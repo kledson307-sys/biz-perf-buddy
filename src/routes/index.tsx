@@ -165,9 +165,14 @@ function Painel({ email }: { email: string }) {
     return { c, ...calc(ss.reduce((a, s) => a + s.servicos, 0), ss.reduce((a, s) => a + s.pecas, 0), g.servicos, g.pecas) };
   }).sort((a, b) => b.perf - a.perf);
   const lider = linhas[0];
-  const liderServ = linhas.length ? linhas.reduce((a, l) => (l.perfS > a.perfS ? l : a), linhas[0]!) : null;
-  const liderPec = linhas.length ? linhas.reduce((a, l) => (l.perfP > a.perfP ? l : a), linhas[0]!) : null;
   const soma = (arr: (Calc)[]) => calc(arr.reduce((a, l) => a + l.servicos, 0), arr.reduce((a, l) => a + l.pecas, 0), arr.reduce((a, l) => a + l.mS, 0), arr.reduce((a, l) => a + l.mP, 0));
+  // Consultores que vendem apenas peças — ficam fora da aba Serviços
+  const SO_PECAS = ["MARCELA.S", "GEOVANA.M", "NAILTON/THIERRY"];
+  const soPecas = (nome: string) => SO_PECAS.includes(nome.trim().toUpperCase());
+  const linhasServ = linhas.filter((l) => !soPecas(l.c.nome));
+  const totalServ = soma(linhasServ);
+  const liderServ = linhasServ.length ? linhasServ.reduce((a, l) => (l.perfS > a.perfS ? l : a), linhasServ[0]!) : null;
+  const liderPec = linhas.length ? linhas.reduce((a, l) => (l.perfP > a.perfP ? l : a), linhas[0]!) : null;
   const total = soma(linhas);
   const porDept = [...new Set(linhas.map((l) => l.c.department_id))].map((id) => ({ nome: deptName(id), ...soma(linhas.filter((l) => l.c.department_id === id)) }));
 
@@ -320,15 +325,15 @@ function Painel({ email }: { email: string }) {
         {tab === "proj-serv" && (
           <>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Kpi label="Realizado Serviços" value={brl(total.servicos)} sub={`Meta ${brl(total.mS)} · ${pct(total.perfS)}`} cls={tone(total.perfS)} />
-              <Kpi label="Projeção Serviços" value={brl(total.projS)} sub={`${pct(total.projPctS)} da meta de ${brl(total.mS)}`} cls={tone(total.projPctS)} />
-              <Kpi label="Falta para a meta" value={brl(Math.max(total.mS - total.servicos, 0))} sub={`Precisa ${brl(total.necS)}/dia (${Math.max(tot - dec, 0)} dias restantes)`} />
+              <Kpi label="Realizado Serviços" value={brl(totalServ.servicos)} sub={`Meta ${brl(totalServ.mS)} · ${pct(totalServ.perfS)}`} cls={tone(totalServ.perfS)} />
+              <Kpi label="Projeção Serviços" value={brl(totalServ.projS)} sub={`${pct(totalServ.projPctS)} da meta de ${brl(totalServ.mS)}`} cls={tone(totalServ.projPctS)} />
+              <Kpi label="Falta para a meta" value={brl(Math.max(totalServ.mS - totalServ.servicos, 0))} sub={`Precisa ${brl(totalServ.necS)}/dia (${Math.max(tot - dec, 0)} dias restantes)`} />
               <Kpi label="Líder de Serviços" value={liderServ ? liderServ.c.nome : "—"} sub={liderServ ? `${pct(liderServ.perfS)} de performance` : ""} />
             </div>
             <Box title="Projeção individual de serviços">
               <Tabela head={["#", "Consultor", "Depto", "Realizado", "Meta", "Performance", "Projeção", "Proj. %", "Média/dia", "Necessário/dia", "vs. Líder"]}>
-                {linhas.length === 0 && <tr><td colSpan={11} className="px-3 py-10 text-center text-muted-foreground">Sem dados. Cadastre consultores em "Configurar" e cole os dados do dia.</td></tr>}
-                {linhas.map((l, i) => (
+                {linhasServ.length === 0 && <tr><td colSpan={11} className="px-3 py-10 text-center text-muted-foreground">Sem dados. Cadastre consultores em "Configurar" e cole os dados do dia.</td></tr>}
+                {linhasServ.map((l, i) => (
                   <tr key={l.c.id} className="border-t border-border">
                     <td className="px-3 py-2">{i + 1}</td>
                     <td className="px-3 py-2 font-medium">{l.c.nome}</td>
