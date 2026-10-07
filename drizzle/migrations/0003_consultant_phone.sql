@@ -1,0 +1,1 @@
+ALTER TABLE public.consultants ADD COLUMN IF NOT EXISTS telefone text NOT NULL DEFAULT '';

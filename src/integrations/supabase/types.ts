@@ -149,6 +149,7 @@ export type Database = {
           department_id: string | null
           id: string
           nome: string
+          telefone: string
           user_id: string
         }
         Insert: {
@@ -156,6 +157,7 @@ export type Database = {
           department_id?: string | null
           id?: string
           nome: string
+          telefone?: string
           user_id?: string
         }
         Update: {
@@ -163,6 +165,7 @@ export type Database = {
           department_id?: string | null
           id?: string
           nome?: string
+          telefone?: string
           user_id?: string
         }
         Relationships: [
