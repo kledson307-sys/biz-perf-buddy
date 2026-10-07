@@ -55,7 +55,7 @@ export function AgregadosImport({ allCons, codigos, ini, end, onDone }: {
       const items = itensSubst.map((i) => i.k);
       const del = await supabase.from("agg_sales").delete().in("item", items).gte("dia", periodo.ini).lte("dia", periodo.fim);
       if (del.error) throw del.error;
-      const rows = res.linhas.map((l) => ({ consultant_id: cmap.get(norm(l.nome))!, dia: periodo.fim, item: l.item, qtd: l.qtd, valor: l.valor }));
+      const rows = res.registros.map((l) => ({ consultant_id: cmap.get(norm(l.nome))!, dia: l.dia ?? periodo.fim, item: l.item, qtd: l.qtd, valor: l.valor }));
       if (rows.length) {
         const up = await supabase.from("agg_sales").upsert(rows, { onConflict: "consultant_id,dia,item" });
         if (up.error) throw up.error;
@@ -76,9 +76,9 @@ export function AgregadosImport({ allCons, codigos, ini, end, onDone }: {
     <div className="space-y-6">
       <section className="space-y-4 rounded-xl border border-border bg-card p-6">
         <div>
-          <h3 className="font-semibold">Importar relatório de ranking do sistema (serviços ou peças)</h3>
+          <h3 className="font-semibold">Importar relatório do sistema (serviços ou peças)</h3>
           <p className="text-sm text-muted-foreground">
-            Escolha o arquivo Excel exportado do sistema. Só os códigos cadastrados abaixo são considerados. A quantidade de cada consultor vem do relatório e o valor é calculado assim: <b>valor bruto do item ÷ quantidade total do item × quantidade do consultor</b>. Importar o relatório de serviços não altera as peças, e vice-versa.
+            Escolha o arquivo Excel exportado do sistema. Só os códigos cadastrados abaixo são considerados. No <b>ranking de serviços</b>, a quantidade de cada consultor vem do relatório e o valor é calculado assim: <b>valor bruto do item ÷ quantidade total do item × quantidade do consultor</b>. Na <b>lista de itens vendidos (peças)</b>, cada venda já traz o vendedor, a data e o preço final, que são usados direto. Importar o relatório de serviços não altera as peças, e vice-versa.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -105,7 +105,7 @@ export function AgregadosImport({ allCons, codigos, ini, end, onDone }: {
         }>
           <div className="space-y-4 p-4 text-sm">
             <p className="text-muted-foreground">
-              {res.usados.length} serviços encontrados de {rel!.servicos.length} no relatório. Ao confirmar, os valores de {itensAtivos.map((i) => i.nome).join(", ")} deste período são substituídos por estes. {rel?.periodo && rel.periodo.ini !== rel.periodo.fim && "Como o relatório é acumulado do período, o total fica registrado no último dia."}
+              {res.usados.length} itens encontrados de {rel!.servicos.length} no relatório. Ao confirmar, os valores de {itensAtivos.map((i) => i.nome).join(", ")} deste período são substituídos por estes. {rel?.porDia ? "Cada venda fica registrada no dia em que aconteceu." : rel?.periodo && rel.periodo.ini !== rel.periodo.fim && "Como o relatório é acumulado do período, o total fica registrado no último dia."}
             </p>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
