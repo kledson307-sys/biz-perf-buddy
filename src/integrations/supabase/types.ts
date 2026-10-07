@@ -302,6 +302,30 @@ export type Database = {
         }
         Relationships: []
       }
+      open_order_snapshots: {
+        Row: {
+          id: string
+          mes: string
+          updated_at: string
+          user_id: string
+          valores: Json
+        }
+        Insert: {
+          id?: string
+          mes: string
+          updated_at?: string
+          user_id?: string
+          valores?: Json
+        }
+        Update: {
+          id?: string
+          mes?: string
+          updated_at?: string
+          user_id?: string
+          valores?: Json
+        }
+        Relationships: []
+      }
       team_members: {
         Row: {
           created_at: string

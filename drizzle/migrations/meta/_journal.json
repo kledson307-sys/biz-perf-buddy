@@ -43,6 +43,13 @@
       "when": 1791408354071,
       "tag": "0005_team_sharing",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791410875164,
+      "tag": "0006_persist_open_orders",
+      "breakpoints": true
     }
   ]
 }
