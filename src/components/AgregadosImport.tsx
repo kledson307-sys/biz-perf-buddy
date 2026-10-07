@@ -18,7 +18,10 @@ export function AgregadosImport({ allCons, codigos, ini, end, onDone }: {
   const [salvando, setSalvando] = useState(false);
 
   const res = useMemo(() => (rel ? distribuir(rel, codigos) : null), [rel, codigos]);
-  const itensAtivos = ITENS.filter((i) => (codigos[i.k] ?? []).length > 0);
+  // Só substitui o grupo (serviços ou peças) que aparece no relatório, para que importar um não apague o outro.
+  const grupos = new Set((res?.usados ?? []).map((u) => ITENS.find((i) => i.k === u.item)?.g));
+  const itensAtivos = ITENS.filter((i) => (codigos[i.k] ?? []).length > 0 && grupos.has(i.g));
+  const itensSubst = itensAtivos;
   const periodo = rel?.periodo ?? { ini: dia, fim: dia };
   const conhecidos = new Set(allCons.map((c) => norm(c.nome)));
 
@@ -49,7 +52,7 @@ export function AgregadosImport({ allCons, codigos, ini, end, onDone }: {
         if (error || !data) throw new Error(`Não consegui cadastrar ${l.nome}: ${error?.message ?? ""}`);
         cmap.set(norm(l.nome), data.id);
       }
-      const items = itensAtivos.map((i) => i.k);
+      const items = itensSubst.map((i) => i.k);
       const del = await supabase.from("agg_sales").delete().in("item", items).gte("dia", periodo.ini).lte("dia", periodo.fim);
       if (del.error) throw del.error;
       const rows = res.linhas.map((l) => ({ consultant_id: cmap.get(norm(l.nome))!, dia: periodo.fim, item: l.item, qtd: l.qtd, valor: l.valor }));
