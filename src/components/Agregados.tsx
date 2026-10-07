@@ -4,6 +4,7 @@ import { Barra, Box, Kpi, Tabela, brl, div, norm, num, parseNum, pct, tone } fro
 import { GRUPO_NOME, ITENS, naoVende, splitCods, type Grupo } from "@/lib/agregados";
 import { AgregadosImport } from "./AgregadosImport";
 import { AgregadosIA } from "./AgregadosIA";
+import { registrarUpdate } from "@/lib/update-log";
 
 type Cons = { id: string; nome: string; department_id: string | null };
 type ASale = { consultant_id: string; dia: string; item: string; qtd: number; valor: number };

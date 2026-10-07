@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Box, brl, norm, num } from "./painel-ui";
 import { GRUPO_NOME, ITENS, distribuir, lerRanking, splitCods, type Relatorio } from "@/lib/agregados";
+import { registrarUpdate } from "@/lib/update-log";
 
 type Cons = { id: string; nome: string; department_id: string | null };
 const br = (d: string) => d.split("-").reverse().join("/");
