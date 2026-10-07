@@ -5,8 +5,8 @@ export const pct = (n: number) => (n * 100).toLocaleString("pt-BR", { maximumFra
 export const num = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
 export const div = (a: number, b: number) => (b ? a / b : 0);
 export const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-export const tone = (p: number) => (p >= 1 ? "text-primary" : p >= 0.85 ? "text-chart-4" : "text-destructive");
-export const bg = (p: number) => (p >= 1 ? "bg-primary" : p >= 0.85 ? "bg-chart-4" : "bg-destructive");
+export const tone = (p: number) => (p >= 1 ? "text-success" : p >= 0.85 ? "text-warning" : "text-destructive");
+export const bg = (p: number) => (p >= 1 ? "bg-success" : p >= 0.85 ? "bg-warning" : "bg-destructive");
 
 export function parseNum(v: string) {
   let s = (v || "").replace(/[R$\s%]/g, "");
@@ -17,8 +17,8 @@ export function parseNum(v: string) {
 
 export function Box({ title, children, right }: { title: string; children: React.ReactNode; right?: React.ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-xl border border-border bg-card">
-      <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+    <section className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-table-band px-5 py-4 text-table-band-foreground">
         <h3 className="font-semibold">{title}</h3>
         {right}
       </div>
@@ -54,9 +54,10 @@ export function Cmp({ label, a, b }: { label: string; a: number; b: number }) {
 }
 export function Kpi({ label, value, sub, cls = "" }: { label: string; value: string; sub?: string; cls?: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
+    <div className="relative min-w-0 overflow-hidden rounded-lg border border-border bg-card p-5 shadow-sm before:absolute before:left-0 before:top-0 before:h-full before:w-1 before:bg-primary">
       <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={`mt-1 text-2xl font-bold ${cls}`}>{value}</p>
+      <p className={`mt-2 break-words text-2xl font-bold ${cls}`}>{value}</p>
+      <div className="my-3 h-1 rounded-full bg-muted" />
       {sub && <p className="mt-1 text-xs text-muted-foreground">{sub}</p>}
     </div>
   );
