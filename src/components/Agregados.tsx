@@ -90,6 +90,9 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons }
       {(sub === "servicos" || sub === "pecas") && (
         <GrupoView g={sub} stat={stat} ranking={ranking} ids={cons.map((c) => c.id)} deptName={deptName} rest={rest} />
       )}
+      {sub === "importar" && (
+        <AgregadosImport allCons={allCons} codigos={codigos} ini={ini} end={end} onDone={() => { load(); reloadCons(); }} />
+      )}
       {sub === "lancar" && (
         <Lancar cons={cons} allCons={allCons} sales={sales} visits={visits} ini={ini} end={end} onDone={() => { load(); reloadCons(); }} />
       )}
