@@ -235,30 +235,6 @@ function Painel({ email }: { email: string }) {
               </Tabela>
             </Box>
 
-            <Box title="Projeção individual (serviços e peças separados)">
-              <Tabela head={["#", "Consultor", "Depto", "Real. Serv.", "Meta Serv.", "Perf. Serv.", "Proj. Serv.", "Real. Peças", "Meta Peças", "Perf. Peças", "Proj. Peças", "Perf. Total", "Projeção", "Proj. %", "vs. Líder"]}>
-                {linhas.length === 0 && <tr><td colSpan={15} className="px-3 py-10 text-center text-muted-foreground">Sem dados. Cadastre consultores em "Configurar" e cole os dados do dia.</td></tr>}
-                {linhas.map((l, i) => (
-                  <tr key={l.c.id} className="border-t border-border">
-                    <td className="px-3 py-2">{i + 1}</td>
-                    <td className="px-3 py-2 font-medium">{l.c.nome}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{deptName(l.c.department_id)}</td>
-                    <td className="px-3 py-2">{brl(l.servicos)}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{brl(l.mS)}</td>
-                    <td className={`px-3 py-2 font-semibold ${tone(l.perfS)}`}>{pct(l.perfS)}</td>
-                    <td className={`px-3 py-2 ${tone(l.projPctS)}`}>{brl(l.projS)}</td>
-                    <td className="px-3 py-2">{brl(l.pecas)}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{brl(l.mP)}</td>
-                    <td className={`px-3 py-2 font-semibold ${tone(l.perfP)}`}>{pct(l.perfP)}</td>
-                    <td className={`px-3 py-2 ${tone(l.projPctP)}`}>{brl(l.projP)}</td>
-                    <td className={`px-3 py-2 font-semibold ${tone(l.perf)}`}>{pct(l.perf)}</td>
-                    <td className="px-3 py-2 font-semibold">{brl(l.proj)}</td>
-                    <td className="px-3 py-2"><Barra p={l.projPct} /></td>
-                    <td className="whitespace-nowrap px-3 py-2">{i === 0 ? <span className="font-semibold text-primary">Líder</span> : <span className="text-destructive">−{((lider!.perf - l.perf) * 100).toFixed(1)} pts</span>}</td>
-                  </tr>
-                ))}
-              </Tabela>
-            </Box>
 
             <Box title="Comparação com o líder e recomendações">
               <div className="grid gap-4 p-4 md:grid-cols-2">
