@@ -76,9 +76,9 @@ export function AgregadosImport({ allCons, codigos, ini, end, onDone }: {
     <div className="space-y-6">
       <section className="space-y-4 rounded-xl border border-border bg-card p-6">
         <div>
-          <h3 className="font-semibold">Importar relatório de ranking do sistema (serviços ou peças)</h3>
+          <h3 className="font-semibold">Importar relatório do sistema (serviços ou peças)</h3>
           <p className="text-sm text-muted-foreground">
-            Escolha o arquivo Excel exportado do sistema. Só os códigos cadastrados abaixo são considerados. A quantidade de cada consultor vem do relatório e o valor é calculado assim: <b>valor bruto do item ÷ quantidade total do item × quantidade do consultor</b>. Importar o relatório de serviços não altera as peças, e vice-versa.
+            Escolha o arquivo Excel exportado do sistema. Só os códigos cadastrados abaixo são considerados. No <b>ranking de serviços</b>, a quantidade de cada consultor vem do relatório e o valor é calculado assim: <b>valor bruto do item ÷ quantidade total do item × quantidade do consultor</b>. Na <b>lista de itens vendidos (peças)</b>, cada venda já traz o vendedor, a data e o preço final, que são usados direto. Importar o relatório de serviços não altera as peças, e vice-versa.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
