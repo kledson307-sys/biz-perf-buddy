@@ -61,6 +61,7 @@ export function AgregadosImport({ allCons, codigos, ini, end, onDone }: {
         if (up.error) throw up.error;
       }
       setMsg(`Importado: ${rows.length} lançamentos de ${br(periodo.ini)} a ${br(periodo.fim)}. Importar de novo o mesmo período substitui os valores.`);
+      await registrarUpdate("Agregados (importação)");
       setRel(null); setTxt(""); setArquivo("");
       onDone();
     } catch (e) { setMsg("Erro ao salvar: " + (e as Error).message); }
