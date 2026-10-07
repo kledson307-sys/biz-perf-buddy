@@ -108,10 +108,12 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec }: { linhas: Linha[];
     <div className="space-y-6">
       <h2 className="text-lg font-semibold">Projeção com OS abertas — {mes}</h2>
       <p className="text-sm text-muted-foreground">Faturado (dados já importados) + ordens de serviço abertas que ainda serão faturadas. Não altera as outras abas.</p>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Kpi label="Serviços: faturado + OS" value={brl(ts)} sub={`Faturado ${brl(g.fs)} + OS ${brl(g.os)} · meta ${brl(g.ms)} · ${pct(div(ts, g.ms))}`} cls={tone(div(ts, g.ms))} />
-        <Kpi label="Peças: faturado + OS" value={brl(tp)} sub={`Faturado ${brl(g.fp)} + OS ${brl(g.op)} · meta ${brl(g.mp)} · ${pct(div(tp, g.mp))}`} cls={tone(div(tp, g.mp))} />
-        <Kpi label="Total: faturado + OS" value={brl(ts + tp)} sub={`Meta ${brl(g.ms + g.mp)} · ${pct(div(ts + tp, g.ms + g.mp))} · falta ${brl(Math.max(g.ms + g.mp - ts - tp, 0))}`} cls={tone(div(ts + tp, g.ms + g.mp))} />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <Kpi label="Realizado Serviços Total" value={brl(ts)} sub={`Meta ${brl(g.ms)} · ${pct(div(ts, g.ms))}`} cls={tone(div(ts, g.ms))} />
+        <Kpi label="Realizado Peças Total" value={brl(tp)} sub={`Meta ${brl(g.mp)} · ${pct(div(tp, g.mp))}`} cls={tone(div(tp, g.mp))} />
+        <Kpi label="Projeção Serviços" value={brl(projS)} sub={`${pct(projPctS)} da meta ${brl(g.ms)}`} cls={tone(projPctS)} />
+        <Kpi label="Projeção Peças" value={brl(projP)} sub={`${pct(projPctP)} da meta ${brl(g.mp)}`} cls={tone(projPctP)} />
+        <Kpi label="Projeção Total" value={brl(projS + projP)} sub={`${pct(projPct)} · precisa serviços ${brl(necS)}/dia · precisa peças ${brl(necP)}/dia`} cls={tone(projPct)} />
       </div>
 
       <Box title="Importar OS abertas (Excel ou colar)">
