@@ -14,7 +14,162 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      consultants: {
+        Row: {
+          created_at: string
+          department_id: string | null
+          id: string
+          nome: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          department_id?: string | null
+          id?: string
+          nome: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          department_id?: string | null
+          id?: string
+          nome?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultants_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_sales: {
+        Row: {
+          consultant_id: string
+          dia: string
+          id: string
+          pecas: number
+          servicos: number
+          user_id: string
+        }
+        Insert: {
+          consultant_id: string
+          dia: string
+          id?: string
+          pecas?: number
+          servicos?: number
+          user_id?: string
+        }
+        Update: {
+          consultant_id?: string
+          dia?: string
+          id?: string
+          pecas?: number
+          servicos?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_sales_consultant_id_fkey"
+            columns: ["consultant_id"]
+            isOneToOne: false
+            referencedRelation: "consultants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      departments: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      goals: {
+        Row: {
+          consultant_id: string
+          id: string
+          mes: string
+          pecas: number
+          servicos: number
+          user_id: string
+        }
+        Insert: {
+          consultant_id: string
+          id?: string
+          mes: string
+          pecas?: number
+          servicos?: number
+          user_id?: string
+        }
+        Update: {
+          consultant_id?: string
+          id?: string
+          mes?: string
+          pecas?: number
+          servicos?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goals_consultant_id_fkey"
+            columns: ["consultant_id"]
+            isOneToOne: false
+            referencedRelation: "consultants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      month_params: {
+        Row: {
+          base: string
+          dc_decorridos: number
+          dc_totais: number
+          du_decorridos: number
+          du_totais: number
+          id: string
+          mes: string
+          user_id: string
+        }
+        Insert: {
+          base?: string
+          dc_decorridos?: number
+          dc_totais?: number
+          du_decorridos?: number
+          du_totais?: number
+          id?: string
+          mes: string
+          user_id?: string
+        }
+        Update: {
+          base?: string
+          dc_decorridos?: number
+          dc_totais?: number
+          du_decorridos?: number
+          du_totais?: number
+          id?: string
+          mes?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
