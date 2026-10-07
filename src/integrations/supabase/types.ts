@@ -302,6 +302,30 @@ export type Database = {
         }
         Relationships: []
       }
+      team_members: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          owner_id: string
+          papel: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          owner_id?: string
+          papel?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          owner_id?: string
+          papel?: string
+        }
+        Relationships: []
+      }
       update_log: {
         Row: {
           at: string
@@ -331,6 +355,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_edit: { Args: never; Returns: boolean }
+      data_owner: { Args: never; Returns: string }
       import_sales_period: {
         Args: { p_fim: string; p_ini: string; p_rows: Json }
         Returns: number

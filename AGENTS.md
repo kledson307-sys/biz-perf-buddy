@@ -20,3 +20,4 @@
 - Cumulative main-sales reports use the authenticated SECURITY INVOKER `import_sales_period` RPC to replace included consultants' period atomically and store totals on the final day; period totals cannot reconstruct daily sales.
 - Brand primary and performance colors use independent semantic tokens so changing the brand never changes success/warning thresholds.
 - Team WhatsApp updates open wa.me links per consultant (manager sends manually) with AI tips from `whatsapp-ia.functions.ts`; no automated bulk sending.
+- Team sharing: all data tables default `user_id` to `data_owner()` (owner resolved via `team_members` by JWT email) and RLS uses `data_owner()`/`can_edit()`; never filter by `auth.uid()` directly so viewers/editors see the owner's data.
