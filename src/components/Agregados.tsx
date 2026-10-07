@@ -205,7 +205,7 @@ function Lancar({ cons, allCons, sales, visits, ini, end, onDone }: {
     setMsg("Salvando…");
     const ids = Object.keys(d);
     const sRows = ids.flatMap((cid) => ITENS.map((it) => ({ consultant_id: cid, dia, item: it.k, qtd: d[cid]![`${it.k}_q`] ?? 0, valor: d[cid]![`${it.k}_v`] ?? 0 })));
-    const vRows = ids.map((cid) => ({ consultant_id: cid, dia, passagens: d[cid]!.pass ?? 0 }));
+    const vRows = ids.map((cid) => ({ consultant_id: cid, dia, passagens: d[cid]!["pass"] ?? 0 }));
     const [a, b] = await Promise.all([
       sRows.length ? supabase.from("agg_sales").upsert(sRows, { onConflict: "consultant_id,dia,item" }) : Promise.resolve({ error: null }),
       vRows.length ? supabase.from("agg_visits").upsert(vRows, { onConflict: "consultant_id,dia" }) : Promise.resolve({ error: null }),
