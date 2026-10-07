@@ -233,13 +233,27 @@ function Painel({ email }: { email: string }) {
         </div>
       </header>
 
-      {lastUp && (
-        <div className="border-b border-border bg-primary/5 print:hidden">
-          <div className="mx-auto max-w-7xl px-4 py-2 text-xs text-muted-foreground sm:px-6">
-            🔄 Última atualização: {new Date(lastUp.at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })} por <span className="font-medium text-foreground">{lastUp.nome}</span> · {lastUp.origem}
+      {(() => {
+        const desat = !lastUp || new Date(lastUp.at).toDateString() !== new Date().toDateString();
+        return (
+          <div className={`border-b print:hidden ${desat ? "animate-pulse border-destructive bg-destructive text-destructive-foreground" : "border-border bg-primary/5 text-muted-foreground"}`}>
+            <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-4 py-2 text-xs sm:px-6">
+              {lastUp ? (
+                <span>
+                  🔄 Última atualização: {new Date(lastUp.at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })} por <span className="font-medium">{lastUp.nome}</span> · {lastUp.origem}
+                </span>
+              ) : (
+                <span>🔄 Nenhuma atualização registrada.</span>
+              )}
+              {desat && (
+                <button type="button" onClick={() => setTab("dados")} className="ml-auto rounded bg-background px-2 py-1 font-semibold text-destructive">
+                  ⚠️ Dados desatualizados — importar planilha de hoje
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
         {tab === "painel" && (
