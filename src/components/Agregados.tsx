@@ -1,21 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Barra, Box, Kpi, Tabela, brl, div, norm, num, parseNum, pct, tone } from "./painel-ui";
+import { GRUPO_NOME, ITENS, splitCods, type Grupo } from "@/lib/agregados";
+import { AgregadosImport } from "./AgregadosImport";
 
 type Cons = { id: string; nome: string; department_id: string | null };
-type Grupo = "servicos" | "pecas";
 type ASale = { consultant_id: string; dia: string; item: string; qtd: number; valor: number };
 type AGoal = { consultant_id: string; item: string; meta_qtd: number; meta_valor: number };
 type AVisit = { consultant_id: string; dia: string; passagens: number };
-
-export const ITENS: { k: string; nome: string; g: Grupo; re: RegExp }[] = [
-  { k: "limpar", nome: "Limpar", g: "servicos", re: /limp/ },
-  { k: "alinhamento", nome: "Alinhamento & Balanceamento", g: "servicos", re: /alinh|balanc/ },
-  { k: "oxi", nome: "Oxi Capacete", g: "servicos", re: /oxi|capacete/ },
-  { k: "brazzo", nome: "Brazzo", g: "pecas", re: /brazzo/ },
-  { k: "tunap", nome: "Tunap", g: "pecas", re: /tunap/ },
-];
-const GRUPO_NOME: Record<Grupo, string> = { servicos: "Serviços agregados", pecas: "Peças agregadas" };
 
 type Props = {
   mes: string; cons: Cons[]; allCons: Cons[]; tot: number; dec: number;
@@ -23,24 +15,28 @@ type Props = {
 };
 
 export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons }: Props) {
-  const [sub, setSub] = useState<"servicos" | "pecas" | "lancar" | "metas">("servicos");
+  const [sub, setSub] = useState<"servicos" | "pecas" | "importar" | "lancar" | "metas">("servicos");
   const [sales, setSales] = useState<ASale[]>([]);
   const [goals, setGoals] = useState<AGoal[]>([]);
   const [visits, setVisits] = useState<AVisit[]>([]);
+  const [codigos, setCodigos] = useState<Record<string, string[]>>(() => Object.fromEntries(ITENS.map((i) => [i.k, i.cod])));
 
   const [y, m] = mes.split("-").map(Number);
   const fim = new Date(y!, m!, 0).getDate();
   const ini = `${mes}-01`, end = `${mes}-${fim}`;
 
   const load = useCallback(async () => {
-    const [s, g, v] = await Promise.all([
+    const [s, g, v, c] = await Promise.all([
       supabase.from("agg_sales").select("consultant_id,dia,item,qtd,valor").gte("dia", ini).lte("dia", end),
       supabase.from("agg_goals").select("consultant_id,item,meta_qtd,meta_valor").eq("mes", mes),
       supabase.from("agg_visits").select("consultant_id,dia,passagens").gte("dia", ini).lte("dia", end),
+      supabase.from("agg_codes").select("item,codigos"),
     ]);
     setSales((s.data ?? []).map((x) => ({ ...x, qtd: +x.qtd, valor: +x.valor })));
     setGoals((g.data ?? []).map((x) => ({ ...x, meta_qtd: +x.meta_qtd, meta_valor: +x.meta_valor })));
     setVisits((v.data ?? []).map((x) => ({ ...x, passagens: +x.passagens })));
+    const salvo = new Map((c.data ?? []).map((x) => [x.item, splitCods(x.codigos)]));
+    setCodigos(Object.fromEntries(ITENS.map((i) => [i.k, salvo.get(i.k) ?? i.cod])));
   }, [mes, ini, end]);
   useEffect(() => { load(); }, [load]);
 
