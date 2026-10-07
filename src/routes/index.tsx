@@ -270,8 +270,9 @@ function Painel({ email }: { email: string }) {
                 <Button variant="outline" onClick={() => window.print()}><Printer />Imprimir / PDF</Button>
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Kpi label="Realizado Total" value={brl(total.real)} sub={`Meta ${brl(total.meta)} · ${pct(total.perf)}`} cls={tone(total.perf)} />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              <Kpi label="Realizado Serviços Total" value={brl(total.servicos)} sub={`Meta ${brl(total.mS)} · ${pct(total.perfS)}`} cls={tone(total.perfS)} />
+              <Kpi label="Realizado Peças Total" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)}`} cls={tone(total.perfP)} />
               <Kpi label="Projeção Serviços" value={brl(total.projS)} sub={`${pct(total.projPctS)} da meta ${brl(total.mS)}`} cls={tone(total.projPctS)} />
               <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta ${brl(total.mP)}`} cls={tone(total.projPctP)} />
               <Kpi label="Projeção Total" value={brl(total.proj)} sub={`${pct(total.projPct)} · precisa ${brl(total.nec)}/dia`} cls={tone(total.projPct)} />
