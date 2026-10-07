@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      agg_codes: {
+        Row: {
+          codigos: string
+          id: string
+          item: string
+          user_id: string
+        }
+        Insert: {
+          codigos?: string
+          id?: string
+          item: string
+          user_id?: string
+        }
+        Update: {
+          codigos?: string
+          id?: string
+          item?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       agg_goals: {
         Row: {
           consultant_id: string
