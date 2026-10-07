@@ -165,9 +165,14 @@ function Painel({ email }: { email: string }) {
     return { c, ...calc(ss.reduce((a, s) => a + s.servicos, 0), ss.reduce((a, s) => a + s.pecas, 0), g.servicos, g.pecas) };
   }).sort((a, b) => b.perf - a.perf);
   const lider = linhas[0];
-  const liderServ = linhas.length ? linhas.reduce((a, l) => (l.perfS > a.perfS ? l : a), linhas[0]!) : null;
-  const liderPec = linhas.length ? linhas.reduce((a, l) => (l.perfP > a.perfP ? l : a), linhas[0]!) : null;
   const soma = (arr: (Calc)[]) => calc(arr.reduce((a, l) => a + l.servicos, 0), arr.reduce((a, l) => a + l.pecas, 0), arr.reduce((a, l) => a + l.mS, 0), arr.reduce((a, l) => a + l.mP, 0));
+  // Consultores que vendem apenas peças — ficam fora da aba Serviços
+  const SO_PECAS = ["MARCELA.S", "GEOVANA.M", "NAILTON/THIERRY"];
+  const soPecas = (nome: string) => SO_PECAS.includes(nome.trim().toUpperCase());
+  const linhasServ = linhas.filter((l) => !soPecas(l.c.nome));
+  const totalServ = soma(linhasServ);
+  const liderServ = linhasServ.length ? linhasServ.reduce((a, l) => (l.perfS > a.perfS ? l : a), linhasServ[0]!) : null;
+  const liderPec = linhas.length ? linhas.reduce((a, l) => (l.perfP > a.perfP ? l : a), linhas[0]!) : null;
   const total = soma(linhas);
   const porDept = [...new Set(linhas.map((l) => l.c.department_id))].map((id) => ({ nome: deptName(id), ...soma(linhas.filter((l) => l.c.department_id === id)) }));
 
