@@ -45,19 +45,20 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
     ]).then(([as, ag, av]) => setAgg({ s: as.data ?? [], g: ag.data ?? [], v: av.data ?? [] }));
   }, [ids, mes]);
 
-  const dadosAgg = (id: string) => {
+  const dadosAgg = (id: string, nome = "") => {
     const rest = Math.max(tot - dec, 0);
     const passagens = agg.v.filter((v) => v.consultant_id === id).reduce((n, v) => n + Number(v.passagens), 0);
     const agregados = ITENS.map((it) => {
+      if (nome && naoVende(it.k, nome)) return null;
       const qtd = agg.s.filter((x) => x.consultant_id === id && x.item === it.k).reduce((n, x) => n + Number(x.qtd), 0);
       const meta = Number(agg.g.find((x) => x.consultant_id === id && x.item === it.k)?.meta_qtd ?? 0);
       return { item: it.nome, grupo: it.g, qtd, meta, proj: dec ? (qtd / dec) * tot : 0, nec: rest ? Math.max(meta - qtd, 0) / rest : 0, aper: passagens ? qtd / passagens : 0 };
-    });
+    }).filter((x): x is NonNullable<typeof x> => !!x);
     return { passagens, agregados };
   };
 
-  const perfAgg = (id: string) => {
-    const a = dadosAgg(id).agregados;
+  const perfAgg = (id: string, nome = "") => {
+    const a = dadosAgg(id, nome).agregados;
     const qtd = a.reduce((n, x) => n + x.qtd, 0);
     const meta = a.reduce((n, x) => n + x.meta, 0);
     return meta ? qtd / meta : 0;
@@ -66,14 +67,14 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
     linhas.map((x) => {
       const k = ITENS.find((i) => i.nome === nomeItem)?.k ?? "";
       if (naoVende(k, x.c.nome)) return null;
-      const a = dadosAgg(x.c.id).agregados.find((y) => y.item === nomeItem);
+      const a = dadosAgg(x.c.id, x.c.nome).agregados.find((y) => y.item === nomeItem);
       return a ? { id: x.c.id, nome: x.c.nome, qtd: a.qtd, meta: a.meta } : null;
     }).filter((x): x is { id: string; nome: string; qtd: number; meta: number } => !!x && x.meta > 0)
       .sort((a, b) => b.qtd / b.meta - a.qtd / a.meta)[0] ?? null;
-  const liderAgg = linhas.filter((x) => perfAgg(x.c.id) > 0).sort((a, b) => perfAgg(b.c.id) - perfAgg(a.c.id))[0] ?? null;
+  const liderAgg = linhas.filter((x) => perfAgg(x.c.id, x.c.nome) > 0).sort((a, b) => perfAgg(b.c.id, b.c.nome) - perfAgg(a.c.id, a.c.nome))[0] ?? null;
 
   const montar = (l: LinhaEnvio, ia: string) => {
-    const { passagens, agregados } = dadosAgg(l.c.id);
+    const { passagens, agregados } = dadosAgg(l.c.id, l.c.nome);
     const cmp = (ld: LinhaEnvio | null, minha: number, dele: number) =>
       !ld ? "" : ld.c.id === l.c.id ? "🏆 Você é o líder!" : `🏆 Líder: ${ld.c.nome} (${pct(dele)}) · você está ${num((dele - minha) * 100)} pts atrás`;
     const dicas = (tag: string) => { const t = bloco(ia, tag); return t ? ["💡 Sugestões:", t] : []; };
@@ -104,7 +105,7 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
       "➕ *AGREGADOS*",
       ...linhasAgg,
       passagens ? `Aproveitamento: ${pct(totAgg / passagens)} (${num(totAgg)} itens em ${num(passagens)} passagens)` : "Passagens ainda não lançadas.",
-      cmp(liderAgg, perfAgg(l.c.id), liderAgg ? perfAgg(liderAgg.c.id) : 0),
+      cmp(liderAgg, perfAgg(l.c.id, l.c.nome), liderAgg ? perfAgg(liderAgg.c.id, liderAgg.c.nome) : 0),
       oport ? `🎯 Oportunidade: ${oport.item} está mais longe da meta (${pct(oport.qtd / oport.meta)}) — foque nele.` : "",
       ...dicas("AGREGADOS"),
     ].filter((x) => x !== undefined && x !== null).join("\n").replace(/\n{3,}/g, "\n\n").trim();
@@ -125,13 +126,13 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
     if (fone.length < 12) { setMsg(`Cadastre o celular de ${l.c.nome} com DDD.`); return; }
     const janela = window.open("", "_blank");
     setBusy(l.c.id); setMsg("");
-    const d = dadosAgg(l.c.id);
+    const d = dadosAgg(l.c.id, l.c.nome);
     const r = await gerar({ data: {
       nome: l.c.nome, mes, dec, tot, servicos: l.servicos, pecas: l.pecas, mS: l.mS, mP: l.mP,
       projS: l.projS, projP: l.projP, perfS: l.perfS, perfP: l.perfP, projPct: l.projPct,
       necS: l.necS, necP: l.necP, liderServ: liderServ?.c.nome ?? "", liderPerfS: liderServ?.perfS ?? 0,
       liderPec: liderPec?.c.nome ?? "", liderPerfP: liderPec?.perfP ?? 0,
-      liderAgg: liderAgg?.c.nome ?? "", liderAggPerf: liderAgg ? perfAgg(liderAgg.c.id) : 0,
+      liderAgg: liderAgg?.c.nome ?? "", liderAggPerf: liderAgg ? perfAgg(liderAgg.c.id, liderAgg.c.nome) : 0,
       passagens: d.passagens, agregados: d.agregados,
     } }).catch(() => ({ ok: false as const, mensagem: "Não foi possível gerar as dicas." }));
     setBusy("");
