@@ -106,6 +106,10 @@ function Painel({ email }: { email: string }) {
   const [sales, setSales] = useState<Sale[]>([]);
   const [params, setParams] = useState<Params>(defParams);
   const [tab, setTab] = useState("painel");
+  const [relatorio, setRelatorio] = useState(false);
+  const show = (k: string) => tab === k || relatorio;
+  useEffect(() => { const f = () => setRelatorio(false); window.addEventListener("afterprint", f); return () => window.removeEventListener("afterprint", f); }, []);
+  const gerarRelatorio = () => { setRelatorio(true); setTimeout(() => window.print(), 1200); };
   const [filtroDept, setFiltroDept] = useState("todos");
   const [lastUp, setLastUp] = useState<{ at: string; nome: string; origem: string } | null>(null);
 
@@ -268,14 +272,15 @@ function Painel({ email }: { email: string }) {
       })()}
 
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
-        {tab === "os" && <OsAbertas linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} />}
-        {tab === "painel" && (
+        {show("os") && <OsAbertas linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} />}
+        {show("painel") && (
           <>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-lg font-semibold">Relatório de {mes}</h2>
               <div className="flex gap-2 print:hidden">
                 <Button onClick={exportar}><Download />Exportar Excel (CSV)</Button>
                 <Button variant="outline" onClick={() => window.print()}><Printer />Imprimir / PDF</Button>
+                <Button onClick={gerarRelatorio}><Printer />Relatório completo (PDF)</Button>
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -331,7 +336,7 @@ function Painel({ email }: { email: string }) {
           </>
         )}
 
-        {tab === "proj-serv" && (
+        {show("proj-serv") && (
           <>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Kpi label="Realizado Serviços" value={brl(totalServ.servicos)} sub={`Meta ${brl(totalServ.mS)} · ${pct(totalServ.perfS)}`} cls={tone(totalServ.perfS)} />
@@ -362,7 +367,7 @@ function Painel({ email }: { email: string }) {
           </>
         )}
 
-        {tab === "proj-pec" && (
+        {show("proj-pec") && (
           <>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Kpi label="Realizado Peças" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)}`} cls={tone(total.perfP)} />
@@ -393,7 +398,7 @@ function Painel({ email }: { email: string }) {
           </>
         )}
 
-        {tab === "proj-total" && (
+        {show("proj-total") && (
           <>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Kpi label="Realizado Total" value={brl(total.real)} sub={`Meta ${brl(total.meta)} · ${pct(total.perf)}`} cls={tone(total.perf)} />
@@ -450,8 +455,8 @@ function Painel({ email }: { email: string }) {
           </>
         )}
 
-        {tab === "agregados" && <Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} />}
-        {tab === "diario" && <Diario sales={sales} cons={visiveis} metaTotal={total.meta} tot={tot} />}
+        {show("agregados") && <Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} />}
+        {show("diario") && <Diario sales={sales} cons={visiveis} metaTotal={total.meta} tot={tot} />}
         {tab === "dados" && <SalesImport cons={cons} depts={depts} onDone={load} onPeriod={setMes} />}
         {tab === "config" && <div className="space-y-6"><Equipe /><Config params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} /></div>}
       </main>
