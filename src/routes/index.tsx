@@ -283,15 +283,38 @@ function Painel({ email }: { email: string }) {
       })()}
 
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
-        {show("os") && <OsAbertas linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} />}
+        {relatorio && (
+          <div className="hidden print:block">
+            <div className="flex min-h-[250mm] flex-col items-center justify-center text-center">
+              <img src={bmwLogo.url} alt="BMW" className="size-28" />
+              <p className="mt-10 text-sm font-semibold uppercase tracking-[0.3em] text-primary">Relatório de Fechamento</p>
+              <h1 className="mt-3 text-4xl font-bold">HAUS MOTORS SALVADOR</h1>
+              <p className="mt-1 text-xl font-medium text-primary">(KLEDSON)</p>
+              <p className="mt-8 text-2xl font-semibold capitalize">{mesExtenso}</p>
+              <div className="mx-auto mt-12 grid w-full max-w-2xl grid-cols-2 gap-4 text-left">
+                <Kpi label="Realizado Serviços" value={brl(total.servicos)} sub={`Meta ${brl(total.mS)} · ${pct(total.perfS)}`} cls={tone(total.perfS)} />
+                <Kpi label="Realizado Peças" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)}`} cls={tone(total.perfP)} />
+                <Kpi label="Projeção Serviços" value={brl(total.projS)} sub={`${pct(total.projPctS)} da meta ${brl(total.mS)}`} cls={tone(total.projPctS)} />
+                <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta ${brl(total.mP)}`} cls={tone(total.projPctP)} />
+              </div>
+              <p className="mt-8 text-2xl font-bold">Projeção Total: {brl(total.proj)} <span className={tone(total.projPct)}>({pct(total.projPct)} da meta)</span></p>
+              <p className="mt-12 max-w-2xl text-xs text-muted-foreground">
+                Gerado em {dataHora(new Date().toISOString())}
+                {lastUp && ` · Última atualização dos dados: ${dataHora(lastUp.at)} por ${lastUp.nome}`}
+                {` · Projeção por ${params.base === "uteis" ? "dias úteis" : "dias corridos"}: ${dec} de ${tot}`}
+              </p>
+            </div>
+          </div>
+        )}
+        {show("os") && <Secao titulo="Projeção + Ordens de Serviço abertas"><OsAbertas linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} /></Secao>}
         {show("painel") && (
-          <>
+          <Secao titulo="Resumo executivo">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-lg font-semibold">Relatório de {mes}</h2>
               <div className="flex gap-2 print:hidden">
                 <Button onClick={exportar}><Download />Exportar Excel (CSV)</Button>
                 <Button variant="outline" onClick={() => window.print()}><Printer />Imprimir / PDF</Button>
-                <Button onClick={gerarRelatorio}><Printer />Relatório completo (PDF)</Button>
+                <Button onClick={gerarRelatorio}><Printer />Relatório de fechamento (PDF)</Button>
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
