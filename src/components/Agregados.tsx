@@ -114,10 +114,11 @@ function GrupoView({ g, stat, ranking, ids, deptName, rest }: {
   const items = ITENS.filter((i) => i.g === g);
   const keys = items.map((i) => i.k);
   const T = stat(ids, keys);
+  const perItem = items.map((it) => ({ it, s: stat(ids, [it.k]) }));
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label="Quantidade vendida" value={num(T.qtd)} sub={`Meta ${num(T.mq)} · ${pct(T.perfQ)}`} cls={tone(T.perfQ)} />
+        <Kpi label="Quantidade vendida" value={num(T.qtd)} cls={tone(T.perfQ)} sub={<ItensMeta perItem={perItem} T={T} />} />
         <Kpi label="Projeção (qtd)" value={num(T.projQ)} sub={`${pct(T.projPctQ)} da meta · precisa ${num(T.necQ)}/dia (${rest} dias)`} cls={tone(T.projPctQ)} />
         <Kpi label="Valor vendido" value={brl(T.valor)} sub={`Meta ${brl(T.mv)} · projeção ${brl(T.projV)}`} cls={tone(T.perfV)} />
         <Kpi label="Aproveitamento" value={pct(T.aprov)} sub={`${num(T.qtd)} itens em ${num(T.pass)} passagens`} />
@@ -125,8 +126,7 @@ function GrupoView({ g, stat, ranking, ids, deptName, rest }: {
 
       <Box title={`Resumo por item — ${GRUPO_NOME[g]}`}>
         <Tabela head={["Item", "Qtd", "Meta", "Perf.", "Projeção", "Proj. %", "Valor", "Meta R$", "Perf. R$", "Aproveit.", "Líder"]}>
-          {items.map((it) => {
-            const s = stat(ids, [it.k]);
+          {perItem.map(({ it, s }) => {
             const lid = ranking([it.k])[0];
             return (
               <tr key={it.k} className="border-t border-border">
@@ -150,6 +150,24 @@ function GrupoView({ g, stat, ranking, ids, deptName, rest }: {
       <RankTable title={`Ranking geral — ${GRUPO_NOME[g]}`} rows={ranking(keys)} deptName={deptName} />
       {items.map((it) => <RankTable key={it.k} title={`Ranking — ${it.nome}`} rows={ranking([it.k])} deptName={deptName} />)}
     </>
+  );
+}
+
+/** Linha por item dentro do cartão "Quantidade vendida": o vendido e a meta de cada tópico. */
+function ItensMeta({ perItem, T }: { perItem: { it: (typeof ITENS)[number]; s: Stat }[]; T: Stat }) {
+  return (
+    <span className="block space-y-1">
+      {perItem.map(({ it, s }) => (
+        <span key={it.k} className="flex items-baseline justify-between gap-3">
+          <span className="truncate">{it.nome}</span>
+          <span className="whitespace-nowrap tabular-nums">{num(s.qtd)} de {num(s.mq)}</span>
+        </span>
+      ))}
+      <span className="flex items-baseline justify-between gap-3 border-t border-border pt-1 font-semibold text-foreground">
+        <span>Total</span>
+        <span className="whitespace-nowrap tabular-nums">{num(T.qtd)} de {num(T.mq)} · {pct(T.perfQ)}</span>
+      </span>
+    </span>
   );
 }
 

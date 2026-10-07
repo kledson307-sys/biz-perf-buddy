@@ -52,7 +52,7 @@ export function Cmp({ label, a, b }: { label: string; a: number; b: number }) {
     </div>
   );
 }
-export function Kpi({ label, value, sub, cls = "" }: { label: string; value: string; sub?: string; cls?: string }) {
+export function Kpi({ label, value, sub, cls = "" }: { label: string; value: string; sub?: React.ReactNode; cls?: string }) {
   return (
     <div className="relative min-w-0 overflow-hidden rounded-lg border border-border bg-card p-5 shadow-sm before:absolute before:left-0 before:top-0 before:h-full before:w-1 before:bg-primary">
       <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
