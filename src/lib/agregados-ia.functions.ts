@@ -40,7 +40,7 @@ function erro(status: number, mensagem: string): RecomendacaoResult {
 
 export const recomendarAgregados = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => inputSchema.parse(d))
+  .validator((d: unknown) => inputSchema.parse(d))
   .handler(async ({ data }): Promise<RecomendacaoResult> => {
     const apiKey = process.env["LOVABLE_API_KEY"];
     if (!apiKey) return erro(500, "A IA não está configurada neste projeto.");
