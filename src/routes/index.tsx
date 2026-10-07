@@ -7,6 +7,7 @@ import { Barra, Box, Cmp, Kpi, Num, Tabela, bg, brl, div, norm, parseNum, pct, t
 import { Agregados } from "@/components/Agregados";
 import { SalesImport } from "@/components/SalesImport";
 import { EnvioWhatsapp } from "@/components/EnvioWhatsapp";
+import { OsAbertas } from "@/components/OsAbertas";
 import { Button } from "@/components/ui/button";
 import { Download, LogOut, Printer } from "lucide-react";
 import bmwLogo from "@/assets/bmw-logo.asset.json";
@@ -204,7 +205,7 @@ function Painel({ email }: { email: string }) {
     a.download = `relatorio-${mes}.csv`; a.click();
   };
 
-  const tabs = [["painel", "Painel"], ["proj-serv", "Serviços"], ["proj-pec", "Peças"], ["proj-total", "Projeção"], ["agregados", "Agregados"], ["diario", "Diário"], ["dados", "Colar dados"], ["config", "Configurar"]];
+  const tabs = [["painel", "Painel"], ["proj-serv", "Serviços"], ["proj-pec", "Peças"], ["proj-total", "Projeção"], ["os", "Projeção + OS"], ["agregados", "Agregados"], ["diario", "Diário"], ["dados", "Colar dados"], ["config", "Configurar"]];
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -261,6 +262,7 @@ function Painel({ email }: { email: string }) {
       })()}
 
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
+        {tab === "os" && <OsAbertas linhas={linhas} mes={mes} soPecas={soPecas} />}
         {tab === "painel" && (
           <>
             <div className="flex flex-wrap items-center justify-between gap-2">
