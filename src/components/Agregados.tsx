@@ -118,10 +118,10 @@ function GrupoView({ g, stat, ranking, ids, deptName, rest }: {
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label="Quantidade vendida" value={num(T.qtd)} cls={tone(T.perfQ)} sub={<ItensMeta perItem={perItem} T={T} />} />
-        <Kpi label="Projeção (qtd)" value={num(T.projQ)} sub={`${pct(T.projPctQ)} da meta · precisa ${num(T.necQ)}/dia (${rest} dias)`} cls={tone(T.projPctQ)} />
-        <Kpi label="Valor vendido" value={brl(T.valor)} sub={`Meta ${brl(T.mv)} · projeção ${brl(T.projV)}`} cls={tone(T.perfV)} />
-        <Kpi label="Aproveitamento" value={pct(T.aprov)} sub={`${num(T.qtd)} itens em ${num(T.pass)} passagens`} />
+        <Kpi label="Quantidade vendida" value={num(T.qtd)} cls={tone(T.perfQ)} sub={<ItensDetalhe perItem={perItem} T={T} modo="qtd" />} />
+        <Kpi label="Projeção (qtd)" value={num(T.projQ)} cls={tone(T.projPctQ)} sub={<ItensDetalhe perItem={perItem} T={T} modo="proj" rest={rest} />} />
+        <Kpi label="Valor vendido" value={brl(T.valor)} cls={tone(T.perfV)} sub={<ItensDetalhe perItem={perItem} T={T} modo="valor" />} />
+        <Kpi label="Aproveitamento" value={pct(T.aprov)} sub={<ItensDetalhe perItem={perItem} T={T} modo="aprov" />} />
       </div>
 
       <Box title={`Resumo por item — ${GRUPO_NOME[g]}`}>
@@ -153,19 +153,29 @@ function GrupoView({ g, stat, ranking, ids, deptName, rest }: {
   );
 }
 
-/** Linha por item dentro do cartão "Quantidade vendida": o vendido e a meta de cada tópico. */
-function ItensMeta({ perItem, T }: { perItem: { it: (typeof ITENS)[number]; s: Stat }[]; T: Stat }) {
+/** Linha por item dentro dos cartões de KPI: vendido/projeção/valor/aproveitamento de cada tópico, com total. */
+function ItensDetalhe({ perItem, T, modo, rest = 0 }: { perItem: { it: (typeof ITENS)[number]; s: Stat }[]; T: Stat; modo: "qtd" | "proj" | "valor" | "aprov"; rest?: number }) {
+  const linha = (s: Stat) =>
+    modo === "qtd" ? `${num(s.qtd)} de ${num(s.mq)}`
+    : modo === "proj" ? `${num(s.projQ)} de ${num(s.mq)}`
+    : modo === "valor" ? `${brl(s.valor)} de ${brl(s.mv)}`
+    : `${pct(s.aprov)}`;
+  const total =
+    modo === "qtd" ? `${num(T.qtd)} de ${num(T.mq)} · ${pct(T.perfQ)}`
+    : modo === "proj" ? `${num(T.projQ)} de ${num(T.mq)} · ${pct(T.projPctQ)} · precisa ${num(T.necQ)}/dia (${rest} dias)`
+    : modo === "valor" ? `${brl(T.valor)} de ${brl(T.mv)} · ${pct(T.perfV)} · projeção ${brl(T.projV)}`
+    : `${num(T.qtd)} itens em ${num(T.pass)} passagens`;
   return (
     <span className="block space-y-1">
       {perItem.map(({ it, s }) => (
         <span key={it.k} className="flex items-baseline justify-between gap-3">
           <span className="truncate">{it.nome}</span>
-          <span className="whitespace-nowrap tabular-nums">{num(s.qtd)} de {num(s.mq)}</span>
+          <span className="whitespace-nowrap tabular-nums">{linha(s)}</span>
         </span>
       ))}
       <span className="flex items-baseline justify-between gap-3 border-t border-border pt-1 font-semibold text-foreground">
         <span>Total</span>
-        <span className="whitespace-nowrap tabular-nums">{num(T.qtd)} de {num(T.mq)} · {pct(T.perfQ)}</span>
+        <span className="whitespace-nowrap tabular-nums text-right">{total}</span>
       </span>
     </span>
   );
