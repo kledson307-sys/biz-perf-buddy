@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Box, Tabela, brl, pct, tone } from "@/components/painel-ui";
 import { dicaWhatsapp } from "@/lib/whatsapp-ia.functions";
+import { ITENS } from "@/lib/agregados";
 
 export type LinhaEnvio = {
   c: { id: string; nome: string; telefone: string };
@@ -17,8 +18,12 @@ const digitos = (t: string) => {
   return d.length === 10 || d.length === 11 ? `55${d}` : d;
 };
 
-export function EnvioWhatsapp({ linhas, lider, mes, dec, tot, reload }: {
-  linhas: LinhaEnvio[]; lider: LinhaEnvio | undefined; mes: string; dec: number; tot: number; reload: () => void;
+const bloco = (txt: string, tag: string) => txt.match(new RegExp(`\\[${tag}\\]([\\s\\S]*?)(?=\\n?\\[[A-Z]+\\]|$)`))?.[1]?.trim() ?? "";
+const num = (v: number) => v.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+
+export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, tot, reload }: {
+  linhas: LinhaEnvio[]; lider: LinhaEnvio | undefined; liderServ: LinhaEnvio | null; liderPec: LinhaEnvio | null;
+  mes: string; dec: number; tot: number; reload: () => void;
 }) {
   const gerar = useServerFn(dicaWhatsapp);
   const [tel, setTel] = useState<Record<string, string>>({});
@@ -35,25 +40,57 @@ export function EnvioWhatsapp({ linhas, lider, mes, dec, tot, reload }: {
     if (fone.length < 12) { setMsg(`Cadastre o celular de ${l.c.nome} com DDD.`); return; }
     const janela = window.open("", "_blank");
     setBusy(l.c.id); setMsg("");
+    const [y, m] = mes.split("-").map(Number);
+    const fim = `${mes}-${new Date(y!, m!, 0).getDate()}`;
+    const [as, ag, av] = await Promise.all([
+      supabase.from("agg_sales").select("item,qtd").eq("consultant_id", l.c.id).gte("dia", `${mes}-01`).lte("dia", fim),
+      supabase.from("agg_goals").select("item,meta_qtd").eq("consultant_id", l.c.id).eq("mes", mes),
+      supabase.from("agg_visits").select("passagens").eq("consultant_id", l.c.id).gte("dia", `${mes}-01`).lte("dia", fim),
+    ]);
+    const rest = Math.max(tot - dec, 0);
+    const passagens = (av.data ?? []).reduce((n, v) => n + Number(v.passagens), 0);
+    const agregados = ITENS.map((it) => {
+      const qtd = (as.data ?? []).filter((x) => x.item === it.k).reduce((n, x) => n + Number(x.qtd), 0);
+      const meta = Number((ag.data ?? []).find((x) => x.item === it.k)?.meta_qtd ?? 0);
+      return { item: it.nome, grupo: it.g, qtd, meta, proj: dec ? (qtd / dec) * tot : 0, nec: rest ? Math.max(meta - qtd, 0) / rest : 0 };
+    });
     const r = await gerar({ data: {
       nome: l.c.nome, mes, dec, tot, servicos: l.servicos, pecas: l.pecas, mS: l.mS, mP: l.mP,
       projS: l.projS, projP: l.projP, perfS: l.perfS, perfP: l.perfP, projPct: l.projPct,
-      necS: l.necS, necP: l.necP, lider: lider?.c.nome ?? "", liderPerf: lider?.perf ?? 0,
+      necS: l.necS, necP: l.necP, liderServ: liderServ?.c.nome ?? "", liderPerfS: liderServ?.perfS ?? 0,
+      liderPec: liderPec?.c.nome ?? "", liderPerfP: liderPec?.perfP ?? 0, passagens, agregados,
     } }).catch(() => ({ ok: false as const, mensagem: "Não foi possível gerar as dicas." }));
     setBusy("");
+    const ia = r.ok ? r.texto : "";
+    const cmp = (ld: LinhaEnvio | null, minha: number, dele: number) =>
+      !ld ? "" : ld.c.id === l.c.id ? "🏆 Você é o líder!" : `🏆 Líder: ${ld.c.nome} (${pct(dele)}) · você está ${num((dele - minha) * 100)} pts atrás`;
+    const dicas = (tag: string) => { const t = bloco(ia, tag); return t ? ["💡 Sugestões:", t] : []; };
+    const linhasAgg = agregados.map((a) =>
+      `• ${a.item}: ${num(a.qtd)}${a.meta ? ` de ${num(a.meta)} (${pct(a.qtd / a.meta)}) · proj. ${num(a.proj)} · precisa ${num(Math.ceil(a.nec))}/dia` : " (sem meta)"}`);
+    const totAgg = agregados.reduce((n, a) => n + a.qtd, 0);
     const texto = [
       `Olá, ${l.c.nome}! Atualização HAUS MOTORS – ${mes.split("-").reverse().join("/")} (dia ${dec} de ${tot})`,
       "",
-      `🔧 Serviços: ${brl(l.servicos)} de ${brl(l.mS)} (${pct(l.perfS)})`,
-      `   Projeção: ${brl(l.projS)} · precisa ${brl(l.necS)}/dia`,
-      `🔩 Peças: ${brl(l.pecas)} de ${brl(l.mP)} (${pct(l.perfP)})`,
-      `   Projeção: ${brl(l.projP)} · precisa ${brl(l.necP)}/dia`,
-      `📈 Projeção total: ${pct(l.projPct)} da meta`,
-      lider && lider.c.id !== l.c.id ? `🏆 Líder: ${lider.c.nome} (${pct(lider.perf)}). Você: ${pct(l.perf)}` : "🏆 Você é o líder do mês!",
+      "🔧 *SERVIÇOS*",
+      `Realizado: ${brl(l.servicos)} de ${brl(l.mS)} (${pct(l.perfS)})`,
+      `Projeção: ${brl(l.projS)} (${pct(l.mS ? l.projS / l.mS : 0)} da meta)`,
+      `Precisa vender: ${brl(l.necS)}/dia`,
+      cmp(liderServ, l.perfS, liderServ?.perfS ?? 0),
+      ...dicas("SERVICOS"),
       "",
-      r.ok ? `Recomendações:\n${r.texto}` : "",
-    ].filter((x, i, a) => x !== "" || a[i - 1] !== "").join("\n").trim();
-    if (!r.ok) setMsg(`${r.mensagem} A mensagem foi aberta sem as recomendações.`);
+      "🔩 *PEÇAS*",
+      `Realizado: ${brl(l.pecas)} de ${brl(l.mP)} (${pct(l.perfP)})`,
+      `Projeção: ${brl(l.projP)} (${pct(l.mP ? l.projP / l.mP : 0)} da meta)`,
+      `Precisa vender: ${brl(l.necP)}/dia`,
+      cmp(liderPec, l.perfP, liderPec?.perfP ?? 0),
+      ...dicas("PECAS"),
+      "",
+      "➕ *AGREGADOS*",
+      ...linhasAgg,
+      passagens ? `Aproveitamento: ${pct(totAgg / passagens)} (${num(totAgg)} itens em ${num(passagens)} passagens)` : "Passagens ainda não lançadas.",
+      ...dicas("AGREGADOS"),
+    ].filter((x) => x !== undefined && x !== null).join("\n").replace(/\n{3,}/g, "\n\n").trim();
+    if (!r.ok) setMsg(`${r.mensagem} A mensagem foi aberta sem as sugestões.`);
     const url = `https://wa.me/${fone}?text=${encodeURIComponent(texto)}`;
     if (janela) janela.location.href = url; else window.open(url, "_blank");
   };

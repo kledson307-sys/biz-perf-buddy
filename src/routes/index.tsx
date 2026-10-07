@@ -238,7 +238,7 @@ function Painel({ email }: { email: string }) {
               </Tabela>
             </Box>
 
-            <div className="print:hidden"><EnvioWhatsapp linhas={linhas} lider={lider} mes={mes} dec={dec} tot={tot} reload={load} /></div>
+            <div className="print:hidden"><EnvioWhatsapp linhas={linhas} lider={lider} liderServ={liderServ} liderPec={liderPec} mes={mes} dec={dec} tot={tot} reload={load} /></div>
 
 
             <Box title="Comparação com o líder e recomendações">
