@@ -4,16 +4,18 @@ export type Grupo = "servicos" | "pecas";
 
 /** Catálogo de itens agregados. `cod` = códigos padrão do sistema (podem ser alterados pelo usuário na tela). */
 export const ITENS: { k: string; nome: string; g: Grupo; re: RegExp; cod: string[] }[] = [
-  { k: "limpar", nome: "Limpar", g: "servicos", re: /limp/, cod: ["LIMP001", "LIMPSIST", "LIMP05", "LIMP04", "LIMPFREIO", "LIMP08", "LIMP07", "LIMPCORRENTE"] },
+  { k: "limpar", nome: "Limpar", g: "servicos", re: /limp/, cod: ["LIMP001", "LIMPSIST", "LIMP05", "LIMP04", "LIMPFREIO", "LIMP08", "LIMP07", "LIMPCORRENTE", "LIMP10"] },
   { k: "alinhamento", nome: "Alinhamento & Balanceamento", g: "servicos", re: /alinh|balanc/, cod: ["0000170", "ALINHA01"] },
-  { k: "oxi", nome: "Oxi Capacete", g: "servicos", re: /oxi|capacete/, cod: ["LIMP10"] },
-  { k: "brazzo", nome: "Brazzo", g: "pecas", re: /brazzo/, cod: [] },
-  { k: "tunap", nome: "Tunap", g: "pecas", re: /tunap/, cod: [] },
+  { k: "oxi", nome: "Oxi Capacete", g: "servicos", re: /oxi|capacete/, cod: ["OXICAP"] },
+  { k: "brazzo", nome: "Brazzo", g: "pecas", re: /brazzo/, cod: ["1350 117", "1350 195", "1350 218", "1350 249", "1350 288", "1350 299", "1350 327"] },
+  { k: "tunap", nome: "Tunap", g: "pecas", re: /tunap/, cod: ["F96500200B2", "MP104004400ABT", "MP10900500ABT", "47658", "TUNAP7000", "F37500200AT", "MF957000200X3T", "1299600150X6T", "259900145XT"] },
 ];
 export const GRUPO_NOME: Record<Grupo, string> = { servicos: "Serviços agregados", pecas: "Peças agregadas" };
 
-export const normCod = (s: string) => s.trim().toUpperCase();
-export const splitCods = (s: string) => s.split(/[,;\s]+/).map(normCod).filter(Boolean);
+/** Chave de comparação do código: maiúsculas e sem espaços ("1350 117" = "1350117"). */
+export const normCod = (s: string) => s.replace(/\s+/g, "").toUpperCase();
+/** Lista de códigos digitada pelo usuário, separada por vírgula, ponto e vírgula ou quebra de linha (espaços fazem parte do código). */
+export const splitCods = (s: string) => s.split(/[,;\n]+/).map((c) => c.trim().replace(/\s+/g, " ").toUpperCase()).filter(Boolean);
 
 type Cell = string | number | null | undefined;
 export type Servico = { codigo: string; desc: string; qtd: number; bruto: number; vendedores: { nome: string; qtd: number }[] };
@@ -29,11 +31,11 @@ export function lerRanking(rows: Cell[][]): Relatorio {
     const m = txt(c).match(/(\d{2})\/(\d{2})\/(\d{4})\s*a\s*(\d{2})\/(\d{2})\/(\d{4})/);
     if (m && /per[ií]odo/i.test(txt(c))) { periodo = { ini: `${m[3]}-${m[2]}-${m[1]}`, fim: `${m[6]}-${m[5]}-${m[4]}` }; break; }
   }
-  const hi = rows.findIndex((r) => r.some((c) => norm(txt(c)) === "rank") && r.some((c) => norm(txt(c)) === "qtde"));
-  if (hi < 0) throw new Error('Não encontrei o cabeçalho do relatório (colunas "Rank", "Serviço", "Qtde", "Bruto").');
+  const hi = rows.findIndex((r) => r.some((c) => norm(txt(c)) === "rank") && r.some((c) => /^qtde?\.?$|^quantidade$/.test(norm(txt(c)))));
+  if (hi < 0) throw new Error('Não encontrei o cabeçalho do relatório (colunas "Rank", "Serviço"/"Peça", "Qtde", "Bruto").');
   const head = rows[hi]!.map((c) => norm(txt(c)));
   const col = (re: RegExp) => head.findIndex((h) => re.test(h));
-  const cRank = col(/^rank$/), cCod = col(/^servico/), cDesc = col(/^descri/), cQtd = col(/^qtde$/);
+  const cRank = col(/^rank$/), cCod = col(/^(servico|peca|produto|codigo|cod\.?$|item$|referencia)/), cDesc = col(/^descri/), cQtd = col(/^qtde?\.?$|^quantidade$/);
   let cBruto = col(/bruto/);
   if (cBruto < 0) {
     const prev = (rows[hi - 1] ?? []).map((c) => norm(txt(c)));
