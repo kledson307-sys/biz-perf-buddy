@@ -8,14 +8,27 @@ const inputSchema = z.object({
   nome: z.string().max(120), mes: z.string().max(7), dec: n, tot: n,
   servicos: n, pecas: n, mS: n, mP: n, projS: n, projP: n,
   perfS: n, perfP: n, projPct: n, necS: n, necP: n,
-  lider: z.string().max(120), liderPerf: n,
+  liderServ: z.string().max(120), liderPerfS: n, liderPec: z.string().max(120), liderPerfP: n,
+  passagens: n,
+  agregados: z.array(z.object({ item: z.string().max(60), grupo: z.string().max(20), qtd: n, meta: n, proj: n, nec: n })).max(20),
 });
+export type DicaInput = z.infer<typeof inputSchema>;
 
 export type DicaResult = { ok: true; texto: string } | { ok: false; mensagem: string };
 
 const INSTRUCOES = `Você é gerente de pós-venda de uma concessionária BMW e escreve uma mensagem curta de WhatsApp para um consultor sobre o desempenho dele no mês (serviços e peças).
-Responda em português do Brasil, texto simples (sem Markdown, sem títulos, sem emojis em excesso), no máximo 3 dicas curtas e práticas, uma por linha começando com "• ".
-Seja motivador e direto, cite números enviados, não invente dados. No máximo 70 palavras.`;
+Trate SERVIÇOS, PEÇAS e AGREGADOS separadamente. Agregados: serviços (Limpar, Alinhamento & Balanceamento, Oxi Capacete) e peças (Brazzo, Tunap); aproveitamento = itens ÷ passagens.
+Responda em português do Brasil, texto simples (sem Markdown), EXATAMENTE neste formato:
+[SERVICOS]
+• dica
+• dica
+[PECAS]
+• dica
+• dica
+[AGREGADOS]
+• dica
+• dica
+Até 2 dicas curtas e práticas por bloco, citando números enviados (projeção, quanto falta por dia, distância do líder). Não invente dados; se faltar meta, peça para cadastrar. Seja motivador e direto.`;
 
 export const dicaWhatsapp = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
