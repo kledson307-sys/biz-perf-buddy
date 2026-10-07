@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { MessageCircle, Sparkles } from "lucide-react";
+import { Copy, MessageCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Box, Tabela, brl, pct, tone } from "@/components/painel-ui";
@@ -30,38 +30,34 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
   const [busy, setBusy] = useState<string>("");
   const [msg, setMsg] = useState("");
 
-  const salvarTel = async (id: string, v: string) => {
-    await supabase.from("consultants").update({ telefone: v.trim() }).eq("id", id);
-    reload();
-  };
-
-  const enviar = async (l: LinhaEnvio) => {
-    const fone = digitos(tel[l.c.id] ?? l.c.telefone);
-    if (fone.length < 12) { setMsg(`Cadastre o celular de ${l.c.nome} com DDD.`); return; }
-    const janela = window.open("", "_blank");
-    setBusy(l.c.id); setMsg("");
+  const [agg, setAgg] = useState<{ s: { consultant_id: string; item: string; qtd: number }[]; g: { consultant_id: string; item: string; meta_qtd: number }[]; v: { consultant_id: string; passagens: number }[] }>({ s: [], g: [], v: [] });
+  const [copiado, setCopiado] = useState("");
+  const ids = linhas.map((l) => l.c.id).join(",");
+  useEffect(() => {
+    const lista = ids ? ids.split(",") : [];
+    if (!lista.length) return;
     const [y, m] = mes.split("-").map(Number);
     const fim = `${mes}-${new Date(y!, m!, 0).getDate()}`;
-    const [as, ag, av] = await Promise.all([
-      supabase.from("agg_sales").select("item,qtd").eq("consultant_id", l.c.id).gte("dia", `${mes}-01`).lte("dia", fim),
-      supabase.from("agg_goals").select("item,meta_qtd").eq("consultant_id", l.c.id).eq("mes", mes),
-      supabase.from("agg_visits").select("passagens").eq("consultant_id", l.c.id).gte("dia", `${mes}-01`).lte("dia", fim),
-    ]);
+    void Promise.all([
+      supabase.from("agg_sales").select("consultant_id,item,qtd").in("consultant_id", lista).gte("dia", `${mes}-01`).lte("dia", fim),
+      supabase.from("agg_goals").select("consultant_id,item,meta_qtd").in("consultant_id", lista).eq("mes", mes),
+      supabase.from("agg_visits").select("consultant_id,passagens").in("consultant_id", lista).gte("dia", `${mes}-01`).lte("dia", fim),
+    ]).then(([as, ag, av]) => setAgg({ s: as.data ?? [], g: ag.data ?? [], v: av.data ?? [] }));
+  }, [ids, mes]);
+
+  const dadosAgg = (id: string) => {
     const rest = Math.max(tot - dec, 0);
-    const passagens = (av.data ?? []).reduce((n, v) => n + Number(v.passagens), 0);
+    const passagens = agg.v.filter((v) => v.consultant_id === id).reduce((n, v) => n + Number(v.passagens), 0);
     const agregados = ITENS.map((it) => {
-      const qtd = (as.data ?? []).filter((x) => x.item === it.k).reduce((n, x) => n + Number(x.qtd), 0);
-      const meta = Number((ag.data ?? []).find((x) => x.item === it.k)?.meta_qtd ?? 0);
+      const qtd = agg.s.filter((x) => x.consultant_id === id && x.item === it.k).reduce((n, x) => n + Number(x.qtd), 0);
+      const meta = Number(agg.g.find((x) => x.consultant_id === id && x.item === it.k)?.meta_qtd ?? 0);
       return { item: it.nome, grupo: it.g, qtd, meta, proj: dec ? (qtd / dec) * tot : 0, nec: rest ? Math.max(meta - qtd, 0) / rest : 0, aper: passagens ? qtd / passagens : 0 };
     });
-    const r = await gerar({ data: {
-      nome: l.c.nome, mes, dec, tot, servicos: l.servicos, pecas: l.pecas, mS: l.mS, mP: l.mP,
-      projS: l.projS, projP: l.projP, perfS: l.perfS, perfP: l.perfP, projPct: l.projPct,
-      necS: l.necS, necP: l.necP, liderServ: liderServ?.c.nome ?? "", liderPerfS: liderServ?.perfS ?? 0,
-      liderPec: liderPec?.c.nome ?? "", liderPerfP: liderPec?.perfP ?? 0, passagens, agregados,
-    } }).catch(() => ({ ok: false as const, mensagem: "Não foi possível gerar as dicas." }));
-    setBusy("");
-    const ia = r.ok ? r.texto : "";
+    return { passagens, agregados };
+  };
+
+  const montar = (l: LinhaEnvio, ia: string) => {
+    const { passagens, agregados } = dadosAgg(l.c.id);
     const cmp = (ld: LinhaEnvio | null, minha: number, dele: number) =>
       !ld ? "" : ld.c.id === l.c.id ? "🏆 Você é o líder!" : `🏆 Líder: ${ld.c.nome} (${pct(dele)}) · você está ${num((dele - minha) * 100)} pts atrás`;
     const dicas = (tag: string) => { const t = bloco(ia, tag); return t ? ["💡 Sugestões:", t] : []; };
@@ -69,7 +65,7 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
       `• ${a.item}: ${num(a.qtd)}${a.meta ? ` de ${num(a.meta)} (${pct(a.qtd / a.meta)}) · proj. ${num(a.proj)} · precisa ${num(Math.ceil(a.nec))}/dia` : " (sem meta)"}${passagens ? ` · aproveit. ${pct(a.aper)}` : ""}`);
     const totAgg = agregados.reduce((n, a) => n + a.qtd, 0);
     const oport = agregados.filter((a) => a.meta > 0 && a.qtd < a.meta).sort((a, b) => a.qtd / a.meta - b.qtd / b.meta)[0];
-    const texto = [
+    return [
       `Olá, ${l.c.nome}! Atualização HAUS MOTORS – ${mes.split("-").reverse().join("/")} (dia ${dec} de ${tot})`,
       "",
       "🔧 *SERVIÇOS*",
@@ -92,7 +88,33 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
       oport ? `🎯 Oportunidade: ${oport.item} está mais longe da meta (${pct(oport.qtd / oport.meta)}) — foque nele.` : "",
       ...dicas("AGREGADOS"),
     ].filter((x) => x !== undefined && x !== null).join("\n").replace(/\n{3,}/g, "\n\n").trim();
-    if (!r.ok) setMsg(`${r.mensagem} A mensagem foi aberta sem as sugestões.`);
+  };
+
+  const copiar = async (l: LinhaEnvio) => {
+    await navigator.clipboard.writeText(montar(l, ""));
+    setCopiado(l.c.id); setTimeout(() => setCopiado(""), 2000);
+  };
+
+  const salvarTel = async (id: string, v: string) => {
+    await supabase.from("consultants").update({ telefone: v.trim() }).eq("id", id);
+    reload();
+  };
+
+  const enviar = async (l: LinhaEnvio) => {
+    const fone = digitos(tel[l.c.id] ?? l.c.telefone);
+    if (fone.length < 12) { setMsg(`Cadastre o celular de ${l.c.nome} com DDD.`); return; }
+    const janela = window.open("", "_blank");
+    setBusy(l.c.id); setMsg("");
+    const d = dadosAgg(l.c.id);
+    const r = await gerar({ data: {
+      nome: l.c.nome, mes, dec, tot, servicos: l.servicos, pecas: l.pecas, mS: l.mS, mP: l.mP,
+      projS: l.projS, projP: l.projP, perfS: l.perfS, perfP: l.perfP, projPct: l.projPct,
+      necS: l.necS, necP: l.necP, liderServ: liderServ?.c.nome ?? "", liderPerfS: liderServ?.perfS ?? 0,
+      liderPec: liderPec?.c.nome ?? "", liderPerfP: liderPec?.perfP ?? 0, passagens: d.passagens, agregados: d.agregados,
+    } }).catch(() => ({ ok: false as const, mensagem: "Não foi possível gerar as dicas." }));
+    setBusy("");
+    const texto = montar(l, r.ok ? r.texto : "");
+    if (!r.ok) setMsg(`${r.mensagem} A mensagem foi aberta sem as sugestões da IA. Você também pode copiar as mensagens prontas abaixo.`);
     const url = `https://wa.me/${fone}?text=${encodeURIComponent(texto)}`;
     if (janela) janela.location.href = url; else window.open(url, "_blank");
   };
@@ -100,6 +122,7 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
   return (
     <Box title="Enviar atualização por WhatsApp">
       <p className="mb-4 text-sm text-muted-foreground">Cadastre o celular com DDD. Ao clicar em Enviar, a IA escreve as recomendações e o WhatsApp abre com a mensagem pronta — é só apertar enviar.</p>
+      <p className="mb-4 rounded-md border border-border bg-muted px-3 py-2 text-sm">⚠️ Cada envio com IA usa cerca de <b>0,3 crédito</b> (equipe de 5 ≈ 1,5 crédito). Sem créditos, use <b>Copiar</b> nas mensagens prontas abaixo — elas não gastam nada.</p>
       <Tabela head={["Consultor", "Celular", "Perf.", "Projeção", ""]}>
         {linhas.map((l) => (
           <tr key={l.c.id} className="border-t border-border">
@@ -121,6 +144,18 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
         ))}
       </Tabela>
       {msg && <p role="status" className="mt-3 text-sm text-muted-foreground">{msg}</p>}
+      <h3 className="mb-3 mt-6 font-semibold">Mensagens prontas (sem IA, sem créditos)</h3>
+      <div className="grid gap-4 md:grid-cols-2">
+        {linhas.map((l) => (
+          <div key={l.c.id} className="rounded-lg border border-border bg-card p-4">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <span className="font-semibold">{l.c.nome}</span>
+              <Button size="sm" variant="outline" onClick={() => void copiar(l)}><Copy />{copiado === l.c.id ? "Copiado!" : "Copiar"}</Button>
+            </div>
+            <pre className="max-h-72 overflow-auto whitespace-pre-wrap font-sans text-sm text-muted-foreground">{montar(l, "")}</pre>
+          </div>
+        ))}
+      </div>
     </Box>
   );
 }
