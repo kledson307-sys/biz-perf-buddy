@@ -47,16 +47,18 @@ export function OsAbertas({ linhas, mes, soPecas }: { linhas: Linha[]; mes: stri
   const salvar = (n: Os) => { setOs(n); localStorage.setItem(store, JSON.stringify(n)); };
 
   const aplicar = (raw: unknown[][]) => {
-    const rep = readSalesReport(raw);
+    const sys = lerOsSistema(raw);
+    const rows = sys ?? readSalesReport(raw).rows.map((r) => ({ nome: r.nome, servicos: r.servicos, pecas: r.pecas }));
     const n: Os = {}; const fora: string[] = [];
-    for (const r of rep.rows) {
-      const c = linhas.find((l) => key(l.c.nome) === key(r.nome) || (r.completo && key(l.c.nome) === key(r.completo)));
+    for (const r of rows) {
+      const c = linhas.find((l) => key(l.c.nome) === key(r.nome));
       if (!c) { fora.push(r.nome); continue; }
+      if (!OS_PERMITIDOS.has(key(c.c.nome))) continue;
       const a = n[c.c.id] ?? { s: 0, p: 0 };
       n[c.c.id] = { s: a.s + r.servicos, p: a.p + r.pecas };
     }
     salvar(n);
-    setMsg(`OS abertas importadas para ${Object.keys(n).length} consultor(es).${fora.length ? ` Não encontrados: ${fora.join(", ")}.` : ""}`);
+    setMsg(`OS abertas importadas para ${Object.keys(n).length} consultor(es) — só P.BENIGNO, ANDRESSA.O, GILBERTO.S, WESLEY.F, RENAN.O, GEOVANA.M e MARCELA.S são considerados.${fora.length ? ` Fora da lista (ignorados): ${[...new Set(fora)].join(", ")}.` : ""}`);
   };
   const abrir = async (f?: File) => {
     if (!f) return;
