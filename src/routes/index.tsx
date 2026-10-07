@@ -367,11 +367,11 @@ function Painel({ email }: { email: string }) {
                 ))}
               </div>
             </Box>
-          </>
+          </Secao>
         )}
 
         {show("proj-serv") && (
-          <>
+          <Secao titulo="Projeção de Serviços">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Kpi label="Realizado Serviços" value={brl(totalServ.servicos)} sub={`Meta ${brl(totalServ.mS)} · ${pct(totalServ.perfS)}`} cls={tone(totalServ.perfS)} />
               <Kpi label="Projeção Serviços" value={brl(totalServ.projS)} sub={`${pct(totalServ.projPctS)} da meta de ${brl(totalServ.mS)}`} cls={tone(totalServ.projPctS)} />
@@ -398,11 +398,11 @@ function Painel({ email }: { email: string }) {
                 ))}
               </Tabela>
             </Box>
-          </>
+          </Secao>
         )}
 
         {show("proj-pec") && (
-          <>
+          <Secao titulo="Projeção de Peças">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Kpi label="Realizado Peças" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)}`} cls={tone(total.perfP)} />
               <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta de ${brl(total.mP)}`} cls={tone(total.projPctP)} />
@@ -429,11 +429,11 @@ function Painel({ email }: { email: string }) {
                 ))}
               </Tabela>
             </Box>
-          </>
+          </Secao>
         )}
 
         {show("proj-total") && (
-          <>
+          <Secao titulo="Projeção Individual (Serviços + Peças)">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Kpi label="Realizado Total" value={brl(total.real)} sub={`Meta ${brl(total.meta)} · ${pct(total.perf)}`} cls={tone(total.perf)} />
               <Kpi label="Projeção Total" value={brl(total.proj)} sub={`Serviços ${brl(total.projS)} + Peças ${brl(total.projP)}`} cls={tone(total.projPct)} />
@@ -486,7 +486,7 @@ function Painel({ email }: { email: string }) {
                 })}
               </Tabela>
             </Box>
-          </>
+          </Secao>
         )}
 
         {show("agregados") && <Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} />}
