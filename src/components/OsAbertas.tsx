@@ -8,6 +8,35 @@ type Linha = { c: { id: string; nome: string }; servicos: number; pecas: number;
 type Os = Record<string, { s: number; p: number }>;
 const key = (v: string) => norm(v.trim());
 
+// Vendedores considerados na importação de OS abertas (demais são ignorados).
+const OS_PERMITIDOS = new Set(["p.benigno", "andressa.o", "gilberto.s", "wesley.f", "renan.o", "geovana.m", "marcela.s"]);
+const numRe = /^\d{3,}$/;
+const toNum = (v: unknown) => {
+  const s = String(v ?? "").trim();
+  if (!s) return 0;
+  const n = parseFloat(s.replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
+};
+
+// Relatório do sistema "O.S. Abertas": bloco por O.S. (número na col. C, veículo na col. F,
+// consultor na linha seguinte, Total Líq. Peças col. U e Total Serviços col. W).
+function lerOsSistema(raw: unknown[][]): { nome: string; servicos: number; pecas: number }[] | null {
+  const res: { nome: string; servicos: number; pecas: number }[] = [];
+  for (let i = 0; i < raw.length; i++) {
+    const c2 = String(raw[i]?.[2] ?? "").trim();
+    const c5 = String(raw[i]?.[5] ?? "").trim();
+    if (!numRe.test(c2) || !c5 || numRe.test(c5)) continue;
+    let cons = "";
+    for (let j = i + 1; j < Math.min(i + 5, raw.length); j++) {
+      const v = String(raw[j]?.[5] ?? "").trim();
+      if (v) { cons = v; break; }
+    }
+    if (!cons || !OS_PERMITIDOS.has(norm(cons))) continue;
+    res.push({ nome: cons, servicos: toNum(raw[i]?.[22]), pecas: toNum(raw[i]?.[20]) });
+  }
+  return res.length ? res : null;
+}
+
 export function OsAbertas({ linhas, mes, soPecas }: { linhas: Linha[]; mes: string; soPecas: (n: string) => boolean }) {
   const store = `os-abertas-${mes}`;
   const [os, setOs] = useState<Os>({});
