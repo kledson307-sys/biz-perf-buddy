@@ -13,7 +13,7 @@ type AVisit = { consultant_id: string; dia: string; passagens: number };
 
 type Props = {
   mes: string; cons: Cons[]; allCons: Cons[]; tot: number; dec: number;
-  deptName: (id: string | null) => string; reloadCons: () => void;
+  deptName: (id: string | null) => string; reloadCons: () => void; relatorio?: boolean;
 };
 
 export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, relatorio }: Props) {
