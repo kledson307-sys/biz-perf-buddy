@@ -3,9 +3,10 @@ import { Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Box, Kpi, Tabela, brl, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
 import { readSalesReport } from "@/lib/sales-report";
+import { loadOpenOrders, saveOpenOrders, type OpenOrders } from "@/lib/open-orders.functions";
 
 type Linha = { c: { id: string; nome: string }; servicos: number; pecas: number; mS: number; mP: number };
-type Os = Record<string, { s: number; p: number }>;
+type Os = OpenOrders;
 const key = (v: string) => norm(v.trim());
 
 // Vendedores considerados na importação de OS abertas (demais são ignorados).
@@ -49,11 +50,57 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec }: { linhas: Linha[];
   const [os, setOs] = useState<Os>({});
   const [txt, setTxt] = useState("");
   const [msg, setMsg] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
   const file = useRef<HTMLInputElement>(null);
-  useEffect(() => { try { setOs(JSON.parse(localStorage.getItem(store) ?? "{}")); } catch { setOs({}); } }, [store]);
-  const salvar = (n: Os) => { setOs(n); localStorage.setItem(store, JSON.stringify(n)); };
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setOs({});
+    setMsg("");
+    setCanEdit(false);
+    const load = async () => {
+      try {
+        const result = await loadOpenOrders({ data: { mes } });
+        if (cancelled) return;
+        setCanEdit(result.canEdit);
+        let values = result.valores ?? {};
+        // Recover the old browser snapshot once, only when no shared snapshot exists.
+        if (result.valores === null && result.canEdit) {
+          let old: Os | null = null;
+          try { old = JSON.parse(localStorage.getItem(store) ?? "null"); } catch { /* No valid browser backup. */ }
+          if (old && Object.keys(old).length) {
+            await saveOpenOrders({ data: { mes, valores: old } });
+            values = old;
+            try { localStorage.removeItem(store); } catch { /* Shared copy is already saved. */ }
+          }
+        }
+        if (!cancelled) { setOs(values); setLoading(false); }
+      } catch (e) {
+        if (!cancelled) setMsg(e instanceof Error ? e.message : "Não foi possível carregar as O.S. Atualize a página para tentar novamente.");
+      }
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, [mes, store]);
+  const salvar = async (n: Os) => {
+    if (loading || saving || !canEdit) return false;
+    setSaving(true);
+    setMsg("Salvando O.S.…");
+    try {
+      await saveOpenOrders({ data: { mes, valores: n } });
+      setOs(n);
+      setMsg("O.S. salvas no painel.");
+      try { localStorage.removeItem(store); } catch { /* Shared snapshot is authoritative. */ }
+      return true;
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Não foi possível salvar as O.S. Tente novamente.");
+      return false;
+    } finally { setSaving(false); }
+  };
 
-  const aplicar = (raw: unknown[][]) => {
+  const aplicar = async (raw: unknown[][]) => {
     const sys = lerOsSistema(raw);
     const rows: { nome: string; servicos: number; pecas: number; completo?: string }[] =
       sys ?? readSalesReport(raw).rows.map((r) => ({ nome: r.nome, servicos: r.servicos, pecas: r.pecas, completo: r.completo }));
@@ -65,7 +112,8 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec }: { linhas: Linha[];
       const a = n[c.c.id] ?? { s: 0, p: 0 };
       n[c.c.id] = { s: a.s + r.servicos, p: a.p + r.pecas };
     }
-    salvar(n);
+    if (!Object.keys(n).length) throw new Error("Nenhuma O.S. dos consultores permitidos foi encontrada. As O.S. salvas foram mantidas.");
+    if (!await salvar(n)) return;
     setMsg(`OS abertas importadas para ${Object.keys(n).length} consultor(es) — só P.BENIGNO, ANDRESSA.O, GILBERTO.S, WESLEY.F, RENAN.O, GEOVANA.M e MARCELA.S são considerados.${fora.length ? ` Fora da lista (ignorados): ${[...new Set(fora)].join(", ")}.` : ""}`);
   };
   const abrir = async (f?: File) => {
@@ -73,19 +121,20 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec }: { linhas: Linha[];
     try {
       const XLSX = await import("xlsx");
       const wb = XLSX.read(await f.arrayBuffer(), { type: "array" });
-      const sh = wb.Sheets[wb.SheetNames[0]!];
+      const sheetName = wb.SheetNames[0];
+      const sh = sheetName ? wb.Sheets[sheetName] : undefined;
       if (!sh) throw new Error("Planilha vazia.");
-      aplicar(XLSX.utils.sheet_to_json<unknown[]>(sh, { header: 1, raw: true, defval: "" }));
+      await aplicar(XLSX.utils.sheet_to_json<unknown[]>(sh, { header: 1, raw: true, defval: "" }));
     } catch (e) { setMsg((e as Error).message); }
     if (file.current) file.current.value = "";
   };
-  const colar = () => {
-    try { const sep = txt.includes("\t") ? "\t" : ";"; aplicar(txt.split(/\r?\n/).map((l) => l.split(sep))); setTxt(""); }
+  const colar = async () => {
+    try { const sep = txt.includes("\t") ? "\t" : ";"; await aplicar(txt.split(/\r?\n/).map((l) => l.split(sep))); }
     catch (e) { setMsg((e as Error).message); }
   };
   const editar = (id: string, campo: "s" | "p", v: string) => {
     const a = os[id] ?? { s: 0, p: 0 };
-    salvar({ ...os, [id]: { ...a, [campo]: parseNum(v) } });
+    void salvar({ ...os, [id]: { ...a, [campo]: parseNum(v) } });
   };
 
   const rows = linhas.map((l) => {
@@ -120,12 +169,13 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec }: { linhas: Linha[];
         <p className="mb-3 text-sm text-muted-foreground">Aceita o relatório "O.S. Abertas" do sistema (peças e serviços separados) ou colar vendedor/serviços/peças. Só são considerados: P.BENIGNO, ANDRESSA.O, GILBERTO.S, WESLEY.F, RENAN.O, GEOVANA.M e MARCELA.S. Importar substitui as OS abertas do mês. Também dá para digitar direto na tabela abaixo.</p>
         <div className="flex flex-wrap gap-2">
           <input ref={file} type="file" accept=".xls,.xlsx,.csv" className="hidden" onChange={(e) => void abrir(e.target.files?.[0])} />
-          <Button onClick={() => file.current?.click()}><Upload />Importar Excel de OS abertas</Button>
-          <Button variant="outline" onClick={() => { salvar({}); setMsg("OS abertas zeradas."); }}><Trash2 />Zerar OS</Button>
+          <Button disabled={loading || saving || !canEdit} onClick={() => file.current?.click()}><Upload />Importar Excel de OS abertas</Button>
+          <Button disabled={loading || saving || !canEdit} variant="outline" onClick={() => void salvar({})}><Trash2 />Zerar OS</Button>
         </div>
         <textarea value={txt} onChange={(e) => setTxt(e.target.value)} placeholder={"Vendedor\tServiços\tPeças\nFULANO\t1.500,00\t800,00"} className="mt-3 h-24 w-full rounded-md border border-input bg-card p-2 font-mono text-xs" />
-        <Button variant="outline" className="mt-2" onClick={colar} disabled={!txt.trim()}>Ler dados colados</Button>
-        {msg && <p className="mt-2 text-sm">{msg}</p>}
+        <Button variant="outline" className="mt-2" onClick={() => void colar()} disabled={!txt.trim() || loading || saving || !canEdit}>Ler dados colados</Button>
+        {loading && !msg && <p className="mt-2 text-sm text-muted-foreground">Carregando O.S. salvas…</p>}
+        {msg && <p role="status" className="mt-2 text-sm">{msg}</p>}
       </Box>
 
       <Box title="Projeção individual (faturado + OS abertas)">
@@ -138,7 +188,7 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec }: { linhas: Linha[];
                   <td className={cell}>{gr}</td>
                   {k === "s" && semServ ? <td colSpan={6} className={`${cell} text-muted-foreground`}>não vende serviços</td> : <>
                     <td className={cell}>{brl(fat)}</td>
-                    <td className={cell}><input aria-label={`OS ${gr} ${l.c.nome}`} defaultValue={o[k] ? o[k].toLocaleString("pt-BR") : ""} key={`${k}-${o[k]}`} onBlur={(e) => editar(l.c.id, k, e.target.value)} className="w-28 rounded border border-input bg-card px-2 py-1 text-right" placeholder="0" /></td>
+                    <td className={cell}><input disabled={loading || saving || !canEdit} aria-label={`OS ${gr} ${l.c.nome}`} defaultValue={o[k] ? o[k].toLocaleString("pt-BR") : ""} key={`${mes}-${k}-${o[k]}`} onBlur={(e) => editar(l.c.id, k, e.target.value)} className="w-28 rounded border border-input bg-card px-2 py-1 text-right" placeholder="0" /></td>
                     <td className={`${cell} font-semibold`}>{brl(tot)}</td>
                     <td className={`${cell} text-muted-foreground`}>{brl(meta)}</td>
                     <td className={`${cell} font-semibold ${tone(div(tot, meta))}`}>{pct(div(tot, meta))}</td>
