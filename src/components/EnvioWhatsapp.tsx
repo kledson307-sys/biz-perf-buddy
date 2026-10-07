@@ -56,6 +56,20 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
     return { passagens, agregados };
   };
 
+  const perfAgg = (id: string) => {
+    const a = dadosAgg(id).agregados;
+    const qtd = a.reduce((n, x) => n + x.qtd, 0);
+    const meta = a.reduce((n, x) => n + x.meta, 0);
+    return meta ? qtd / meta : 0;
+  };
+  const liderItem = (nomeItem: string) =>
+    linhas.map((x) => {
+      const a = dadosAgg(x.c.id).agregados.find((y) => y.item === nomeItem);
+      return a ? { id: x.c.id, nome: x.c.nome, qtd: a.qtd, meta: a.meta } : null;
+    }).filter((x): x is { id: string; nome: string; qtd: number; meta: number } => !!x && x.meta > 0)
+      .sort((a, b) => b.qtd / b.meta - a.qtd / a.meta)[0] ?? null;
+  const liderAgg = linhas.filter((x) => perfAgg(x.c.id) > 0).sort((a, b) => perfAgg(b.c.id) - perfAgg(a.c.id))[0] ?? null;
+
   const montar = (l: LinhaEnvio, ia: string) => {
     const { passagens, agregados } = dadosAgg(l.c.id);
     const cmp = (ld: LinhaEnvio | null, minha: number, dele: number) =>
