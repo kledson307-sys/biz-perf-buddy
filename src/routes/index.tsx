@@ -34,8 +34,8 @@ function parseNum(v: string) {
 function parsePaste(text: string): { rows: Row[]; error?: string } {
   const lines = text.split(/\r?\n/).filter((l) => l.trim());
   if (lines.length < 2) return { rows: [], error: "Cole o cabeçalho e ao menos uma linha." };
-  const sep = lines[0].includes("\t") ? "\t" : ";";
-  const head = lines[0].split(sep).map((h) => h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+  const sep = (lines[0] ?? "").includes("\t") ? "\t" : ";";
+  const head = (lines[0] ?? "").split(sep).map((h) => h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
   const ci = head.findIndex((h) => /consult|vendedor|nome|colaborador/.test(h));
   const si = head.findIndex((h) => /serv|mao de obra|mo\b/.test(h));
   const pi = head.findIndex((h) => /pec/.test(h));
@@ -47,8 +47,8 @@ function parsePaste(text: string): { rows: Row[]; error?: string } {
     const nome = (c[ci] || "").trim();
     if (!nome || /^total/i.test(nome)) continue;
     const r = map.get(nome) || { consultor: nome, servicos: 0, pecas: 0 };
-    if (si >= 0) r.servicos += parseNum(c[si]);
-    if (pi >= 0) r.pecas += parseNum(c[pi]);
+    if (si >= 0) r.servicos += parseNum(c[si] ?? "");
+    if (pi >= 0) r.pecas += parseNum(c[pi] ?? "");
     map.set(nome, r);
   }
   return { rows: [...map.values()] };
