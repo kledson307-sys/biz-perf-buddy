@@ -13,7 +13,7 @@ const OS_PERMITIDOS = new Set(["p.benigno", "andressa.o", "gilberto.s", "wesley.
 const numRe = /^\d{3,}$/;
 const toNum = (v: unknown) => {
   const s = String(v ?? "").trim();
-  if (!s) return 0;
+  if (!s || s.includes("%")) return 0; // "7,0%" é porcentagem, não valor
   const n = parseFloat(s.replace(/\./g, "").replace(",", "."));
   return Number.isFinite(n) ? n : 0;
 };
