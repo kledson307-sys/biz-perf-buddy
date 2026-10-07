@@ -33,6 +33,17 @@ type Params = { du_totais: number; du_decorridos: number; dc_totais: number; dc_
 
 const defParams: Params = { du_totais: 22, du_decorridos: 1, dc_totais: 30, dc_decorridos: 1, base: "uteis" };
 
+// Conta dias úteis (seg-sex) de "mes" do dia 01 até o dia "ate".
+const diasUteis = (mes: string, ate: number) => {
+  const [y, m] = mes.split("-").map(Number);
+  let n = 0;
+  for (let d = 1; d <= ate; d++) {
+    const w = new Date(y!, m! - 1, d).getDay();
+    if (w !== 0 && w !== 6) n++;
+  }
+  return n;
+};
+
 function Index() {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
