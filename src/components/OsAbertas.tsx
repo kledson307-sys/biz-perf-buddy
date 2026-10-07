@@ -55,7 +55,8 @@ export function OsAbertas({ linhas, mes, soPecas }: { linhas: Linha[]; mes: stri
 
   const aplicar = (raw: unknown[][]) => {
     const sys = lerOsSistema(raw);
-    const rows = sys ?? readSalesReport(raw).rows.map((r) => ({ nome: r.nome, servicos: r.servicos, pecas: r.pecas, completo: r.completo }));
+    const rows: { nome: string; servicos: number; pecas: number; completo?: string }[] =
+      sys ?? readSalesReport(raw).rows.map((r) => ({ nome: r.nome, servicos: r.servicos, pecas: r.pecas, completo: r.completo }));
     const n: Os = {}; const fora: string[] = [];
     for (const r of rows) {
       const c = linhas.find((l) => key(l.c.nome) === key(r.nome) || (r.completo && key(l.c.nome) === key(r.completo)));
