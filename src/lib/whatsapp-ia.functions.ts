@@ -9,6 +9,7 @@ const inputSchema = z.object({
   servicos: n, pecas: n, mS: n, mP: n, projS: n, projP: n,
   perfS: n, perfP: n, projPct: n, necS: n, necP: n,
   liderServ: z.string().max(120), liderPerfS: n, liderPec: z.string().max(120), liderPerfP: n,
+  liderAgg: z.string().max(120), liderAggPerf: n,
   passagens: n,
   agregados: z.array(z.object({ item: z.string().max(60), grupo: z.string().max(20), qtd: n, meta: n, proj: n, nec: n, aper: n })).max(20),
 });
@@ -17,7 +18,7 @@ export type DicaInput = z.infer<typeof inputSchema>;
 export type DicaResult = { ok: true; texto: string } | { ok: false; mensagem: string };
 
 const INSTRUCOES = `Você é gerente de pós-venda de uma concessionária BMW e escreve uma mensagem curta de WhatsApp para um consultor sobre o desempenho dele no mês (serviços e peças).
-Trate SERVIÇOS, PEÇAS e AGREGADOS separadamente. Agregados: serviços (Limpar, Alinhamento & Balanceamento, Oxi Capacete) e peças (Brazzo, Tunap); aproveitamento = itens ÷ passagens.
+Trate SERVIÇOS, PEÇAS e AGREGADOS separadamente. Agregados: serviços (Limpar, Alinhamento & Balanceamento, Oxi Capacete) e peças (Brazzo, Tunap); aproveitamento = itens ÷ passagens; o líder de agregados é quem tem a melhor relação itens ÷ meta (liderAgg).
 Responda em português do Brasil, texto simples (sem Markdown), EXATAMENTE neste formato:
 [SERVICOS]
 • dica
