@@ -2,3 +2,4 @@
 - [x] Add Excel sales import from fonte.xls with seller preview and safe cumulative handling.
 - [x] Verify import with the supplied report and the signed-in dashboard.
 - [x] Present blue BMW / HAUS MOTORS SALVADOR (KLEDSON) design options and implement the selected option.
+- [x] Verify in the browser that the out-of-date alert blinks until today's data is imported and clears afterwards.
