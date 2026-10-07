@@ -304,7 +304,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      import_sales_period: {
+        Args: { p_fim: string; p_ini: string; p_rows: Json }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
