@@ -75,8 +75,11 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
     const cmp = (ld: LinhaEnvio | null, minha: number, dele: number) =>
       !ld ? "" : ld.c.id === l.c.id ? "🏆 Você é o líder!" : `🏆 Líder: ${ld.c.nome} (${pct(dele)}) · você está ${num((dele - minha) * 100)} pts atrás`;
     const dicas = (tag: string) => { const t = bloco(ia, tag); return t ? ["💡 Sugestões:", t] : []; };
-    const linhasAgg = agregados.map((a) =>
-      `• ${a.item}: ${num(a.qtd)}${a.meta ? ` de ${num(a.meta)} (${pct(a.qtd / a.meta)}) · proj. ${num(a.proj)} · precisa ${num(Math.ceil(a.nec))}/dia` : " (sem meta)"}${passagens ? ` · aproveit. ${pct(a.aper)}` : ""}`);
+    const linhasAgg = agregados.map((a) => {
+      const li = liderItem(a.item);
+      const liderTxt = li ? (li.id === l.c.id ? "👑 você é o líder" : `👑 líder: ${li.nome} (${pct(li.qtd / li.meta)})`) : "";
+      return `• ${a.item}: ${num(a.qtd)}${a.meta ? ` de ${num(a.meta)} (${pct(a.qtd / a.meta)}) · proj. ${num(a.proj)} · precisa ${num(Math.ceil(a.nec))}/dia` : " (sem meta)"}${passagens ? ` · aproveit. ${pct(a.aper)}` : ""}${liderTxt ? ` · ${liderTxt}` : ""}`;
+    });
     const totAgg = agregados.reduce((n, a) => n + a.qtd, 0);
     const oport = agregados.filter((a) => a.meta > 0 && a.qtd < a.meta).sort((a, b) => a.qtd / a.meta - b.qtd / b.meta)[0];
     return [
@@ -99,6 +102,7 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
       "➕ *AGREGADOS*",
       ...linhasAgg,
       passagens ? `Aproveitamento: ${pct(totAgg / passagens)} (${num(totAgg)} itens em ${num(passagens)} passagens)` : "Passagens ainda não lançadas.",
+      cmp(liderAgg, perfAgg(l.c.id), liderAgg ? perfAgg(liderAgg.c.id) : 0),
       oport ? `🎯 Oportunidade: ${oport.item} está mais longe da meta (${pct(oport.qtd / oport.meta)}) — foque nele.` : "",
       ...dicas("AGREGADOS"),
     ].filter((x) => x !== undefined && x !== null).join("\n").replace(/\n{3,}/g, "\n\n").trim();
@@ -124,7 +128,9 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
       nome: l.c.nome, mes, dec, tot, servicos: l.servicos, pecas: l.pecas, mS: l.mS, mP: l.mP,
       projS: l.projS, projP: l.projP, perfS: l.perfS, perfP: l.perfP, projPct: l.projPct,
       necS: l.necS, necP: l.necP, liderServ: liderServ?.c.nome ?? "", liderPerfS: liderServ?.perfS ?? 0,
-      liderPec: liderPec?.c.nome ?? "", liderPerfP: liderPec?.perfP ?? 0, passagens: d.passagens, agregados: d.agregados,
+      liderPec: liderPec?.c.nome ?? "", liderPerfP: liderPec?.perfP ?? 0,
+      liderAgg: liderAgg?.c.nome ?? "", liderAggPerf: liderAgg ? perfAgg(liderAgg.c.id) : 0,
+      passagens: d.passagens, agregados: d.agregados,
     } }).catch(() => ({ ok: false as const, mensagem: "Não foi possível gerar as dicas." }));
     setBusy("");
     const texto = montar(l, r.ok ? r.texto : "");
