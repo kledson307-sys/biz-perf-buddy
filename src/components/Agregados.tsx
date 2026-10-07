@@ -56,7 +56,8 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons }
     };
   };
   const ranking = (items: string[]) =>
-    cons.map((c) => ({ c, ...stat([c.id], items) })).sort((a, b) => b.perfQ - a.perfQ || b.qtd - a.qtd);
+    cons.filter((c) => items.length !== 1 || !naoVende(items[0]!, c.nome))
+      .map((c) => ({ c, ...stat([c.id], items) })).sort((a, b) => b.perfQ - a.perfQ || b.qtd - a.qtd);
 
   const exportar = () => {
     const h = ["Grupo", "Item", "Consultor", "Departamento", "Qtd", "Meta Qtd", "Perf. Qtd", "Projeção Qtd", "Valor", "Meta R$", "Perf. R$", "Projeção R$", "Passagens", "Aproveitamento"];

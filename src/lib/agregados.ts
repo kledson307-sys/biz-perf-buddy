@@ -12,6 +12,15 @@ export const ITENS: { k: string; nome: string; g: Grupo; re: RegExp; cod: string
 ];
 export const GRUPO_NOME: Record<Grupo, string> = { servicos: "Serviços agregados", pecas: "Peças agregadas" };
 
+/** Consultores que não vendem o item: ficam fora do ranking/comparação daquele item. */
+const NAO_VENDE: Record<string, string[]> = {
+  oxi: ["ANDRESSA.O", "WESLEY.F"],
+  alinhamento: ["P.BENIGNO", "WESLEY.F"],
+};
+const chaveNome = (s: string) => s.replace(/\s+/g, "").toUpperCase();
+export const naoVende = (itemK: string, nome: string) =>
+  (NAO_VENDE[itemK] ?? []).some((n) => chaveNome(nome).startsWith(chaveNome(n)));
+
 /** Chave de comparação do código: maiúsculas e sem espaços ("1350 117" = "1350117"). */
 export const normCod = (s: string) => s.replace(/\s+/g, "").toUpperCase();
 /** Lista de códigos digitada pelo usuário, separada por vírgula, ponto e vírgula ou quebra de linha (espaços fazem parte do código). */
