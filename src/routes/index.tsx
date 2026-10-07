@@ -217,7 +217,8 @@ function Painel({ email }: { email: string }) {
   const tabs = [["painel", "Painel"], ["proj-serv", "Serviços"], ["proj-pec", "Peças"], ["proj-total", "Projeção"], ["os", "Projeção + OS"], ["agregados", "Agregados"], ["diario", "Diário"], ["dados", "Colar dados"], ["config", "Configurar"]];
 
   const [anoMes, mesNum] = mes.split("-").map(Number);
-  const mesExtenso = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(anoMes!, mesNum! - 1, 1));
+  const mesExt = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(anoMes!, mesNum! - 1, 1));
+  const mesExtenso = mesExt.charAt(0).toUpperCase() + mesExt.slice(1);
   const dataHora = (iso: string) => new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
   // Seção do relatório de fechamento: título só na impressão e quebra de página entre seções.
   const Secao = ({ titulo, children }: { titulo: string; children: ReactNode }) => (
