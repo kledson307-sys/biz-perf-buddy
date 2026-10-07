@@ -14,6 +14,114 @@ export type Database = {
   }
   public: {
     Tables: {
+      agg_goals: {
+        Row: {
+          consultant_id: string
+          id: string
+          item: string
+          mes: string
+          meta_qtd: number
+          meta_valor: number
+          user_id: string
+        }
+        Insert: {
+          consultant_id: string
+          id?: string
+          item: string
+          mes: string
+          meta_qtd?: number
+          meta_valor?: number
+          user_id?: string
+        }
+        Update: {
+          consultant_id?: string
+          id?: string
+          item?: string
+          mes?: string
+          meta_qtd?: number
+          meta_valor?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agg_goals_consultant_id_fkey"
+            columns: ["consultant_id"]
+            isOneToOne: false
+            referencedRelation: "consultants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agg_sales: {
+        Row: {
+          consultant_id: string
+          dia: string
+          id: string
+          item: string
+          qtd: number
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          consultant_id: string
+          dia: string
+          id?: string
+          item: string
+          qtd?: number
+          user_id?: string
+          valor?: number
+        }
+        Update: {
+          consultant_id?: string
+          dia?: string
+          id?: string
+          item?: string
+          qtd?: number
+          user_id?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agg_sales_consultant_id_fkey"
+            columns: ["consultant_id"]
+            isOneToOne: false
+            referencedRelation: "consultants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agg_visits: {
+        Row: {
+          consultant_id: string
+          dia: string
+          id: string
+          passagens: number
+          user_id: string
+        }
+        Insert: {
+          consultant_id: string
+          dia: string
+          id?: string
+          passagens?: number
+          user_id?: string
+        }
+        Update: {
+          consultant_id?: string
+          dia?: string
+          id?: string
+          passagens?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agg_visits_consultant_id_fkey"
+            columns: ["consultant_id"]
+            isOneToOne: false
+            referencedRelation: "consultants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consultants: {
         Row: {
           created_at: string
