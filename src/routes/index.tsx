@@ -141,6 +141,8 @@ function Painel({ email }: { email: string }) {
     return { c, ...calc(ss.reduce((a, s) => a + s.servicos, 0), ss.reduce((a, s) => a + s.pecas, 0), g.servicos, g.pecas) };
   }).sort((a, b) => b.perf - a.perf);
   const lider = linhas[0];
+  const liderServ = linhas.length ? linhas.reduce((a, l) => (l.perfS > a.perfS ? l : a), linhas[0]!) : null;
+  const liderPec = linhas.length ? linhas.reduce((a, l) => (l.perfP > a.perfP ? l : a), linhas[0]!) : null;
   const soma = (arr: (Calc)[]) => calc(arr.reduce((a, l) => a + l.servicos, 0), arr.reduce((a, l) => a + l.pecas, 0), arr.reduce((a, l) => a + l.mS, 0), arr.reduce((a, l) => a + l.mP, 0));
   const total = soma(linhas);
   const porDept = [...new Set(linhas.map((l) => l.c.department_id))].map((id) => ({ nome: deptName(id), ...soma(linhas.filter((l) => l.c.department_id === id)) }));
@@ -173,7 +175,7 @@ function Painel({ email }: { email: string }) {
     a.download = `relatorio-${mes}.csv`; a.click();
   };
 
-  const tabs = [["painel", "Painel"], ["diario", "Diário"], ["dados", "Colar dados"], ["config", "Configurar"]];
+  const tabs = [["painel", "Painel"], ["proj-serv", "Serviços"], ["proj-pec", "Peças"], ["proj-total", "Projeção"], ["diario", "Diário"], ["dados", "Colar dados"], ["config", "Configurar"]];
 
   return (
     <div className="min-h-screen bg-background text-foreground">
