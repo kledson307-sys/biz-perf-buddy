@@ -15,7 +15,7 @@ export const GRUPO_NOME: Record<Grupo, string> = { servicos: "Serviços agregado
 /** Consultores que não vendem o item: ficam fora do ranking/comparação daquele item. */
 const NAO_VENDE: Record<string, string[]> = {
   oxi: ["ANDRESSA.O", "WESLEY.F"],
-  alinhamento: ["P.BENIGNO", "WESLEY.F"],
+  alinhamento: ["P.BENIGNO", "GILBERTO.S"],
 };
 const chaveNome = (s: string) => s.replace(/\s+/g, "").toUpperCase();
 export const naoVende = (itemK: string, nome: string) =>
