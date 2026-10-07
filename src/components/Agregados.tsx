@@ -126,8 +126,7 @@ function GrupoView({ g, stat, ranking, ids, deptName, rest }: {
 
       <Box title={`Resumo por item — ${GRUPO_NOME[g]}`}>
         <Tabela head={["Item", "Qtd", "Meta", "Perf.", "Projeção", "Proj. %", "Valor", "Meta R$", "Perf. R$", "Aproveit.", "Líder"]}>
-          {items.map((it) => {
-            const s = stat(ids, [it.k]);
+          {perItem.map(({ it, s }) => {
             const lid = ranking([it.k])[0];
             return (
               <tr key={it.k} className="border-t border-border">
@@ -151,6 +150,24 @@ function GrupoView({ g, stat, ranking, ids, deptName, rest }: {
       <RankTable title={`Ranking geral — ${GRUPO_NOME[g]}`} rows={ranking(keys)} deptName={deptName} />
       {items.map((it) => <RankTable key={it.k} title={`Ranking — ${it.nome}`} rows={ranking([it.k])} deptName={deptName} />)}
     </>
+  );
+}
+
+/** Linha por item dentro do cartão "Quantidade vendida": o vendido e a meta de cada tópico. */
+function ItensMeta({ perItem, T }: { perItem: { it: (typeof ITENS)[number]; s: Stat }[]; T: Stat }) {
+  return (
+    <span className="block space-y-1">
+      {perItem.map(({ it, s }) => (
+        <span key={it.k} className="flex items-baseline justify-between gap-3">
+          <span className="truncate">{it.nome}</span>
+          <span className="whitespace-nowrap tabular-nums">{num(s.qtd)} de {num(s.mq)}</span>
+        </span>
+      ))}
+      <span className="flex items-baseline justify-between gap-3 border-t border-border pt-1 font-semibold text-foreground">
+        <span>Total</span>
+        <span className="whitespace-nowrap tabular-nums">{num(T.qtd)} de {num(T.mq)} · {pct(T.perfQ)}</span>
+      </span>
+    </span>
   );
 }
 
