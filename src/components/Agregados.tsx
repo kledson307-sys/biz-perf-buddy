@@ -16,7 +16,7 @@ type Props = {
   deptName: (id: string | null) => string; reloadCons: () => void;
 };
 
-export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons }: Props) {
+export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, relatorio }: Props) {
   const [sub, setSub] = useState<"servicos" | "pecas" | "ia" | "importar" | "lancar" | "metas">("servicos");
   const [sales, setSales] = useState<ASale[]>([]);
   const [goals, setGoals] = useState<AGoal[]>([]);

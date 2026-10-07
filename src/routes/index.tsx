@@ -490,7 +490,7 @@ function Painel({ email }: { email: string }) {
           </Secao>
         )}
 
-        {show("agregados") && <Secao titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} /></Secao>}
+        {show("agregados") && <Secao titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} /></Secao>}
         {show("diario") && <Secao titulo="Performance diária e acumulada"><Diario sales={sales} cons={visiveis} metaTotal={total.meta} tot={tot} /></Secao>}
         {tab === "dados" && <SalesImport cons={cons} depts={depts} onDone={load} onPeriod={setMes} />}
         {tab === "config" && <div className="space-y-6"><Equipe /><Config params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} /></div>}
