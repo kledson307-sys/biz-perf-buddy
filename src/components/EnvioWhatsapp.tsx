@@ -45,19 +45,20 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
     ]).then(([as, ag, av]) => setAgg({ s: as.data ?? [], g: ag.data ?? [], v: av.data ?? [] }));
   }, [ids, mes]);
 
-  const dadosAgg = (id: string) => {
+  const dadosAgg = (id: string, nome = "") => {
     const rest = Math.max(tot - dec, 0);
     const passagens = agg.v.filter((v) => v.consultant_id === id).reduce((n, v) => n + Number(v.passagens), 0);
     const agregados = ITENS.map((it) => {
+      if (nome && naoVende(it.k, nome)) return null;
       const qtd = agg.s.filter((x) => x.consultant_id === id && x.item === it.k).reduce((n, x) => n + Number(x.qtd), 0);
       const meta = Number(agg.g.find((x) => x.consultant_id === id && x.item === it.k)?.meta_qtd ?? 0);
       return { item: it.nome, grupo: it.g, qtd, meta, proj: dec ? (qtd / dec) * tot : 0, nec: rest ? Math.max(meta - qtd, 0) / rest : 0, aper: passagens ? qtd / passagens : 0 };
-    });
+    }).filter((x): x is NonNullable<typeof x> => !!x);
     return { passagens, agregados };
   };
 
-  const perfAgg = (id: string) => {
-    const a = dadosAgg(id).agregados;
+  const perfAgg = (id: string, nome = "") => {
+    const a = dadosAgg(id, nome).agregados;
     const qtd = a.reduce((n, x) => n + x.qtd, 0);
     const meta = a.reduce((n, x) => n + x.meta, 0);
     return meta ? qtd / meta : 0;
