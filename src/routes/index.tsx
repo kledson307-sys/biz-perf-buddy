@@ -104,7 +104,22 @@ function Painel({ email }: { email: string }) {
     setDepts(d.data ?? []); setCons(c.data ?? []);
     setGoals((g.data ?? []).map((x) => ({ ...x, servicos: +x.servicos, pecas: +x.pecas })));
     setSales((s.data ?? []).map((x) => ({ ...x, servicos: +x.servicos, pecas: +x.pecas })));
-    setParams(p.data ? (p.data as Params) : { ...defParams, dc_totais: fim });
+    let np: Params = p.data ? (p.data as Params) : { ...defParams, dc_totais: fim };
+    const hoje = new Date();
+    const mesHoje = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
+    if (mes === mesHoje) {
+      const dia = hoje.getDate();
+      const muda: Partial<Params> = {};
+      if (dia > np.dc_decorridos) muda.dc_decorridos = dia;
+      const du = diasUteis(mes, dia);
+      if (du > np.du_decorridos) muda.du_decorridos = du;
+      if (!p.data) { muda.dc_totais = fim; muda.du_totais = diasUteis(mes, fim); }
+      if (Object.keys(muda).length) {
+        np = { ...np, ...muda };
+        await supabase.from("month_params").upsert({ ...np, mes }, { onConflict: "user_id,mes" });
+      }
+    }
+    setParams(np);
   }, [mes]);
   useEffect(() => { load(); }, [load]);
 
@@ -434,6 +449,7 @@ function Config({ params, salvarParams, depts, cons, goals, mes, reload, deptNam
         <Num label="Dias úteis decorridos" v={params.du_decorridos} on={(v) => salvarParams({ ...params, du_decorridos: v })} />
         <Num label="Dias corridos totais" v={params.dc_totais} on={(v) => salvarParams({ ...params, dc_totais: v })} />
         <Num label="Dias corridos decorridos" v={params.dc_decorridos} on={(v) => salvarParams({ ...params, dc_decorridos: v })} />
+        <p className="text-xs text-muted-foreground">No mês atual, os dias decorridos avançam sozinhos a cada dia (fins de semana não contam nos úteis). Você ainda pode ajustar manualmente — feriados, por exemplo.</p>
         <label className="block text-sm"><span className="text-muted-foreground">Projeção baseada em</span>
           <select value={params.base} onChange={(e) => salvarParams({ ...params, base: e.target.value })} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2">
             <option value="uteis">Dias úteis</option><option value="corridos">Dias corridos</option>
