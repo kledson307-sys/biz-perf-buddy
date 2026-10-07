@@ -15,6 +15,13 @@
       "when": 1791384674130,
       "tag": "0001_agg_codes",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791395595261,
+      "tag": "0002_import_sales_period",
+      "breakpoints": true
     }
   ]
 }

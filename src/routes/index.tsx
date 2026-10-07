@@ -5,13 +5,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Barra, Box, Cmp, Kpi, Num, Tabela, bg, brl, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
 import { Agregados } from "@/components/Agregados";
+import { SalesImport } from "@/components/SalesImport";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Painel de Metas e Projeção por Consultor" },
+      { title: "HAUS MOTORS SALVADOR (KLEDSON) | Metas e Projeções" },
       { name: "description", content: "Metas, projeção de serviços e peças por consultor e departamento, performance diária e relatório mensal." },
-      { property: "og:title", content: "Painel de Metas e Projeção por Consultor" },
+      { property: "og:title", content: "HAUS MOTORS SALVADOR (KLEDSON) | Metas e Projeções" },
       { property: "og:description", content: "Projeção, performance diária e acumulada, comparação com o líder e recomendações." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -349,7 +350,7 @@ function Painel({ email }: { email: string }) {
 
         {tab === "agregados" && <Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} />}
         {tab === "diario" && <Diario sales={sales} cons={visiveis} metaTotal={total.meta} tot={tot} />}
-        {tab === "dados" && <Colar cons={cons} depts={depts} onDone={load} />}
+        {tab === "dados" && <SalesImport cons={cons} depts={depts} onDone={load} onPeriod={setMes} />}
         {tab === "config" && <Config params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} />}
       </main>
     </div>
@@ -394,69 +395,6 @@ function Diario({ sales, cons, metaTotal, tot }: { sales: Sale[]; cons: Cons[]; 
         ))}
       </Tabela>
     </Box>
-  );
-}
-
-function Colar({ cons, depts, onDone }: { cons: Cons[]; depts: Dept[]; onDone: () => void }) {
-  const [dia, setDia] = useState(() => new Date().toISOString().slice(0, 10));
-  const [txt, setTxt] = useState("");
-  const [msg, setMsg] = useState("");
-  const importar = async () => {
-    const lines = txt.split(/\r?\n/).filter((l) => l.trim());
-    if (lines.length < 2) return setMsg("Cole o cabeçalho e ao menos uma linha.");
-    const sep = lines[0]!.includes("\t") ? "\t" : ";";
-    const head = lines[0]!.split(sep).map(norm);
-    const ci = head.findIndex((h) => /consult|vendedor|nome|colaborador/.test(h));
-    const si = head.findIndex((h) => /serv|mao de obra/.test(h));
-    const pi = head.findIndex((h) => /pec/.test(h));
-    const di = head.findIndex((h) => /depart|setor|loja/.test(h));
-    if (ci < 0 || (si < 0 && pi < 0)) return setMsg("O cabeçalho precisa ter: Consultor, Serviços e/ou Peças (Departamento opcional).");
-    const map = new Map<string, { s: number; p: number; d: string }>();
-    for (const l of lines.slice(1)) {
-      const c = l.split(sep);
-      const nome = (c[ci] || "").trim();
-      if (!nome || /^total/i.test(nome)) continue;
-      const r = map.get(nome) || { s: 0, p: 0, d: di >= 0 ? (c[di] || "").trim() : "" };
-      if (si >= 0) r.s += parseNum(c[si] ?? "");
-      if (pi >= 0) r.p += parseNum(c[pi] ?? "");
-      map.set(nome, r);
-    }
-    setMsg("Salvando…");
-    const dmap = new Map(depts.map((d) => [norm(d.nome), d.id]));
-    for (const dn of new Set([...map.values()].map((v) => v.d).filter(Boolean))) {
-      if (!dmap.has(norm(dn))) {
-        const { data } = await supabase.from("departments").insert({ nome: dn }).select("id").single();
-        if (data) dmap.set(norm(dn), data.id);
-      }
-    }
-    const cmap = new Map(cons.map((c) => [norm(c.nome), c.id]));
-    for (const [nome, v] of map) {
-      if (!cmap.has(norm(nome))) {
-        const { data } = await supabase.from("consultants").insert({ nome, department_id: v.d ? dmap.get(norm(v.d)) ?? null : null }).select("id").single();
-        if (data) cmap.set(norm(nome), data.id);
-      }
-    }
-    const rows = [...map].map(([nome, v]) => ({ consultant_id: cmap.get(norm(nome))!, dia, servicos: v.s, pecas: v.p })).filter((r) => r.consultant_id);
-    const { error } = await supabase.from("daily_sales").upsert(rows, { onConflict: "consultant_id,dia" });
-    if (error) return setMsg("Erro ao salvar: " + error.message);
-    setMsg(`${rows.length} consultores salvos para ${dia.split("-").reverse().join("/")}.`);
-    setTxt(""); onDone();
-  };
-  return (
-    <section className="space-y-3 rounded-xl border border-border bg-card p-6">
-      <h2 className="text-lg font-semibold">Colar vendas do dia</h2>
-      <p className="text-sm text-muted-foreground">
-        Escolha a data, copie do Excel <b>incluindo o cabeçalho</b> e cole. Colunas: <b>Consultor</b>, <b>Serviços</b>, <b>Peças</b> e (opcional) <b>Departamento</b>. Informe o valor <b>vendido no dia</b>. Colar de novo na mesma data substitui aquele dia. Consultores novos são cadastrados automaticamente.
-      </p>
-      <label className="block text-sm"><span className="text-muted-foreground">Data das vendas</span>
-        <input type="date" value={dia} onChange={(e) => setDia(e.target.value)} className="mt-1 block rounded-lg border border-input bg-background px-3 py-2" />
-      </label>
-      <textarea value={txt} onChange={(e) => setTxt(e.target.value)} rows={12} placeholder={"Consultor\tDepartamento\tServiços\tPeças\nJoão\tOficina\t1.250,00\t830,00"} className="w-full rounded-lg border border-input bg-background p-3 font-mono text-xs" />
-      <div className="flex items-center gap-3">
-        <button onClick={importar} className="rounded-lg bg-primary px-5 py-2 font-medium text-primary-foreground">Salvar e atualizar</button>
-        {msg && <span className="text-sm text-muted-foreground">{msg}</span>}
-      </div>
-    </section>
   );
 }
 
