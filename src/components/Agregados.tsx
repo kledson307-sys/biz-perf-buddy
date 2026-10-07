@@ -102,10 +102,7 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons }
   );
 }
 
-type Stat = ReturnType<ReturnType<typeof makeStatType>>;
-function makeStatType() {
-  return () => ({ qtd: 0, valor: 0, mq: 0, mv: 0, pass: 0, projQ: 0, projV: 0, perfQ: 0, perfV: 0, projPctQ: 0, projPctV: 0, aprov: 0, necQ: 0 });
-}
+type Stat = { qtd: number; valor: number; mq: number; mv: number; pass: number; projQ: number; projV: number; perfQ: number; perfV: number; projPctQ: number; projPctV: number; aprov: number; necQ: number };
 type Row = Stat & { c: Cons };
 
 function GrupoView({ g, stat, ranking, ids, deptName, rest }: {

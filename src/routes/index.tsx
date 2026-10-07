@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { Barra, Box, Cmp, Kpi, Num, Tabela, bg, brl, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
+import { Agregados } from "@/components/Agregados";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -24,20 +26,7 @@ type Goal = { consultant_id: string; servicos: number; pecas: number };
 type Sale = { consultant_id: string; dia: string; servicos: number; pecas: number };
 type Params = { du_totais: number; du_decorridos: number; dc_totais: number; dc_decorridos: number; base: string };
 
-const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-const pct = (n: number) => (n * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "%";
-const div = (a: number, b: number) => (b ? a / b : 0);
-const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-const tone = (p: number) => (p >= 1 ? "text-primary" : p >= 0.85 ? "text-chart-4" : "text-destructive");
-const bg = (p: number) => (p >= 1 ? "bg-primary" : p >= 0.85 ? "bg-chart-4" : "bg-destructive");
 const defParams: Params = { du_totais: 22, du_decorridos: 1, dc_totais: 30, dc_decorridos: 1, base: "uteis" };
-
-function parseNum(v: string) {
-  let s = (v || "").replace(/[R$\s%]/g, "");
-  if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
-  const n = parseFloat(s);
-  return isNaN(n) ? 0 : n;
-}
 
 function Index() {
   const [session, setSession] = useState<Session | null>(null);
@@ -175,7 +164,7 @@ function Painel({ email }: { email: string }) {
     a.download = `relatorio-${mes}.csv`; a.click();
   };
 
-  const tabs = [["painel", "Painel"], ["proj-serv", "Serviços"], ["proj-pec", "Peças"], ["proj-total", "Projeção"], ["diario", "Diário"], ["dados", "Colar dados"], ["config", "Configurar"]];
+  const tabs = [["painel", "Painel"], ["proj-serv", "Serviços"], ["proj-pec", "Peças"], ["proj-total", "Projeção"], ["agregados", "Agregados"], ["diario", "Diário"], ["dados", "Colar dados"], ["config", "Configurar"]];
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -191,7 +180,7 @@ function Painel({ email }: { email: string }) {
               <option value="todos">Todos departamentos</option>
               {depts.map((d) => <option key={d.id} value={d.id}>{d.nome}</option>)}
             </select>
-            <nav className="flex gap-1 rounded-lg bg-muted p-1">
+            <nav className="flex flex-wrap gap-1 rounded-lg bg-muted p-1">
               {tabs.map(([k, l]) => (
                 <button key={k} onClick={() => setTab(k!)} className={`rounded-md px-3 py-2 text-sm font-medium ${tab === k ? "bg-card shadow-sm" : "text-muted-foreground"}`}>{l}</button>
               ))}
@@ -358,6 +347,7 @@ function Painel({ email }: { email: string }) {
           </>
         )}
 
+        {tab === "agregados" && <Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} />}
         {tab === "diario" && <Diario sales={sales} cons={visiveis} metaTotal={total.meta} tot={tot} />}
         {tab === "dados" && <Colar cons={cons} depts={depts} onDone={load} />}
         {tab === "config" && <Config params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} />}
@@ -547,56 +537,5 @@ function Config({ params, salvarParams, depts, cons, goals, mes, reload, deptNam
         <p className="text-xs text-muted-foreground">As metas são salvas ao sair do campo e valem para o mês selecionado no topo.</p>
       </section>
     </div>
-  );
-}
-
-function Box({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="overflow-hidden rounded-xl border border-border bg-card">
-      <h3 className="border-b border-border px-4 py-3 font-semibold">{title}</h3>
-      {children}
-    </section>
-  );
-}
-function Tabela({ head, children }: { head: string[]; children: React.ReactNode }) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="bg-muted text-left text-xs uppercase text-muted-foreground"><tr>{head.map((h, i) => <th key={i} className="whitespace-nowrap px-3 py-3">{h}</th>)}</tr></thead>
-        <tbody>{children}</tbody>
-      </table>
-    </div>
-  );
-}
-function Barra({ p }: { p: number }) {
-  return (
-    <div className="flex items-center gap-2">
-      <div className="h-2 w-16 overflow-hidden rounded bg-muted"><div className={`h-full ${bg(p)}`} style={{ width: `${Math.min(p * 100, 100)}%` }} /></div>
-      <span className={`font-semibold ${tone(p)}`}>{pct(p)}</span>
-    </div>
-  );
-}
-function Cmp({ label, a, b }: { label: string; a: number; b: number }) {
-  return (
-    <div className="rounded bg-muted p-2">
-      <p className="text-muted-foreground">{label}</p>
-      <p><span className={`font-semibold ${tone(a)}`}>{pct(a)}</span> <span className="text-muted-foreground">vs líder {pct(b)}</span></p>
-    </div>
-  );
-}
-function Kpi({ label, value, sub, cls = "" }: { label: string; value: string; sub?: string; cls?: string }) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-5">
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={`mt-1 text-2xl font-bold ${cls}`}>{value}</p>
-      {sub && <p className="mt-1 text-xs text-muted-foreground">{sub}</p>}
-    </div>
-  );
-}
-function Num({ label, v, on }: { label: string; v: number; on: (v: number) => void }) {
-  return (
-    <label className="block text-sm"><span className="text-muted-foreground">{label}</span>
-      <input type="number" value={v} onChange={(e) => on(+e.target.value)} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2" />
-    </label>
   );
 }
