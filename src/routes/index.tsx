@@ -9,6 +9,7 @@ import { SalesImport } from "@/components/SalesImport";
 import { EnvioWhatsapp } from "@/components/EnvioWhatsapp";
 import { OsAbertas } from "@/components/OsAbertas";
 import { Equipe } from "@/components/Equipe";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Download, LogOut, Printer } from "lucide-react";
 import bmwLogo from "@/assets/bmw-logo.asset.json";
@@ -78,7 +79,10 @@ function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-6">
       <div className="w-full max-w-sm space-y-4 rounded-xl border border-border bg-card p-6">
-        <img src={bmwLogo.url} alt="BMW" className="size-14" />
+        <div className="flex items-center justify-between">
+          <img src={bmwLogo.url} alt="BMW" className="size-14" />
+          <ThemeToggle />
+        </div>
         <h1 className="text-xl font-bold">HAUS MOTORS SALVADOR <span className="font-medium text-primary">(KLEDSON)</span></h1>
         <p className="text-sm text-muted-foreground">{modo === "entrar" ? "Entre para acessar seus dados de qualquer lugar." : "Crie sua conta."}</p>
         <input className="w-full rounded-lg border border-input bg-background px-3 py-2" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -221,6 +225,7 @@ function Painel({ email }: { email: string }) {
           </div>
           <div className="flex min-w-0 items-center gap-3">
             <p className="break-all text-xs text-muted-foreground">{email}</p>
+            <ThemeToggle />
             <Button variant="ghost" size="icon" title="Sair" aria-label="Sair" onClick={() => void supabase.auth.signOut()}><LogOut /></Button>
           </div>
         </div>
