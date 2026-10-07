@@ -6,6 +6,9 @@ import { lovable } from "@/integrations/lovable/index";
 import { Barra, Box, Cmp, Kpi, Num, Tabela, bg, brl, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
 import { Agregados } from "@/components/Agregados";
 import { SalesImport } from "@/components/SalesImport";
+import { Button } from "@/components/ui/button";
+import { Download, LogOut, Printer } from "lucide-react";
+import bmwLogo from "@/assets/bmw-logo.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -61,15 +64,16 @@ function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-6">
       <div className="w-full max-w-sm space-y-4 rounded-xl border border-border bg-card p-6">
-        <h1 className="text-2xl font-bold">Painel de Metas</h1>
+        <img src={bmwLogo.url} alt="BMW" className="size-14" />
+        <h1 className="text-xl font-bold">HAUS MOTORS SALVADOR <span className="font-medium text-primary">(KLEDSON)</span></h1>
         <p className="text-sm text-muted-foreground">{modo === "entrar" ? "Entre para acessar seus dados de qualquer lugar." : "Crie sua conta."}</p>
         <input className="w-full rounded-lg border border-input bg-background px-3 py-2" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} />
         <input className="w-full rounded-lg border border-input bg-background px-3 py-2" type="password" placeholder="Senha" value={senha} onChange={(e) => setSenha(e.target.value)} />
-        <button onClick={enviar} className="w-full rounded-lg bg-primary py-2 font-medium text-primary-foreground">{modo === "entrar" ? "Entrar" : "Criar conta"}</button>
-        <button onClick={google} className="w-full rounded-lg border border-border py-2 font-medium">Continuar com Google</button>
-        <button onClick={() => setModo(modo === "entrar" ? "criar" : "entrar")} className="w-full text-sm text-muted-foreground underline">
+        <Button onClick={enviar} className="w-full">{modo === "entrar" ? "Entrar" : "Criar conta"}</Button>
+        <Button onClick={google} variant="outline" className="w-full">Continuar com Google</Button>
+        <Button variant="link" onClick={() => setModo(modo === "entrar" ? "criar" : "entrar")} className="w-full text-sm text-muted-foreground">
           {modo === "entrar" ? "Não tem conta? Criar" : "Já tenho conta"}
-        </button>
+        </Button>
         {msg && <p className="text-sm text-destructive">{msg}</p>}
       </div>
     </div>
@@ -169,36 +173,45 @@ function Painel({ email }: { email: string }) {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border bg-card print:hidden">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-6 py-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Painel de Metas</h1>
-            <p className="text-sm text-muted-foreground">{params.base === "uteis" ? "Dias úteis" : "Dias corridos"}: {dec} de {tot} · {email}</p>
+      <header className="border-t-4 border-primary border-b border-border bg-card print:hidden">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-6 sm:px-6">
+          <div className="flex min-w-0 items-center gap-4">
+            <img src={bmwLogo.url} alt="BMW" className="size-14 shrink-0" />
+            <div className="min-w-0">
+              <h1 className="text-xl font-bold">HAUS MOTORS SALVADOR <span className="inline-block font-medium text-primary">(KLEDSON)</span></h1>
+              <p className="mt-1 text-xs font-medium text-muted-foreground">PAINEL DE METAS · {params.base === "uteis" ? "Dias úteis" : "Dias corridos"}: {dec} de {tot}</p>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <input type="month" value={mes} onChange={(e) => setMes(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-            <select value={filtroDept} onChange={(e) => setFiltroDept(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm">
+          <div className="flex min-w-0 items-center gap-3">
+            <p className="break-all text-xs text-muted-foreground">{email}</p>
+            <Button variant="ghost" size="icon" title="Sair" aria-label="Sair" onClick={() => void supabase.auth.signOut()}><LogOut /></Button>
+          </div>
+        </div>
+        <div className="border-t border-border bg-muted/40">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
+            <input aria-label="Mês do relatório" type="month" value={mes} onChange={(e) => setMes(e.target.value)} className="rounded-md border border-input bg-card px-3 py-2 text-sm" />
+            <select aria-label="Departamento" value={filtroDept} onChange={(e) => setFiltroDept(e.target.value)} className="max-w-full rounded-md border border-input bg-card px-3 py-2 text-sm">
               <option value="todos">Todos departamentos</option>
               {depts.map((d) => <option key={d.id} value={d.id}>{d.nome}</option>)}
             </select>
-            <nav className="flex flex-wrap gap-1 rounded-lg bg-muted p-1">
+            <nav aria-label="Abas do painel" className="flex min-w-0 flex-wrap gap-1 lg:ml-auto">
               {tabs.map(([k, l]) => (
-                <button key={k} onClick={() => setTab(k!)} className={`rounded-md px-3 py-2 text-sm font-medium ${tab === k ? "bg-card shadow-sm" : "text-muted-foreground"}`}>{l}</button>
+                <Button key={k} onClick={() => { if (k) setTab(k); }} variant={tab === k ? "default" : "ghost"} className={tab === k ? "" : "text-muted-foreground"} aria-current={tab === k ? "page" : undefined}>{l}</Button>
               ))}
             </nav>
-            <button onClick={() => supabase.auth.signOut()} className="text-sm text-muted-foreground underline">Sair</button>
+          </div>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl space-y-6 px-6 py-6">
+      <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
         {tab === "painel" && (
           <>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-lg font-semibold">Relatório de {mes}</h2>
               <div className="flex gap-2 print:hidden">
-                <button onClick={exportar} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Exportar Excel (CSV)</button>
-                <button onClick={() => window.print()} className="rounded-lg bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground">Imprimir / PDF</button>
+                <Button onClick={exportar}><Download />Exportar Excel (CSV)</Button>
+                <Button variant="outline" onClick={() => window.print()}><Printer />Imprimir / PDF</Button>
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
