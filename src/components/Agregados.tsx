@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Barra, Box, Kpi, Tabela, brl, div, norm, num, parseNum, pct, tone } from "./painel-ui";
 import { GRUPO_NOME, ITENS, splitCods, type Grupo } from "@/lib/agregados";
 import { AgregadosImport } from "./AgregadosImport";
+import { AgregadosIA } from "./AgregadosIA";
 
 type Cons = { id: string; nome: string; department_id: string | null };
 type ASale = { consultant_id: string; dia: string; item: string; qtd: number; valor: number };
@@ -15,7 +16,7 @@ type Props = {
 };
 
 export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons }: Props) {
-  const [sub, setSub] = useState<"servicos" | "pecas" | "importar" | "lancar" | "metas">("servicos");
+  const [sub, setSub] = useState<"servicos" | "pecas" | "ia" | "importar" | "lancar" | "metas">("servicos");
   const [sales, setSales] = useState<ASale[]>([]);
   const [goals, setGoals] = useState<AGoal[]>([]);
   const [visits, setVisits] = useState<AVisit[]>([]);
@@ -68,7 +69,7 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons }
     a.download = `agregados-${mes}.csv`; a.click();
   };
 
-  const subs: [typeof sub, string][] = [["servicos", "Serviços agregados"], ["pecas", "Peças agregadas"], ["importar", "Importar Excel"], ["lancar", "Lançar / colar"], ["metas", "Metas"]];
+  const subs: [typeof sub, string][] = [["servicos", "Serviços agregados"], ["pecas", "Peças agregadas"], ["ia", "Recomendações IA"], ["importar", "Importar Excel"], ["lancar", "Lançar / colar"], ["metas", "Metas"]];
 
   return (
     <div className="space-y-6">
@@ -90,6 +91,7 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons }
       {(sub === "servicos" || sub === "pecas") && (
         <GrupoView g={sub} stat={stat} ranking={ranking} ids={cons.map((c) => c.id)} deptName={deptName} rest={rest} />
       )}
+      {sub === "ia" && <AgregadosIA mes={mes} cons={cons} tot={tot} dec={dec} stat={stat} deptName={deptName} />}
       {sub === "importar" && (
         <AgregadosImport allCons={allCons} codigos={codigos} ini={ini} end={end} onDone={() => { load(); reloadCons(); }} />
       )}
