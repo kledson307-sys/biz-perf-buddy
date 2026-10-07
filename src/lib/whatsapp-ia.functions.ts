@@ -10,7 +10,7 @@ const inputSchema = z.object({
   perfS: n, perfP: n, projPct: n, necS: n, necP: n,
   liderServ: z.string().max(120), liderPerfS: n, liderPec: z.string().max(120), liderPerfP: n,
   passagens: n,
-  agregados: z.array(z.object({ item: z.string().max(60), grupo: z.string().max(20), qtd: n, meta: n, proj: n, nec: n })).max(20),
+  agregados: z.array(z.object({ item: z.string().max(60), grupo: z.string().max(20), qtd: n, meta: n, proj: n, nec: n, aper: n })).max(20),
 });
 export type DicaInput = z.infer<typeof inputSchema>;
 
@@ -28,7 +28,8 @@ Responda em português do Brasil, texto simples (sem Markdown), EXATAMENTE neste
 [AGREGADOS]
 • dica
 • dica
-Até 2 dicas curtas e práticas por bloco, citando números enviados (projeção, quanto falta por dia, distância do líder). Não invente dados; se faltar meta, peça para cadastrar. Seja motivador e direto.`;
+• oportunidade (qual item tem mais espaço para crescer, considerando aproveitamento sobre as passagens)
+Até 2 dicas curtas e práticas por bloco, citando números enviados (projeção, quanto falta por dia, distância do líder). Em AGREGADOS, aponte a oportunidade: o item com menor aproveitamento ou maior distância da meta, e como oferecê-lo. Não invente dados; se faltar meta, peça para cadastrar. Seja motivador e direto.`;
 
 export const dicaWhatsapp = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

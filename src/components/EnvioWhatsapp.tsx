@@ -52,7 +52,7 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
     const agregados = ITENS.map((it) => {
       const qtd = (as.data ?? []).filter((x) => x.item === it.k).reduce((n, x) => n + Number(x.qtd), 0);
       const meta = Number((ag.data ?? []).find((x) => x.item === it.k)?.meta_qtd ?? 0);
-      return { item: it.nome, grupo: it.g, qtd, meta, proj: dec ? (qtd / dec) * tot : 0, nec: rest ? Math.max(meta - qtd, 0) / rest : 0 };
+      return { item: it.nome, grupo: it.g, qtd, meta, proj: dec ? (qtd / dec) * tot : 0, nec: rest ? Math.max(meta - qtd, 0) / rest : 0, aper: passagens ? qtd / passagens : 0 };
     });
     const r = await gerar({ data: {
       nome: l.c.nome, mes, dec, tot, servicos: l.servicos, pecas: l.pecas, mS: l.mS, mP: l.mP,
@@ -66,8 +66,9 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
       !ld ? "" : ld.c.id === l.c.id ? "🏆 Você é o líder!" : `🏆 Líder: ${ld.c.nome} (${pct(dele)}) · você está ${num((dele - minha) * 100)} pts atrás`;
     const dicas = (tag: string) => { const t = bloco(ia, tag); return t ? ["💡 Sugestões:", t] : []; };
     const linhasAgg = agregados.map((a) =>
-      `• ${a.item}: ${num(a.qtd)}${a.meta ? ` de ${num(a.meta)} (${pct(a.qtd / a.meta)}) · proj. ${num(a.proj)} · precisa ${num(Math.ceil(a.nec))}/dia` : " (sem meta)"}`);
+      `• ${a.item}: ${num(a.qtd)}${a.meta ? ` de ${num(a.meta)} (${pct(a.qtd / a.meta)}) · proj. ${num(a.proj)} · precisa ${num(Math.ceil(a.nec))}/dia` : " (sem meta)"}${passagens ? ` · aproveit. ${pct(a.aper)}` : ""}`);
     const totAgg = agregados.reduce((n, a) => n + a.qtd, 0);
+    const oport = agregados.filter((a) => a.meta > 0 && a.qtd < a.meta).sort((a, b) => a.qtd / a.meta - b.qtd / b.meta)[0];
     const texto = [
       `Olá, ${l.c.nome}! Atualização HAUS MOTORS – ${mes.split("-").reverse().join("/")} (dia ${dec} de ${tot})`,
       "",
@@ -88,6 +89,7 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
       "➕ *AGREGADOS*",
       ...linhasAgg,
       passagens ? `Aproveitamento: ${pct(totAgg / passagens)} (${num(totAgg)} itens em ${num(passagens)} passagens)` : "Passagens ainda não lançadas.",
+      oport ? `🎯 Oportunidade: ${oport.item} está mais longe da meta (${pct(oport.qtd / oport.meta)}) — foque nele.` : "",
       ...dicas("AGREGADOS"),
     ].filter((x) => x !== undefined && x !== null).join("\n").replace(/\n{3,}/g, "\n\n").trim();
     if (!r.ok) setMsg(`${r.mensagem} A mensagem foi aberta sem as sugestões.`);
