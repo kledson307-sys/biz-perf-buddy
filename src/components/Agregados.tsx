@@ -90,7 +90,10 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons }
         </div>
       </div>
 
-      {(sub === "servicos" || sub === "pecas") && (
+      {relatorio ? (<>
+        <GrupoView g="servicos" stat={stat} ranking={ranking} ids={cons.map((c) => c.id)} deptName={deptName} rest={rest} />
+        <GrupoView g="pecas" stat={stat} ranking={ranking} ids={cons.map((c) => c.id)} deptName={deptName} rest={rest} />
+      </>) : (sub === "servicos" || sub === "pecas") && (
         <GrupoView g={sub} stat={stat} ranking={ranking} ids={cons.map((c) => c.id)} deptName={deptName} rest={rest} />
       )}
       {sub === "ia" && <AgregadosIA mes={mes} cons={cons} tot={tot} dec={dec} stat={stat} deptName={deptName} />}
