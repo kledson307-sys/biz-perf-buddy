@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Box, Tabela, brl, pct, tone } from "@/components/painel-ui";
 import { dicaWhatsapp } from "@/lib/whatsapp-ia.functions";
-import { ITENS } from "@/lib/agregados";
+import { ITENS, naoVende } from "@/lib/agregados";
 
 export type LinhaEnvio = {
   c: { id: string; nome: string; telefone: string };
@@ -64,6 +64,8 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
   };
   const liderItem = (nomeItem: string) =>
     linhas.map((x) => {
+      const k = ITENS.find((i) => i.nome === nomeItem)?.k ?? "";
+      if (naoVende(k, x.c.nome)) return null;
       const a = dadosAgg(x.c.id).agregados.find((y) => y.item === nomeItem);
       return a ? { id: x.c.id, nome: x.c.nome, qtd: a.qtd, meta: a.meta } : null;
     }).filter((x): x is { id: string; nome: string; qtd: number; meta: number } => !!x && x.meta > 0)
