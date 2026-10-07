@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Barra, Box, Kpi, Tabela, brl, div, norm, num, parseNum, pct, tone } from "./painel-ui";
-import { GRUPO_NOME, ITENS, splitCods, type Grupo } from "@/lib/agregados";
+import { GRUPO_NOME, ITENS, naoVende, splitCods, type Grupo } from "@/lib/agregados";
 import { AgregadosImport } from "./AgregadosImport";
 import { AgregadosIA } from "./AgregadosIA";
 
