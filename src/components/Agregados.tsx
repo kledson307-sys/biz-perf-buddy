@@ -118,10 +118,10 @@ function GrupoView({ g, stat, ranking, ids, deptName, rest }: {
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label="Quantidade vendida" value={num(T.qtd)} cls={tone(T.perfQ)} sub={<ItensMeta perItem={perItem} T={T} />} />
-        <Kpi label="Projeção (qtd)" value={num(T.projQ)} sub={`${pct(T.projPctQ)} da meta · precisa ${num(T.necQ)}/dia (${rest} dias)`} cls={tone(T.projPctQ)} />
-        <Kpi label="Valor vendido" value={brl(T.valor)} sub={`Meta ${brl(T.mv)} · projeção ${brl(T.projV)}`} cls={tone(T.perfV)} />
-        <Kpi label="Aproveitamento" value={pct(T.aprov)} sub={`${num(T.qtd)} itens em ${num(T.pass)} passagens`} />
+        <Kpi label="Quantidade vendida" value={num(T.qtd)} cls={tone(T.perfQ)} sub={<ItensDetalhe perItem={perItem} T={T} modo="qtd" />} />
+        <Kpi label="Projeção (qtd)" value={num(T.projQ)} cls={tone(T.projPctQ)} sub={<ItensDetalhe perItem={perItem} T={T} modo="proj" rest={rest} />} />
+        <Kpi label="Valor vendido" value={brl(T.valor)} cls={tone(T.perfV)} sub={<ItensDetalhe perItem={perItem} T={T} modo="valor" />} />
+        <Kpi label="Aproveitamento" value={pct(T.aprov)} sub={<ItensDetalhe perItem={perItem} T={T} modo="aprov" />} />
       </div>
 
       <Box title={`Resumo por item — ${GRUPO_NOME[g]}`}>
