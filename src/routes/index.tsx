@@ -262,7 +262,7 @@ function Painel({ email }: { email: string }) {
       })()}
 
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
-        {tab === "os" && <OsAbertas linhas={linhas} mes={mes} soPecas={soPecas} />}
+        {tab === "os" && <OsAbertas linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} />}
         {tab === "painel" && (
           <>
             <div className="flex flex-wrap items-center justify-between gap-2">
