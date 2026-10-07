@@ -202,5 +202,6 @@ input, select, textarea { max-width: 100%; }
   tr { break-inside: avoid; }
   section, .print-keep { break-inside: avoid-page; }
   .print-page { break-before: page; }
-  input, select, textarea, button { display: none !important; }
+  button { display: none !important; }
+  input, select, textarea { border: none !important; background: transparent !important; padding: 0 !important; appearance: none !important; }
 }

@@ -291,7 +291,7 @@ function Painel({ email }: { email: string }) {
               <p className="mt-10 text-sm font-semibold uppercase tracking-[0.3em] text-primary">Relatório de Fechamento</p>
               <h1 className="mt-3 text-4xl font-bold">HAUS MOTORS SALVADOR</h1>
               <p className="mt-1 text-xl font-medium text-primary">(KLEDSON)</p>
-              <p className="mt-8 text-2xl font-semibold capitalize">{mesExtenso}</p>
+              <p className="mt-8 text-2xl font-semibold">{mesExtenso}</p>
               <div className="mx-auto mt-12 grid w-full max-w-2xl grid-cols-2 gap-4 text-left">
                 <Kpi label="Realizado Serviços" value={brl(total.servicos)} sub={`Meta ${brl(total.mS)} · ${pct(total.perfS)}`} cls={tone(total.perfS)} />
                 <Kpi label="Realizado Peças" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)}`} cls={tone(total.perfP)} />

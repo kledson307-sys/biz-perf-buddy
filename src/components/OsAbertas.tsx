@@ -176,7 +176,7 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec }: { linhas: Linha[];
         <Button variant="outline" className="mt-2" onClick={() => void colar()} disabled={!txt.trim() || loading || saving || !canEdit}>Ler dados colados</Button>
         {loading && !msg && <p className="mt-2 text-sm text-muted-foreground">Carregando O.S. salvas…</p>}
         {msg && <p role="status" className="mt-2 text-sm">{msg}</p>}
-      </Box>
+      </Box></div>
 
       <Box title="Projeção individual (faturado + OS abertas)">
         <Tabela head={["Consultor", "Grupo", "Faturado", "OS abertas", "Projeção", "Meta", "% da meta", "Falta"]}>
