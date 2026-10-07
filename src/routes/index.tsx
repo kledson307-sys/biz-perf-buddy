@@ -200,7 +200,6 @@ function Painel({ email }: { email: string }) {
               ))}
             </nav>
           </div>
-          </div>
         </div>
       </header>
 
