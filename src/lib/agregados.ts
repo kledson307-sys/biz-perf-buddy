@@ -8,7 +8,7 @@ export const ITENS: { k: string; nome: string; g: Grupo; re: RegExp; cod: string
   { k: "alinhamento", nome: "Alinhamento & Balanceamento", g: "servicos", re: /alinh|balanc/, cod: ["0000170", "ALINHA01"] },
   { k: "oxi", nome: "Oxi Capacete", g: "servicos", re: /oxi|capacete/, cod: ["OXICAP"] },
   { k: "brazzo", nome: "Brazzo", g: "pecas", re: /brazzo/, cod: ["1350 117", "1350 195", "1350 218", "1350 249", "1350 288", "1350 299", "1350 327"] },
-  { k: "tunap", nome: "Tunap", g: "pecas", re: /tunap/, cod: ["F96500200B2", "MP104004400ABT", "MP10900500ABT", "47658", "TUNAP7000", "F37500200AT", "MF957000200X3T", "1299600150X6T", "259900145XT"] },
+  { k: "tunap", nome: "Tunap", g: "pecas", re: /tunap/, cod: ["F96500200B2", "MP104004400ABT", "MP10900500ABT", "47658", "TUNAP7000", "F37500200AT", "MF95700200X3T", "1299600150X6T", "259900145XT"] },
 ];
 export const GRUPO_NOME: Record<Grupo, string> = { servicos: "Serviços agregados", pecas: "Peças agregadas" };
 
@@ -104,16 +104,25 @@ export function lerRanking(rows: Cell[][]): Relatorio {
 }
 
 export type Linha = { nome: string; item: string; qtd: number; valor: number };
+export type Registro = Linha & { dia?: string };
 
 /**
- * Distribui cada serviço entre os vendedores: valor do vendedor = (valor bruto do serviço ÷ qtd total do serviço) × qtd do vendedor.
- * Considera apenas os serviços cujos códigos estão em `codigos` (item → lista de códigos).
+ * Distribui cada item entre os vendedores. No ranking: valor do vendedor = (valor bruto ÷ qtd total) × qtd do vendedor.
+ * Na lista de itens vendidos o valor de cada venda já vem pronto (Preço Final) e a data da venda é mantida.
+ * Considera apenas os itens cujos códigos estão em `codigos` (item → lista de códigos).
+ * `linhas` = total por consultor e item (prévia); `registros` = o que é gravado (por dia quando o relatório traz a data).
  */
 export function distribuir(rel: Relatorio, codigos: Record<string, string[]>) {
   const porCod = new Map<string, string>();
   for (const [item, cods] of Object.entries(codigos)) for (const c of cods) porCod.set(normCod(c), item);
   const acc = new Map<string, Linha>();
+  const reg = new Map<string, Registro>();
   const usados: (Servico & { item: string; soma: number })[] = [];
+  const somar = <T extends Linha>(m: Map<string, T>, key: string, base: T, qtd: number, valor: number) => {
+    const l = m.get(key) ?? base;
+    l.qtd += qtd; l.valor += valor;
+    m.set(key, l);
+  };
   for (const s of rel.servicos) {
     const item = porCod.get(s.codigo);
     if (!item) continue;
@@ -121,12 +130,11 @@ export function distribuir(rel: Relatorio, codigos: Record<string, string[]>) {
     usados.push({ ...s, item, soma });
     const unit = s.qtd ? s.bruto / s.qtd : 0;
     for (const v of s.vendedores) {
-      const key = `${v.nome}|${item}`;
-      const l = acc.get(key) ?? { nome: v.nome, item, qtd: 0, valor: 0 };
-      l.qtd += v.qtd; l.valor += v.qtd * unit;
-      acc.set(key, l);
+      const valor = v.valor ?? v.qtd * unit;
+      somar(acc, `${v.nome}|${item}`, { nome: v.nome, item, qtd: 0, valor: 0 }, v.qtd, valor);
+      somar(reg, `${v.nome}|${item}|${v.dia ?? ""}`, { nome: v.nome, item, qtd: 0, valor: 0, ...(v.dia ? { dia: v.dia } : {}) }, v.qtd, valor);
     }
   }
-  for (const l of acc.values()) l.valor = Math.round(l.valor * 100) / 100;
-  return { linhas: [...acc.values()], usados };
+  for (const l of [...acc.values(), ...reg.values()]) l.valor = Math.round(l.valor * 100) / 100;
+  return { linhas: [...acc.values()], registros: [...reg.values()], usados };
 }
