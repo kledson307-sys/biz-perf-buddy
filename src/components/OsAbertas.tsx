@@ -8,6 +8,42 @@ type Linha = { c: { id: string; nome: string }; servicos: number; pecas: number;
 type Os = Record<string, { s: number; p: number }>;
 const key = (v: string) => norm(v.trim());
 
+// Vendedores considerados na importação de OS abertas (demais são ignorados).
+const OS_PERMITIDOS = new Set(["p.benigno", "andressa.o", "gilberto.s", "wesley.f", "renan.o", "geovana.m", "marcela.s"]);
+const numRe = /^\d{3,}$/;
+const toNum = (v: unknown) => {
+  const s = String(v ?? "").trim();
+  if (!s || s.includes("%")) return 0; // "7,0%" é porcentagem, não valor
+  const n = parseFloat(s.replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
+};
+
+// Relatório do sistema "O.S. Abertas": bloco por O.S. (número na col. C, veículo na col. F,
+// consultor na linha seguinte, Total Líq. Peças col. U e Total Serviços col. W).
+function lerOsSistema(raw: unknown[][]): { nome: string; servicos: number; pecas: number }[] | null {
+  // Detecta o deslocamento de colunas pela célula "Numero" do cabeçalho
+  let off = -1;
+  for (let i = 0; i < Math.min(10, raw.length) && off < 0; i++) {
+    const row = raw[i] ?? [];
+    for (let c = 0; c < row.length; c++) if (norm(String(row[c] ?? "")) === "numero") { off = c; break; }
+  }
+  if (off < 0) return null;
+  const res: { nome: string; servicos: number; pecas: number }[] = [];
+  for (let i = 0; i < raw.length; i++) {
+    const cN = String(raw[i]?.[off] ?? "").trim();
+    const cV = String(raw[i]?.[off + 3] ?? "").trim();
+    if (!numRe.test(cN) || !cV || numRe.test(cV)) continue;
+    let cons = "";
+    for (let j = i + 1; j < Math.min(i + 5, raw.length); j++) {
+      const v = String(raw[j]?.[off + 3] ?? "").trim();
+      if (v) { cons = v; break; }
+    }
+    if (!cons || !OS_PERMITIDOS.has(norm(cons))) continue;
+    res.push({ nome: cons, servicos: toNum(raw[i]?.[off + 20]), pecas: toNum(raw[i]?.[off + 18]) });
+  }
+  return res.length ? res : null;
+}
+
 export function OsAbertas({ linhas, mes, soPecas }: { linhas: Linha[]; mes: string; soPecas: (n: string) => boolean }) {
   const store = `os-abertas-${mes}`;
   const [os, setOs] = useState<Os>({});
@@ -18,16 +54,19 @@ export function OsAbertas({ linhas, mes, soPecas }: { linhas: Linha[]; mes: stri
   const salvar = (n: Os) => { setOs(n); localStorage.setItem(store, JSON.stringify(n)); };
 
   const aplicar = (raw: unknown[][]) => {
-    const rep = readSalesReport(raw);
+    const sys = lerOsSistema(raw);
+    const rows: { nome: string; servicos: number; pecas: number; completo?: string }[] =
+      sys ?? readSalesReport(raw).rows.map((r) => ({ nome: r.nome, servicos: r.servicos, pecas: r.pecas, completo: r.completo }));
     const n: Os = {}; const fora: string[] = [];
-    for (const r of rep.rows) {
+    for (const r of rows) {
       const c = linhas.find((l) => key(l.c.nome) === key(r.nome) || (r.completo && key(l.c.nome) === key(r.completo)));
       if (!c) { fora.push(r.nome); continue; }
+      if (!OS_PERMITIDOS.has(key(c.c.nome))) continue;
       const a = n[c.c.id] ?? { s: 0, p: 0 };
       n[c.c.id] = { s: a.s + r.servicos, p: a.p + r.pecas };
     }
     salvar(n);
-    setMsg(`OS abertas importadas para ${Object.keys(n).length} consultor(es).${fora.length ? ` Não encontrados: ${fora.join(", ")}.` : ""}`);
+    setMsg(`OS abertas importadas para ${Object.keys(n).length} consultor(es) — só P.BENIGNO, ANDRESSA.O, GILBERTO.S, WESLEY.F, RENAN.O, GEOVANA.M e MARCELA.S são considerados.${fora.length ? ` Fora da lista (ignorados): ${[...new Set(fora)].join(", ")}.` : ""}`);
   };
   const abrir = async (f?: File) => {
     if (!f) return;
@@ -72,7 +111,7 @@ export function OsAbertas({ linhas, mes, soPecas }: { linhas: Linha[]; mes: stri
       </div>
 
       <Box title="Importar OS abertas (Excel ou colar)">
-        <p className="mb-3 text-sm text-muted-foreground">A planilha precisa ter as colunas Vendedor/Consultor e Serviços e/ou Peças. Importar substitui as OS abertas do mês. Também dá para digitar direto na tabela abaixo.</p>
+        <p className="mb-3 text-sm text-muted-foreground">Aceita o relatório "O.S. Abertas" do sistema (peças e serviços separados) ou colar vendedor/serviços/peças. Só são considerados: P.BENIGNO, ANDRESSA.O, GILBERTO.S, WESLEY.F, RENAN.O, GEOVANA.M e MARCELA.S. Importar substitui as OS abertas do mês. Também dá para digitar direto na tabela abaixo.</p>
         <div className="flex flex-wrap gap-2">
           <input ref={file} type="file" accept=".xls,.xlsx,.csv" className="hidden" onChange={(e) => void abrir(e.target.files?.[0])} />
           <Button onClick={() => file.current?.click()}><Upload />Importar Excel de OS abertas</Button>
