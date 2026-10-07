@@ -68,7 +68,7 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons }
     a.download = `agregados-${mes}.csv`; a.click();
   };
 
-  const subs: [typeof sub, string][] = [["servicos", "Serviços agregados"], ["pecas", "Peças agregadas"], ["lancar", "Lançar / colar"], ["metas", "Metas"]];
+  const subs: [typeof sub, string][] = [["servicos", "Serviços agregados"], ["pecas", "Peças agregadas"], ["importar", "Importar Excel"], ["lancar", "Lançar / colar"], ["metas", "Metas"]];
 
   return (
     <div className="space-y-6">
