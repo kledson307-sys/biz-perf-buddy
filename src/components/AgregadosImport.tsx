@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Box, brl, norm, num } from "./painel-ui";
 import { GRUPO_NOME, ITENS, distribuir, lerRanking, splitCods, type Relatorio } from "@/lib/agregados";
+import { registrarUpdate } from "@/lib/update-log";
 
 type Cons = { id: string; nome: string; department_id: string | null };
 const br = (d: string) => d.split("-").reverse().join("/");
@@ -61,6 +62,7 @@ export function AgregadosImport({ allCons, codigos, ini, end, onDone }: {
         if (up.error) throw up.error;
       }
       setMsg(`Importado: ${rows.length} lançamentos de ${br(periodo.ini)} a ${br(periodo.fim)}. Importar de novo o mesmo período substitui os valores.`);
+      await registrarUpdate("Agregados (importação)");
       setRel(null); setTxt(""); setArquivo("");
       onDone();
     } catch (e) { setMsg("Erro ao salvar: " + (e as Error).message); }

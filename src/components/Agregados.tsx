@@ -4,6 +4,7 @@ import { Barra, Box, Kpi, Tabela, brl, div, norm, num, parseNum, pct, tone } fro
 import { GRUPO_NOME, ITENS, naoVende, splitCods, type Grupo } from "@/lib/agregados";
 import { AgregadosImport } from "./AgregadosImport";
 import { AgregadosIA } from "./AgregadosIA";
+import { registrarUpdate } from "@/lib/update-log";
 
 type Cons = { id: string; nome: string; department_id: string | null };
 type ASale = { consultant_id: string; dia: string; item: string; qtd: number; valor: number };
@@ -215,6 +216,7 @@ function Lancar({ cons, allCons, sales, visits, ini, end, onDone }: {
     const err = a.error || b.error;
     if (err) return setMsg("Erro ao salvar: " + err.message);
     setMsg(`${ids.length} consultores salvos para ${dia.split("-").reverse().join("/")}.`);
+    await registrarUpdate("Agregados (lançamento)");
     onDone();
   };
 

@@ -101,17 +101,20 @@ function Painel({ email }: { email: string }) {
   const [params, setParams] = useState<Params>(defParams);
   const [tab, setTab] = useState("painel");
   const [filtroDept, setFiltroDept] = useState("todos");
+  const [lastUp, setLastUp] = useState<{ at: string; nome: string; origem: string } | null>(null);
 
   const load = useCallback(async () => {
     const [y, m] = mes.split("-").map(Number);
     const fim = new Date(y!, m!, 0).getDate();
-    const [d, c, g, s, p] = await Promise.all([
+    const [d, c, g, s, p, ul] = await Promise.all([
       supabase.from("departments").select("id,nome").order("nome"),
       supabase.from("consultants").select("id,nome,department_id,telefone").order("nome"),
       supabase.from("goals").select("consultant_id,servicos,pecas").eq("mes", mes),
       supabase.from("daily_sales").select("consultant_id,dia,servicos,pecas").gte("dia", `${mes}-01`).lte("dia", `${mes}-${fim}`).order("dia"),
       supabase.from("month_params").select("*").eq("mes", mes).maybeSingle(),
+      supabase.from("update_log").select("at,nome,origem").order("at", { ascending: false }).limit(1).maybeSingle(),
     ]);
+    setLastUp((ul.data as { at: string; nome: string; origem: string } | null) ?? null);
     setDepts(d.data ?? []); setCons(c.data ?? []);
     setGoals((g.data ?? []).map((x) => ({ ...x, servicos: +x.servicos, pecas: +x.pecas })));
     setSales((s.data ?? []).map((x) => ({ ...x, servicos: +x.servicos, pecas: +x.pecas })));
@@ -229,6 +232,14 @@ function Painel({ email }: { email: string }) {
           </div>
         </div>
       </header>
+
+      {lastUp && (
+        <div className="border-b border-border bg-primary/5 print:hidden">
+          <div className="mx-auto max-w-7xl px-4 py-2 text-xs text-muted-foreground sm:px-6">
+            🔄 Última atualização: {new Date(lastUp.at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })} por <span className="font-medium text-foreground">{lastUp.nome}</span> · {lastUp.origem}
+          </div>
+        </div>
+      )}
 
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
         {tab === "painel" && (

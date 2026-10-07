@@ -302,6 +302,30 @@ export type Database = {
         }
         Relationships: []
       }
+      update_log: {
+        Row: {
+          at: string
+          id: string
+          nome: string
+          origem: string
+          user_id: string
+        }
+        Insert: {
+          at?: string
+          id?: string
+          nome: string
+          origem: string
+          user_id?: string
+        }
+        Update: {
+          at?: string
+          id?: string
+          nome?: string
+          origem?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

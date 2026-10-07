@@ -29,6 +29,13 @@
       "when": 1791401119421,
       "tag": "0003_consultant_phone",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791403335168,
+      "tag": "0004_update_log",
+      "breakpoints": true
     }
   ]
 }
