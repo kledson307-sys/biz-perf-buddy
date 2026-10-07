@@ -48,10 +48,10 @@ export function OsAbertas({ linhas, mes, soPecas }: { linhas: Linha[]; mes: stri
 
   const aplicar = (raw: unknown[][]) => {
     const sys = lerOsSistema(raw);
-    const rows = sys ?? readSalesReport(raw).rows.map((r) => ({ nome: r.nome, servicos: r.servicos, pecas: r.pecas }));
+    const rows = sys ?? readSalesReport(raw).rows.map((r) => ({ nome: r.nome, servicos: r.servicos, pecas: r.pecas, completo: r.completo }));
     const n: Os = {}; const fora: string[] = [];
     for (const r of rows) {
-      const c = linhas.find((l) => key(l.c.nome) === key(r.nome));
+      const c = linhas.find((l) => key(l.c.nome) === key(r.nome) || (r.completo && key(l.c.nome) === key(r.completo)));
       if (!c) { fora.push(r.nome); continue; }
       if (!OS_PERMITIDOS.has(key(c.c.nome))) continue;
       const a = n[c.c.id] ?? { s: 0, p: 0 };
@@ -103,7 +103,7 @@ export function OsAbertas({ linhas, mes, soPecas }: { linhas: Linha[]; mes: stri
       </div>
 
       <Box title="Importar OS abertas (Excel ou colar)">
-        <p className="mb-3 text-sm text-muted-foreground">A planilha precisa ter as colunas Vendedor/Consultor e Serviços e/ou Peças. Importar substitui as OS abertas do mês. Também dá para digitar direto na tabela abaixo.</p>
+        <p className="mb-3 text-sm text-muted-foreground">Aceita o relatório "O.S. Abertas" do sistema (peças e serviços separados) ou colar vendedor/serviços/peças. Só são considerados: P.BENIGNO, ANDRESSA.O, GILBERTO.S, WESLEY.F, RENAN.O, GEOVANA.M e MARCELA.S. Importar substitui as OS abertas do mês. Também dá para digitar direto na tabela abaixo.</p>
         <div className="flex flex-wrap gap-2">
           <input ref={file} type="file" accept=".xls,.xlsx,.csv" className="hidden" onChange={(e) => void abrir(e.target.files?.[0])} />
           <Button onClick={() => file.current?.click()}><Upload />Importar Excel de OS abertas</Button>
