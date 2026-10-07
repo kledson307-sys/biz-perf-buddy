@@ -98,6 +98,10 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec }: { linhas: Linha[];
     fp: a.fp + r.l.pecas, op: a.op + r.o.p, mp: a.mp + r.l.mP,
   }), { fs: 0, os: 0, ms: 0, fp: 0, op: 0, mp: 0 });
   const ts = g.fs + g.os, tp = g.fp + g.op;
+  const rest = Math.max(tot - dec, 0);
+  const projS = dec ? div(ts, dec) * tot : 0, projP = dec ? div(tp, dec) * tot : 0;
+  const projPctS = div(projS, g.ms), projPctP = div(projP, g.mp), projPct = div(projS + projP, g.ms + g.mp);
+  const necS = rest ? Math.max(g.ms - ts, 0) / rest : 0, necP = rest ? Math.max(g.mp - tp, 0) / rest : 0;
   const cell = "px-3 py-2";
 
   return (
