@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Box, Tabela, brl, pct, tone } from "@/components/painel-ui";
 import { dicaWhatsapp } from "@/lib/whatsapp-ia.functions";
-import { ITENS } from "@/lib/agregados";
+import { ITENS, naoVende } from "@/lib/agregados";
 
 export type LinhaEnvio = {
   c: { id: string; nome: string; telefone: string };
