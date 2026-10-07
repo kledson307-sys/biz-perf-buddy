@@ -197,7 +197,7 @@ function Lancar({ cons, allCons, sales, visits, ini, end, onDone }: {
   useEffect(() => {
     const d: Draft = {};
     for (const s of sales) if (s.dia === dia) { const r = (d[s.consultant_id] ??= {}); r[`${s.item}_q`] = s.qtd; r[`${s.item}_v`] = s.valor; }
-    for (const v of visits) if (v.dia === dia) (d[v.consultant_id] ??= {}).pass = v.passagens;
+    for (const v of visits) if (v.dia === dia) (d[v.consultant_id] ??= {})["pass"] = v.passagens;
     setDraft(d);
   }, [dia, sales, visits]);
 
@@ -243,7 +243,7 @@ function Lancar({ cons, allCons, sales, visits, ini, end, onDone }: {
         id = data.id; cmap.set(norm(nome), id);
       }
       const r = (d[id] ??= {});
-      if (pi >= 0) r.pass = (r.pass ?? 0) + parseNum(c[pi] ?? "");
+      if (pi >= 0) r["pass"] = (r["pass"] ?? 0) + parseNum(c[pi] ?? "");
       for (const col of cols) r[col.key] = (r[col.key] ?? 0) + parseNum(c[col.j] ?? "");
     }
     await salvar(d);
@@ -276,7 +276,7 @@ function Lancar({ cons, allCons, sales, visits, ini, end, onDone }: {
                 return (
                   <tr key={c.id} className="border-t border-border">
                     <td className="whitespace-nowrap px-3 py-2 font-medium">{c.nome}</td>
-                    <td className="px-2 py-1 text-center"><input type="number" value={r.pass || ""} onChange={(e) => set(c.id, "pass", +e.target.value)} className={inp} /></td>
+                    <td className="px-2 py-1 text-center"><input type="number" value={r["pass"] || ""} onChange={(e) => set(c.id, "pass", +e.target.value)} className={inp} /></td>
                     {ITENS.map((it) => [
                       <td key={it.k + "q"} className="border-l border-border px-2 py-1"><input type="number" value={r[`${it.k}_q`] || ""} onChange={(e) => set(c.id, `${it.k}_q`, +e.target.value)} className={inp} /></td>,
                       <td key={it.k + "v"} className="px-2 py-1"><input type="number" value={r[`${it.k}_v`] || ""} onChange={(e) => set(c.id, `${it.k}_v`, +e.target.value)} className={`${inp} w-20`} /></td>,
