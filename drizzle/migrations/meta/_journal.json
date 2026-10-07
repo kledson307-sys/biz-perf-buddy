@@ -36,6 +36,13 @@
       "when": 1791403335168,
       "tag": "0004_update_log",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791408354071,
+      "tag": "0005_team_sharing",
+      "breakpoints": true
     }
   ]
 }
