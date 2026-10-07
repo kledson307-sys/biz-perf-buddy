@@ -21,18 +21,25 @@ const toNum = (v: unknown) => {
 // Relatório do sistema "O.S. Abertas": bloco por O.S. (número na col. C, veículo na col. F,
 // consultor na linha seguinte, Total Líq. Peças col. U e Total Serviços col. W).
 function lerOsSistema(raw: unknown[][]): { nome: string; servicos: number; pecas: number }[] | null {
+  // Detecta o deslocamento de colunas pela célula "Numero" do cabeçalho
+  let off = -1;
+  for (let i = 0; i < Math.min(10, raw.length) && off < 0; i++) {
+    const row = raw[i] ?? [];
+    for (let c = 0; c < row.length; c++) if (norm(String(row[c] ?? "")) === "numero") { off = c; break; }
+  }
+  if (off < 0) return null;
   const res: { nome: string; servicos: number; pecas: number }[] = [];
   for (let i = 0; i < raw.length; i++) {
-    const c2 = String(raw[i]?.[2] ?? "").trim();
-    const c5 = String(raw[i]?.[5] ?? "").trim();
-    if (!numRe.test(c2) || !c5 || numRe.test(c5)) continue;
+    const cN = String(raw[i]?.[off] ?? "").trim();
+    const cV = String(raw[i]?.[off + 3] ?? "").trim();
+    if (!numRe.test(cN) || !cV || numRe.test(cV)) continue;
     let cons = "";
     for (let j = i + 1; j < Math.min(i + 5, raw.length); j++) {
-      const v = String(raw[j]?.[5] ?? "").trim();
+      const v = String(raw[j]?.[off + 3] ?? "").trim();
       if (v) { cons = v; break; }
     }
     if (!cons || !OS_PERMITIDOS.has(norm(cons))) continue;
-    res.push({ nome: cons, servicos: toNum(raw[i]?.[22]), pecas: toNum(raw[i]?.[20]) });
+    res.push({ nome: cons, servicos: toNum(raw[i]?.[off + 20]), pecas: toNum(raw[i]?.[off + 18]) });
   }
   return res.length ? res : null;
 }
