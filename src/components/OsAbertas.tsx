@@ -165,7 +165,7 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec }: { linhas: Linha[];
         <Kpi label="Projeção Total" value={brl(projS + projP)} sub={`${pct(projPct)} · precisa serviços ${brl(necS)}/dia · precisa peças ${brl(necP)}/dia`} cls={tone(projPct)} />
       </div>
 
-      <Box title="Importar OS abertas (Excel ou colar)">
+      <div className="print:hidden"><Box title="Importar OS abertas (Excel ou colar)">
         <p className="mb-3 text-sm text-muted-foreground">Aceita o relatório "O.S. Abertas" do sistema (peças e serviços separados) ou colar vendedor/serviços/peças. Só são considerados: P.BENIGNO, ANDRESSA.O, GILBERTO.S, WESLEY.F, RENAN.O, GEOVANA.M e MARCELA.S. Importar substitui as OS abertas do mês. Também dá para digitar direto na tabela abaixo.</p>
         <div className="flex flex-wrap gap-2">
           <input ref={file} type="file" accept=".xls,.xlsx,.csv" className="hidden" onChange={(e) => void abrir(e.target.files?.[0])} />
@@ -176,7 +176,7 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec }: { linhas: Linha[];
         <Button variant="outline" className="mt-2" onClick={() => void colar()} disabled={!txt.trim() || loading || saving || !canEdit}>Ler dados colados</Button>
         {loading && !msg && <p className="mt-2 text-sm text-muted-foreground">Carregando O.S. salvas…</p>}
         {msg && <p role="status" className="mt-2 text-sm">{msg}</p>}
-      </Box>
+      </Box></div>
 
       <Box title="Projeção individual (faturado + OS abertas)">
         <Tabela head={["Consultor", "Grupo", "Faturado", "OS abertas", "Projeção", "Meta", "% da meta", "Falta"]}>

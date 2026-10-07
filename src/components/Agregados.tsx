@@ -13,10 +13,10 @@ type AVisit = { consultant_id: string; dia: string; passagens: number };
 
 type Props = {
   mes: string; cons: Cons[]; allCons: Cons[]; tot: number; dec: number;
-  deptName: (id: string | null) => string; reloadCons: () => void;
+  deptName: (id: string | null) => string; reloadCons: () => void; relatorio?: boolean;
 };
 
-export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons }: Props) {
+export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, relatorio }: Props) {
   const [sub, setSub] = useState<"servicos" | "pecas" | "ia" | "importar" | "lancar" | "metas">("servicos");
   const [sales, setSales] = useState<ASale[]>([]);
   const [goals, setGoals] = useState<AGoal[]>([]);
@@ -90,7 +90,10 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons }
         </div>
       </div>
 
-      {(sub === "servicos" || sub === "pecas") && (
+      {relatorio ? (<>
+        <GrupoView g="servicos" stat={stat} ranking={ranking} ids={cons.map((c) => c.id)} deptName={deptName} rest={rest} />
+        <GrupoView g="pecas" stat={stat} ranking={ranking} ids={cons.map((c) => c.id)} deptName={deptName} rest={rest} />
+      </>) : (sub === "servicos" || sub === "pecas") && (
         <GrupoView g={sub} stat={stat} ranking={ranking} ids={cons.map((c) => c.id)} deptName={deptName} rest={rest} />
       )}
       {sub === "ia" && <AgregadosIA mes={mes} cons={cons} tot={tot} dec={dec} stat={stat} deptName={deptName} />}

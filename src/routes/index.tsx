@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -216,6 +216,18 @@ function Painel({ email }: { email: string }) {
 
   const tabs = [["painel", "Painel"], ["proj-serv", "Serviços"], ["proj-pec", "Peças"], ["proj-total", "Projeção"], ["os", "Projeção + OS"], ["agregados", "Agregados"], ["diario", "Diário"], ["dados", "Colar dados"], ["config", "Configurar"]];
 
+  const [anoMes, mesNum] = mes.split("-").map(Number);
+  const mesExt = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(anoMes!, mesNum! - 1, 1));
+  const mesExtenso = mesExt.charAt(0).toUpperCase() + mesExt.slice(1);
+  const dataHora = (iso: string) => new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  // Seção do relatório de fechamento: título só na impressão e quebra de página entre seções.
+  const Secao = ({ titulo, children }: { titulo: string; children: ReactNode }) => (
+    <section className={relatorio ? "print-page" : ""}>
+      {relatorio && <h2 className="mb-4 hidden border-b-2 border-primary pb-2 text-lg font-bold uppercase tracking-wide print:block">{titulo}</h2>}
+      {children}
+    </section>
+  );
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-t-4 border-primary border-b border-border bg-card print:hidden">
@@ -272,15 +284,38 @@ function Painel({ email }: { email: string }) {
       })()}
 
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
-        {show("os") && <OsAbertas linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} />}
+        {relatorio && (
+          <div className="hidden print:block">
+            <div className="flex min-h-[250mm] flex-col items-center justify-center text-center">
+              <img src={bmwLogo.url} alt="BMW" className="size-28" />
+              <p className="mt-10 text-sm font-semibold uppercase tracking-[0.3em] text-primary">Relatório de Fechamento</p>
+              <h1 className="mt-3 text-4xl font-bold">HAUS MOTORS SALVADOR</h1>
+              <p className="mt-1 text-xl font-medium text-primary">(KLEDSON)</p>
+              <p className="mt-8 text-2xl font-semibold">{mesExtenso}</p>
+              <div className="mx-auto mt-12 grid w-full max-w-2xl grid-cols-2 gap-4 text-left">
+                <Kpi label="Realizado Serviços" value={brl(total.servicos)} sub={`Meta ${brl(total.mS)} · ${pct(total.perfS)}`} cls={tone(total.perfS)} />
+                <Kpi label="Realizado Peças" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)}`} cls={tone(total.perfP)} />
+                <Kpi label="Projeção Serviços" value={brl(total.projS)} sub={`${pct(total.projPctS)} da meta ${brl(total.mS)}`} cls={tone(total.projPctS)} />
+                <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta ${brl(total.mP)}`} cls={tone(total.projPctP)} />
+              </div>
+              <p className="mt-8 text-2xl font-bold">Projeção Total: {brl(total.proj)} <span className={tone(total.projPct)}>({pct(total.projPct)} da meta)</span></p>
+              <p className="mt-12 max-w-2xl text-xs text-muted-foreground">
+                Gerado em {dataHora(new Date().toISOString())}
+                {lastUp && ` · Última atualização dos dados: ${dataHora(lastUp.at)} por ${lastUp.nome}`}
+                {` · Projeção por ${params.base === "uteis" ? "dias úteis" : "dias corridos"}: ${dec} de ${tot}`}
+              </p>
+            </div>
+          </div>
+        )}
+        {show("os") && <Secao titulo="Projeção + Ordens de Serviço abertas"><OsAbertas linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} /></Secao>}
         {show("painel") && (
-          <>
+          <Secao titulo="Resumo executivo">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-lg font-semibold">Relatório de {mes}</h2>
               <div className="flex gap-2 print:hidden">
                 <Button onClick={exportar}><Download />Exportar Excel (CSV)</Button>
                 <Button variant="outline" onClick={() => window.print()}><Printer />Imprimir / PDF</Button>
-                <Button onClick={gerarRelatorio}><Printer />Relatório completo (PDF)</Button>
+                <Button onClick={gerarRelatorio}><Printer />Relatório de fechamento (PDF)</Button>
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -333,11 +368,11 @@ function Painel({ email }: { email: string }) {
                 ))}
               </div>
             </Box>
-          </>
+          </Secao>
         )}
 
         {show("proj-serv") && (
-          <>
+          <Secao titulo="Projeção de Serviços">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Kpi label="Realizado Serviços" value={brl(totalServ.servicos)} sub={`Meta ${brl(totalServ.mS)} · ${pct(totalServ.perfS)}`} cls={tone(totalServ.perfS)} />
               <Kpi label="Projeção Serviços" value={brl(totalServ.projS)} sub={`${pct(totalServ.projPctS)} da meta de ${brl(totalServ.mS)}`} cls={tone(totalServ.projPctS)} />
@@ -364,11 +399,11 @@ function Painel({ email }: { email: string }) {
                 ))}
               </Tabela>
             </Box>
-          </>
+          </Secao>
         )}
 
         {show("proj-pec") && (
-          <>
+          <Secao titulo="Projeção de Peças">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Kpi label="Realizado Peças" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)}`} cls={tone(total.perfP)} />
               <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta de ${brl(total.mP)}`} cls={tone(total.projPctP)} />
@@ -395,11 +430,11 @@ function Painel({ email }: { email: string }) {
                 ))}
               </Tabela>
             </Box>
-          </>
+          </Secao>
         )}
 
         {show("proj-total") && (
-          <>
+          <Secao titulo="Projeção Individual (Serviços + Peças)">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Kpi label="Realizado Total" value={brl(total.real)} sub={`Meta ${brl(total.meta)} · ${pct(total.perf)}`} cls={tone(total.perf)} />
               <Kpi label="Projeção Total" value={brl(total.proj)} sub={`Serviços ${brl(total.projS)} + Peças ${brl(total.projP)}`} cls={tone(total.projPct)} />
@@ -452,11 +487,11 @@ function Painel({ email }: { email: string }) {
                 })}
               </Tabela>
             </Box>
-          </>
+          </Secao>
         )}
 
-        {show("agregados") && <Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} />}
-        {show("diario") && <Diario sales={sales} cons={visiveis} metaTotal={total.meta} tot={tot} />}
+        {show("agregados") && <Secao titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} /></Secao>}
+        {show("diario") && <Secao titulo="Performance diária e acumulada"><Diario sales={sales} cons={visiveis} metaTotal={total.meta} tot={tot} /></Secao>}
         {tab === "dados" && <SalesImport cons={cons} depts={depts} onDone={load} onPeriod={setMes} />}
         {tab === "config" && <div className="space-y-6"><Equipe /><Config params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} /></div>}
       </main>
