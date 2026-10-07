@@ -261,6 +261,103 @@ function Painel({ email }: { email: string }) {
           </>
         )}
 
+        {tab === "proj-serv" && (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Kpi label="Realizado Serviços" value={brl(total.servicos)} sub={`Meta ${brl(total.mS)} · ${pct(total.perfS)}`} cls={tone(total.perfS)} />
+              <Kpi label="Projeção Serviços" value={brl(total.projS)} sub={`${pct(total.projPctS)} da meta de ${brl(total.mS)}`} cls={tone(total.projPctS)} />
+              <Kpi label="Falta para a meta" value={brl(Math.max(total.mS - total.servicos, 0))} sub={`Precisa ${brl(total.necS)}/dia (${Math.max(tot - dec, 0)} dias restantes)`} />
+              <Kpi label="Líder de Serviços" value={liderServ ? liderServ.c.nome : "—"} sub={liderServ ? `${pct(liderServ.perfS)} de performance` : undefined} />
+            </div>
+            <Box title="Projeção individual de serviços">
+              <Tabela head={["#", "Consultor", "Depto", "Realizado", "Meta", "Performance", "Projeção", "Proj. %", "Média/dia", "Necessário/dia", "vs. Líder"]}>
+                {linhas.length === 0 && <tr><td colSpan={11} className="px-3 py-10 text-center text-muted-foreground">Sem dados. Cadastre consultores em "Configurar" e cole os dados do dia.</td></tr>}
+                {linhas.map((l, i) => (
+                  <tr key={l.c.id} className="border-t border-border">
+                    <td className="px-3 py-2">{i + 1}</td>
+                    <td className="px-3 py-2 font-medium">{l.c.nome}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{deptName(l.c.department_id)}</td>
+                    <td className="px-3 py-2">{brl(l.servicos)}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{brl(l.mS)}</td>
+                    <td className={`px-3 py-2 font-semibold ${tone(l.perfS)}`}>{pct(l.perfS)}</td>
+                    <td className={`px-3 py-2 ${tone(l.projPctS)}`}>{brl(l.projS)}</td>
+                    <td className="px-3 py-2"><Barra p={l.projPctS} /></td>
+                    <td className="px-3 py-2">{brl(div(l.servicos, dec))}</td>
+                    <td className="px-3 py-2">{l.necS ? brl(l.necS) : "—"}</td>
+                    <td className="whitespace-nowrap px-3 py-2">{liderServ && liderServ.c.id === l.c.id ? <span className="font-semibold text-primary">Líder</span> : liderServ ? <span className="text-destructive">−{((liderServ.perfS - l.perfS) * 100).toFixed(1)} pts</span> : "—"}</td>
+                  </tr>
+                ))}
+              </Tabela>
+            </Box>
+          </>
+        )}
+
+        {tab === "proj-pec" && (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Kpi label="Realizado Peças" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)}`} cls={tone(total.perfP)} />
+              <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta de ${brl(total.mP)}`} cls={tone(total.projPctP)} />
+              <Kpi label="Falta para a meta" value={brl(Math.max(total.mP - total.pecas, 0))} sub={`Precisa ${brl(total.necP)}/dia (${Math.max(tot - dec, 0)} dias restantes)`} />
+              <Kpi label="Líder de Peças" value={liderPec ? liderPec.c.nome : "—"} sub={liderPec ? `${pct(liderPec.perfP)} de performance` : undefined} />
+            </div>
+            <Box title="Projeção individual de peças">
+              <Tabela head={["#", "Consultor", "Depto", "Realizado", "Meta", "Performance", "Projeção", "Proj. %", "Média/dia", "Necessário/dia", "vs. Líder"]}>
+                {linhas.length === 0 && <tr><td colSpan={11} className="px-3 py-10 text-center text-muted-foreground">Sem dados. Cadastre consultores em "Configurar" e cole os dados do dia.</td></tr>}
+                {linhas.map((l, i) => (
+                  <tr key={l.c.id} className="border-t border-border">
+                    <td className="px-3 py-2">{i + 1}</td>
+                    <td className="px-3 py-2 font-medium">{l.c.nome}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{deptName(l.c.department_id)}</td>
+                    <td className="px-3 py-2">{brl(l.pecas)}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{brl(l.mP)}</td>
+                    <td className={`px-3 py-2 font-semibold ${tone(l.perfP)}`}>{pct(l.perfP)}</td>
+                    <td className={`px-3 py-2 ${tone(l.projPctP)}`}>{brl(l.projP)}</td>
+                    <td className="px-3 py-2"><Barra p={l.projPctP} /></td>
+                    <td className="px-3 py-2">{brl(div(l.pecas, dec))}</td>
+                    <td className="px-3 py-2">{l.necP ? brl(l.necP) : "—"}</td>
+                    <td className="whitespace-nowrap px-3 py-2">{liderPec && liderPec.c.id === l.c.id ? <span className="font-semibold text-primary">Líder</span> : liderPec ? <span className="text-destructive">−{((liderPec.perfP - l.perfP) * 100).toFixed(1)} pts</span> : "—"}</td>
+                  </tr>
+                ))}
+              </Tabela>
+            </Box>
+          </>
+        )}
+
+        {tab === "proj-total" && (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Kpi label="Realizado Total" value={brl(total.real)} sub={`Meta ${brl(total.meta)} · ${pct(total.perf)}`} cls={tone(total.perf)} />
+              <Kpi label="Projeção Total" value={brl(total.proj)} sub={`Serviços ${brl(total.projS)} + Peças ${brl(total.projP)}`} cls={tone(total.projPct)} />
+              <Kpi label="Falta para a meta" value={brl(Math.max(total.meta - total.real, 0))} sub={`Precisa ${brl(total.nec)}/dia (${Math.max(tot - dec, 0)} dias restantes)`} />
+              <Kpi label="Líder" value={lider ? lider.c.nome : "—"} sub={lider ? `${pct(lider.perf)} de performance` : undefined} />
+            </div>
+            <Box title="Projeção individual (serviços + peças)">
+              <Tabela head={["#", "Consultor", "Depto", "Real. Serv.", "Meta Serv.", "Perf. Serv.", "Proj. Serv.", "Real. Peças", "Meta Peças", "Perf. Peças", "Proj. Peças", "Perf. Total", "Projeção", "Proj. %", "vs. Líder"]}>
+                {linhas.length === 0 && <tr><td colSpan={15} className="px-3 py-10 text-center text-muted-foreground">Sem dados. Cadastre consultores em "Configurar" e cole os dados do dia.</td></tr>}
+                {linhas.map((l, i) => (
+                  <tr key={l.c.id} className="border-t border-border">
+                    <td className="px-3 py-2">{i + 1}</td>
+                    <td className="px-3 py-2 font-medium">{l.c.nome}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{deptName(l.c.department_id)}</td>
+                    <td className="px-3 py-2">{brl(l.servicos)}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{brl(l.mS)}</td>
+                    <td className={`px-3 py-2 font-semibold ${tone(l.perfS)}`}>{pct(l.perfS)}</td>
+                    <td className={`px-3 py-2 ${tone(l.projPctS)}`}>{brl(l.projS)}</td>
+                    <td className="px-3 py-2">{brl(l.pecas)}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{brl(l.mP)}</td>
+                    <td className={`px-3 py-2 font-semibold ${tone(l.perfP)}`}>{pct(l.perfP)}</td>
+                    <td className={`px-3 py-2 ${tone(l.projPctP)}`}>{brl(l.projP)}</td>
+                    <td className={`px-3 py-2 font-semibold ${tone(l.perf)}`}>{pct(l.perf)}</td>
+                    <td className="px-3 py-2 font-semibold">{brl(l.proj)}</td>
+                    <td className="px-3 py-2"><Barra p={l.projPct} /></td>
+                    <td className="whitespace-nowrap px-3 py-2">{i === 0 ? <span className="font-semibold text-primary">Líder</span> : <span className="text-destructive">−{((lider!.perf - l.perf) * 100).toFixed(1)} pts</span>}</td>
+                  </tr>
+                ))}
+              </Tabela>
+            </Box>
+          </>
+        )}
+
         {tab === "diario" && <Diario sales={sales} cons={visiveis} metaTotal={total.meta} tot={tot} />}
         {tab === "dados" && <Colar cons={cons} depts={depts} onDone={load} />}
         {tab === "config" && <Config params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} />}
