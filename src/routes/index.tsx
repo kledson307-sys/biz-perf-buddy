@@ -1,13 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { Session } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Painel de Metas e Projeção por Consultor" },
-      { name: "description", content: "Configure dias úteis, metas e acompanhe projeção e performance por consultor." },
+      { name: "description", content: "Metas, projeção de serviços e peças por consultor e departamento, performance diária e relatório mensal." },
       { property: "og:title", content: "Painel de Metas e Projeção por Consultor" },
-      { property: "og:description", content: "Realizado, meta, projeção e performance de serviços e peças por consultor." },
+      { property: "og:description", content: "Projeção, performance diária e acumulada, comparação com o líder e recomendações." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -15,14 +18,19 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type Params = { duTotais: number; duDecorridos: number; dcTotais: number; dcDecorridos: number; base: "uteis" | "corridos" };
-type Meta = { servicos: number; pecas: number };
-type Row = { consultor: string; servicos: number; pecas: number };
+type Dept = { id: string; nome: string };
+type Cons = { id: string; nome: string; department_id: string | null };
+type Goal = { consultant_id: string; servicos: number; pecas: number };
+type Sale = { consultant_id: string; dia: string; servicos: number; pecas: number };
+type Params = { du_totais: number; du_decorridos: number; dc_totais: number; dc_decorridos: number; base: string };
 
-const KEY = "painel-metas-v1";
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 const pct = (n: number) => (n * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "%";
 const div = (a: number, b: number) => (b ? a / b : 0);
+const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const tone = (p: number) => (p >= 1 ? "text-primary" : p >= 0.85 ? "text-chart-4" : "text-destructive");
+const bg = (p: number) => (p >= 1 ? "bg-primary" : p >= 0.85 ? "bg-chart-4" : "bg-destructive");
+const defParams: Params = { du_totais: 22, du_decorridos: 1, dc_totais: 30, dc_decorridos: 1, base: "uteis" };
 
 function parseNum(v: string) {
   let s = (v || "").replace(/[R$\s%]/g, "");
@@ -31,228 +39,476 @@ function parseNum(v: string) {
   return isNaN(n) ? 0 : n;
 }
 
-function parsePaste(text: string): { rows: Row[]; error?: string } {
-  const lines = text.split(/\r?\n/).filter((l) => l.trim());
-  if (lines.length < 2) return { rows: [], error: "Cole o cabeçalho e ao menos uma linha." };
-  const sep = (lines[0] ?? "").includes("\t") ? "\t" : ";";
-  const head = (lines[0] ?? "").split(sep).map((h) => h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
-  const ci = head.findIndex((h) => /consult|vendedor|nome|colaborador/.test(h));
-  const si = head.findIndex((h) => /serv|mao de obra|mo\b/.test(h));
-  const pi = head.findIndex((h) => /pec/.test(h));
-  if (ci < 0 || (si < 0 && pi < 0))
-    return { rows: [], error: "Não encontrei as colunas. O cabeçalho precisa ter: Consultor, Serviços e/ou Peças." };
-  const map = new Map<string, Row>();
-  for (const l of lines.slice(1)) {
-    const c = l.split(sep);
-    const nome = (c[ci] || "").trim();
-    if (!nome || /^total/i.test(nome)) continue;
-    const r = map.get(nome) || { consultor: nome, servicos: 0, pecas: 0 };
-    if (si >= 0) r.servicos += parseNum(c[si] ?? "");
-    if (pi >= 0) r.pecas += parseNum(c[pi] ?? "");
-    map.set(nome, r);
-  }
-  return { rows: [...map.values()] };
+function Index() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const { data } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    supabase.auth.getSession().then(({ data }) => { setSession(data.session); setReady(true); });
+    return () => data.subscription.unsubscribe();
+  }, []);
+  if (!ready) return <div className="p-10 text-center text-muted-foreground">Carregando…</div>;
+  return session ? <Painel email={session.user.email ?? ""} /> : <Login />;
 }
 
-function Index() {
-  const [params, setParams] = useState<Params>({ duTotais: 22, duDecorridos: 1, dcTotais: 30, dcDecorridos: 1, base: "uteis" });
-  const [metas, setMetas] = useState<Record<string, Meta>>({});
-  const [rows, setRows] = useState<Row[]>([]);
-  const [updatedAt, setUpdatedAt] = useState<string>("");
-  const [paste, setPaste] = useState("");
+function Login() {
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [modo, setModo] = useState<"entrar" | "criar">("entrar");
   const [msg, setMsg] = useState("");
-  const [loaded, setLoaded] = useState(false);
-  const [tab, setTab] = useState<"painel" | "dados" | "config">("painel");
+  const enviar = async () => {
+    setMsg("");
+    const { error } = modo === "entrar"
+      ? await supabase.auth.signInWithPassword({ email, password: senha })
+      : await supabase.auth.signUp({ email, password: senha, options: { emailRedirectTo: window.location.origin } });
+    if (error) setMsg(error.message);
+    else if (modo === "criar") setMsg("Conta criada. Confirme pelo link enviado ao seu e-mail.");
+  };
+  const google = async () => {
+    const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+    if (r.error) setMsg(String(r.error.message ?? r.error));
+  };
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background p-6">
+      <div className="w-full max-w-sm space-y-4 rounded-xl border border-border bg-card p-6">
+        <h1 className="text-2xl font-bold">Painel de Metas</h1>
+        <p className="text-sm text-muted-foreground">{modo === "entrar" ? "Entre para acessar seus dados de qualquer lugar." : "Crie sua conta."}</p>
+        <input className="w-full rounded-lg border border-input bg-background px-3 py-2" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input className="w-full rounded-lg border border-input bg-background px-3 py-2" type="password" placeholder="Senha" value={senha} onChange={(e) => setSenha(e.target.value)} />
+        <button onClick={enviar} className="w-full rounded-lg bg-primary py-2 font-medium text-primary-foreground">{modo === "entrar" ? "Entrar" : "Criar conta"}</button>
+        <button onClick={google} className="w-full rounded-lg border border-border py-2 font-medium">Continuar com Google</button>
+        <button onClick={() => setModo(modo === "entrar" ? "criar" : "entrar")} className="w-full text-sm text-muted-foreground underline">
+          {modo === "entrar" ? "Não tem conta? Criar" : "Já tenho conta"}
+        </button>
+        {msg && <p className="text-sm text-destructive">{msg}</p>}
+      </div>
+    </div>
+  );
+}
 
-  useEffect(() => {
-    try {
-      const s = JSON.parse(localStorage.getItem(KEY) || "{}");
-      if (s.params) setParams(s.params);
-      if (s.metas) setMetas(s.metas);
-      if (s.rows) setRows(s.rows);
-      if (s.updatedAt) setUpdatedAt(s.updatedAt);
-    } catch {}
-    setLoaded(true);
-  }, []);
-  useEffect(() => {
-    if (loaded) localStorage.setItem(KEY, JSON.stringify({ params, metas, rows, updatedAt }));
-  }, [params, metas, rows, updatedAt, loaded]);
+function Painel({ email }: { email: string }) {
+  const [mes, setMes] = useState(() => new Date().toISOString().slice(0, 7));
+  const [depts, setDepts] = useState<Dept[]>([]);
+  const [cons, setCons] = useState<Cons[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [params, setParams] = useState<Params>(defParams);
+  const [tab, setTab] = useState("painel");
+  const [filtroDept, setFiltroDept] = useState("todos");
 
-  const consultores = useMemo(() => [...new Set([...rows.map((r) => r.consultor), ...Object.keys(metas)])].sort(), [rows, metas]);
-  const [tot, dec] = params.base === "uteis" ? [params.duTotais, params.duDecorridos] : [params.dcTotais, params.dcDecorridos];
+  const load = useCallback(async () => {
+    const [y, m] = mes.split("-").map(Number);
+    const fim = new Date(y!, m!, 0).getDate();
+    const [d, c, g, s, p] = await Promise.all([
+      supabase.from("departments").select("id,nome").order("nome"),
+      supabase.from("consultants").select("id,nome,department_id").order("nome"),
+      supabase.from("goals").select("consultant_id,servicos,pecas").eq("mes", mes),
+      supabase.from("daily_sales").select("consultant_id,dia,servicos,pecas").gte("dia", `${mes}-01`).lte("dia", `${mes}-${fim}`).order("dia"),
+      supabase.from("month_params").select("*").eq("mes", mes).maybeSingle(),
+    ]);
+    setDepts(d.data ?? []); setCons(c.data ?? []);
+    setGoals((g.data ?? []).map((x) => ({ ...x, servicos: +x.servicos, pecas: +x.pecas })));
+    setSales((s.data ?? []).map((x) => ({ ...x, servicos: +x.servicos, pecas: +x.pecas })));
+    setParams(p.data ? (p.data as Params) : { ...defParams, dc_totais: fim });
+  }, [mes]);
+  useEffect(() => { load(); }, [load]);
 
-  const calc = (servicos: number, pecas: number, m: Meta) => {
-    const real = servicos + pecas;
-    const meta = m.servicos + m.pecas;
-    const projS = div(servicos, dec) * tot;
-    const projP = div(pecas, dec) * tot;
-    const proj = projS + projP;
-    const restante = Math.max(tot - dec, 0);
+  const tot = params.base === "uteis" ? params.du_totais : params.dc_totais;
+  const dec = params.base === "uteis" ? params.du_decorridos : params.dc_decorridos;
+
+  const calc = (servicos: number, pecas: number, mS: number, mP: number) => {
+    const real = servicos + pecas, meta = mS + mP;
+    const projS = div(servicos, dec) * tot, projP = div(pecas, dec) * tot, proj = projS + projP;
+    const rest = Math.max(tot - dec, 0);
     return {
-      servicos, pecas, real, meta, projS, projP, proj,
-      perfS: div(servicos, m.servicos), perfP: div(pecas, m.pecas),
-      perf: div(real, meta), projPct: div(proj, meta),
+      servicos, pecas, real, mS, mP, meta, projS, projP, proj,
+      perfS: div(servicos, mS), perfP: div(pecas, mP), perf: div(real, meta),
+      projPctS: div(projS, mS), projPctP: div(projP, mP), projPct: div(proj, meta),
       mediaDia: div(real, dec),
-      necessarioDia: restante ? Math.max(meta - real, 0) / restante : 0,
+      necS: rest ? Math.max(mS - servicos, 0) / rest : 0,
+      necP: rest ? Math.max(mP - pecas, 0) / rest : 0,
+      nec: rest ? Math.max(meta - real, 0) / rest : 0,
     };
   };
+  type Calc = ReturnType<typeof calc>;
 
-  const linhas = consultores.map((c) => {
-    const r = rows.find((x) => x.consultor === c) || { servicos: 0, pecas: 0 };
-    return { nome: c, ...calc(r.servicos, r.pecas, metas[c] || { servicos: 0, pecas: 0 }) };
-  });
-  const total = calc(
-    linhas.reduce((a, l) => a + l.servicos, 0),
-    linhas.reduce((a, l) => a + l.pecas, 0),
-    { servicos: linhas.reduce((a, l) => a + (metas[l.nome]?.servicos || 0), 0), pecas: linhas.reduce((a, l) => a + (metas[l.nome]?.pecas || 0), 0) },
-  );
+  const deptName = (id: string | null) => depts.find((d) => d.id === id)?.nome ?? "Sem departamento";
+  const visiveis = cons.filter((c) => filtroDept === "todos" || c.department_id === filtroDept);
 
-  const importar = () => {
-    const { rows: r, error } = parsePaste(paste);
-    if (error) return setMsg(error);
-    setRows(r);
-    setUpdatedAt(new Date().toLocaleString("pt-BR"));
-    setMsg(`${r.length} consultores importados com sucesso.`);
-    setPaste("");
+  const linhas = visiveis.map((c) => {
+    const ss = sales.filter((s) => s.consultant_id === c.id);
+    const g = goals.find((x) => x.consultant_id === c.id) ?? { servicos: 0, pecas: 0 };
+    return { c, ...calc(ss.reduce((a, s) => a + s.servicos, 0), ss.reduce((a, s) => a + s.pecas, 0), g.servicos, g.pecas) };
+  }).sort((a, b) => b.perf - a.perf);
+  const lider = linhas[0];
+  const soma = (arr: (Calc)[]) => calc(arr.reduce((a, l) => a + l.servicos, 0), arr.reduce((a, l) => a + l.pecas, 0), arr.reduce((a, l) => a + l.mS, 0), arr.reduce((a, l) => a + l.mP, 0));
+  const total = soma(linhas);
+  const porDept = [...new Set(linhas.map((l) => l.c.department_id))].map((id) => ({ nome: deptName(id), ...soma(linhas.filter((l) => l.c.department_id === id)) }));
+
+  const recomendar = (l: (typeof linhas)[number]) => {
+    const r: string[] = [];
+    if (l.meta === 0) return ["Cadastre a meta do mês para este consultor."];
+    if (l.projPct >= 1) r.push("No ritmo para bater a meta. Manter o ritmo e buscar superação.");
+    else r.push(`Precisa vender ${brl(l.nec)}/dia (hoje faz ${brl(l.mediaDia)}/dia) para bater a meta.`);
+    if (l.mS && l.projPctS < 1) r.push(`Serviços: faltam ${brl(Math.max(l.mS - l.servicos, 0))}; precisa ${brl(l.necS)}/dia. Revisar orçamentos pendentes e agendamentos.`);
+    if (l.mP && l.projPctP < 1) r.push(`Peças: faltam ${brl(Math.max(l.mP - l.pecas, 0))}; precisa ${brl(l.necP)}/dia. Oferecer itens complementares em cada atendimento.`);
+    if (l.mS && l.mP && Math.abs(l.perfS - l.perfP) > 0.15) r.push(`Desequilíbrio: ${l.perfS < l.perfP ? "Serviços" : "Peças"} está bem abaixo do outro grupo. Foco nesse ponto.`);
+    if (lider && lider.c.id !== l.c.id && lider.mediaDia > l.mediaDia) r.push(`O líder (${lider.c.nome}) fatura ${brl(lider.mediaDia - l.mediaDia)}/dia a mais. Observar a abordagem dele.`);
+    return r;
   };
 
-  const tone = (p: number) => (p >= 1 ? "text-primary" : p >= 0.85 ? "text-chart-4" : "text-destructive");
+  const salvarParams = async (p: Params) => {
+    setParams(p);
+    await supabase.from("month_params").upsert({ ...p, mes }, { onConflict: "user_id,mes" });
+  };
+
+  const exportar = () => {
+    const h = ["Departamento", "Consultor", "Real. Serviços", "Meta Serviços", "Perf. Serv.", "Proj. Serviços", "Real. Peças", "Meta Peças", "Perf. Peças", "Proj. Peças", "Realizado", "Meta", "Perf.", "Projeção", "Proj. %", "Gap p/ líder (pts)", "Recomendações"];
+    const f = (n: number) => n.toFixed(2).replace(".", ",");
+    const rows = linhas.map((l) => [deptName(l.c.department_id), l.c.nome, f(l.servicos), f(l.mS), pct(l.perfS), f(l.projS), f(l.pecas), f(l.mP), pct(l.perfP), f(l.projP), f(l.real), f(l.meta), pct(l.perf), f(l.proj), pct(l.projPct), ((lider!.perf - l.perf) * 100).toFixed(1).replace(".", ","), recomendar(l).join(" | ")]);
+    porDept.forEach((d) => rows.push([d.nome, "TOTAL DEPARTAMENTO", f(d.servicos), f(d.mS), pct(d.perfS), f(d.projS), f(d.pecas), f(d.mP), pct(d.perfP), f(d.projP), f(d.real), f(d.meta), pct(d.perf), f(d.proj), pct(d.projPct), "", ""]));
+    const csv = "\uFEFF" + [h, ...rows].map((r) => r.map((x) => `"${String(x).replace(/"/g, '""')}"`).join(";")).join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    a.download = `relatorio-${mes}.csv`; a.click();
+  };
+
+  const tabs = [["painel", "Painel"], ["diario", "Diário"], ["dados", "Colar dados"], ["config", "Configurar"]];
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-4">
+      <header className="border-b border-border bg-card print:hidden">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-6 py-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Painel de Metas</h1>
-            <p className="text-sm text-muted-foreground">
-              {params.base === "uteis" ? "Dias úteis" : "Dias corridos"}: {dec} de {tot} · Atualizado: {updatedAt || "—"}
-            </p>
+            <p className="text-sm text-muted-foreground">{params.base === "uteis" ? "Dias úteis" : "Dias corridos"}: {dec} de {tot} · {email}</p>
           </div>
-          <nav className="flex gap-1 rounded-lg bg-muted p-1">
-            {([["painel", "Painel"], ["dados", "Colar dados"], ["config", "Configurar"]] as const).map(([k, l]) => (
-              <button key={k} onClick={() => setTab(k)}
-                className={`rounded-md px-4 py-2 text-sm font-medium ${tab === k ? "bg-card shadow-sm" : "text-muted-foreground"}`}>{l}</button>
-            ))}
-          </nav>
+          <div className="flex flex-wrap items-center gap-2">
+            <input type="month" value={mes} onChange={(e) => setMes(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+            <select value={filtroDept} onChange={(e) => setFiltroDept(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm">
+              <option value="todos">Todos departamentos</option>
+              {depts.map((d) => <option key={d.id} value={d.id}>{d.nome}</option>)}
+            </select>
+            <nav className="flex gap-1 rounded-lg bg-muted p-1">
+              {tabs.map(([k, l]) => (
+                <button key={k} onClick={() => setTab(k!)} className={`rounded-md px-3 py-2 text-sm font-medium ${tab === k ? "bg-card shadow-sm" : "text-muted-foreground"}`}>{l}</button>
+              ))}
+            </nav>
+            <button onClick={() => supabase.auth.signOut()} className="text-sm text-muted-foreground underline">Sair</button>
+          </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-6">
         {tab === "painel" && (
           <>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold">Relatório de {mes}</h2>
+              <div className="flex gap-2 print:hidden">
+                <button onClick={exportar} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Exportar Excel (CSV)</button>
+                <button onClick={() => window.print()} className="rounded-lg bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground">Imprimir / PDF</button>
+              </div>
+            </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Kpi label="Realizado Total" value={brl(total.real)} sub={`Meta ${brl(total.meta)}`} />
-              <Kpi label="Performance" value={pct(total.perf)} cls={tone(total.perf)} sub={`Serv ${pct(total.perfS)} · Peças ${pct(total.perfP)}`} />
-              <Kpi label="Projeção Total" value={brl(total.proj)} sub={`${pct(total.projPct)} da meta`} cls={tone(total.projPct)} />
-              <Kpi label="Necessário / dia" value={brl(total.necessarioDia)} sub={`Média atual ${brl(total.mediaDia)}`} />
+              <Kpi label="Realizado Total" value={brl(total.real)} sub={`Meta ${brl(total.meta)} · ${pct(total.perf)}`} cls={tone(total.perf)} />
+              <Kpi label="Projeção Serviços" value={brl(total.projS)} sub={`${pct(total.projPctS)} da meta ${brl(total.mS)}`} cls={tone(total.projPctS)} />
+              <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta ${brl(total.mP)}`} cls={tone(total.projPctP)} />
+              <Kpi label="Projeção Total" value={brl(total.proj)} sub={`${pct(total.projPct)} · precisa ${brl(total.nec)}/dia`} cls={tone(total.projPct)} />
             </div>
 
-            <div className="overflow-x-auto rounded-xl border border-border bg-card">
-              <table className="w-full text-sm">
-                <thead className="bg-muted text-left text-xs uppercase text-muted-foreground">
-                  <tr>
-                    {["Consultor", "Real. Serviços", "Meta Serv.", "Perf. Serv.", "Proj. Serv.", "Real. Peças", "Meta Peças", "Perf. Peças", "Proj. Peças", "Realizado", "Meta", "Perf.", "Projeção", "Proj. %"].map((h) => (
-                      <th key={h} className="whitespace-nowrap px-3 py-3">{h}</th>
-                    ))}
+            <Box title="Projeção por departamento">
+              <Tabela head={["Departamento", "Realizado", "Meta", "Perf.", "Proj. Serviços", "Proj. Peças", "Projeção", "Proj. %"]}>
+                {porDept.map((d) => (
+                  <tr key={d.nome} className="border-t border-border">
+                    <td className="px-3 py-2 font-medium">{d.nome}</td>
+                    <td className="px-3 py-2">{brl(d.real)}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{brl(d.meta)}</td>
+                    <td className={`px-3 py-2 font-semibold ${tone(d.perf)}`}>{pct(d.perf)}</td>
+                    <td className={`px-3 py-2 ${tone(d.projPctS)}`}>{brl(d.projS)} ({pct(d.projPctS)})</td>
+                    <td className={`px-3 py-2 ${tone(d.projPctP)}`}>{brl(d.projP)} ({pct(d.projPctP)})</td>
+                    <td className="px-3 py-2 font-semibold">{brl(d.proj)}</td>
+                    <td className="px-3 py-2"><Barra p={d.projPct} /></td>
                   </tr>
-                </thead>
-                <tbody>
-                  {linhas.length === 0 && (
-                    <tr><td colSpan={14} className="px-3 py-10 text-center text-muted-foreground">Nenhum dado ainda. Vá em "Colar dados".</td></tr>
-                  )}
-                  {[...linhas].sort((a, b) => b.projPct - a.projPct).map((l) => (
-                    <tr key={l.nome} className="border-t border-border">
-                      <td className="px-3 py-2 font-medium">{l.nome}</td>
-                      <td className="px-3 py-2">{brl(l.servicos)}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{brl(metas[l.nome]?.servicos || 0)}</td>
-                      <td className={`px-3 py-2 font-semibold ${tone(l.perfS)}`}>{pct(l.perfS)}</td>
-                      <td className="px-3 py-2">{brl(l.projS)}</td>
-                      <td className="px-3 py-2">{brl(l.pecas)}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{brl(metas[l.nome]?.pecas || 0)}</td>
-                      <td className={`px-3 py-2 font-semibold ${tone(l.perfP)}`}>{pct(l.perfP)}</td>
-                      <td className="px-3 py-2">{brl(l.projP)}</td>
-                      <td className="px-3 py-2 font-semibold">{brl(l.real)}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{brl(l.meta)}</td>
-                      <td className={`px-3 py-2 font-semibold ${tone(l.perf)}`}>{pct(l.perf)}</td>
-                      <td className="px-3 py-2 font-semibold">{brl(l.proj)}</td>
-                      <td className="px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-16 overflow-hidden rounded bg-muted">
-                            <div className={`h-full ${l.projPct >= 1 ? "bg-primary" : l.projPct >= 0.85 ? "bg-chart-4" : "bg-destructive"}`} style={{ width: `${Math.min(l.projPct * 100, 100)}%` }} />
-                          </div>
-                          <span className={`font-semibold ${tone(l.projPct)}`}>{pct(l.projPct)}</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </Tabela>
+            </Box>
+
+            <Box title="Projeção individual (serviços e peças separados)">
+              <Tabela head={["#", "Consultor", "Depto", "Real. Serv.", "Meta Serv.", "Perf. Serv.", "Proj. Serv.", "Real. Peças", "Meta Peças", "Perf. Peças", "Proj. Peças", "Perf. Total", "Projeção", "Proj. %", "vs. Líder"]}>
+                {linhas.length === 0 && <tr><td colSpan={15} className="px-3 py-10 text-center text-muted-foreground">Sem dados. Cadastre consultores em "Configurar" e cole os dados do dia.</td></tr>}
+                {linhas.map((l, i) => (
+                  <tr key={l.c.id} className="border-t border-border">
+                    <td className="px-3 py-2">{i + 1}</td>
+                    <td className="px-3 py-2 font-medium">{l.c.nome}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{deptName(l.c.department_id)}</td>
+                    <td className="px-3 py-2">{brl(l.servicos)}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{brl(l.mS)}</td>
+                    <td className={`px-3 py-2 font-semibold ${tone(l.perfS)}`}>{pct(l.perfS)}</td>
+                    <td className={`px-3 py-2 ${tone(l.projPctS)}`}>{brl(l.projS)}</td>
+                    <td className="px-3 py-2">{brl(l.pecas)}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{brl(l.mP)}</td>
+                    <td className={`px-3 py-2 font-semibold ${tone(l.perfP)}`}>{pct(l.perfP)}</td>
+                    <td className={`px-3 py-2 ${tone(l.projPctP)}`}>{brl(l.projP)}</td>
+                    <td className={`px-3 py-2 font-semibold ${tone(l.perf)}`}>{pct(l.perf)}</td>
+                    <td className="px-3 py-2 font-semibold">{brl(l.proj)}</td>
+                    <td className="px-3 py-2"><Barra p={l.projPct} /></td>
+                    <td className="whitespace-nowrap px-3 py-2">{i === 0 ? <span className="font-semibold text-primary">Líder</span> : <span className="text-destructive">−{((lider!.perf - l.perf) * 100).toFixed(1)} pts</span>}</td>
+                  </tr>
+                ))}
+              </Tabela>
+            </Box>
+
+            <Box title="Comparação com o líder e recomendações">
+              <div className="grid gap-4 p-4 md:grid-cols-2">
+                {linhas.map((l) => (
+                  <div key={l.c.id} className="rounded-lg border border-border p-4">
+                    <div className="flex items-baseline justify-between">
+                      <p className="font-semibold">{l.c.nome}</p>
+                      <p className={`text-sm font-semibold ${tone(l.projPct)}`}>Proj. {pct(l.projPct)}</p>
+                    </div>
+                    {lider && lider.c.id !== l.c.id && (
+                      <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                        <Cmp label="Perf. Serviços" a={l.perfS} b={lider.perfS} />
+                        <Cmp label="Perf. Peças" a={l.perfP} b={lider.perfP} />
+                        <Cmp label="Perf. Total" a={l.perf} b={lider.perf} />
+                      </div>
+                    )}
+                    <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                      {recomendar(l).map((r) => <li key={r}>{r}</li>)}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </Box>
           </>
         )}
 
-        {tab === "dados" && (
-          <section className="space-y-3 rounded-xl border border-border bg-card p-6">
-            <h2 className="text-lg font-semibold">Colar dados da planilha fonte</h2>
-            <p className="text-sm text-muted-foreground">
-              No Excel, selecione o intervalo <b>incluindo o cabeçalho</b> e copie (Ctrl+C). Colunas reconhecidas: <b>Consultor</b>, <b>Serviços</b>, <b>Peças</b>. Linhas repetidas do mesmo consultor são somadas. Colar substitui os dados anteriores.
-            </p>
-            <textarea value={paste} onChange={(e) => setPaste(e.target.value)} rows={14}
-              placeholder={"Consultor\tServiços\tPeças\nJoão\t12.500,00\t8.300,00"}
-              className="w-full rounded-lg border border-input bg-background p-3 font-mono text-xs" />
-            <div className="flex items-center gap-3">
-              <button onClick={importar} className="rounded-lg bg-primary px-5 py-2 font-medium text-primary-foreground">Atualizar painel</button>
-              {msg && <span className="text-sm text-muted-foreground">{msg}</span>}
-            </div>
-          </section>
-        )}
-
-        {tab === "config" && (
-          <div className="grid gap-6 lg:grid-cols-3">
-            <section className="space-y-4 rounded-xl border border-border bg-card p-6">
-              <h2 className="text-lg font-semibold">Dias</h2>
-              <Num label="Dias úteis totais" v={params.duTotais} on={(v) => setParams({ ...params, duTotais: v })} />
-              <Num label="Dias úteis decorridos" v={params.duDecorridos} on={(v) => setParams({ ...params, duDecorridos: v })} />
-              <Num label="Dias corridos totais" v={params.dcTotais} on={(v) => setParams({ ...params, dcTotais: v })} />
-              <Num label="Dias corridos decorridos" v={params.dcDecorridos} on={(v) => setParams({ ...params, dcDecorridos: v })} />
-              <label className="block text-sm">
-                <span className="text-muted-foreground">Projeção baseada em</span>
-                <select value={params.base} onChange={(e) => setParams({ ...params, base: e.target.value as Params["base"] })}
-                  className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2">
-                  <option value="uteis">Dias úteis</option>
-                  <option value="corridos">Dias corridos</option>
-                </select>
-              </label>
-            </section>
-            <section className="space-y-3 rounded-xl border border-border bg-card p-6 lg:col-span-2">
-              <h2 className="text-lg font-semibold">Metas por consultor</h2>
-              <AddConsultor onAdd={(n) => setMetas({ ...metas, [n]: metas[n] || { servicos: 0, pecas: 0 } })} />
-              <table className="w-full text-sm">
-                <thead className="text-left text-xs uppercase text-muted-foreground">
-                  <tr><th className="py-2">Consultor</th><th>Meta Serviços</th><th>Meta Peças</th><th></th></tr>
-                </thead>
-                <tbody>
-                  {consultores.map((c) => {
-                    const m = metas[c] || { servicos: 0, pecas: 0 };
-                    return (
-                      <tr key={c} className="border-t border-border">
-                        <td className="py-2 pr-2 font-medium">{c}</td>
-                        <td className="pr-2"><input type="number" value={m.servicos || ""} onChange={(e) => setMetas({ ...metas, [c]: { ...m, servicos: +e.target.value } })} className="w-full rounded border border-input bg-background px-2 py-1" /></td>
-                        <td className="pr-2"><input type="number" value={m.pecas || ""} onChange={(e) => setMetas({ ...metas, [c]: { ...m, pecas: +e.target.value } })} className="w-full rounded border border-input bg-background px-2 py-1" /></td>
-                        <td><button onClick={() => { const n = { ...metas }; delete n[c]; setMetas(n); setRows(rows.filter((r) => r.consultor !== c)); }} className="text-destructive">Remover</button></td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </section>
-          </div>
-        )}
+        {tab === "diario" && <Diario sales={sales} cons={visiveis} metaTotal={total.meta} tot={tot} />}
+        {tab === "dados" && <Colar cons={cons} depts={depts} onDone={load} />}
+        {tab === "config" && <Config params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} />}
       </main>
     </div>
   );
 }
 
+function Diario({ sales, cons, metaTotal, tot }: { sales: Sale[]; cons: Cons[]; metaTotal: number; tot: number }) {
+  const [sel, setSel] = useState("todos");
+  const ids = new Set(sel === "todos" ? cons.map((c) => c.id) : [sel]);
+  const dias = [...new Set(sales.map((s) => s.dia))].sort();
+  let acS = 0, acP = 0;
+  const rows = dias.map((d) => {
+    const ss = sales.filter((s) => s.dia === d && ids.has(s.consultant_id));
+    const s = ss.reduce((a, x) => a + x.servicos, 0), p = ss.reduce((a, x) => a + x.pecas, 0);
+    acS += s; acP += p;
+    return { d, s, p, t: s + p, acS, acP, ac: acS + acP };
+  });
+  const max = Math.max(1, ...rows.map((r) => r.t));
+  const metaDia = div(metaTotal, tot);
+  return (
+    <Box title="Performance diária e acumulada do mês">
+      <div className="flex items-center gap-2 p-4">
+        <select value={sel} onChange={(e) => setSel(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm">
+          <option value="todos">Todos os consultores</option>
+          {cons.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+        </select>
+        {sel === "todos" && <span className="text-sm text-muted-foreground">Meta diária necessária: {brl(metaDia)}</span>}
+      </div>
+      <Tabela head={["Dia", "Serviços", "Peças", "Total do dia", "", "Acum. Serviços", "Acum. Peças", "Acumulado"]}>
+        {rows.length === 0 && <tr><td colSpan={8} className="px-3 py-10 text-center text-muted-foreground">Nenhum lançamento neste mês.</td></tr>}
+        {rows.map((r) => (
+          <tr key={r.d} className="border-t border-border">
+            <td className="px-3 py-2 font-medium">{r.d.split("-").reverse().join("/")}</td>
+            <td className="px-3 py-2">{brl(r.s)}</td>
+            <td className="px-3 py-2">{brl(r.p)}</td>
+            <td className="px-3 py-2 font-semibold">{brl(r.t)}</td>
+            <td className="px-3 py-2"><div className="h-2 w-32 rounded bg-muted"><div className={`h-full rounded ${sel === "todos" && metaDia ? bg(r.t / metaDia) : "bg-primary"}`} style={{ width: `${(r.t / max) * 100}%` }} /></div></td>
+            <td className="px-3 py-2">{brl(r.acS)}</td>
+            <td className="px-3 py-2">{brl(r.acP)}</td>
+            <td className="px-3 py-2 font-semibold">{brl(r.ac)}{sel === "todos" && metaTotal ? <span className="ml-2 text-xs text-muted-foreground">({pct(r.ac / metaTotal)})</span> : null}</td>
+          </tr>
+        ))}
+      </Tabela>
+    </Box>
+  );
+}
+
+function Colar({ cons, depts, onDone }: { cons: Cons[]; depts: Dept[]; onDone: () => void }) {
+  const [dia, setDia] = useState(() => new Date().toISOString().slice(0, 10));
+  const [txt, setTxt] = useState("");
+  const [msg, setMsg] = useState("");
+  const importar = async () => {
+    const lines = txt.split(/\r?\n/).filter((l) => l.trim());
+    if (lines.length < 2) return setMsg("Cole o cabeçalho e ao menos uma linha.");
+    const sep = lines[0]!.includes("\t") ? "\t" : ";";
+    const head = lines[0]!.split(sep).map(norm);
+    const ci = head.findIndex((h) => /consult|vendedor|nome|colaborador/.test(h));
+    const si = head.findIndex((h) => /serv|mao de obra/.test(h));
+    const pi = head.findIndex((h) => /pec/.test(h));
+    const di = head.findIndex((h) => /depart|setor|loja/.test(h));
+    if (ci < 0 || (si < 0 && pi < 0)) return setMsg("O cabeçalho precisa ter: Consultor, Serviços e/ou Peças (Departamento opcional).");
+    const map = new Map<string, { s: number; p: number; d: string }>();
+    for (const l of lines.slice(1)) {
+      const c = l.split(sep);
+      const nome = (c[ci] || "").trim();
+      if (!nome || /^total/i.test(nome)) continue;
+      const r = map.get(nome) || { s: 0, p: 0, d: di >= 0 ? (c[di] || "").trim() : "" };
+      if (si >= 0) r.s += parseNum(c[si] ?? "");
+      if (pi >= 0) r.p += parseNum(c[pi] ?? "");
+      map.set(nome, r);
+    }
+    setMsg("Salvando…");
+    const dmap = new Map(depts.map((d) => [norm(d.nome), d.id]));
+    for (const dn of new Set([...map.values()].map((v) => v.d).filter(Boolean))) {
+      if (!dmap.has(norm(dn))) {
+        const { data } = await supabase.from("departments").insert({ nome: dn }).select("id").single();
+        if (data) dmap.set(norm(dn), data.id);
+      }
+    }
+    const cmap = new Map(cons.map((c) => [norm(c.nome), c.id]));
+    for (const [nome, v] of map) {
+      if (!cmap.has(norm(nome))) {
+        const { data } = await supabase.from("consultants").insert({ nome, department_id: v.d ? dmap.get(norm(v.d)) ?? null : null }).select("id").single();
+        if (data) cmap.set(norm(nome), data.id);
+      }
+    }
+    const rows = [...map].map(([nome, v]) => ({ consultant_id: cmap.get(norm(nome))!, dia, servicos: v.s, pecas: v.p })).filter((r) => r.consultant_id);
+    const { error } = await supabase.from("daily_sales").upsert(rows, { onConflict: "consultant_id,dia" });
+    if (error) return setMsg("Erro ao salvar: " + error.message);
+    setMsg(`${rows.length} consultores salvos para ${dia.split("-").reverse().join("/")}.`);
+    setTxt(""); onDone();
+  };
+  return (
+    <section className="space-y-3 rounded-xl border border-border bg-card p-6">
+      <h2 className="text-lg font-semibold">Colar vendas do dia</h2>
+      <p className="text-sm text-muted-foreground">
+        Escolha a data, copie do Excel <b>incluindo o cabeçalho</b> e cole. Colunas: <b>Consultor</b>, <b>Serviços</b>, <b>Peças</b> e (opcional) <b>Departamento</b>. Informe o valor <b>vendido no dia</b>. Colar de novo na mesma data substitui aquele dia. Consultores novos são cadastrados automaticamente.
+      </p>
+      <label className="block text-sm"><span className="text-muted-foreground">Data das vendas</span>
+        <input type="date" value={dia} onChange={(e) => setDia(e.target.value)} className="mt-1 block rounded-lg border border-input bg-background px-3 py-2" />
+      </label>
+      <textarea value={txt} onChange={(e) => setTxt(e.target.value)} rows={12} placeholder={"Consultor\tDepartamento\tServiços\tPeças\nJoão\tOficina\t1.250,00\t830,00"} className="w-full rounded-lg border border-input bg-background p-3 font-mono text-xs" />
+      <div className="flex items-center gap-3">
+        <button onClick={importar} className="rounded-lg bg-primary px-5 py-2 font-medium text-primary-foreground">Salvar e atualizar</button>
+        {msg && <span className="text-sm text-muted-foreground">{msg}</span>}
+      </div>
+    </section>
+  );
+}
+
+function Config({ params, salvarParams, depts, cons, goals, mes, reload, deptName }: {
+  params: Params; salvarParams: (p: Params) => void; depts: Dept[]; cons: Cons[]; goals: Goal[]; mes: string; reload: () => void; deptName: (id: string | null) => string;
+}) {
+  const [novoDept, setNovoDept] = useState("");
+  const [novoCons, setNovoCons] = useState("");
+  const [consDept, setConsDept] = useState("");
+  const [metas, setMetas] = useState<Record<string, { servicos: number; pecas: number }>>({});
+  useEffect(() => { setMetas(Object.fromEntries(goals.map((g) => [g.consultant_id, { servicos: g.servicos, pecas: g.pecas }]))); }, [goals]);
+  const salvarMeta = async (id: string) => {
+    const m = metas[id] ?? { servicos: 0, pecas: 0 };
+    await supabase.from("goals").upsert({ consultant_id: id, mes, ...m }, { onConflict: "consultant_id,mes" });
+  };
+  const grupos = useMemo(() => [...new Set(cons.map((c) => c.department_id))], [cons]);
+  return (
+    <div className="grid gap-6 lg:grid-cols-3">
+      <section className="space-y-4 rounded-xl border border-border bg-card p-6">
+        <h2 className="text-lg font-semibold">Dias do mês {mes}</h2>
+        <Num label="Dias úteis totais" v={params.du_totais} on={(v) => salvarParams({ ...params, du_totais: v })} />
+        <Num label="Dias úteis decorridos" v={params.du_decorridos} on={(v) => salvarParams({ ...params, du_decorridos: v })} />
+        <Num label="Dias corridos totais" v={params.dc_totais} on={(v) => salvarParams({ ...params, dc_totais: v })} />
+        <Num label="Dias corridos decorridos" v={params.dc_decorridos} on={(v) => salvarParams({ ...params, dc_decorridos: v })} />
+        <label className="block text-sm"><span className="text-muted-foreground">Projeção baseada em</span>
+          <select value={params.base} onChange={(e) => salvarParams({ ...params, base: e.target.value })} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2">
+            <option value="uteis">Dias úteis</option><option value="corridos">Dias corridos</option>
+          </select>
+        </label>
+        <h2 className="pt-4 text-lg font-semibold">Departamentos</h2>
+        <div className="flex gap-2">
+          <input value={novoDept} onChange={(e) => setNovoDept(e.target.value)} placeholder="Nome do departamento" className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+          <button onClick={async () => { if (novoDept.trim()) { await supabase.from("departments").insert({ nome: novoDept.trim() }); setNovoDept(""); reload(); } }} className="rounded-lg bg-secondary px-3 text-sm font-medium text-secondary-foreground">Adicionar</button>
+        </div>
+        {depts.map((d) => (
+          <div key={d.id} className="flex justify-between text-sm"><span>{d.nome}</span>
+            <button onClick={async () => { await supabase.from("departments").delete().eq("id", d.id); reload(); }} className="text-destructive">Remover</button>
+          </div>
+        ))}
+      </section>
+      <section className="space-y-3 rounded-xl border border-border bg-card p-6 lg:col-span-2">
+        <h2 className="text-lg font-semibold">Consultores e metas de {mes}</h2>
+        <div className="flex flex-wrap gap-2">
+          <input value={novoCons} onChange={(e) => setNovoCons(e.target.value)} placeholder="Nome do consultor" className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+          <select value={consDept} onChange={(e) => setConsDept(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm">
+            <option value="">Sem departamento</option>
+            {depts.map((d) => <option key={d.id} value={d.id}>{d.nome}</option>)}
+          </select>
+          <button onClick={async () => { if (novoCons.trim()) { await supabase.from("consultants").insert({ nome: novoCons.trim(), department_id: consDept || null }); setNovoCons(""); reload(); } }} className="rounded-lg bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground">Adicionar</button>
+        </div>
+        {grupos.map((gid) => (
+          <div key={gid ?? "none"}>
+            <p className="mt-4 text-xs font-semibold uppercase text-muted-foreground">{deptName(gid)}</p>
+            <table className="w-full text-sm">
+              <thead className="text-left text-xs text-muted-foreground"><tr><th className="py-2">Consultor</th><th>Departamento</th><th>Meta Serviços</th><th>Meta Peças</th><th></th></tr></thead>
+              <tbody>
+                {cons.filter((c) => c.department_id === gid).map((c) => {
+                  const m = metas[c.id] ?? { servicos: 0, pecas: 0 };
+                  return (
+                    <tr key={c.id} className="border-t border-border">
+                      <td className="py-2 pr-2 font-medium">{c.nome}</td>
+                      <td className="pr-2">
+                        <select value={c.department_id ?? ""} onChange={async (e) => { await supabase.from("consultants").update({ department_id: e.target.value || null }).eq("id", c.id); reload(); }} className="rounded border border-input bg-background px-2 py-1">
+                          <option value="">—</option>
+                          {depts.map((d) => <option key={d.id} value={d.id}>{d.nome}</option>)}
+                        </select>
+                      </td>
+                      <td className="pr-2"><input type="number" value={m.servicos || ""} onChange={(e) => setMetas({ ...metas, [c.id]: { ...m, servicos: +e.target.value } })} onBlur={() => salvarMeta(c.id)} className="w-full rounded border border-input bg-background px-2 py-1" /></td>
+                      <td className="pr-2"><input type="number" value={m.pecas || ""} onChange={(e) => setMetas({ ...metas, [c.id]: { ...m, pecas: +e.target.value } })} onBlur={() => salvarMeta(c.id)} className="w-full rounded border border-input bg-background px-2 py-1" /></td>
+                      <td><button onClick={async () => { if (confirm(`Remover ${c.nome} e todos os seus lançamentos?`)) { await supabase.from("consultants").delete().eq("id", c.id); reload(); } }} className="text-destructive">Remover</button></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ))}
+        <p className="text-xs text-muted-foreground">As metas são salvas ao sair do campo e valem para o mês selecionado no topo.</p>
+      </section>
+    </div>
+  );
+}
+
+function Box({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="overflow-hidden rounded-xl border border-border bg-card">
+      <h3 className="border-b border-border px-4 py-3 font-semibold">{title}</h3>
+      {children}
+    </section>
+  );
+}
+function Tabela({ head, children }: { head: string[]; children: React.ReactNode }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead className="bg-muted text-left text-xs uppercase text-muted-foreground"><tr>{head.map((h, i) => <th key={i} className="whitespace-nowrap px-3 py-3">{h}</th>)}</tr></thead>
+        <tbody>{children}</tbody>
+      </table>
+    </div>
+  );
+}
+function Barra({ p }: { p: number }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="h-2 w-16 overflow-hidden rounded bg-muted"><div className={`h-full ${bg(p)}`} style={{ width: `${Math.min(p * 100, 100)}%` }} /></div>
+      <span className={`font-semibold ${tone(p)}`}>{pct(p)}</span>
+    </div>
+  );
+}
+function Cmp({ label, a, b }: { label: string; a: number; b: number }) {
+  return (
+    <div className="rounded bg-muted p-2">
+      <p className="text-muted-foreground">{label}</p>
+      <p><span className={`font-semibold ${tone(a)}`}>{pct(a)}</span> <span className="text-muted-foreground">vs líder {pct(b)}</span></p>
+    </div>
+  );
+}
 function Kpi({ label, value, sub, cls = "" }: { label: string; value: string; sub?: string; cls?: string }) {
   return (
     <div className="rounded-xl border border-border bg-card p-5">
@@ -262,22 +518,10 @@ function Kpi({ label, value, sub, cls = "" }: { label: string; value: string; su
     </div>
   );
 }
-
 function Num({ label, v, on }: { label: string; v: number; on: (v: number) => void }) {
   return (
-    <label className="block text-sm">
-      <span className="text-muted-foreground">{label}</span>
+    <label className="block text-sm"><span className="text-muted-foreground">{label}</span>
       <input type="number" value={v} onChange={(e) => on(+e.target.value)} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2" />
     </label>
-  );
-}
-
-function AddConsultor({ onAdd }: { onAdd: (n: string) => void }) {
-  const [n, setN] = useState("");
-  return (
-    <div className="flex gap-2">
-      <input value={n} onChange={(e) => setN(e.target.value)} placeholder="Nome do consultor" className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-      <button onClick={() => { if (n.trim()) { onAdd(n.trim()); setN(""); } }} className="rounded-lg bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground">Adicionar</button>
-    </div>
   );
 }
