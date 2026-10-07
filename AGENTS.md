@@ -10,7 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Architecture rules
-- Activate the dashboard theme on the root HTML element and define its palette with shared CSS tokens so every tab and native input stays consistent.
+- Manage the dashboard theme through the shared ThemeProvider, persist the browser choice, and apply it on root HTML with shared CSS tokens so every tab and native input stays consistent.
 - Shared dashboard formatters and UI primitives live in `src/components/painel-ui.tsx`; import from there instead of redefining them in routes.
 - Agregados data lives in its own tables (`agg_sales`, `agg_goals`, `agg_visits`) and its own component; never mix it into `daily_sales`/`goals` totals — the user tracks it separately.
 - Agregados item catalogue (`ITENS`, with default system service codes) and the system-report parser live in `src/lib/agregados.ts`; adding an item only requires a new entry there. User-edited codes per item are stored in `agg_codes` and override the defaults.
