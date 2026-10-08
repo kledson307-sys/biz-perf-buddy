@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Barra, Box, Kpi, Tabela, brl, div, norm, num, parseNum, pct, tone } from "./painel-ui";
-import { GRUPO_NOME, ITENS, naoVende, splitCods, type Grupo } from "@/lib/agregados";
+import { GRUPO_NOME, ITENS, naoVende, naoVendeAgregado, splitCods, type Grupo } from "@/lib/agregados";
 import { AgregadosImport } from "./AgregadosImport";
 import { AgregadosIA } from "./AgregadosIA";
 import { registrarUpdate } from "@/lib/update-log";
@@ -43,6 +43,8 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
   useEffect(() => { load(); }, [load]);
 
   const rest = Math.max(tot - dec, 0);
+  /** Quem não vende agregados fica fora de totais, rankings, metas e recomendações. */
+  const consAgg = cons.filter((c) => !naoVendeAgregado(c.nome));
   const stat = (ids: string[], items: string[]) => {
     const idSet = new Set(ids), itSet = new Set(items);
     let qtd = 0, valor = 0, mq = 0, mv = 0, pass = 0;
@@ -57,7 +59,7 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
     };
   };
   const ranking = (items: string[]) =>
-    cons.filter((c) => items.length !== 1 || !naoVende(items[0]!, c.nome))
+    consAgg.filter((c) => items.length !== 1 || !naoVende(items[0]!, c.nome))
       .map((c) => ({ c, ...stat([c.id], items) })).sort((a, b) => b.perfQ - a.perfQ || b.qtd - a.qtd);
 
   const exportar = () => {
@@ -91,19 +93,19 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
       </div>
 
       {relatorio ? (<>
-        <GrupoView g="servicos" stat={stat} ranking={ranking} ids={cons.map((c) => c.id)} deptName={deptName} rest={rest} />
-        <GrupoView g="pecas" stat={stat} ranking={ranking} ids={cons.map((c) => c.id)} deptName={deptName} rest={rest} />
+        <GrupoView g="servicos" stat={stat} ranking={ranking} ids={consAgg.map((c) => c.id)} deptName={deptName} rest={rest} />
+        <GrupoView g="pecas" stat={stat} ranking={ranking} ids={consAgg.map((c) => c.id)} deptName={deptName} rest={rest} />
       </>) : (sub === "servicos" || sub === "pecas") && (
-        <GrupoView g={sub} stat={stat} ranking={ranking} ids={cons.map((c) => c.id)} deptName={deptName} rest={rest} />
+        <GrupoView g={sub} stat={stat} ranking={ranking} ids={consAgg.map((c) => c.id)} deptName={deptName} rest={rest} />
       )}
-      {sub === "ia" && <AgregadosIA mes={mes} cons={cons} tot={tot} dec={dec} stat={stat} deptName={deptName} />}
+      {sub === "ia" && <AgregadosIA mes={mes} cons={consAgg} tot={tot} dec={dec} stat={stat} deptName={deptName} />}
       {sub === "importar" && (
         <AgregadosImport allCons={allCons} codigos={codigos} ini={ini} end={end} onDone={() => { load(); reloadCons(); }} />
       )}
       {sub === "lancar" && (
         <Lancar cons={cons} allCons={allCons} sales={sales} visits={visits} ini={ini} end={end} onDone={() => { load(); reloadCons(); }} />
       )}
-      {sub === "metas" && <Metas cons={cons} goals={goals} mes={mes} deptName={deptName} onSaved={load} />}
+      {sub === "metas" && <Metas cons={consAgg} goals={goals} mes={mes} deptName={deptName} onSaved={load} />}
     </div>
   );
 }

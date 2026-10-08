@@ -3,7 +3,7 @@ import { Copy, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Box, Tabela, brl, pct, tone } from "@/components/painel-ui";
-import { ITENS, naoVende } from "@/lib/agregados";
+import { ITENS, naoVende, naoVendeAgregado } from "@/lib/agregados";
 
 export type LinhaEnvio = {
   c: { id: string; nome: string; telefone: string };
@@ -44,7 +44,7 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
     const rest = Math.max(tot - dec, 0);
     const passagens = agg.v.filter((v) => v.consultant_id === id).reduce((n, v) => n + Number(v.passagens), 0);
     const agregados = ITENS.map((it) => {
-      if (nome && naoVende(it.k, nome)) return null;
+      if (nome && (naoVendeAgregado(nome) || naoVende(it.k, nome))) return null;
       const qtd = agg.s.filter((x) => x.consultant_id === id && x.item === it.k).reduce((n, x) => n + Number(x.qtd), 0);
       const meta = Number(agg.g.find((x) => x.consultant_id === id && x.item === it.k)?.meta_qtd ?? 0);
       return { item: it.nome, grupo: it.g, qtd, meta, proj: dec ? (qtd / dec) * tot : 0, nec: rest ? Math.max(meta - qtd, 0) / rest : 0, aper: passagens ? qtd / passagens : 0 };
@@ -61,13 +61,14 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
   const liderItem = (nomeItem: string) =>
     linhas.map((x) => {
       const k = ITENS.find((i) => i.nome === nomeItem)?.k ?? "";
-      if (naoVende(k, x.c.nome)) return null;
+      if (naoVendeAgregado(x.c.nome) || naoVende(k, x.c.nome)) return null;
       const a = dadosAgg(x.c.id, x.c.nome).agregados.find((y) => y.item === nomeItem);
       return a ? { id: x.c.id, nome: x.c.nome, qtd: a.qtd, meta: a.meta } : null;
     }).filter((x): x is { id: string; nome: string; qtd: number; meta: number } => !!x && x.meta > 0)
       .sort((a, b) => b.qtd / b.meta - a.qtd / a.meta)[0] ?? null;
-  const liderAgg = linhas.filter((x) => perfAgg(x.c.id, x.c.nome) > 0).sort((a, b) => perfAgg(b.c.id, b.c.nome) - perfAgg(a.c.id, a.c.nome))[0] ?? null;
+  const liderAgg = linhas.filter((x) => !naoVendeAgregado(x.c.nome) && perfAgg(x.c.id, x.c.nome) > 0).sort((a, b) => perfAgg(b.c.id, b.c.nome) - perfAgg(a.c.id, a.c.nome))[0] ?? null;
 
+  // só vendem peças: mensagem sem bloco de serviços (agregados sai pela regra de naoVendeAgregado)
   const SO_PECAS = ["MARCELA.S", "GEOVANA.M", "NAILTON/THIERRY"];
   const montar = (l: LinhaEnvio) => {
     const { passagens, agregados } = dadosAgg(l.c.id, l.c.nome);
@@ -98,11 +99,13 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
       `Precisa vender: ${brl(l.necP)}/dia`,
       cmp(liderPec, l.perfP, liderPec?.perfP ?? 0),
       "",
-      "➕ *AGREGADOS*",
-      ...linhasAgg,
-      passagens ? `Aproveitamento: ${pct(totAgg / passagens)} (${num(totAgg)} itens em ${num(passagens)} passagens)` : "Passagens ainda não lançadas.",
-      cmp(liderAgg, perfAgg(l.c.id, l.c.nome), liderAgg ? perfAgg(liderAgg.c.id, liderAgg.c.nome) : 0),
-      oport ? `🎯 Oportunidade: ${oport.item} está mais longe da meta (${pct(oport.qtd / oport.meta)}) — foque nele.` : "",
+      ...(naoVendeAgregado(l.c.nome) ? [] : [
+        "➕ *AGREGADOS*",
+        ...linhasAgg,
+        passagens ? `Aproveitamento: ${pct(totAgg / passagens)} (${num(totAgg)} itens em ${num(passagens)} passagens)` : "Passagens ainda não lançadas.",
+        cmp(liderAgg, perfAgg(l.c.id, l.c.nome), liderAgg ? perfAgg(liderAgg.c.id, liderAgg.c.nome) : 0),
+        oport ? `🎯 Oportunidade: ${oport.item} está mais longe da meta (${pct(oport.qtd / oport.meta)}) — foque nele.` : "",
+      ]),
     ].filter((x) => x !== undefined && x !== null).join("\n").replace(/\n{3,}/g, "\n\n").trim();
   };
 
