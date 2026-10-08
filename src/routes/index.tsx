@@ -318,8 +318,8 @@ function Painel({ email }: { email: string }) {
             </div>
           </div>
         )}
-        {show("painel") && <Secao titulo="Análise do fechamento"><AnaliseFechamento linhas={linhas} total={total} porDept={porDept} sales={sales} dec={dec} tot={tot} mes={mes} /></Secao>}
-        {show("painel") && <Secao titulo="Reconhecimento"><Reconhecimento linhas={linhas} sales={sales} dec={dec} tot={tot} mes={mes} /></Secao>}
+        {show("painel") && <Secao titulo="Análise do fechamento" sempre><AnaliseFechamento linhas={linhas} total={total} porDept={porDept} sales={sales} dec={dec} tot={tot} mes={mes} /></Secao>}
+        {show("painel") && <Secao titulo="Reconhecimento" sempre><Reconhecimento linhas={linhas} sales={sales} dec={dec} tot={tot} mes={mes} /></Secao>}
         {show("os") && <Secao titulo="Projeção + Ordens de Serviço abertas"><OsAbertas linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} /></Secao>}
         {show("painel") && (
           <Secao titulo="Resumo executivo">
