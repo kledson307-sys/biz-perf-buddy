@@ -30,11 +30,11 @@ export function MecanicosIA({ mes, tot, dec, blocos }: { mes: string; tot: numbe
     const cm = comMeta(b);
     out.push(cm.length
       ? `Líder: ${cm[0]!.r.nome} com ${pct(cm[0]!.t.perf)} da meta${cm[1] ? `; o 2º é ${cm[1]!.r.nome} com ${pct(cm[1]!.t.perf)}` : ""}.`
-      : "Nenhum mecânico deste grupo tem meta cadastrada — sem meta não é possível medir performance.");
+      : "Nenhum técnico deste grupo tem meta cadastrada — sem meta não é possível medir performance.");
     const baixo = cm.filter(x => x.t.perf < 0.85);
     out.push(baixo.length
       ? `Abaixo de 85%: ${baixo.slice(0, 6).map(x => `${x.r.nome} (${pct(x.t.perf)})`).join(", ")} — juntos precisam de ${brl(baixo.reduce((a, x) => a + x.t.nec, 0))}/dia.`
-      : "Nenhum mecânico deste grupo está abaixo de 85% da meta.");
+      : "Nenhum técnico deste grupo está abaixo de 85% da meta.");
     const semMeta = b.calcs.filter(x => x.t.meta === 0).map(x => x.r.nome);
     if (semMeta.length) out.push(`Sem meta cadastrada: ${semMeta.join(", ")}.`);
     out.push(`Mix do faturado: serviços ${brl(b.S.real)} (${pct(div(b.S.real, b.T.real))}) e peças ${brl(b.P.real)} (${pct(div(b.P.real, b.T.real))}).`);
@@ -112,7 +112,7 @@ export function MecanicosIA({ mes, tot, dec, blocos }: { mes: string; tot: numbe
         <div>
           <h3 className="font-semibold">Análise completa com IA</h3>
           <p className="text-sm text-muted-foreground">
-            A IA lê os números de carro e de moto e escreve o diagnóstico de cada mecânico, o ritmo diário para bater a meta e as prioridades do mês.
+            A IA lê os números de carro e de moto e escreve o diagnóstico de cada técnico, o ritmo diário para bater a meta e as prioridades do mês.
             Cada análise gasta créditos de IA (cerca de 0,3 crédito).
           </p>
         </div>

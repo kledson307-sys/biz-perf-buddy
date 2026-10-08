@@ -54,10 +54,10 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
       if (ehRelatorioPassagens(raw)) { await importarPassagens(raw); return; }
       const r = lerMecanicos(raw);
       if (r.periodo && r.periodo.fim.slice(0, 7) !== mes && !confirm(`O relatório é de ${r.periodo.ini.slice(0, 7)}, mas o mês aberto é ${mes}. Importar mesmo assim neste mês?`)) return;
-      const ok = await gravar(r.rows.map(x => ({ ...base(x.nome), servicos: x.servicos, pecas: x.pecas })), "Mecânicos (importação)");
+      const ok = await gravar(r.rows.map(x => ({ ...base(x.nome), servicos: x.servicos, pecas: x.pecas })), "Técnicos (importação)");
       if (ok) {
         const semGrupo = r.rows.filter(x => grupoDe(x.nome) === "outros").length;
-        setMsg(`${r.rows.length} mecânicos importados${r.periodo ? ` (período ${r.periodo.ini.split("-").reverse().join("/")} a ${r.periodo.fim.split("-").reverse().join("/")})` : ""}. Valores do mês substituídos, sem somar.${semGrupo ? ` ${semGrupo} não estão na lista de carro nem na de moto e ficaram em "Sem grupo definido".` : ""}`);
+        setMsg(`${r.rows.length} técnicos importados${r.periodo ? ` (período ${r.periodo.ini.split("-").reverse().join("/")} a ${r.periodo.fim.split("-").reverse().join("/")})` : ""}. Valores do mês substituídos, sem somar.${semGrupo ? ` ${semGrupo} não estão na lista de carro nem na de moto e ficaram em "Sem grupo definido".` : ""}`);
       }
     } catch (e) { setMsg((e as Error).message); }
     if (file.current) file.current.value = "";
@@ -68,7 +68,7 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
     setBusy(true);
     const mecs = r.mecanicos.map(x => ({ ...base(x.nome), passagens: x.passagens }));
     const { error: eM } = await supabase.from("mech_month").upsert(mecs.map(({ id: _i, ...m }) => ({ ...m, mes, updated_at: new Date().toISOString() })), { onConflict: "user_id,mes,nome" });
-    if (eM) { setBusy(false); setMsg("Erro ao salvar passagens dos mecânicos: " + eM.message); return; }
+    if (eM) { setBusy(false); setMsg("Erro ao salvar passagens dos técnicos: " + eM.message); return; }
     // consultores: total de O.S. distintas vai para o último dia do mês (substitui o valor daquele dia)
     const { data: cons } = await supabase.from("consultants").select("id,nome");
     const byNome = new Map((cons ?? []).map(c => [norm(c.nome).replace(/\s+/g, " "), c.id]));
@@ -84,7 +84,7 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
     setBusy(false);
     await registrarUpdate("Passagens (importação)");
     await load();
-    setMsg(`Passagens importadas: ${r.mecanicos.length} mecânicos e ${vRows.length} consultores (O.S. repetidas contadas uma única vez).${ignorados ? ` ${ignorados} consultores do relatório não estão cadastrados e foram ignorados.` : ""} Totais do mês substituídos, sem somar.`);
+    setMsg(`Passagens importadas: ${r.mecanicos.length} técnicos e ${vRows.length} consultores (O.S. repetidas contadas uma única vez).${ignorados ? ` ${ignorados} consultores do relatório não estão cadastrados e foram ignorados.` : ""} Totais do mês substituídos, sem somar.`);
   };
 
   const colar = async () => {
@@ -93,11 +93,11 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
       return c.length === 2 ? { ...b, passagens: parseNum(c[1]!) } : { ...b, servicos: parseNum(c[1]!), pecas: parseNum(c[2] ?? ""), ...(c[3] ? { passagens: parseNum(c[3]) } : {}) };
     });
     if (!lst.length) { setMsg("Nada para colar. Use: Nome ⇥ Passagens  ou  Nome ⇥ Serviços ⇥ Peças ⇥ Passagens"); return; }
-    if (await gravar(lst, "Mecânicos (colar)")) { setCola(""); setMsg(`${lst.length} linhas salvas.`); }
+    if (await gravar(lst, "Técnicos (colar)")) { setCola(""); setMsg(`${lst.length} linhas salvas.`); }
   };
 
-  const editar = (r: Mec, k: MecCampo, v: number) => { if (r[k] !== v) void gravar([{ ...r, [k]: v }], "Mecânicos (edição)"); };
-  const mudarGrupo = (r: Mec, g: Grupo) => { if (r.grupo !== g) void gravar([{ ...r, grupo: g }], "Mecânicos (grupo)"); };
+  const editar = (r: Mec, k: MecCampo, v: number) => { if (r[k] !== v) void gravar([{ ...r, [k]: v }], "Técnicos (edição)"); };
+  const mudarGrupo = (r: Mec, g: Grupo) => { if (r.grupo !== g) void gravar([{ ...r, grupo: g }], "Técnicos (grupo)"); };
   const remover = async (r: Mec) => { if (r.id && confirm(`Remover ${r.nome} deste mês?`)) { await supabase.from("mech_month").delete().eq("id", r.id); await load(); } };
 
   const EQUIPE = blocoMec(rows, dec, tot);
@@ -118,9 +118,9 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
       </div>
 
       <GrupoSec rotulo="Carro" titulo={GRUPO_NOME.carro} b={G.carro} dec={dec} tot={tot} busy={busy} onEdit={editar} onGrupo={mudarGrupo} onRem={remover}
-        vazio="Nenhum mecânico de carro neste mês." />
+        vazio="Nenhum técnico de carro neste mês." />
       <GrupoSec rotulo="Moto" titulo={GRUPO_NOME.moto} b={G.moto} dec={dec} tot={tot} busy={busy} onEdit={editar} onGrupo={mudarGrupo} onRem={remover}
-        vazio="Nenhum mecânico de moto neste mês." />
+        vazio="Nenhum técnico de moto neste mês." />
       {G.outros.n > 0 && <GrupoSec rotulo="" titulo={GRUPO_NOME.outros} b={G.outros} dec={dec} tot={tot} busy={busy} onEdit={editar} onGrupo={mudarGrupo} onRem={remover}
         vazio="" dica="Troque para Carro ou Moto no seletor abaixo do nome." />}
 
@@ -133,7 +133,7 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
       <div className="grid gap-4 print:hidden lg:grid-cols-2">
         <Box title="Importar planilha do sistema">
           <div className="space-y-3 p-5 text-sm">
-            <p className="text-muted-foreground">Relatório "Faturamento Líquido dos Produtivos". Usa Srv Total como serviços e Peças; ignora "Sem Apontamento(s)". Reimportar substitui os valores do mês (passagens, metas e grupo ficam). Quem não está na lista de carro nem na de moto entra em "Sem grupo definido". Também aceita o relatório "Passagem tecnico+consultor": cada O.S. conta uma única vez por mecânico e por consultor, mesmo repetida em várias linhas.</p>
+            <p className="text-muted-foreground">Relatório "Faturamento Líquido dos Produtivos". Usa Srv Total como serviços e Peças; ignora "Sem Apontamento(s)". Reimportar substitui os valores do mês (passagens, metas e grupo ficam). Quem não está na lista de carro nem na de moto entra em "Sem grupo definido". Também aceita o relatório "Passagem tecnico+consultor": cada O.S. conta uma única vez por técnico e por consultor, mesmo repetida em várias linhas.</p>
             <input ref={file} type="file" accept=".xls,.xlsx" hidden onChange={e => importar(e.target.files?.[0])} />
             <Button onClick={() => file.current?.click()} disabled={busy}><Upload className="mr-2 size-4" />Importar Excel</Button>
             {msg && <p role="status" className="text-sm">{msg}</p>}
@@ -141,16 +141,16 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
         </Box>
         <Box title="Colar passagens / valores">
           <div className="space-y-3 p-5 text-sm">
-            <p className="text-muted-foreground">Uma linha por mecânico: <b>Nome ⇥ Passagens</b> ou <b>Nome ⇥ Serviços ⇥ Peças ⇥ Passagens</b>. Substitui o valor do mês.</p>
+            <p className="text-muted-foreground">Uma linha por técnico: <b>Nome ⇥ Passagens</b> ou <b>Nome ⇥ Serviços ⇥ Peças ⇥ Passagens</b>. Substitui o valor do mês.</p>
             <textarea value={cola} onChange={e => setCola(e.target.value)} rows={4} className="w-full rounded-lg border border-input bg-background p-2 font-mono text-xs" />
             <div className="flex flex-wrap items-center gap-2">
               <Button onClick={colar} disabled={busy}>Salvar colagem</Button>
-              <input value={novo} onChange={e => setNovo(e.target.value)} placeholder="Novo mecânico" className="rounded-lg border border-input bg-background px-3 py-2" />
+              <input value={novo} onChange={e => setNovo(e.target.value)} placeholder="Novo técnico" className="rounded-lg border border-input bg-background px-3 py-2" />
               <select value={grupoNovo} onChange={e => setGrupoNovo(e.target.value as Grupo)} className="rounded-lg border border-input bg-background px-2 py-2">
                 <option value="carro">Carro</option>
                 <option value="moto">Moto</option>
               </select>
-              <Button variant="outline" disabled={!novo.trim() || busy} onClick={async () => { if (await gravar([{ ...base(novo), grupo: grupoNovo }], "Mecânicos (edição)")) setNovo(""); }}>Adicionar</Button>
+              <Button variant="outline" disabled={!novo.trim() || busy} onClick={async () => { if (await gravar([{ ...base(novo), grupo: grupoNovo }], "Técnicos (edição)")) setNovo(""); }}>Adicionar</Button>
             </div>
           </div>
         </Box>
@@ -177,8 +177,8 @@ function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onEdit, onGrupo, onRem, v
         <Kpi label="Necessidade diária" value={brl(b.T.nec) + "/dia"} sub={<>serviços {brl(b.S.nec)}/dia · peças {brl(b.P.nec)}/dia</>} />
       </div>
 
-      <Box title={titulo} right={<span className="text-xs">{visiveis.length} {visiveis.length === 1 ? "mecânico" : "mecânicos"}{ocultos ? ` + ${ocultos} técnico${ocultos > 1 ? "s" : ""} de diagnóstico (somado nos totais)` : ""} · {dec} de {tot} dias{dica ? ` · ${dica}` : ""}</span>}>
-        <Tabela head={["#", "Mecânico", "Linha", "Faturado", "Meta", "Perf.", "Projeção", "Média · Precisa/dia", "Passagens", ""]}>
+      <Box title={titulo} right={<span className="text-xs">{visiveis.length} {visiveis.length === 1 ? "técnico" : "técnicos"}{ocultos ? ` + ${ocultos} técnico${ocultos > 1 ? "s" : ""} de diagnóstico (somado nos totais)` : ""} · {dec} de {tot} dias{dica ? ` · ${dica}` : ""}</span>}>
+        <Tabela head={["#", "Técnico", "Linha", "Faturado", "Meta", "Perf.", "Projeção", "Média · Precisa/dia", "Passagens", ""]}>
           {visiveis.map(({ r, s, p, t }, i) => (["Serviços", "Peças", "Total"] as const).map((g, j) => {
             const x = j === 0 ? s : j === 1 ? p : t;
             const metaK = j === 0 ? "meta_servicos" : j === 1 ? "meta_pecas" : null;
@@ -214,7 +214,54 @@ function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onEdit, onGrupo, onRem, v
           {!visiveis.length && <tr><td colSpan={10} className="px-3 py-6 text-center text-muted-foreground">{vazio || "Importe o relatório \"Faturamento Líquido dos Produtivos\" para começar."}</td></tr>}
         </Tabela>
       </Box>
+      {rotulo && visiveis.length > 0 && <Oficina rotulo={rotulo} b={b} visiveis={visiveis} dec={dec} tot={tot} />}
     </div>
+  );
+}
+
+const pc = (v: number) => `${Math.round(v * 100)}%`;
+function textoOficina(rotulo: string, b: MecBloco, vis: MecBloco["calcs"], dec: number, tot: number) {
+  const tkGrupo = div(b.T.real, b.pass);
+  const L: string[] = [`🔧 *Oficina ${rotulo.toUpperCase()} — como estamos* (dia ${dec} de ${tot})`, "",
+    `Equipe: serviços ${brl(b.S.real)}${b.S.meta ? ` (${pc(b.S.perf)} da meta)` : ""} · peças ${brl(b.P.real)}${b.P.meta ? ` (${pc(b.P.perf)} da meta)` : ""}`,
+    b.T.nec ? `Pra bater a meta falta *${brl(b.T.nec)} por dia* no grupo.` : "", ""];
+  vis.forEach(({ r, s, p, t }, i) => {
+    const tk = div(t.real, r.passagens);
+    const dicas: string[] = [];
+    if (!s.meta && !p.meta) dicas.push("ainda sem meta cadastrada");
+    if (s.meta && s.perf < 0.85) dicas.push(`serviços abaixo: em todo carro que entrar, faça o checklist completo e avise o consultor do que precisa (falta ${brl(s.nec)}/dia)`);
+    else if (s.meta && s.perf < 1) dicas.push(`serviços quase lá: falta ${brl(s.nec)}/dia`);
+    if (p.meta && p.perf < 0.85) dicas.push(`peças abaixo: achou desgaste (pastilha, filtro, fluido, pneu), tira foto e manda pro consultor oferecer (falta ${brl(p.nec)}/dia)`);
+    else if (p.meta && p.perf < 1) dicas.push(`peças quase lá: falta ${brl(p.nec)}/dia`);
+    if (r.passagens && tkGrupo && tk < tkGrupo * 0.8) dicas.push("valor por carro baixo: aproveite cada passagem pra revisar o veículo todo");
+    if (!dicas.length) dicas.push("mandou bem, mantém o ritmo 👏");
+    L.push(`${i + 1}. *${r.nome}*`, `   Serviços ${brl(r.servicos)}${s.meta ? ` (${pc(s.perf)})` : ""} · Peças ${brl(r.pecas)}${p.meta ? ` (${pc(p.perf)})` : ""} · ${num(r.passagens)} carros`,
+      ...dicas.map(d => `   👉 ${d}`), "");
+  });
+  L.push("Bora pra cima, time! 💪");
+  return L.filter((x, i, a) => !(x === "" && a[i - 1] === "")).join("\n");
+}
+
+function Oficina({ rotulo, b, visiveis, dec, tot }: { rotulo: string; b: MecBloco; visiveis: MecBloco["calcs"]; dec: number; tot: number }) {
+  const txt = textoOficina(rotulo, b, visiveis, dec, tot);
+  const [ok, setOk] = useState(false);
+  const pdf = () => {
+    const w = window.open("", "_blank"); if (!w) return;
+    const esc = (x: string) => x.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/\*/g, "");
+    w.document.write(`<html><head><title>Oficina ${rotulo}</title></head><body style="font-family:sans-serif;font-size:15px;white-space:pre-wrap;padding:24px">${esc(txt)}</body></html>`);
+    w.document.close(); w.focus(); w.print();
+  };
+  return (
+    <Box title={`Resumo para o grupo da oficina — ${rotulo}`} right={<span className="text-xs">linguagem simples · sem custo</span>}>
+      <div className="space-y-3 print:hidden">
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, "_blank")}>Enviar no WhatsApp ({rotulo})</Button>
+          <Button variant="outline" onClick={async () => { await navigator.clipboard.writeText(txt); setOk(true); setTimeout(() => setOk(false), 2000); }}>{ok ? "Copiado!" : "Copiar"}</Button>
+          <Button variant="outline" onClick={pdf}>Imprimir / PDF</Button>
+        </div>
+        <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-lg bg-muted p-3 text-xs">{txt}</pre>
+      </div>
+    </Box>
   );
 }
 
