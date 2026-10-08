@@ -122,7 +122,7 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
       <GrupoSec rotulo="Moto" titulo={GRUPO_NOME.moto} b={G.moto} dec={dec} tot={tot} busy={busy} onEdit={editar} onGrupo={mudarGrupo} onRem={remover}
         vazio="Nenhum mecânico de moto neste mês." />
       {G.outros.n > 0 && <GrupoSec rotulo="" titulo={GRUPO_NOME.outros} b={G.outros} dec={dec} tot={tot} busy={busy} onEdit={editar} onGrupo={mudarGrupo} onRem={remover}
-        vazio="" dica="Troque para Carro ou Moto na coluna Grupo." />}
+        vazio="" dica="Troque para Carro ou Moto no seletor abaixo do nome." />}
 
       <MecanicosIA mes={mes} tot={tot} dec={dec} blocos={[
         { k: "carro", nome: GRUPO_NOME.carro, b: G.carro },
@@ -178,46 +178,49 @@ function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onEdit, onGrupo, onRem, v
       </div>
 
       <Box title={titulo} right={<span className="text-xs">{visiveis.length} {visiveis.length === 1 ? "mecânico" : "mecânicos"}{ocultos ? ` + ${ocultos} técnico${ocultos > 1 ? "s" : ""} de diagnóstico (somado nos totais)` : ""} · {dec} de {tot} dias{dica ? ` · ${dica}` : ""}</span>}>
-        <Tabela head={["#", "Mecânico", "Grupo", "Linha", "Faturado", "Meta", "Perf.", "Projeção", "Proj. %", "Média/dia", "Precisa/dia", "Passagens", "Ticket", ""]}>
+        <Tabela head={["#", "Mecânico", "Linha", "Faturado", "Meta", "Perf.", "Projeção", "Média · Precisa/dia", "Passagens", ""]}>
           {visiveis.map(({ r, s, p, t }, i) => (["Serviços", "Peças", "Total"] as const).map((g, j) => {
             const x = j === 0 ? s : j === 1 ? p : t;
             const metaK = j === 0 ? "meta_servicos" : j === 1 ? "meta_pecas" : null;
             return (
               <tr key={r.nome + g} className={`border-t border-border ${j === 2 ? "bg-muted/50 font-semibold" : ""}`}>
-                {j === 0 && <><td rowSpan={3} className="px-3 py-2 align-top">{i + 1}</td>
-                  <td rowSpan={3} className="whitespace-nowrap px-3 py-2 align-top font-medium">{r.nome}</td>
-                  <td rowSpan={3} className="px-3 py-2 align-top">
-                    <select value={r.grupo} disabled={busy} onChange={e => onGrupo(r, e.target.value as Grupo)}
-                      className="rounded border border-input bg-background px-2 py-1 text-xs print:border-0">
+                {j === 0 && <><td rowSpan={3} className="px-2 py-1.5 align-top text-xs">{i + 1}</td>
+                  <td rowSpan={3} className="px-2 py-1.5 align-top font-medium">
+                    <div className="max-w-[170px] leading-tight">{r.nome}</div>
+                    <select value={r.grupo} disabled={busy} onChange={e => onGrupo(r, e.target.value as Grupo)} title="Grupo"
+                      className="mt-1 rounded border border-input bg-background px-1 py-0.5 text-[11px] text-muted-foreground print:hidden">
                       <option value="carro">Carro</option>
                       <option value="moto">Moto</option>
                       <option value="outros">Sem grupo</option>
                     </select>
                   </td></>}
-                <td className="px-3 py-2">{g}</td>
-                <td className="px-3 py-2">{j < 2 ? <In v={j === 0 ? r.servicos : r.pecas} on={v => onEdit(r, j === 0 ? "servicos" : "pecas", v)} dis={busy} /> : brl(x.real)}</td>
-                <td className="px-3 py-2">{metaK ? <In v={r[metaK]} on={v => onEdit(r, metaK, v)} dis={busy} /> : brl(x.meta)}</td>
-                <td className="px-3 py-2"><Barra p={x.perf} /></td>
-                <td className="px-3 py-2">{brl(x.proj)}</td>
-                <td className={`px-3 py-2 font-semibold ${tone(x.projP)}`}>{x.meta ? pct(x.projP) : "—"}</td>
-                <td className="px-3 py-2">{brl(x.dia)}</td>
-                <td className="px-3 py-2">{x.meta ? (x.nec ? brl(x.nec) : "✔ batida") : "sem meta"}</td>
-                {j === 0 && <><td rowSpan={3} className="px-3 py-2 align-top"><In v={r.passagens} on={v => onEdit(r, "passagens", v)} dis={busy} money={false} /></td>
-                  <td rowSpan={3} className="px-3 py-2 align-top">{brl(div(t.real, r.passagens))}</td>
-                  <td rowSpan={3} className="px-3 py-2 align-top print:hidden"><button onClick={() => onRem(r)} className="text-xs text-destructive">remover</button></td></>}
+                <td className="whitespace-nowrap px-2 py-1.5">{g}</td>
+                <td className="px-2 py-1.5">{j < 2 ? <In v={j === 0 ? r.servicos : r.pecas} on={v => onEdit(r, j === 0 ? "servicos" : "pecas", v)} dis={busy} w="w-24" /> : brl(x.real)}</td>
+                <td className="px-2 py-1.5">{metaK ? <In v={r[metaK]} on={v => onEdit(r, metaK, v)} dis={busy} w="w-24" /> : brl(x.meta)}</td>
+                <td className="whitespace-nowrap px-2 py-1.5"><Barra p={x.perf} /></td>
+                <td className="whitespace-nowrap px-2 py-1.5">{brl(x.proj)}{x.meta ? <span className={`ml-1 text-xs font-semibold ${tone(x.projP)}`}>{pct(x.projP)}</span> : null}</td>
+                <td className="whitespace-nowrap px-2 py-1.5 text-xs">
+                  <div className="text-muted-foreground">média {brl(x.dia)}</div>
+                  <div>{x.meta ? (x.nec ? `falta ${brl(x.nec)}/dia` : "✔ batida") : "sem meta"}</div>
+                </td>
+                {j === 0 && <><td rowSpan={3} className="whitespace-nowrap px-2 py-1.5 align-top">
+                    <In v={r.passagens} on={v => onEdit(r, "passagens", v)} dis={busy} money={false} w="w-16" />
+                    <div className="mt-1 text-[11px] text-muted-foreground">ticket {brl(div(t.real, r.passagens))}</div>
+                  </td>
+                  <td rowSpan={3} className="px-2 py-1.5 align-top print:hidden"><button onClick={() => onRem(r)} className="text-xs text-destructive">remover</button></td></>}
               </tr>
             );
           }))}
-          {!visiveis.length && <tr><td colSpan={14} className="px-3 py-6 text-center text-muted-foreground">{vazio || "Importe o relatório \"Faturamento Líquido dos Produtivos\" para começar."}</td></tr>}
+          {!visiveis.length && <tr><td colSpan={10} className="px-3 py-6 text-center text-muted-foreground">{vazio || "Importe o relatório \"Faturamento Líquido dos Produtivos\" para começar."}</td></tr>}
         </Tabela>
       </Box>
     </div>
   );
 }
 
-function In({ v, on, dis, money = true }: { v: number; on: (v: number) => void; dis: boolean; money?: boolean }) {
+function In({ v, on, dis, money = true, w = "w-24" }: { v: number; on: (v: number) => void; dis: boolean; money?: boolean; w?: string }) {
   const [t, setT] = useState(String(v));
   useEffect(() => setT(String(v)), [v]);
   return <input value={t} disabled={dis} onChange={e => setT(e.target.value)} onBlur={() => on(parseNum(t))} title={money ? brl(v) : num(v)}
-    className="w-28 rounded border border-input bg-background px-2 py-1 text-right print:border-0" />;
+    className={`${w} rounded border border-input bg-background px-2 py-1 text-right print:border-0`} />;
 }
