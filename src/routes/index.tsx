@@ -8,6 +8,7 @@ import { Agregados } from "@/components/Agregados";
 import { SalesImport } from "@/components/SalesImport";
 import { EnvioWhatsapp } from "@/components/EnvioWhatsapp";
 import { ResumoPainel } from "@/components/ResumoPainel";
+import { ResumoSupervisor } from "@/components/ResumoSupervisor";
 import { OsAbertas } from "@/components/OsAbertas";
 import { ControleOS } from "@/components/ControleOS";
 import { Mecanicos } from "@/components/Mecanicos";
