@@ -18,9 +18,9 @@ const digitos = (t: string) => {
 
 const num = (v: number) => v.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
 
-export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, tot, reload }: {
+export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, tot, reload, envioAberto, onToggleEnvio }: {
   linhas: LinhaEnvio[]; lider: LinhaEnvio | undefined; liderServ: LinhaEnvio | null; liderPec: LinhaEnvio | null;
-  mes: string; dec: number; tot: number; reload: () => void;
+  mes: string; dec: number; tot: number; reload: () => void; envioAberto: boolean; onToggleEnvio: () => void;
 }) {
   const [tel, setTel] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState("");
