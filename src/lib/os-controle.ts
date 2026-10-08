@@ -69,7 +69,7 @@ export function previsao(obs: string, ref: string): string | null {
   const m = obs.match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
   if (!m) return null;
   const y3 = m[3]; const y = y3 ? (y3.length === 2 ? 2000 + +y3 : +y3) : +ref.slice(0, 4);
-  const d = new Date(Date.UTC(y, +m[2] - 1, +m[1]));
+  const d = new Date(Date.UTC(y, Number(m[2]) - 1, Number(m[1])));
   return isNaN(+d) ? null : iso(d);
 }
 
