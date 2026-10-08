@@ -51,6 +51,7 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
       const XLSX = await import("xlsx");
       const wb = XLSX.read(await f.arrayBuffer(), { type: "array" });
       const raw = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[wb.SheetNames[0] ?? ""]!, { header: 1, defval: "" });
+      if (ehRelatorioPassagens(raw)) { await importarPassagens(raw); return; }
       const r = lerMecanicos(raw);
       if (r.periodo && r.periodo.fim.slice(0, 7) !== mes && !confirm(`O relatório é de ${r.periodo.ini.slice(0, 7)}, mas o mês aberto é ${mes}. Importar mesmo assim neste mês?`)) return;
       const ok = await gravar(r.rows.map(x => ({ ...base(x.nome), servicos: x.servicos, pecas: x.pecas })), "Mecânicos (importação)");
