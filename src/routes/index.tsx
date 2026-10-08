@@ -13,6 +13,7 @@ import { ControleOS } from "@/components/ControleOS";
 import { Mecanicos } from "@/components/Mecanicos";
 import { Equipe } from "@/components/Equipe";
 import { MetasAno } from "@/components/MetasAno";
+import { AnaliseFechamento, Reconhecimento } from "@/components/RelatorioAnalise";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Download, LogOut, Printer } from "lucide-react";
