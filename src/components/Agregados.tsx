@@ -73,6 +73,13 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
 
   const subs: [typeof sub, string][] = [["servicos", "Serviços agregados"], ["pecas", "Peças agregadas"], ["ia", "Recomendações IA"], ["importar", "Importar Excel"], ["lancar", "Lançar / colar"], ["metas", "Metas"]];
 
+  if (apenasImportacao) return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">Importe as planilhas de venda de serviços e de peças agregadas. As passagens dos consultores podem ser coladas em "Lançar / colar" na aba Agregados ou importadas pelo botão "Faturamento técnicos" (relatório de passagem técnico+consultor).</p>
+      <AgregadosImport allCons={allCons} codigos={codigos} ini={ini} end={end} onDone={() => { load(); reloadCons(); }} />
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
