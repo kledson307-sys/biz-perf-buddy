@@ -3,7 +3,7 @@ import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Barra, Box, Kpi, Tabela, brl, div, norm, num, parseNum, pct, tone } from "@/components/painel-ui";
-import { GRUPO_NOME, blocoMec, ehRelatorioPassagens, grupoDe, lerPassagens, type Grupo, type Mec, type MecBloco, type MecCampo, lerMecanicos } from "@/lib/mecanicos";
+import { GRUPO_NOME, blocoMec, ehRelatorioPassagens, grupoDe, lerPassagens, ocultoDaLista, type Grupo, type Mec, type MecBloco, type MecCampo, lerMecanicos } from "@/lib/mecanicos";
 import { registrarUpdate } from "@/lib/update-log";
 import { MecanicosIA } from "@/components/MecanicosIA";
 
@@ -165,6 +165,8 @@ function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onEdit, onGrupo, onRem, v
   vazio: string; dica?: string;
 }) {
   const suf = rotulo ? ` ${rotulo}` : "";
+  const visiveis = b.calcs.filter(c => !ocultoDaLista(c.r.nome));
+  const ocultos = b.n - visiveis.length;
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -175,9 +177,9 @@ function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onEdit, onGrupo, onRem, v
         <Kpi label="Necessidade diária" value={brl(b.T.nec) + "/dia"} sub={<>serviços {brl(b.S.nec)}/dia · peças {brl(b.P.nec)}/dia</>} />
       </div>
 
-      <Box title={titulo} right={<span className="text-xs">{b.n} {b.n === 1 ? "mecânico" : "mecânicos"} · {dec} de {tot} dias{dica ? ` · ${dica}` : ""}</span>}>
+      <Box title={titulo} right={<span className="text-xs">{visiveis.length} {visiveis.length === 1 ? "mecânico" : "mecânicos"}{ocultos ? ` + ${ocultos} técnico${ocultos > 1 ? "s" : ""} de diagnóstico (somado nos totais)` : ""} · {dec} de {tot} dias{dica ? ` · ${dica}` : ""}</span>}>
         <Tabela head={["#", "Mecânico", "Grupo", "Linha", "Faturado", "Meta", "Perf.", "Projeção", "Proj. %", "Média/dia", "Precisa/dia", "Passagens", "Ticket", ""]}>
-          {b.calcs.map(({ r, s, p, t }, i) => (["Serviços", "Peças", "Total"] as const).map((g, j) => {
+          {visiveis.map(({ r, s, p, t }, i) => (["Serviços", "Peças", "Total"] as const).map((g, j) => {
             const x = j === 0 ? s : j === 1 ? p : t;
             const metaK = j === 0 ? "meta_servicos" : j === 1 ? "meta_pecas" : null;
             return (
@@ -206,7 +208,7 @@ function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onEdit, onGrupo, onRem, v
               </tr>
             );
           }))}
-          {!b.calcs.length && <tr><td colSpan={14} className="px-3 py-6 text-center text-muted-foreground">{vazio || "Importe o relatório \"Faturamento Líquido dos Produtivos\" para começar."}</td></tr>}
+          {!visiveis.length && <tr><td colSpan={14} className="px-3 py-6 text-center text-muted-foreground">{vazio || "Importe o relatório \"Faturamento Líquido dos Produtivos\" para começar."}</td></tr>}
         </Tabela>
       </Box>
     </div>
