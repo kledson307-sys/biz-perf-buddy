@@ -49,7 +49,7 @@ export const GRUPO_NOME: Record<Grupo, string> = {
 };
 
 /** Técnicos de diagnóstico: sem meta, ocultos da lista, mas o faturamento entra nos totais. */
-const OCULTOS = ["VINICIUS", "DELMIR"];
+const OCULTOS = ["VINICIUS", "DELMIR", "LUIS SANDRO"];
 
 export function ocultoDaLista(nome: string): boolean {
   return OCULTOS.some(x => lab(x) === lab(nome));
