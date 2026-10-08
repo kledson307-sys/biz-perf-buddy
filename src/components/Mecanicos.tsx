@@ -3,22 +3,15 @@ import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Barra, Box, Kpi, Tabela, brl, div, norm, num, parseNum, pct, tone } from "@/components/painel-ui";
-import { GRUPO_NOME, grupoDe, type Grupo, lerMecanicos } from "@/lib/mecanicos";
+import { GRUPO_NOME, blocoMec, grupoDe, type Grupo, type Mec, type MecBloco, type MecCampo, lerMecanicos } from "@/lib/mecanicos";
 import { registrarUpdate } from "@/lib/update-log";
-
-type M = { id?: string; nome: string; grupo: Grupo; servicos: number; pecas: number; passagens: number; meta_servicos: number; meta_pecas: number };
-const CAMPOS = ["servicos", "pecas", "passagens", "meta_servicos", "meta_pecas"] as const;
-type Campo = (typeof CAMPOS)[number];
-
-type X = { real: number; meta: number; perf: number; proj: number; projP: number; nec: number; dia: number };
-type Calc = { r: M; s: X; p: X; t: X };
-type Bloco = { calcs: Calc[]; S: X; P: X; T: X; pass: number; n: number };
+import { MecanicosIA } from "@/components/MecanicosIA";
 
 const asGrupo = (v: string): Grupo => (v === "carro" || v === "moto" ? v : "outros");
 
 export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: number }) {
   const file = useRef<HTMLInputElement>(null);
-  const [rows, setRows] = useState<M[]>([]);
+  const [rows, setRows] = useState<Mec[]>([]);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [cola, setCola] = useState("");
@@ -28,7 +21,7 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
   const load = async () => {
     const { data, error } = await supabase.from("mech_month").select("id,nome,grupo,servicos,pecas,passagens,meta_servicos,meta_pecas").eq("mes", mes).order("nome");
     if (error) { setMsg(error.message); return; }
-    let lst: M[] = (data ?? []).map(r => ({ ...r, grupo: asGrupo(r.grupo) }));
+    let lst: Mec[] = (data ?? []).map(r => ({ ...r, grupo: asGrupo(r.grupo) }));
     // quem ainda está sem grupo herda o grupo do mês mais recente em que apareceu
     const sem = lst.filter(r => r.grupo === "outros").map(r => r.nome);
     if (sem.length) {
@@ -41,7 +34,7 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
   };
   useEffect(() => { void load(); }, [mes]);
 
-  const gravar = async (lst: M[], origem: string) => {
+  const gravar = async (lst: Mec[], origem: string) => {
     if (!lst.length) return false;
     setBusy(true);
     const { error } = await supabase.from("mech_month").upsert(lst.map(({ id: _i, ...r }) => ({ ...r, mes, updated_at: new Date().toISOString() })), { onConflict: "user_id,mes,nome" });
@@ -49,7 +42,7 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
     if (error) { setMsg("Erro ao salvar: " + error.message); return false; }
     await registrarUpdate(origem); await load(); return true;
   };
-  const base = (nome: string): M => rows.find(r => norm(r.nome) === norm(nome)) ?? { nome: nome.trim().toUpperCase(), grupo: grupoDe(nome), servicos: 0, pecas: 0, passagens: 0, meta_servicos: 0, meta_pecas: 0 };
+  const base = (nome: string): Mec => rows.find(r => norm(r.nome) === norm(nome)) ?? { nome: nome.trim().toUpperCase(), grupo: grupoDe(nome), servicos: 0, pecas: 0, passagens: 0, meta_servicos: 0, meta_pecas: 0 };
 
   const importar = async (f?: File) => {
     if (!f) return;
@@ -78,23 +71,15 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
     if (await gravar(lst, "Mecânicos (colar)")) { setCola(""); setMsg(`${lst.length} linhas salvas.`); }
   };
 
-  const editar = (r: M, k: Campo, v: number) => { if (r[k] !== v) void gravar([{ ...r, [k]: v }], "Mecânicos (edição)"); };
-  const mudarGrupo = (r: M, g: Grupo) => { if (r.grupo !== g) void gravar([{ ...r, grupo: g }], "Mecânicos (grupo)"); };
-  const remover = async (r: M) => { if (r.id && confirm(`Remover ${r.nome} deste mês?`)) { await supabase.from("mech_month").delete().eq("id", r.id); await load(); } };
+  const editar = (r: Mec, k: MecCampo, v: number) => { if (r[k] !== v) void gravar([{ ...r, [k]: v }], "Mecânicos (edição)"); };
+  const mudarGrupo = (r: Mec, g: Grupo) => { if (r.grupo !== g) void gravar([{ ...r, grupo: g }], "Mecânicos (grupo)"); };
+  const remover = async (r: Mec) => { if (r.id && confirm(`Remover ${r.nome} deste mês?`)) { await supabase.from("mech_month").delete().eq("id", r.id); await load(); } };
 
-  const rest = Math.max(tot - dec, 1);
-  const c = (real: number, meta: number): X => { const proj = div(real, dec) * tot; return { real, meta, perf: div(real, meta), proj, projP: div(proj, meta), nec: Math.max(meta - real, 0) / rest, dia: div(real, dec) }; };
-  const bloco = (lst: M[]): Bloco => {
-    const calcs = lst.map(r => ({ r, s: c(r.servicos, r.meta_servicos), p: c(r.pecas, r.meta_pecas), t: c(r.servicos + r.pecas, r.meta_servicos + r.meta_pecas) })).sort((a, b) => b.t.real - a.t.real);
-    const sum = (k: Campo) => lst.reduce((a, r) => a + Number(r[k]), 0);
-    const S = c(sum("servicos"), sum("meta_servicos")), P = c(sum("pecas"), sum("meta_pecas")), T = c(S.real + P.real, S.meta + P.meta);
-    return { calcs, S, P, T, pass: sum("passagens"), n: lst.length };
-  };
-  const EQUIPE = bloco(rows);
-  const G: Record<Grupo, Bloco> = {
-    carro: bloco(rows.filter(r => r.grupo === "carro")),
-    moto: bloco(rows.filter(r => r.grupo === "moto")),
-    outros: bloco(rows.filter(r => r.grupo === "outros")),
+  const EQUIPE = blocoMec(rows, dec, tot);
+  const G: Record<Grupo, MecBloco> = {
+    carro: blocoMec(rows.filter(r => r.grupo === "carro"), dec, tot),
+    moto: blocoMec(rows.filter(r => r.grupo === "moto"), dec, tot),
+    outros: blocoMec(rows.filter(r => r.grupo === "outros"), dec, tot),
   };
 
   return (
@@ -113,6 +98,12 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
         vazio="Nenhum mecânico de moto neste mês." />
       {G.outros.n > 0 && <GrupoSec titulo={GRUPO_NOME.outros} b={G.outros} dec={dec} tot={tot} busy={busy} onEdit={editar} onGrupo={mudarGrupo} onRem={remover}
         vazio="" dica="Troque para Carro ou Moto na coluna Grupo." />}
+
+      <MecanicosIA mes={mes} tot={tot} dec={dec} blocos={[
+        { k: "carro", nome: GRUPO_NOME.carro, b: G.carro },
+        { k: "moto", nome: GRUPO_NOME.moto, b: G.moto },
+        { k: "outros", nome: GRUPO_NOME.outros, b: G.outros },
+      ]} />
 
       <div className="grid gap-4 print:hidden lg:grid-cols-2">
         <Box title="Importar planilha do sistema">
@@ -144,8 +135,8 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
 }
 
 function GrupoSec({ titulo, b, dec, tot, busy, onEdit, onGrupo, onRem, vazio, dica }: {
-  titulo: string; b: Bloco; dec: number; tot: number; busy: boolean;
-  onEdit: (r: M, k: Campo, v: number) => void; onGrupo: (r: M, g: Grupo) => void; onRem: (r: M) => void;
+  titulo: string; b: MecBloco; dec: number; tot: number; busy: boolean;
+  onEdit: (r: Mec, k: MecCampo, v: number) => void; onGrupo: (r: Mec, g: Grupo) => void; onRem: (r: Mec) => void;
   vazio: string; dica?: string;
 }) {
   return (
