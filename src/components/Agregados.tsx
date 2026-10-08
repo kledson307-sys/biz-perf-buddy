@@ -93,19 +93,19 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
       </div>
 
       {relatorio ? (<>
-        <GrupoView g="servicos" stat={stat} ranking={ranking} ids={cons.map((c) => c.id)} deptName={deptName} rest={rest} />
-        <GrupoView g="pecas" stat={stat} ranking={ranking} ids={cons.map((c) => c.id)} deptName={deptName} rest={rest} />
+        <GrupoView g="servicos" stat={stat} ranking={ranking} ids={consAgg.map((c) => c.id)} deptName={deptName} rest={rest} />
+        <GrupoView g="pecas" stat={stat} ranking={ranking} ids={consAgg.map((c) => c.id)} deptName={deptName} rest={rest} />
       </>) : (sub === "servicos" || sub === "pecas") && (
-        <GrupoView g={sub} stat={stat} ranking={ranking} ids={cons.map((c) => c.id)} deptName={deptName} rest={rest} />
+        <GrupoView g={sub} stat={stat} ranking={ranking} ids={consAgg.map((c) => c.id)} deptName={deptName} rest={rest} />
       )}
-      {sub === "ia" && <AgregadosIA mes={mes} cons={cons} tot={tot} dec={dec} stat={stat} deptName={deptName} />}
+      {sub === "ia" && <AgregadosIA mes={mes} cons={consAgg} tot={tot} dec={dec} stat={stat} deptName={deptName} />}
       {sub === "importar" && (
         <AgregadosImport allCons={allCons} codigos={codigos} ini={ini} end={end} onDone={() => { load(); reloadCons(); }} />
       )}
       {sub === "lancar" && (
         <Lancar cons={cons} allCons={allCons} sales={sales} visits={visits} ini={ini} end={end} onDone={() => { load(); reloadCons(); }} />
       )}
-      {sub === "metas" && <Metas cons={cons} goals={goals} mes={mes} deptName={deptName} onSaved={load} />}
+      {sub === "metas" && <Metas cons={consAgg} goals={goals} mes={mes} deptName={deptName} onSaved={load} />}
     </div>
   );
 }

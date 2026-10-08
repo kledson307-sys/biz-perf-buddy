@@ -3,7 +3,7 @@ import { Copy, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Box, Tabela, brl, pct, tone } from "@/components/painel-ui";
-import { ITENS, naoVende } from "@/lib/agregados";
+import { ITENS, naoVende, naoVendeAgregado } from "@/lib/agregados";
 
 export type LinhaEnvio = {
   c: { id: string; nome: string; telefone: string };
@@ -44,7 +44,7 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
     const rest = Math.max(tot - dec, 0);
     const passagens = agg.v.filter((v) => v.consultant_id === id).reduce((n, v) => n + Number(v.passagens), 0);
     const agregados = ITENS.map((it) => {
-      if (nome && naoVende(it.k, nome)) return null;
+      if (nome && (naoVendeAgregado(nome) || naoVende(it.k, nome))) return null;
       const qtd = agg.s.filter((x) => x.consultant_id === id && x.item === it.k).reduce((n, x) => n + Number(x.qtd), 0);
       const meta = Number(agg.g.find((x) => x.consultant_id === id && x.item === it.k)?.meta_qtd ?? 0);
       return { item: it.nome, grupo: it.g, qtd, meta, proj: dec ? (qtd / dec) * tot : 0, nec: rest ? Math.max(meta - qtd, 0) / rest : 0, aper: passagens ? qtd / passagens : 0 };
@@ -61,7 +61,7 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
   const liderItem = (nomeItem: string) =>
     linhas.map((x) => {
       const k = ITENS.find((i) => i.nome === nomeItem)?.k ?? "";
-      if (naoVende(k, x.c.nome)) return null;
+      if (naoVendeAgregado(x.c.nome) || naoVende(k, x.c.nome)) return null;
       const a = dadosAgg(x.c.id, x.c.nome).agregados.find((y) => y.item === nomeItem);
       return a ? { id: x.c.id, nome: x.c.nome, qtd: a.qtd, meta: a.meta } : null;
     }).filter((x): x is { id: string; nome: string; qtd: number; meta: number } => !!x && x.meta > 0)
