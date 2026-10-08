@@ -91,29 +91,7 @@ export function ControleOS() {
           })}
         </div>
 
-        <Box title="Ranking por status — consultor com maior incidência">
-          <Tabela head={["Status", "Ranking de consultores (maior → menor)"]}>
-            {ranking.map(({ s, total, cons }) => (
-              <tr key={s.k} className="border-t border-border align-top">
-                <td className="whitespace-nowrap px-3 py-2 font-semibold">
-                  {s.nome}
-                  <div className="text-xs font-normal text-muted-foreground">{total} O.S.</div>
-                </td>
-                <td className="px-3 py-2 text-sm">
-                  {cons.length === 0 && <span className="text-muted-foreground">Nenhuma O.S. neste status.</span>}
-                  {cons.map((r, i) => (
-                    <span key={r.c} className="mr-4 inline-block whitespace-nowrap">
-                      <span className="font-semibold">{i + 1}º {r.c}</span>{" "}
-                      <span className="text-muted-foreground">{r.qtd} O.S. · {brl(r.valor)}</span>
-                    </span>
-                  ))}
-                </td>
-              </tr>
-            ))}
-          </Tabela>
-        </Box>
-
-        <Box title="Ranking em gráficos de pizza">
+        <Box title="Ranking por status — gráficos de pizza">
           <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 xl:grid-cols-4">
             <CartaoPizza titulo="O.S. por status" sub="distribuição geral" fmt={n => `${n} O.S.`}
               dados={STATUS.map(s => ({ label: s.nome, valor: lista.filter(a => a.item.st === s.k).length }))} />
