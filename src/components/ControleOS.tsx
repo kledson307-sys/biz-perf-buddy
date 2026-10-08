@@ -56,6 +56,14 @@ export function ControleOS() {
 
   const doStatus = lista.filter(a => a.item.st === aba);
   const porCons = [...new Set(doStatus.map(a => a.item.cons))].sort().map(c => ({ c, l: doStatus.filter(a => a.item.cons === c).sort((x, y) => y.diasStatus - x.diasStatus) }));
+  const ranking = useMemo(() => STATUS.map(s => {
+    const l = lista.filter(a => a.item.st === s.k);
+    const cons = [...new Set(l.map(a => a.item.cons))].map(c => {
+      const g = l.filter(a => a.item.cons === c);
+      return { c, qtd: g.length, valor: g.reduce((n, a) => n + a.item.valor, 0) };
+    }).sort((x, y) => y.qtd - x.qtd || y.valor - x.valor);
+    return { s, total: l.length, cons };
+  }), [lista]);
 
   return (
     <section className="space-y-6">
@@ -82,6 +90,28 @@ export function ControleOS() {
             </button>;
           })}
         </div>
+
+        <Box title="Ranking por status — consultor com maior incidência">
+          <Tabela head={["Status", "Ranking de consultores (maior → menor)"]}>
+            {ranking.map(({ s, total, cons }) => (
+              <tr key={s.k} className="border-t border-border align-top">
+                <td className="whitespace-nowrap px-3 py-2 font-semibold">
+                  {s.nome}
+                  <div className="text-xs font-normal text-muted-foreground">{total} O.S.</div>
+                </td>
+                <td className="px-3 py-2 text-sm">
+                  {cons.length === 0 && <span className="text-muted-foreground">Nenhuma O.S. neste status.</span>}
+                  {cons.map((r, i) => (
+                    <span key={r.c} className="mr-4 inline-block whitespace-nowrap">
+                      <span className="font-semibold">{i + 1}º {r.c}</span>{" "}
+                      <span className="text-muted-foreground">{r.qtd} O.S. · {brl(r.valor)}</span>
+                    </span>
+                  ))}
+                </td>
+              </tr>
+            ))}
+          </Tabela>
+        </Box>
 
         {lembretes.length > 0 && <Box title={`Lembretes de hoje (${lembretes.length})`} right={<Bell className="size-4" />}>
           <ul className="divide-y divide-border text-sm">
