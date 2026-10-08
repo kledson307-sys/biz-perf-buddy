@@ -389,14 +389,8 @@ function Painel({ email }: { email: string }) {
             </Box>
 
             <div className="print:hidden">
-              {abrirWhats ? (
-                <div className="space-y-3">
-                  <Button variant="outline" size="sm" onClick={() => setAbrirWhats(false)}>Ocultar envio por WhatsApp</Button>
-                  <EnvioWhatsapp linhas={linhas} lider={lider} liderServ={liderServ} liderPec={liderPec} mes={mes} dec={dec} tot={tot} reload={load} />
-                </div>
-              ) : (
-                <Button variant="outline" onClick={() => setAbrirWhats(true)}>Mostrar envio por WhatsApp</Button>
-              )}
+              <EnvioWhatsapp linhas={linhas} lider={lider} liderServ={liderServ} liderPec={liderPec} mes={mes} dec={dec} tot={tot} reload={load}
+                envioAberto={abrirWhats} onToggleEnvio={() => setAbrirWhats((v) => !v)} />
             </div>
 
             <ResumoPainel linhas={linhas.map((l) => ({ nome: l.c.nome, servicos: l.servicos, pecas: l.pecas, mS: l.mS, mP: l.mP, perfS: l.perfS, perfP: l.perfP, perf: l.perf, projPct: l.projPct, mediaDia: l.mediaDia, necS: l.necS, necP: l.necP, nec: l.nec }))} liderNome={lider?.c.nome ?? null} dec={dec} tot={tot} mes={mes} />
