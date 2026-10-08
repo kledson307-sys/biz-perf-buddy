@@ -43,8 +43,8 @@ const MOTO = [
 ];
 
 export const GRUPO_NOME: Record<Grupo, string> = {
-  carro: "Mecânicos de Carro",
-  moto: "Mecânicos de Moto",
+  carro: "Técnicos de Carro",
+  moto: "Técnicos de Moto",
   outros: "Sem grupo definido",
 };
 
@@ -119,7 +119,7 @@ export function lerMecanicos(raw: unknown[][]): MecReport {
     map.set(k, r);
   }
   const rows = [...map.values()];
-  if (!rows.length) throw new Error("Não encontrei mecânicos. O cabeçalho deve ter Produtivo e Srv Total/Peças.");
+  if (!rows.length) throw new Error("Não encontrei técnicos. O cabeçalho deve ter Produtivo e Srv Total/Peças.");
   return { rows, periodo };
 }
 
