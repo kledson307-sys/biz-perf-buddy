@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Barra, Box, Kpi, Tabela, brl, div, norm, num, parseNum, pct, tone } from "./painel-ui";
-import { GRUPO_NOME, ITENS, naoVende, splitCods, type Grupo } from "@/lib/agregados";
+import { GRUPO_NOME, ITENS, naoVende, naoVendeAgregado, splitCods, type Grupo } from "@/lib/agregados";
 import { AgregadosImport } from "./AgregadosImport";
 import { AgregadosIA } from "./AgregadosIA";
 import { registrarUpdate } from "@/lib/update-log";
@@ -43,6 +43,8 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
   useEffect(() => { load(); }, [load]);
 
   const rest = Math.max(tot - dec, 0);
+  /** Quem não vende agregados fica fora de totais, rankings, metas e recomendações. */
+  const consAgg = cons.filter((c) => !naoVendeAgregado(c.nome));
   const stat = (ids: string[], items: string[]) => {
     const idSet = new Set(ids), itSet = new Set(items);
     let qtd = 0, valor = 0, mq = 0, mv = 0, pass = 0;
@@ -57,7 +59,7 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
     };
   };
   const ranking = (items: string[]) =>
-    cons.filter((c) => items.length !== 1 || !naoVende(items[0]!, c.nome))
+    consAgg.filter((c) => items.length !== 1 || !naoVende(items[0]!, c.nome))
       .map((c) => ({ c, ...stat([c.id], items) })).sort((a, b) => b.perfQ - a.perfQ || b.qtd - a.qtd);
 
   const exportar = () => {

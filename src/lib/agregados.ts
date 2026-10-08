@@ -21,6 +21,11 @@ const chaveNome = (s: string) => s.replace(/\s+/g, "").toUpperCase();
 export const naoVende = (itemK: string, nome: string) =>
   (NAO_VENDE[itemK] ?? []).some((n) => chaveNome(nome).startsWith(chaveNome(n)));
 
+/** Consultores que não vendem agregados: ficam fora de rankings, metas e comparações de todos os itens. */
+export const SEM_AGG = ["MARCELA.S", "GEOVANA.M", "NAILTON/THIERRY"];
+export const naoVendeAgregado = (nome: string) =>
+  SEM_AGG.some((n) => chaveNome(nome).startsWith(chaveNome(n)));
+
 /** Chave de comparação do código: maiúsculas e sem espaços ("1350 117" = "1350117"). */
 export const normCod = (s: string) => s.replace(/\s+/g, "").toUpperCase();
 /** Lista de códigos digitada pelo usuário, separada por vírgula, ponto e vírgula ou quebra de linha (espaços fazem parte do código). */
