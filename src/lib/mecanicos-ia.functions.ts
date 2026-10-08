@@ -41,6 +41,7 @@ Estruture assim:
 - Para cada mecânico do grupo, "### Nome": **Diagnóstico** (1 linha, citando números), **Ações** (2–3 bullets práticos: agenda e fila de O.S., reemissão e conclusão de serviços, venda de peças no box, captação de passagens, treinamento) e **Ritmo diário** (quanto precisa faturar por dia em serviços e em peças para bater a meta; se não houver meta, diga para cadastrar).
 - **Líder do grupo** e a distância dos demais.
 Ao final, "## Resumo para o gestor" com 3 prioridades e um comparativo carro x moto mostrando onde há mais espaço para crescer.
+Não use tabelas em Markdown: use apenas títulos, parágrafos curtos e listas com '-'. Para comparar mecânicos, escreva uma linha por pessoa no formato 'Nome — faturou R$ X, precisa de R$ Y/dia'.
 Não invente dados que não foram enviados. Seja conciso (no máximo ~110 palavras por mecânico).`;
 
 function erro(status: number, mensagem: string): MecanicosAnaliseResult {
