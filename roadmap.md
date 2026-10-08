@@ -13,7 +13,8 @@
 - [x] Aba Mecânicos: análise de performance dos dois grupos (comparativo carro x moto, líder, gaps, necessidade diária) com IA e análise automática sem créditos
 - [x] Importar relatório "Passagem tecnico+consultor" na aba Mecânicos, contando cada O.S. uma única vez por mecânico e por consultor
 - [x] Aba Mecânicos: ocultar VINICIUS, DELMIR e LUIS SANDRO (técnicos de diagnóstico, sem meta) mantendo o faturamento nos totais
-- [ ] Configurar: grade "Metas do ano" para estabelecer as metas dos 12 meses de forma antecipada (a partir do próximo ano)
-- [ ] Painel: ocultar a área de envio por WhatsApp da tela, atrás de um botão para abrir quando precisar
-- [ ] Relatório de fechamento (PDF): análise do fechamento, gráficos, dicas, plano dos próximos dias e reconhecimento de quem faz acontecer
-- [ ] Análise do fechamento e Reconhecimento: aparecer apenas no PDF de fechamento, não na tela do painel
+- [x] Configurar: grade "Metas do ano" para estabelecer as metas dos 12 meses de forma antecipada (a partir do próximo ano)
+- [x] Painel: ocultar a área de envio por WhatsApp da tela, atrás de um botão para abrir quando precisar
+- [x] Relatório de fechamento (PDF): análise do fechamento, gráficos, dicas, plano dos próximos dias e reconhecimento de quem faz acontecer
+- [x] Análise do fechamento e Reconhecimento: aparecer apenas no PDF de fechamento, não na tela do painel
+- [x] Topo de cada aba: orientação curta ao gestor (1 análise + 1 ação sugerida)
