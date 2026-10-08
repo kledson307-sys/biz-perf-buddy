@@ -57,7 +57,7 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
       const ok = await gravar(r.rows.map(x => ({ ...base(x.nome), servicos: x.servicos, pecas: x.pecas })), "Técnicos (importação)");
       if (ok) {
         const semGrupo = r.rows.filter(x => grupoDe(x.nome) === "outros").length;
-        setMsg(`${r.rows.length} mecânicos importados${r.periodo ? ` (período ${r.periodo.ini.split("-").reverse().join("/")} a ${r.periodo.fim.split("-").reverse().join("/")})` : ""}. Valores do mês substituídos, sem somar.${semGrupo ? ` ${semGrupo} não estão na lista de carro nem na de moto e ficaram em "Sem grupo definido".` : ""}`);
+        setMsg(`${r.rows.length} técnicos importados${r.periodo ? ` (período ${r.periodo.ini.split("-").reverse().join("/")} a ${r.periodo.fim.split("-").reverse().join("/")})` : ""}. Valores do mês substituídos, sem somar.${semGrupo ? ` ${semGrupo} não estão na lista de carro nem na de moto e ficaram em "Sem grupo definido".` : ""}`);
       }
     } catch (e) { setMsg((e as Error).message); }
     if (file.current) file.current.value = "";
@@ -84,7 +84,7 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
     setBusy(false);
     await registrarUpdate("Passagens (importação)");
     await load();
-    setMsg(`Passagens importadas: ${r.mecanicos.length} mecânicos e ${vRows.length} consultores (O.S. repetidas contadas uma única vez).${ignorados ? ` ${ignorados} consultores do relatório não estão cadastrados e foram ignorados.` : ""} Totais do mês substituídos, sem somar.`);
+    setMsg(`Passagens importadas: ${r.mecanicos.length} técnicos e ${vRows.length} consultores (O.S. repetidas contadas uma única vez).${ignorados ? ` ${ignorados} consultores do relatório não estão cadastrados e foram ignorados.` : ""} Totais do mês substituídos, sem somar.`);
   };
 
   const colar = async () => {
@@ -133,7 +133,7 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
       <div className="grid gap-4 print:hidden lg:grid-cols-2">
         <Box title="Importar planilha do sistema">
           <div className="space-y-3 p-5 text-sm">
-            <p className="text-muted-foreground">Relatório "Faturamento Líquido dos Produtivos". Usa Srv Total como serviços e Peças; ignora "Sem Apontamento(s)". Reimportar substitui os valores do mês (passagens, metas e grupo ficam). Quem não está na lista de carro nem na de moto entra em "Sem grupo definido". Também aceita o relatório "Passagem tecnico+consultor": cada O.S. conta uma única vez por mecânico e por consultor, mesmo repetida em várias linhas.</p>
+            <p className="text-muted-foreground">Relatório "Faturamento Líquido dos Produtivos". Usa Srv Total como serviços e Peças; ignora "Sem Apontamento(s)". Reimportar substitui os valores do mês (passagens, metas e grupo ficam). Quem não está na lista de carro nem na de moto entra em "Sem grupo definido". Também aceita o relatório "Passagem tecnico+consultor": cada O.S. conta uma única vez por técnico e por consultor, mesmo repetida em várias linhas.</p>
             <input ref={file} type="file" accept=".xls,.xlsx" hidden onChange={e => importar(e.target.files?.[0])} />
             <Button onClick={() => file.current?.click()} disabled={busy}><Upload className="mr-2 size-4" />Importar Excel</Button>
             {msg && <p role="status" className="text-sm">{msg}</p>}
