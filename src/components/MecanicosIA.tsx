@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Box, Kpi, Tabela, brl, div, num, pct, tone } from "./painel-ui";
 import { type Grupo, type MecBloco } from "@/lib/mecanicos";
 import { analisarMecanicos, type MecanicosAnaliseInput } from "@/lib/mecanicos-ia.functions";
@@ -9,6 +10,8 @@ type Bloco = { k: Grupo; nome: string; b: MecBloco };
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
 const r3 = (v: number) => Math.round(v * 1000) / 1000;
+
+const MD = "space-y-2 p-6 text-sm leading-relaxed [&_h2]:mt-5 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-primary [&_h3]:mt-4 [&_h3]:text-sm [&_h3]:font-semibold [&_li]:ml-5 [&_li]:list-disc [&_p]:mt-2 [&_strong]:font-semibold [&_ul]:space-y-1 [&_table]:mt-3 [&_table]:w-full [&_table]:border-collapse [&_table]:text-xs [&_th]:border [&_th]:border-border [&_th]:bg-muted [&_th]:px-2 [&_th]:py-1 [&_th]:text-left [&_td]:border [&_td]:border-border [&_td]:px-2 [&_td]:py-1";
 
 export function MecanicosIA({ mes, tot, dec, blocos }: { mes: string; tot: number; dec: number; blocos: Bloco[] }) {
   const gerar = useServerFn(analisarMecanicos);
@@ -130,8 +133,8 @@ export function MecanicosIA({ mes, tot, dec, blocos }: { mes: string; tot: numbe
 
       {texto && (
         <Box title="Análise de performance" right={<button onClick={() => window.print()} className="rounded-lg border border-input px-3 py-1.5 text-sm print:hidden">Imprimir</button>}>
-          <div className="space-y-2 p-6 text-sm leading-relaxed [&_h2]:mt-5 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-primary [&_h3]:mt-4 [&_h3]:text-sm [&_h3]:font-semibold [&_li]:ml-5 [&_li]:list-disc [&_p]:mt-2 [&_strong]:font-semibold [&_ul]:space-y-1">
-            <ReactMarkdown>{texto}</ReactMarkdown>
+          <div className={MD}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{texto}</ReactMarkdown>
           </div>
         </Box>
       )}
