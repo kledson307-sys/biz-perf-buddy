@@ -69,3 +69,44 @@ export function Num({ label, v, on }: { label: string; v: number; on: (v: number
     </label>
   );
 }
+export function Pizza({ dados, centro, fmt = brl, tam = 150 }: {
+  dados: { label: string; valor: number; extra?: string }[];
+  centro?: React.ReactNode;
+  fmt?: (n: number) => string;
+  tam?: number;
+}) {
+  const lista = dados.filter(d => d.valor > 0);
+  const total = lista.reduce((s, d) => s + d.valor, 0);
+  let acum = 0;
+  return (
+    <div className="flex w-full flex-col items-center gap-3">
+      <div className="relative shrink-0" style={{ width: tam, height: tam }}>
+        <svg viewBox="0 0 100 100" className="h-full w-full">
+          <circle cx="50" cy="50" r="40" fill="none" strokeWidth="24" className="stroke-muted" />
+          {total > 0 && lista.map((d, i) => {
+            const p = (d.valor / total) * 100;
+            const off = acum;
+            acum += p;
+            return (
+              <circle key={d.label} cx="50" cy="50" r="40" fill="none" strokeWidth="24" pathLength={100}
+                stroke={`var(--chart-${(i % 8) + 1})`} strokeDasharray={`${p} ${100 - p}`} strokeDashoffset={-off}
+                transform="rotate(-90 50 50)">
+                <title>{`${d.label}: ${fmt(d.valor)}${d.extra ? ` · ${d.extra}` : ""} (${pct(d.valor / total)})`}</title>
+              </circle>
+            );
+          })}
+        </svg>
+        {centro && <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center leading-tight">{centro}</div>}
+      </div>
+      {lista.length > 0 && <ul className="w-full space-y-1 text-xs">
+        {lista.map((d, i) => (
+          <li key={d.label} className="flex items-center gap-2">
+            <span className="size-2.5 shrink-0 rounded-sm" style={{ background: `var(--chart-${(i % 8) + 1})` }} />
+            <span className="truncate font-medium">{d.label}</span>
+            <span className="ml-auto whitespace-nowrap text-muted-foreground">{fmt(d.valor)} · {pct(d.valor / total)}</span>
+          </li>
+        ))}
+      </ul>}
+    </div>
+  );
+}
