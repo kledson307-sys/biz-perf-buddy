@@ -318,7 +318,7 @@ function Painel({ email }: { email: string }) {
             diario: [`Média da equipe ${brl(total.mediaDia)}/dia; necessário ${brl(total.nec)}/dia.`, total.mediaDia >= total.nec ? "Ritmo diário suficiente: mantenha." : "Identifique os dias fracos e reforce a abertura da manhã."],
             config: [semMeta ? `${semMeta} consultor(es) sem meta neste mês.` : "Metas e dias configurados.", semMeta ? "Cadastre as metas faltantes para a projeção ficar correta." : "Confira feriados nos dias úteis."],
           };
-          const [analise, acao] = o[tab] ?? o.painel!;
+          const [analise, acao] = o[tab] ?? o["painel"]!;
           return (
             <div className="rounded-lg border-l-4 border-primary bg-primary/5 px-4 py-3 text-sm print:hidden">
               <p className="text-xs font-semibold uppercase tracking-wide text-primary">Orientação ao gestor</p>
