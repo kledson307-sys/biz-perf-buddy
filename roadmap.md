@@ -8,4 +8,4 @@
 - [x] In the Agregados "Quantidade vendida" card, list sold quantity and meta for each item and verify in the browser.
 - [x] Aba Controle de O.S.: importação semanal, status, ações por consultor, O.S. sem mudança, histórico
 - [x] Aba Mecânicos: importar/colar serviços, peças, passagens; metas; projeção e necessidade diária
-- [x] Controle de O.S.: ranking por status em gráficos de pizza (incidências por consultor) e verificar no navegador
+- [x] Controle de O.S.: ranking por status só em gráficos de pizza (tabela removida) e verificar no navegador
