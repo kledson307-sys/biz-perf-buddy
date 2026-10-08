@@ -216,7 +216,7 @@ function Painel({ email }: { email: string }) {
     a.download = `relatorio-${mes}.csv`; a.click();
   };
 
-  const tabs = [["painel", "Painel"], ["proj-serv", "Serviços"], ["proj-pec", "Peças"], ["proj-total", "Projeção"], ["os", "Projeção + OS"], ["controle-os", "Controle O.S."], ["mecanicos", "Mecânicos"], ["agregados", "Agregados"], ["diario", "Diário"], ["dados", "Colar dados"], ["config", "Configurar"]];
+  const tabs = [["painel", "Painel"], ["proj-serv", "Serviços"], ["proj-pec", "Peças"], ["proj-total", "Projeção"], ["os", "Projeção + OS"], ["controle-os", "Controle O.S."], ["mecanicos", "Mecânicos"], ["agregados", "Agregados"], ["diario", "Diário"], ["config", "Configurar"]];
 
   const [anoMes, mesNum] = mes.split("-").map(Number);
   const mesExt = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(anoMes!, mesNum! - 1, 1));
@@ -276,9 +276,12 @@ function Painel({ email }: { email: string }) {
                 <span>🔄 Nenhuma atualização registrada.</span>
               )}
               {desat && (
-                <button type="button" onClick={() => setTab("dados")} className="ml-auto rounded bg-background px-2 py-1 font-semibold text-destructive">
+                <Button type="button" variant="outline" size="sm" onClick={() => {
+                  setTab("painel");
+                  setTimeout(() => document.getElementById("colar-dados")?.scrollIntoView({ block: "start" }), 0);
+                }} className="ml-auto bg-background font-semibold text-destructive">
                   ⚠️ Dados desatualizados — importar planilha de hoje
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -370,6 +373,10 @@ function Painel({ email }: { email: string }) {
                 ))}
               </div>
             </Box>
+            {tab === "painel" && !relatorio && <div id="colar-dados" className="scroll-mt-6 space-y-4 border-t border-border pt-6 print:hidden">
+              <h2 className="text-lg font-semibold">Colar dados</h2>
+              <SalesImport cons={cons} depts={depts} onDone={load} onPeriod={setMes} />
+            </div>}
           </Secao>
         )}
 
@@ -496,7 +503,6 @@ function Painel({ email }: { email: string }) {
         {show("diario") && <Secao titulo="Performance diária e acumulada"><Diario sales={sales} cons={visiveis} metaTotal={total.meta} tot={tot} /></Secao>}
         {tab === "controle-os" && <ControleOS />}
         {show("mecanicos") && <Secao titulo="Mecânicos"><Mecanicos mes={mes} tot={tot} dec={dec} /></Secao>}
-        {tab === "dados" && <SalesImport cons={cons} depts={depts} onDone={load} onPeriod={setMes} />}
         {tab === "config" && <div className="space-y-6"><Equipe /><Config params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} /></div>}
       </main>
     </div>
