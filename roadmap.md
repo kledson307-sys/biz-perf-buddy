@@ -19,3 +19,4 @@
 - [x] Análise do fechamento e Reconhecimento: aparecer apenas no PDF de fechamento, não na tela do painel
 - [x] Topo de cada aba: orientação curta ao gestor (1 análise + 1 ação sugerida)
 - [x] Painel: ocultar o bloco "Comparação com o líder e recomendações" da tela, mantendo-o no relatório de fechamento (PDF)
+- Missão do dia do supervisor: cartão único por vendedor em ResumoSupervisor, objetivos editáveis (sugestão = necessidade diária), realizado salvo em supervisor_day (fora do faturamento), análise automática por vendedor — OK
