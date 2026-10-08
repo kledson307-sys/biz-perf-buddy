@@ -6,4 +6,4 @@
 - [x] Verify in the browser that the out-of-date alert blinks until today's data is imported and clears afterwards.
 - [x] In the combined projection table, stack the parts block under the services block per consultant and verify in the browser.
 - [x] In the Agregados "Quantidade vendida" card, list sold quantity and meta for each item and verify in the browser.- [x] Aba Controle de O.S.: importação semanal, status, ações por consultor, O.S. sem mudança, histórico
-- [ ] Aba Mecânicos: importar/colar serviços, peças, passagens; metas; projeção e necessidade diária
+- [x] Aba Mecânicos: importar/colar serviços, peças, passagens; metas; projeção e necessidade diária
