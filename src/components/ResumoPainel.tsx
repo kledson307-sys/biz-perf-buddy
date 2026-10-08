@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Box, Button, brl, div } from "@/components/painel-ui";
+import { Box, brl } from "@/components/painel-ui";
+import { Button } from "@/components/ui/button";
 
 export type LinhaResumo = {
   nome: string;
