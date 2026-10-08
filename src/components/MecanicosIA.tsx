@@ -78,19 +78,16 @@ export function MecanicosIA({ mes, tot, dec, blocos }: { mes: string; tot: numbe
   return (
     <div className="space-y-6">
       <Box title="Comparativo carro x moto" right={<span className="text-xs">{dec} de {tot} dias · {Math.max(tot - dec, 0)} restantes</span>}>
-        <Tabela head={["Grupo", "Mecânicos", "Faturado", "Meta", "Perf.", "Projeção", "Proj. %", "Precisa/dia", "Passagens", "Ticket"]}>
+        <Tabela head={["Grupo", "Faturado", "Meta", "Perf.", "Projeção", "Precisa/dia", "Passagens"]}>
           {ativos.map(({ k, nome, b }) => (
             <tr key={k} className="border-t border-border">
-              <td className="px-3 py-2 font-medium">{nome}</td>
-              <td className="px-3 py-2">{b.n}</td>
-              <td className="px-3 py-2">{brl(b.T.real)}</td>
-              <td className="px-3 py-2 text-muted-foreground">{b.T.meta ? brl(b.T.meta) : "sem meta"}</td>
-              <td className={`px-3 py-2 font-semibold ${b.T.meta ? tone(b.T.perf) : "text-muted-foreground"}`}>{b.T.meta ? pct(b.T.perf) : "—"}</td>
-              <td className="px-3 py-2">{brl(b.T.proj)}</td>
-              <td className={`px-3 py-2 font-semibold ${b.T.meta ? tone(b.T.projP) : "text-muted-foreground"}`}>{b.T.meta ? pct(b.T.projP) : "—"}</td>
-              <td className="px-3 py-2">{b.T.meta ? (b.T.nec ? brl(b.T.nec) : "✔ batida") : "—"}</td>
-              <td className="px-3 py-2">{num(b.pass)}</td>
-              <td className="px-3 py-2">{brl(div(b.T.real, b.pass))}</td>
+              <td className="whitespace-nowrap px-2 py-2 font-medium">{nome} <span className="text-xs font-normal text-muted-foreground">({b.n})</span></td>
+              <td className="whitespace-nowrap px-2 py-2">{brl(b.T.real)}</td>
+              <td className="whitespace-nowrap px-2 py-2 text-muted-foreground">{b.T.meta ? brl(b.T.meta) : "sem meta"}</td>
+              <td className={`whitespace-nowrap px-2 py-2 font-semibold ${b.T.meta ? tone(b.T.perf) : "text-muted-foreground"}`}>{b.T.meta ? pct(b.T.perf) : "—"}</td>
+              <td className="whitespace-nowrap px-2 py-2">{brl(b.T.proj)}{b.T.meta ? <span className={`ml-1 text-xs font-semibold ${tone(b.T.projP)}`}>{pct(b.T.projP)}</span> : null}</td>
+              <td className="whitespace-nowrap px-2 py-2">{b.T.meta ? (b.T.nec ? `${brl(b.T.nec)}/dia` : "✔ batida") : "—"}</td>
+              <td className="whitespace-nowrap px-2 py-2">{num(b.pass)} <span className="text-xs text-muted-foreground">· ticket {brl(div(b.T.real, b.pass))}</span></td>
             </tr>
           ))}
         </Tabela>
