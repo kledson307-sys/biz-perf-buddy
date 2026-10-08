@@ -1,9 +1,23 @@
-import { norm, parseNum } from "@/components/painel-ui";
+import { div, norm, parseNum } from "@/components/painel-ui";
 
 export type MecRow = { nome: string; servicos: number; pecas: number };
 export type MecReport = { rows: MecRow[]; periodo: { ini: string; fim: string } | null };
 
 export type Grupo = "carro" | "moto" | "outros";
+
+/** Linha de mecânico de um mês (tabela mech_month). */
+export type Mec = {
+  id?: string; nome: string; grupo: Grupo;
+  servicos: number; pecas: number; passagens: number;
+  meta_servicos: number; meta_pecas: number;
+};
+
+export const CAMPOS = ["servicos", "pecas", "passagens", "meta_servicos", "meta_pecas"] as const;
+export type MecCampo = (typeof CAMPOS)[number];
+
+export type MecX = { real: number; meta: number; perf: number; proj: number; projP: number; nec: number; dia: number };
+export type MecCalc = { r: Mec; s: MecX; p: MecX; t: MecX };
+export type MecBloco = { calcs: MecCalc[]; S: MecX; P: MecX; T: MecX; pass: number; n: number };
 
 /** Mecânicos de carro informados por Kledson (08/10). */
 const CARRO = [
@@ -34,6 +48,8 @@ export const GRUPO_NOME: Record<Grupo, string> = {
   outros: "Sem grupo definido",
 };
 
+const lab = (v: unknown) => norm(String(v ?? "").trim()).replace(/\s+/g, " ").toUpperCase();
+
 /** Grupo de um mecânico pela lista; quem não está em nenhuma das duas fica "outros". */
 export function grupoDe(nome: string): Grupo {
   const k = lab(nome);
@@ -42,7 +58,29 @@ export function grupoDe(nome: string): Grupo {
   return "outros";
 }
 
-const lab = (v: unknown) => norm(String(v ?? "").trim()).replace(/\s+/g, " ").toUpperCase();
+/** real, meta, performance, projeção, projeção vs. meta, necessidade diária e média por dia. */
+export function calcMec(real: number, meta: number, dec: number, tot: number): MecX {
+  const proj = div(real, dec) * tot;
+  const rest = Math.max(tot - dec, 1);
+  return { real, meta, perf: div(real, meta), proj, projP: div(proj, meta), nec: Math.max(meta - real, 0) / rest, dia: div(real, dec) };
+}
+
+/** Junta um grupo de mecânicos: linhas individuais + totais do grupo. */
+export function blocoMec(lst: Mec[], dec: number, tot: number): MecBloco {
+  const calcs = lst
+    .map(r => ({
+      r,
+      s: calcMec(r.servicos, r.meta_servicos, dec, tot),
+      p: calcMec(r.pecas, r.meta_pecas, dec, tot),
+      t: calcMec(r.servicos + r.pecas, r.meta_servicos + r.meta_pecas, dec, tot),
+    }))
+    .sort((a, b) => b.t.real - a.t.real);
+  const sum = (k: MecCampo) => lst.reduce((a, r) => a + Number(r[k]), 0);
+  const S = calcMec(sum("servicos"), sum("meta_servicos"), dec, tot);
+  const P = calcMec(sum("pecas"), sum("meta_pecas"), dec, tot);
+  const T = calcMec(S.real + P.real, S.meta + P.meta, dec, tot);
+  return { calcs, S, P, T, pass: sum("passagens"), n: lst.length };
+}
 
 const money = (v: unknown) => (typeof v === "number" ? v : parseNum(String(v ?? "")));
 const iso = (s: string) => { const [d, m, y] = s.split("/"); return `${y}-${m}-${d}`; };
