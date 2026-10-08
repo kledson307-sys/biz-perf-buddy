@@ -18,9 +18,9 @@ const digitos = (t: string) => {
 
 const num = (v: number) => v.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
 
-export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, tot, reload, envioAberto, onToggleEnvio }: {
+export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, tot, reload }: {
   linhas: LinhaEnvio[]; lider: LinhaEnvio | undefined; liderServ: LinhaEnvio | null; liderPec: LinhaEnvio | null;
-  mes: string; dec: number; tot: number; reload: () => void; envioAberto: boolean; onToggleEnvio: () => void;
+  mes: string; dec: number; tot: number; reload: () => void;
 }) {
   const [tel, setTel] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState("");
@@ -127,49 +127,39 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
   };
 
   return (
-    <div className="space-y-4">
-      {envioAberto && (
-        <Box title="Enviar atualização por WhatsApp">
-          <p className="mb-4 px-5 pt-4 text-sm text-muted-foreground">Cadastre o celular com DDD. Ao clicar em Enviar, o WhatsApp abre com a mensagem pronta — é só apertar enviar. Nenhum crédito é gasto.</p>
-          <Tabela head={["Consultor", "Celular", "Perf.", "Projeção", ""]}>
-            {linhas.map((l) => (
-              <tr key={l.c.id} className="border-t border-border">
-                <td className="px-3 py-2 font-medium">{l.c.nome}</td>
-                <td className="px-3 py-2">
-                  <input aria-label={`Celular de ${l.c.nome}`} inputMode="tel" placeholder="(71) 99999-9999"
-                    value={tel[l.c.id] ?? l.c.telefone} onChange={(e) => setTel({ ...tel, [l.c.id]: e.target.value })}
-                    onBlur={(e) => { if (e.target.value !== l.c.telefone) void salvarTel(l.c.id, e.target.value); }}
-                    className="w-44 rounded-md border border-input bg-background px-3 py-1.5 text-sm" />
-                </td>
-                <td className={`px-3 py-2 font-semibold ${tone(l.perf)}`}>{pct(l.perf)}</td>
-                <td className={`px-3 py-2 ${tone(l.projPct)}`}>{pct(l.projPct)}</td>
-                <td className="px-3 py-2">
-                  <Button size="sm" onClick={() => enviar(l)}><MessageCircle />Enviar</Button>
-                </td>
-              </tr>
-            ))}
-          </Tabela>
-          {msg && <p role="status" className="px-5 pb-4 pt-3 text-sm text-muted-foreground">{msg}</p>}
-        </Box>
-      )}
-
-      <Box title="Mensagens prontas" right={
-        <Button size="sm" variant="outline" onClick={onToggleEnvio}>
-          {envioAberto ? "Ocultar envio por WhatsApp" : "Mostrar envio por WhatsApp"}
-        </Button>
-      }>
-        <div className="grid gap-4 p-5 md:grid-cols-2">
-          {linhas.map((l) => (
-            <div key={l.c.id} className="rounded-lg border border-border bg-card p-4">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <span className="font-semibold">{l.c.nome}</span>
-                <Button size="sm" variant="outline" onClick={() => void copiar(l)}><Copy />{copiado === l.c.id ? "Copiado!" : "Copiar"}</Button>
-              </div>
-              <pre className="max-h-72 overflow-auto whitespace-pre-wrap font-sans text-sm text-muted-foreground">{montar(l)}</pre>
+    <Box title="Enviar atualização por WhatsApp">
+      <p className="mb-4 text-sm text-muted-foreground">Cadastre o celular com DDD. Ao clicar em Enviar, o WhatsApp abre com a mensagem pronta — é só apertar enviar. Nenhum crédito é gasto.</p>
+      <Tabela head={["Consultor", "Celular", "Perf.", "Projeção", ""]}>
+        {linhas.map((l) => (
+          <tr key={l.c.id} className="border-t border-border">
+            <td className="px-3 py-2 font-medium">{l.c.nome}</td>
+            <td className="px-3 py-2">
+              <input aria-label={`Celular de ${l.c.nome}`} inputMode="tel" placeholder="(71) 99999-9999"
+                value={tel[l.c.id] ?? l.c.telefone} onChange={(e) => setTel({ ...tel, [l.c.id]: e.target.value })}
+                onBlur={(e) => { if (e.target.value !== l.c.telefone) void salvarTel(l.c.id, e.target.value); }}
+                className="w-44 rounded-md border border-input bg-background px-3 py-1.5 text-sm" />
+            </td>
+            <td className={`px-3 py-2 font-semibold ${tone(l.perf)}`}>{pct(l.perf)}</td>
+            <td className={`px-3 py-2 ${tone(l.projPct)}`}>{pct(l.projPct)}</td>
+            <td className="px-3 py-2">
+              <Button size="sm" onClick={() => enviar(l)}><MessageCircle />Enviar</Button>
+            </td>
+          </tr>
+        ))}
+      </Tabela>
+      {msg && <p role="status" className="mt-3 text-sm text-muted-foreground">{msg}</p>}
+      <h3 className="mb-3 mt-6 font-semibold">Mensagens prontas</h3>
+      <div className="grid gap-4 md:grid-cols-2">
+        {linhas.map((l) => (
+          <div key={l.c.id} className="rounded-lg border border-border bg-card p-4">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <span className="font-semibold">{l.c.nome}</span>
+              <Button size="sm" variant="outline" onClick={() => void copiar(l)}><Copy />{copiado === l.c.id ? "Copiado!" : "Copiar"}</Button>
             </div>
-          ))}
-        </div>
-      </Box>
-    </div>
+            <pre className="max-h-72 overflow-auto whitespace-pre-wrap font-sans text-sm text-muted-foreground">{montar(l)}</pre>
+          </div>
+        ))}
+      </div>
+    </Box>
   );
 }
