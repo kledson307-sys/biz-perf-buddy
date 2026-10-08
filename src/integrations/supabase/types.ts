@@ -269,6 +269,45 @@ export type Database = {
           },
         ]
       }
+      mech_month: {
+        Row: {
+          id: string
+          mes: string
+          meta_pecas: number
+          meta_servicos: number
+          nome: string
+          passagens: number
+          pecas: number
+          servicos: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          mes: string
+          meta_pecas?: number
+          meta_servicos?: number
+          nome: string
+          passagens?: number
+          pecas?: number
+          servicos?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          id?: string
+          mes?: string
+          meta_pecas?: number
+          meta_servicos?: number
+          nome?: string
+          passagens?: number
+          pecas?: number
+          servicos?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       month_params: {
         Row: {
           base: string
