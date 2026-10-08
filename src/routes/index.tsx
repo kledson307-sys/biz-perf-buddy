@@ -496,7 +496,17 @@ function Painel({ email }: { email: string }) {
         {show("diario") && <Secao titulo="Performance diária e acumulada"><Diario sales={sales} cons={visiveis} metaTotal={total.meta} tot={tot} /></Secao>}
         {tab === "controle-os" && <ControleOS />}
         {show("mecanicos") && <Secao titulo="Mecânicos"><Mecanicos mes={mes} tot={tot} dec={dec} /></Secao>}
-        {tab === "dados" && <SalesImport cons={cons} depts={depts} onDone={load} onPeriod={setMes} />}
+        {tab === "dados" && <div className="space-y-6">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {([["fat", "Dados Faturamento M.O & PÇ vendedores"], ["os", "O.S abertas AC,BS,MC,NC,C7,M7,N7,CF,C5,MF,MS"], ["agg", "Agregados"], ["mec", "Faturamento técnicos"]] as const).map(([k, l]) => (
+              <Button key={k} variant={imp === k ? "default" : "outline"} className="h-auto min-h-14 whitespace-normal py-3 text-center" onClick={() => setImp(k)}>{l}</Button>
+            ))}
+          </div>
+          {imp === "fat" && <SalesImport cons={cons} depts={depts} onDone={load} onPeriod={setMes} />}
+          {imp === "os" && <OsAbertas linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} />}
+          {imp === "agg" && <div className="space-y-3"><p className="text-sm text-muted-foreground">Importe aqui as planilhas de venda de serviços e de peças. As passagens podem ser coladas em "Lançar / colar" ou importadas no botão Faturamento técnicos (relatório de passagem técnico+consultor).</p><Agregados inicio="importar" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></div>}
+          {imp === "mec" && <div className="space-y-3"><p className="text-sm text-muted-foreground">Use "Importar Excel" para a planilha de venda (Faturamento Líquido dos Produtivos) e para a de passagem — o tipo é reconhecido automaticamente.</p><Mecanicos mes={mes} tot={tot} dec={dec} /></div>}
+        </div>}
         {tab === "config" && <div className="space-y-6"><Equipe /><Config params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} /></div>}
       </main>
     </div>
