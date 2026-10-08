@@ -7,6 +7,7 @@ import { Barra, Box, Cmp, Kpi, Num, Tabela, bg, brl, div, norm, parseNum, pct, t
 import { Agregados } from "@/components/Agregados";
 import { SalesImport } from "@/components/SalesImport";
 import { EnvioWhatsapp } from "@/components/EnvioWhatsapp";
+import { ResumoPainel } from "@/components/ResumoPainel";
 import { OsAbertas } from "@/components/OsAbertas";
 import { ControleOS } from "@/components/ControleOS";
 import { Mecanicos } from "@/components/Mecanicos";
@@ -349,6 +350,8 @@ function Painel({ email }: { email: string }) {
             </Box>
 
             <div className="print:hidden"><EnvioWhatsapp linhas={linhas} lider={lider} liderServ={liderServ} liderPec={liderPec} mes={mes} dec={dec} tot={tot} reload={load} /></div>
+
+            <ResumoPainel linhas={linhas.map((l) => ({ nome: l.c.nome, servicos: l.servicos, pecas: l.pecas, mS: l.mS, mP: l.mP, perfS: l.perfS, perfP: l.perfP, perf: l.perf, projPct: l.projPct, mediaDia: l.mediaDia, necS: l.necS, necP: l.necP, nec: l.nec }))} liderNome={lider?.c.nome ?? null} dec={dec} tot={tot} mes={mes} />
 
 
             <Box title="Comparação com o líder e recomendações">
