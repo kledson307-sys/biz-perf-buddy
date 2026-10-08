@@ -16,3 +16,4 @@
 - [ ] Configurar: grade "Metas do ano" para estabelecer as metas dos 12 meses de forma antecipada (a partir do próximo ano)
 - [ ] Painel: ocultar a área de envio por WhatsApp da tela, atrás de um botão para abrir quando precisar
 - [ ] Relatório de fechamento (PDF): análise do fechamento, gráficos, dicas, plano dos próximos dias e reconhecimento de quem faz acontecer
+- [ ] Análise do fechamento e Reconhecimento: aparecer apenas no PDF de fechamento, não na tela do painel
