@@ -165,6 +165,8 @@ function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onEdit, onGrupo, onRem, v
   vazio: string; dica?: string;
 }) {
   const suf = rotulo ? ` ${rotulo}` : "";
+  const visiveis = b.calcs.filter(c => !ocultoDaLista(c.r.nome));
+  const ocultos = b.n - visiveis.length;
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
