@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
-import { Copy, MessageCircle, Sparkles } from "lucide-react";
+import { Copy, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Box, Tabela, brl, pct, tone } from "@/components/painel-ui";
-import { dicaWhatsapp } from "@/lib/whatsapp-ia.functions";
 import { ITENS, naoVende } from "@/lib/agregados";
 
 export type LinhaEnvio = {
@@ -18,16 +16,13 @@ const digitos = (t: string) => {
   return d.length === 10 || d.length === 11 ? `55${d}` : d;
 };
 
-const bloco = (txt: string, tag: string) => txt.match(new RegExp(`\\[${tag}\\]([\\s\\S]*?)(?=\\n?\\[[A-Z]+\\]|$)`))?.[1]?.trim() ?? "";
 const num = (v: number) => v.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
 
 export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, tot, reload }: {
   linhas: LinhaEnvio[]; lider: LinhaEnvio | undefined; liderServ: LinhaEnvio | null; liderPec: LinhaEnvio | null;
   mes: string; dec: number; tot: number; reload: () => void;
 }) {
-  const gerar = useServerFn(dicaWhatsapp);
   const [tel, setTel] = useState<Record<string, string>>({});
-  const [busy, setBusy] = useState<string>("");
   const [msg, setMsg] = useState("");
 
   const [agg, setAgg] = useState<{ s: { consultant_id: string; item: string; qtd: number }[]; g: { consultant_id: string; item: string; meta_qtd: number }[]; v: { consultant_id: string; passagens: number }[] }>({ s: [], g: [], v: [] });
@@ -73,11 +68,10 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
       .sort((a, b) => b.qtd / b.meta - a.qtd / a.meta)[0] ?? null;
   const liderAgg = linhas.filter((x) => perfAgg(x.c.id, x.c.nome) > 0).sort((a, b) => perfAgg(b.c.id, b.c.nome) - perfAgg(a.c.id, a.c.nome))[0] ?? null;
 
-  const montar = (l: LinhaEnvio, ia: string) => {
+  const montar = (l: LinhaEnvio) => {
     const { passagens, agregados } = dadosAgg(l.c.id, l.c.nome);
     const cmp = (ld: LinhaEnvio | null, minha: number, dele: number) =>
       !ld ? "" : ld.c.id === l.c.id ? "🏆 Você é o líder!" : `🏆 Líder: ${ld.c.nome} (${pct(dele)}) · você está ${num((dele - minha) * 100)} pts atrás`;
-    const dicas = (tag: string) => { const t = bloco(ia, tag); return t ? ["💡 Sugestões:", t] : []; };
     const linhasAgg = agregados.map((a) => {
       const li = liderItem(a.item);
       const liderTxt = li ? (li.id === l.c.id ? "👑 você é o líder" : `👑 líder: ${li.nome} (${pct(li.qtd / li.meta)})`) : "";
@@ -93,26 +87,23 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
       `Projeção: ${brl(l.projS)} (${pct(l.mS ? l.projS / l.mS : 0)} da meta)`,
       `Precisa vender: ${brl(l.necS)}/dia`,
       cmp(liderServ, l.perfS, liderServ?.perfS ?? 0),
-      ...dicas("SERVICOS"),
       "",
       "🔩 *PEÇAS*",
       `Realizado: ${brl(l.pecas)} de ${brl(l.mP)} (${pct(l.perfP)})`,
       `Projeção: ${brl(l.projP)} (${pct(l.mP ? l.projP / l.mP : 0)} da meta)`,
       `Precisa vender: ${brl(l.necP)}/dia`,
       cmp(liderPec, l.perfP, liderPec?.perfP ?? 0),
-      ...dicas("PECAS"),
       "",
       "➕ *AGREGADOS*",
       ...linhasAgg,
       passagens ? `Aproveitamento: ${pct(totAgg / passagens)} (${num(totAgg)} itens em ${num(passagens)} passagens)` : "Passagens ainda não lançadas.",
       cmp(liderAgg, perfAgg(l.c.id, l.c.nome), liderAgg ? perfAgg(liderAgg.c.id, liderAgg.c.nome) : 0),
       oport ? `🎯 Oportunidade: ${oport.item} está mais longe da meta (${pct(oport.qtd / oport.meta)}) — foque nele.` : "",
-      ...dicas("AGREGADOS"),
     ].filter((x) => x !== undefined && x !== null).join("\n").replace(/\n{3,}/g, "\n\n").trim();
   };
 
   const copiar = async (l: LinhaEnvio) => {
-    await navigator.clipboard.writeText(montar(l, ""));
+    await navigator.clipboard.writeText(montar(l));
     setCopiado(l.c.id); setTimeout(() => setCopiado(""), 2000);
   };
 
@@ -121,31 +112,16 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
     reload();
   };
 
-  const enviar = async (l: LinhaEnvio) => {
+  const enviar = (l: LinhaEnvio) => {
     const fone = digitos(tel[l.c.id] ?? l.c.telefone);
     if (fone.length < 12) { setMsg(`Cadastre o celular de ${l.c.nome} com DDD.`); return; }
-    const janela = window.open("", "_blank");
-    setBusy(l.c.id); setMsg("");
-    const d = dadosAgg(l.c.id, l.c.nome);
-    const r = await gerar({ data: {
-      nome: l.c.nome, mes, dec, tot, servicos: l.servicos, pecas: l.pecas, mS: l.mS, mP: l.mP,
-      projS: l.projS, projP: l.projP, perfS: l.perfS, perfP: l.perfP, projPct: l.projPct,
-      necS: l.necS, necP: l.necP, liderServ: liderServ?.c.nome ?? "", liderPerfS: liderServ?.perfS ?? 0,
-      liderPec: liderPec?.c.nome ?? "", liderPerfP: liderPec?.perfP ?? 0,
-      liderAgg: liderAgg?.c.nome ?? "", liderAggPerf: liderAgg ? perfAgg(liderAgg.c.id, liderAgg.c.nome) : 0,
-      passagens: d.passagens, agregados: d.agregados,
-    } }).catch(() => ({ ok: false as const, mensagem: "Não foi possível gerar as dicas." }));
-    setBusy("");
-    const texto = montar(l, r.ok ? r.texto : "");
-    if (!r.ok) setMsg(`${r.mensagem} A mensagem foi aberta sem as sugestões da IA. Você também pode copiar as mensagens prontas abaixo.`);
-    const url = `https://wa.me/${fone}?text=${encodeURIComponent(texto)}`;
-    if (janela) janela.location.href = url; else window.open(url, "_blank");
+    setMsg("");
+    window.open(`https://wa.me/${fone}?text=${encodeURIComponent(montar(l))}`, "_blank");
   };
 
   return (
     <Box title="Enviar atualização por WhatsApp">
-      <p className="mb-4 text-sm text-muted-foreground">Cadastre o celular com DDD. Ao clicar em Enviar, a IA escreve as recomendações e o WhatsApp abre com a mensagem pronta — é só apertar enviar.</p>
-      <p className="mb-4 rounded-md border border-border bg-muted px-3 py-2 text-sm">⚠️ Cada envio com IA usa cerca de <b>0,3 crédito</b> (equipe de 5 ≈ 1,5 crédito). Sem créditos, use <b>Copiar</b> nas mensagens prontas abaixo — elas não gastam nada.</p>
+      <p className="mb-4 text-sm text-muted-foreground">Cadastre o celular com DDD. Ao clicar em Enviar, o WhatsApp abre com a mensagem pronta — é só apertar enviar. Nenhum crédito é gasto.</p>
       <Tabela head={["Consultor", "Celular", "Perf.", "Projeção", ""]}>
         {linhas.map((l) => (
           <tr key={l.c.id} className="border-t border-border">
@@ -159,15 +135,13 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
             <td className={`px-3 py-2 font-semibold ${tone(l.perf)}`}>{pct(l.perf)}</td>
             <td className={`px-3 py-2 ${tone(l.projPct)}`}>{pct(l.projPct)}</td>
             <td className="px-3 py-2">
-              <Button size="sm" disabled={busy !== ""} onClick={() => void enviar(l)}>
-                {busy === l.c.id ? <><Sparkles />Gerando…</> : <><MessageCircle />Enviar</>}
-              </Button>
+              <Button size="sm" onClick={() => enviar(l)}><MessageCircle />Enviar</Button>
             </td>
           </tr>
         ))}
       </Tabela>
       {msg && <p role="status" className="mt-3 text-sm text-muted-foreground">{msg}</p>}
-      <h3 className="mb-3 mt-6 font-semibold">Mensagens prontas (sem IA, sem créditos)</h3>
+      <h3 className="mb-3 mt-6 font-semibold">Mensagens prontas</h3>
       <div className="grid gap-4 md:grid-cols-2">
         {linhas.map((l) => (
           <div key={l.c.id} className="rounded-lg border border-border bg-card p-4">
@@ -175,7 +149,7 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
               <span className="font-semibold">{l.c.nome}</span>
               <Button size="sm" variant="outline" onClick={() => void copiar(l)}><Copy />{copiado === l.c.id ? "Copiado!" : "Copiar"}</Button>
             </div>
-            <pre className="max-h-72 overflow-auto whitespace-pre-wrap font-sans text-sm text-muted-foreground">{montar(l, "")}</pre>
+            <pre className="max-h-72 overflow-auto whitespace-pre-wrap font-sans text-sm text-muted-foreground">{montar(l)}</pre>
           </div>
         ))}
       </div>
