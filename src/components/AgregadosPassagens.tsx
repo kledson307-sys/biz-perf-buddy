@@ -10,7 +10,7 @@ const chave = (s: string) => norm(s).replace(/\s+/g, " ");
 
 /** Importa o relatório "Passagem tecnico+consultor": cada O.S. conta uma única vez por consultor (mesmo critério dos técnicos). */
 export function AgregadosPassagens({ allCons, ini, end, onDone }: { allCons: Cons[]; ini: string; end: string; onDone: () => void }) {
-  const [prev, setPrev] = useState<{ nome: string; passagens: number; id?: string }[] | null>(null);
+  const [prev, setPrev] = useState<{ nome: string; passagens: number; id: string | undefined }[] | null>(null);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
 
