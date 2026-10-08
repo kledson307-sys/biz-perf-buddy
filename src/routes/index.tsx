@@ -6,6 +6,7 @@ import { lovable } from "@/integrations/lovable/index";
 import { Barra, Box, Cmp, Kpi, Num, Tabela, bg, brl, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
 import { Agregados } from "@/components/Agregados";
 import { SalesImport } from "@/components/SalesImport";
+import { EnvioWhatsapp } from "@/components/EnvioWhatsapp";
 import { OsAbertas } from "@/components/OsAbertas";
 import { ControleOS } from "@/components/ControleOS";
 import { Mecanicos } from "@/components/Mecanicos";
@@ -30,7 +31,7 @@ export const Route = createFileRoute("/")({
 });
 
 type Dept = { id: string; nome: string };
-type Cons = { id: string; nome: string; department_id: string | null };
+type Cons = { id: string; nome: string; department_id: string | null; telefone: string };
 type Goal = { consultant_id: string; servicos: number; pecas: number };
 type Sale = { consultant_id: string; dia: string; servicos: number; pecas: number };
 type Params = { du_totais: number; du_decorridos: number; dc_totais: number; dc_decorridos: number; base: string };
@@ -119,7 +120,7 @@ function Painel({ email }: { email: string }) {
     const fim = new Date(y!, m!, 0).getDate();
     const [d, c, g, s, p, ul] = await Promise.all([
       supabase.from("departments").select("id,nome").order("nome"),
-      supabase.from("consultants").select("id,nome,department_id").order("nome"),
+      supabase.from("consultants").select("id,nome,department_id,telefone").order("nome"),
       supabase.from("goals").select("consultant_id,servicos,pecas").eq("mes", mes),
       supabase.from("daily_sales").select("consultant_id,dia,servicos,pecas").gte("dia", `${mes}-01`).lte("dia", `${mes}-${fim}`).order("dia"),
       supabase.from("month_params").select("*").eq("mes", mes).maybeSingle(),
@@ -346,6 +347,9 @@ function Painel({ email }: { email: string }) {
                 ))}
               </Tabela>
             </Box>
+
+            <div className="print:hidden"><EnvioWhatsapp linhas={linhas} lider={lider} liderServ={liderServ} liderPec={liderPec} mes={mes} dec={dec} tot={tot} reload={load} /></div>
+
 
             <Box title="Comparação com o líder e recomendações">
               <div className="grid gap-4 p-4 md:grid-cols-2">
