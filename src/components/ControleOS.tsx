@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Bell, ChevronDown, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { brl, Box, Tabela } from "@/components/painel-ui";
+import { brl, Box, Pizza, Tabela } from "@/components/painel-ui";
 import { analisar, fmt, hoje, lerRelatorio, STATUS, type Analise, type OsImport, type OsItem, type Status } from "@/lib/os-controle";
 import { registrarUpdate } from "@/lib/update-log";
 
@@ -113,6 +113,18 @@ export function ControleOS() {
           </Tabela>
         </Box>
 
+        <Box title="Ranking em gráficos de pizza">
+          <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 xl:grid-cols-4">
+            <CartaoPizza titulo="O.S. por status" sub="distribuição geral" fmt={n => `${n} O.S.`}
+              dados={STATUS.map(s => ({ label: s.nome, valor: lista.filter(a => a.item.st === s.k).length }))} />
+            {ranking.filter(r => r.total > 0).map(({ s, total, cons }) => (
+              <CartaoPizza key={s.k} titulo={s.nome} sub={`${total} O.S. · ${brl(cons.reduce((n, c) => n + c.valor, 0))}`}
+                fmt={n => `${n} O.S.`} onClick={() => setAba(s.k)}
+                dados={cons.map(c => ({ label: c.c, valor: c.qtd, extra: brl(c.valor) }))} />
+            ))}
+          </div>
+        </Box>
+
         {lembretes.length > 0 && <Box title={`Lembretes de hoje (${lembretes.length})`} right={<Bell className="size-4" />}>
           <ul className="divide-y divide-border text-sm">
             {lembretes.map(a => <li key={a.item.n} className="flex flex-wrap gap-x-3 px-5 py-2">
@@ -152,6 +164,24 @@ export function ControleOS() {
         </Tabela>
       </Box>
     </section>
+  );
+}
+
+function CartaoPizza({ titulo, sub, dados, fmt, onClick }: {
+  titulo: string; sub: string; dados: { label: string; valor: number; extra?: string }[];
+  fmt: (n: number) => string; onClick?: () => void;
+}) {
+  const total = dados.reduce((n, d) => n + d.valor, 0);
+  return (
+    <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+      <button className="mb-3 w-full text-left disabled:cursor-default" onClick={() => onClick?.()} disabled={!onClick}>
+        <span className={`block text-sm font-semibold ${onClick ? "hover:text-primary" : ""}`}>{titulo}</span>
+        <span className="block text-xs text-muted-foreground">{sub}</span>
+      </button>
+      {total === 0
+        ? <p className="py-10 text-center text-sm text-muted-foreground">Nenhuma O.S.</p>
+        : <Pizza dados={dados} fmt={fmt} centro={<><span className="text-2xl font-bold">{total}</span><span className="text-[10px] uppercase text-muted-foreground">O.S.</span></>} />}
+    </div>
   );
 }
 
