@@ -45,7 +45,7 @@ function lerOsSistema(raw: unknown[][]): { nome: string; servicos: number; pecas
   return res.length ? res : null;
 }
 
-export function OsAbertas({ linhas, mes, soPecas, tot, dec, apenasImportacao }: { linhas: Linha[]; mes: string; soPecas: (n: string) => boolean; tot: number; dec: number; apenasImportacao?: boolean }) {
+export function OsAbertas({ linhas, mes, soPecas, tot, dec }: { linhas: Linha[]; mes: string; soPecas: (n: string) => boolean; tot: number; dec: number }) {
   const store = `os-abertas-${mes}`;
   const [os, setOs] = useState<Os>({});
   const [txt, setTxt] = useState("");
@@ -152,21 +152,6 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec, apenasImportacao }: 
   const projPctS = div(projS, g.ms), projPctP = div(projP, g.mp), projPct = div(projS + projP, g.ms + g.mp);
   const necS = rest ? Math.max(g.ms - ts, 0) / rest : 0, necP = rest ? Math.max(g.mp - tp, 0) / rest : 0;
   const cell = "px-3 py-2";
-
-  if (apenasImportacao) return (
-    <Box title="Importar OS abertas (Excel ou colar)">
-      <p className="mb-3 text-sm text-muted-foreground">Aceita o relatório "O.S. Abertas" do sistema (peças e serviços separados) ou colar vendedor/serviços/peças. Só são considerados: P.BENIGNO, ANDRESSA.O, GILBERTO.S, WESLEY.F, RENAN.O, GEOVANA.M e MARCELA.S. Importar substitui as OS abertas do mês.</p>
-      <div className="flex flex-wrap gap-2">
-        <input ref={file} type="file" accept=".xls,.xlsx,.csv" className="hidden" onChange={(e) => void abrir(e.target.files?.[0])} />
-        <Button disabled={loading || saving || !canEdit} onClick={() => file.current?.click()}><Upload />Importar Excel de OS abertas</Button>
-        <Button disabled={loading || saving || !canEdit} variant="outline" onClick={() => void salvar({})}><Trash2 />Zerar OS</Button>
-      </div>
-      <textarea value={txt} onChange={(e) => setTxt(e.target.value)} placeholder={"Vendedor\tServiços\tPeças\nFULANO\t1.500,00\t800,00"} className="mt-3 h-24 w-full rounded-md border border-input bg-card p-2 font-mono text-xs" />
-      <Button variant="outline" className="mt-2" onClick={() => void colar()} disabled={!txt.trim() || loading || saving || !canEdit}>Ler dados colados</Button>
-      {loading && !msg && <p className="mt-2 text-sm text-muted-foreground">Carregando O.S. salvas…</p>}
-      {msg && <p role="status" className="mt-2 text-sm">{msg}</p>}
-    </Box>
-  );
 
   return (
     <div className="space-y-6">

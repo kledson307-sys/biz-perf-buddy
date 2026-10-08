@@ -108,7 +108,6 @@ function Painel({ email }: { email: string }) {
   const [sales, setSales] = useState<Sale[]>([]);
   const [params, setParams] = useState<Params>(defParams);
   const [tab, setTab] = useState("painel");
-  const [imp, setImp] = useState<"fat" | "os" | "agg" | "mec">("fat");
   const [relatorio, setRelatorio] = useState(false);
   const show = (k: string) => tab === k || relatorio;
   useEffect(() => { const f = () => setRelatorio(false); window.addEventListener("afterprint", f); return () => window.removeEventListener("afterprint", f); }, []);
@@ -497,17 +496,7 @@ function Painel({ email }: { email: string }) {
         {show("diario") && <Secao titulo="Performance diária e acumulada"><Diario sales={sales} cons={visiveis} metaTotal={total.meta} tot={tot} /></Secao>}
         {tab === "controle-os" && <ControleOS />}
         {show("mecanicos") && <Secao titulo="Mecânicos"><Mecanicos mes={mes} tot={tot} dec={dec} /></Secao>}
-        {tab === "dados" && <div className="space-y-6">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {([["fat", "Dados Faturamento M.O & PÇ vendedores"], ["os", "O.S abertas AC,BS,MC,NC,C7,M7,N7,CF,C5,MF,MS"], ["agg", "Agregados"], ["mec", "Faturamento técnicos"]] as const).map(([k, l]) => (
-              <Button key={k} variant={imp === k ? "default" : "outline"} className="h-auto min-h-14 whitespace-normal py-3 text-center" onClick={() => setImp(k)}>{l}</Button>
-            ))}
-          </div>
-          {imp === "fat" && <SalesImport cons={cons} depts={depts} onDone={load} onPeriod={setMes} />}
-          {imp === "os" && <OsAbertas linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} apenasImportacao />}
-          {imp === "agg" && <Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} apenasImportacao />}
-          {imp === "mec" && <Mecanicos mes={mes} tot={tot} dec={dec} apenasImportacao />}
-        </div>}
+        {tab === "dados" && <SalesImport cons={cons} depts={depts} onDone={load} onPeriod={setMes} />}
         {tab === "config" && <div className="space-y-6"><Equipe /><Config params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} /></div>}
       </main>
     </div>

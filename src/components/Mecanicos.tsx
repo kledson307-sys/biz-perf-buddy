@@ -9,7 +9,7 @@ import { MecanicosIA } from "@/components/MecanicosIA";
 
 const asGrupo = (v: string): Grupo => (v === "carro" || v === "moto" ? v : "outros");
 
-export function Mecanicos({ mes, tot, dec, apenasImportacao }: { mes: string; tot: number; dec: number; apenasImportacao?: boolean }) {
+export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: number }) {
   const file = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<Mec[]>([]);
   const [msg, setMsg] = useState("");
@@ -106,26 +106,6 @@ export function Mecanicos({ mes, tot, dec, apenasImportacao }: { mes: string; to
     moto: blocoMec(rows.filter(r => r.grupo === "moto"), dec, tot),
     outros: blocoMec(rows.filter(r => r.grupo === "outros"), dec, tot),
   };
-
-  if (apenasImportacao) return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <Box title="Importar planilha do sistema">
-        <div className="space-y-3 p-5 text-sm">
-          <p className="text-muted-foreground">Relatório "Faturamento Líquido dos Produtivos" (venda) ou "Passagem tecnico+consultor" (passagens) — o tipo é reconhecido automaticamente. Reimportar substitui os valores do mês, sem somar.</p>
-          <input ref={file} type="file" accept=".xls,.xlsx" hidden onChange={e => importar(e.target.files?.[0])} />
-          <Button onClick={() => file.current?.click()} disabled={busy}><Upload className="mr-2 size-4" />Importar Excel</Button>
-          {msg && <p role="status" className="text-sm">{msg}</p>}
-        </div>
-      </Box>
-      <Box title="Colar passagens / valores">
-        <div className="space-y-3 p-5 text-sm">
-          <p className="text-muted-foreground">Uma linha por mecânico: <b>Nome ⇥ Passagens</b> ou <b>Nome ⇥ Serviços ⇥ Peças ⇥ Passagens</b>. Substitui o valor do mês.</p>
-          <textarea value={cola} onChange={e => setCola(e.target.value)} rows={4} className="w-full rounded-lg border border-input bg-background p-2 font-mono text-xs" />
-          <Button onClick={colar} disabled={busy}>Salvar colagem</Button>
-        </div>
-      </Box>
-    </div>
-  );
 
   return (
     <div className="space-y-6">
