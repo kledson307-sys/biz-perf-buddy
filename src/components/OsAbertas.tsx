@@ -45,7 +45,7 @@ function lerOsSistema(raw: unknown[][]): { nome: string; servicos: number; pecas
   return res.length ? res : null;
 }
 
-export function OsAbertas({ linhas, mes, soPecas, tot, dec }: { linhas: Linha[]; mes: string; soPecas: (n: string) => boolean; tot: number; dec: number }) {
+export function OsAbertas({ linhas, mes, soPecas, tot, dec, apenasImportacao }: { linhas: Linha[]; mes: string; soPecas: (n: string) => boolean; tot: number; dec: number; apenasImportacao?: boolean }) {
   const store = `os-abertas-${mes}`;
   const [os, setOs] = useState<Os>({});
   const [txt, setTxt] = useState("");

@@ -16,7 +16,7 @@ type Props = {
   deptName: (id: string | null) => string; reloadCons: () => void; relatorio?: boolean;
 };
 
-export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, relatorio, inicio }: Props & { inicio?: "importar" | "lancar" }) {
+export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, relatorio, inicio, apenasImportacao }: Props & { inicio?: "importar" | "lancar"; apenasImportacao?: boolean }) {
   const [sub, setSub] = useState<"servicos" | "pecas" | "ia" | "importar" | "lancar" | "metas">(inicio ?? "servicos");
   const [sales, setSales] = useState<ASale[]>([]);
   const [goals, setGoals] = useState<AGoal[]>([]);

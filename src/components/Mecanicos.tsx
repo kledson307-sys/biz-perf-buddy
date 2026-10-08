@@ -9,7 +9,7 @@ import { MecanicosIA } from "@/components/MecanicosIA";
 
 const asGrupo = (v: string): Grupo => (v === "carro" || v === "moto" ? v : "outros");
 
-export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: number }) {
+export function Mecanicos({ mes, tot, dec, apenasImportacao }: { mes: string; tot: number; dec: number; apenasImportacao?: boolean }) {
   const file = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<Mec[]>([]);
   const [msg, setMsg] = useState("");
