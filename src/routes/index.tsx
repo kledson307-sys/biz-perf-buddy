@@ -108,6 +108,7 @@ function Painel({ email }: { email: string }) {
   const [sales, setSales] = useState<Sale[]>([]);
   const [params, setParams] = useState<Params>(defParams);
   const [tab, setTab] = useState("painel");
+  const [imp, setImp] = useState<"fat" | "os" | "agg" | "mec">("fat");
   const [relatorio, setRelatorio] = useState(false);
   const show = (k: string) => tab === k || relatorio;
   useEffect(() => { const f = () => setRelatorio(false); window.addEventListener("afterprint", f); return () => window.removeEventListener("afterprint", f); }, []);
