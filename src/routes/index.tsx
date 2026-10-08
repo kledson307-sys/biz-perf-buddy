@@ -12,6 +12,7 @@ import { OsAbertas } from "@/components/OsAbertas";
 import { ControleOS } from "@/components/ControleOS";
 import { Mecanicos } from "@/components/Mecanicos";
 import { Equipe } from "@/components/Equipe";
+import { MetasAno } from "@/components/MetasAno";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Download, LogOut, Printer } from "lucide-react";
@@ -506,7 +507,7 @@ function Painel({ email }: { email: string }) {
         {show("diario") && <Secao titulo="Performance diária e acumulada"><Diario sales={sales} cons={visiveis} metaTotal={total.meta} tot={tot} /></Secao>}
         {tab === "controle-os" && <ControleOS />}
         {show("mecanicos") && <Secao titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} /></Secao>}
-        {tab === "config" && <div className="space-y-6"><Equipe /><Config params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} /></div>}
+        {tab === "config" && <div className="space-y-6"><Equipe /><Config params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div>}
       </main>
     </div>
   );
