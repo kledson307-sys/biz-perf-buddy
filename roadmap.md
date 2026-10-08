@@ -18,3 +18,4 @@
 - [x] Relatório de fechamento (PDF): análise do fechamento, gráficos, dicas, plano dos próximos dias e reconhecimento de quem faz acontecer
 - [x] Análise do fechamento e Reconhecimento: aparecer apenas no PDF de fechamento, não na tela do painel
 - [x] Topo de cada aba: orientação curta ao gestor (1 análise + 1 ação sugerida)
+- [x] Painel: ocultar o bloco "Comparação com o líder e recomendações" da tela, mantendo-o no relatório de fechamento (PDF)
