@@ -74,7 +74,7 @@ export function previsao(obs: string, ref: string): string | null {
 }
 
 export type Alerta = { nivel: "alto" | "medio" | "info"; texto: string };
-export type Analise = { item: OsItem; diasStatus: number; semMudanca: boolean; alertas: Alerta[]; acoes: string[]; prev: string | null; proxContato?: string; contatoHoje?: boolean };
+export type Analise = { item: OsItem; diasStatus: number; semMudanca: boolean; alertas: Alerta[]; acoes: string[]; prev: string | null; proxContato: string | undefined; contatoHoje: boolean };
 
 export function analisar(item: OsItem, anterior: OsImport | undefined, ref: string): Analise {
   const a = anterior?.itens.find(i => i.n === item.n);
