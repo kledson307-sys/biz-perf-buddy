@@ -227,11 +227,9 @@ function Painel({ email }: { email: string }) {
   const mesExtenso = mesExt.charAt(0).toUpperCase() + mesExt.slice(1);
   const dataHora = (iso: string) => new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
   // Seção do relatório de fechamento: título só na impressão e quebra de página entre seções.
-  // `sempre` mostra o título também na tela (usado nas seções novas de análise).
-  const Secao = ({ titulo, sempre, children }: { titulo: string; sempre?: boolean; children: ReactNode }) => (
+  const Secao = ({ titulo, children }: { titulo: string; children: ReactNode }) => (
     <section className={relatorio ? "print-page" : ""}>
       {relatorio && <h2 className="mb-4 hidden border-b-2 border-primary pb-2 text-lg font-bold uppercase tracking-wide print:block">{titulo}</h2>}
-      {sempre && <h2 className="mb-3 border-b border-border pb-2 text-lg font-semibold print:hidden">{titulo}</h2>}
       {children}
     </section>
   );
@@ -318,8 +316,8 @@ function Painel({ email }: { email: string }) {
             </div>
           </div>
         )}
-        {show("painel") && <Secao titulo="Análise do fechamento" sempre><AnaliseFechamento linhas={linhas} total={total} porDept={porDept} sales={sales} dec={dec} tot={tot} mes={mes} /></Secao>}
-        {show("painel") && <Secao titulo="Reconhecimento" sempre><Reconhecimento linhas={linhas} sales={sales} dec={dec} tot={tot} mes={mes} /></Secao>}
+        {relatorio && <Secao titulo="Análise do fechamento"><AnaliseFechamento linhas={linhas} total={total} porDept={porDept} sales={sales} dec={dec} tot={tot} mes={mes} /></Secao>}
+        {relatorio && <Secao titulo="Reconhecimento"><Reconhecimento linhas={linhas} sales={sales} dec={dec} tot={tot} mes={mes} /></Secao>}
         {show("os") && <Secao titulo="Projeção + Ordens de Serviço abertas"><OsAbertas linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} /></Secao>}
         {show("painel") && (
           <Secao titulo="Resumo executivo">
