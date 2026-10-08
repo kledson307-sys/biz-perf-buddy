@@ -38,7 +38,7 @@ const addDias = (d: string, n: number) => iso(new Date(Date.parse(d) + n * 86400
 export function lerRelatorio(rows: unknown[][], anterior: OsImport | undefined, dataImport: string): OsItem[] {
   const h = rows.findIndex(r => r.some(c => norm(String(c)).trim() === "numero") && r.some(c => norm(String(c)).includes("observ")));
   if (h < 0) throw new Error("Não encontrei as colunas Número e Observação na planilha.");
-  const head = rows[h].map(c => norm(String(c)).trim());
+  const head = (rows[h] ?? []).map(c => norm(String(c)).trim());
   const col = (re: RegExp) => head.findIndex(c => re.test(c));
   const c = { n: col(/^numero$/), cli: col(/cliente/), mod: col(/modelo/), cons: col(/recep|consultor|vendedor/), placa: col(/placa/), emi: col(/emissao/), pec: col(/itens/), serv: col(/serv/), valor: col(/valor/), dias: col(/dias/), obs: col(/observ/) };
   if (c.cons < 0) throw new Error("Não encontrei a coluna do consultor (Recep.).");
@@ -68,7 +68,7 @@ export function lerRelatorio(rows: unknown[][], anterior: OsImport | undefined, 
 export function previsao(obs: string, ref: string): string | null {
   const m = obs.match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
   if (!m) return null;
-  const y = m[3] ? (m[3].length === 2 ? 2000 + +m[3] : +m[3]) : +ref.slice(0, 4);
+  const y3 = m[3]; const y = y3 ? (y3.length === 2 ? 2000 + +y3 : +y3) : +ref.slice(0, 4);
   const d = new Date(Date.UTC(y, +m[2] - 1, +m[1]));
   return isNaN(+d) ? null : iso(d);
 }
