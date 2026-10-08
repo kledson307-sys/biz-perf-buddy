@@ -402,28 +402,31 @@ function Painel({ email }: { email: string }) {
             <ResumoPainel linhas={linhas.map((l) => ({ nome: l.c.nome, servicos: l.servicos, pecas: l.pecas, mS: l.mS, mP: l.mP, perfS: l.perfS, perfP: l.perfP, perf: l.perf, projPct: l.projPct, mediaDia: l.mediaDia, necS: l.necS, necP: l.necP, nec: l.nec }))} liderNome={lider?.c.nome ?? null} dec={dec} tot={tot} mes={mes} />
 
 
-            <Box title="Comparação com o líder e recomendações">
-              <div className="grid gap-4 p-4 md:grid-cols-2">
-                {linhas.map((l) => (
-                  <div key={l.c.id} className="rounded-lg border border-border p-4">
-                    <div className="flex items-baseline justify-between">
-                      <p className="font-semibold">{l.c.nome}</p>
-                      <p className={`text-sm font-semibold ${tone(l.projPct)}`}>Proj. {pct(l.projPct)}</p>
-                    </div>
-                    {lider && lider.c.id !== l.c.id && (
-                      <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
-                        <Cmp label="Perf. Serviços" a={l.perfS} b={lider.perfS} />
-                        <Cmp label="Perf. Peças" a={l.perfP} b={lider.perfP} />
-                        <Cmp label="Perf. Total" a={l.perf} b={lider.perf} />
+            {/* sai da tela; continua no relatório de fechamento (PDF) */}
+            <div className="hidden print:block">
+              <Box title="Comparação com o líder e recomendações">
+                <div className="grid gap-4 p-4 md:grid-cols-2">
+                  {linhas.map((l) => (
+                    <div key={l.c.id} className="rounded-lg border border-border p-4">
+                      <div className="flex items-baseline justify-between">
+                        <p className="font-semibold">{l.c.nome}</p>
+                        <p className={`text-sm font-semibold ${tone(l.projPct)}`}>Proj. {pct(l.projPct)}</p>
                       </div>
-                    )}
-                    <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-                      {recomendar(l).map((r) => <li key={r}>{r}</li>)}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            </Box>
+                      {lider && lider.c.id !== l.c.id && (
+                        <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                          <Cmp label="Perf. Serviços" a={l.perfS} b={lider.perfS} />
+                          <Cmp label="Perf. Peças" a={l.perfP} b={lider.perfP} />
+                          <Cmp label="Perf. Total" a={l.perf} b={lider.perf} />
+                        </div>
+                      )}
+                      <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                        {recomendar(l).map((r) => <li key={r}>{r}</li>)}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </Box>
+            </div>
             {tab === "painel" && !relatorio && <div id="colar-dados" className="scroll-mt-6 space-y-4 border-t border-border pt-6 print:hidden">
               <h2 className="text-lg font-semibold">Colar dados</h2>
               <SalesImport cons={cons} depts={depts} onDone={load} onPeriod={setMes} />
