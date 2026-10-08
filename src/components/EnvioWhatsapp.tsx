@@ -68,6 +68,7 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
       .sort((a, b) => b.qtd / b.meta - a.qtd / a.meta)[0] ?? null;
   const liderAgg = linhas.filter((x) => perfAgg(x.c.id, x.c.nome) > 0).sort((a, b) => perfAgg(b.c.id, b.c.nome) - perfAgg(a.c.id, a.c.nome))[0] ?? null;
 
+  // só vendem peças: mensagem sem bloco de serviços e sem agregados
   const SO_PECAS = ["MARCELA.S", "GEOVANA.M", "NAILTON/THIERRY"];
   const montar = (l: LinhaEnvio) => {
     const { passagens, agregados } = dadosAgg(l.c.id, l.c.nome);
@@ -98,11 +99,13 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
       `Precisa vender: ${brl(l.necP)}/dia`,
       cmp(liderPec, l.perfP, liderPec?.perfP ?? 0),
       "",
-      "➕ *AGREGADOS*",
-      ...linhasAgg,
-      passagens ? `Aproveitamento: ${pct(totAgg / passagens)} (${num(totAgg)} itens em ${num(passagens)} passagens)` : "Passagens ainda não lançadas.",
-      cmp(liderAgg, perfAgg(l.c.id, l.c.nome), liderAgg ? perfAgg(liderAgg.c.id, liderAgg.c.nome) : 0),
-      oport ? `🎯 Oportunidade: ${oport.item} está mais longe da meta (${pct(oport.qtd / oport.meta)}) — foque nele.` : "",
+      ...(semServicos ? [] : [
+        "➕ *AGREGADOS*",
+        ...linhasAgg,
+        passagens ? `Aproveitamento: ${pct(totAgg / passagens)} (${num(totAgg)} itens em ${num(passagens)} passagens)` : "Passagens ainda não lançadas.",
+        cmp(liderAgg, perfAgg(l.c.id, l.c.nome), liderAgg ? perfAgg(liderAgg.c.id, liderAgg.c.nome) : 0),
+        oport ? `🎯 Oportunidade: ${oport.item} está mais longe da meta (${pct(oport.qtd / oport.meta)}) — foque nele.` : "",
+      ]),
     ].filter((x) => x !== undefined && x !== null).join("\n").replace(/\n{3,}/g, "\n\n").trim();
   };
 
