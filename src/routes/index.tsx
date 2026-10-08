@@ -227,9 +227,11 @@ function Painel({ email }: { email: string }) {
   const mesExtenso = mesExt.charAt(0).toUpperCase() + mesExt.slice(1);
   const dataHora = (iso: string) => new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
   // Seção do relatório de fechamento: título só na impressão e quebra de página entre seções.
-  const Secao = ({ titulo, children }: { titulo: string; children: ReactNode }) => (
+  // `sempre` mostra o título também na tela (usado nas seções novas de análise).
+  const Secao = ({ titulo, sempre, children }: { titulo: string; sempre?: boolean; children: ReactNode }) => (
     <section className={relatorio ? "print-page" : ""}>
       {relatorio && <h2 className="mb-4 hidden border-b-2 border-primary pb-2 text-lg font-bold uppercase tracking-wide print:block">{titulo}</h2>}
+      {sempre && <h2 className="mb-3 border-b border-border pb-2 text-lg font-semibold print:hidden">{titulo}</h2>}
       {children}
     </section>
   );
