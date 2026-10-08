@@ -17,4 +17,4 @@
 - [x] Painel: ocultar a área de envio por WhatsApp da tela, atrás de um botão para abrir quando precisar
 - [x] Relatório de fechamento (PDF): análise do fechamento, gráficos, dicas, plano dos próximos dias e reconhecimento de quem faz acontecer
 - [x] Análise do fechamento e Reconhecimento: aparecer apenas no PDF de fechamento, não na tela do painel
-- [ ] Topo de cada aba: orientação curta ao gestor (1 análise + 1 ação sugerida)
+- [x] Topo de cada aba: orientação curta ao gestor (1 análise + 1 ação sugerida)

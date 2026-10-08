@@ -293,6 +293,40 @@ function Painel({ email }: { email: string }) {
       })()}
 
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
+        {!relatorio && (() => {
+          const rest = Math.max(tot - dec, 0);
+          type L = (typeof linhas)[number];
+          const abaixo = (arr: L[], f: (l: L) => number, m: (l: L) => number) => arr.filter((l) => m(l) > 0 && f(l) < 0.85).sort((a, b) => f(a) - f(b));
+          const piorS = abaixo(linhasServ, (l) => l.projPctS, (l) => l.mS)[0];
+          const piorP = abaixo(linhas, (l) => l.projPctP, (l) => l.mP)[0];
+          const pior = abaixo(linhas, (l) => l.projPct, (l) => l.meta)[0];
+          const semMeta = linhas.filter((l) => l.meta === 0).length;
+          const deptFraco = [...porDept].filter((d) => d.meta > 0).sort((a, b) => a.projPct - b.projPct)[0];
+          const o: Record<string, [string, string]> = {
+            painel: [`Projeção do mês em ${pct(total.projPct)} da meta (Serviços ${pct(total.projPctS)} · Peças ${pct(total.projPctP)}), faltando ${rest} dia(s).`,
+              total.projPct >= 1 ? `Ritmo bom: reconheça ${lider?.c.nome ?? "o líder"} e peça superação.` : `Cobre ${brl(total.nec)}/dia da equipe${deptFraco ? `; foco em ${deptFraco.nome} (${pct(deptFraco.projPct)})` : ""}.`],
+            "proj-serv": [`Serviços projetam ${pct(totalServ.projPctS)}; líder ${liderServ?.c.nome ?? "-"} em ${pct(liderServ?.perfS ?? 0)}.`,
+              piorS ? `Converse hoje com ${piorS.c.nome} (${pct(piorS.projPctS)}): revisar orçamentos pendentes; precisa ${brl(piorS.necS)}/dia.` : "Todos acima de 85%: mantenha a cobrança diária de agendamentos."],
+            "proj-pec": [`Peças projetam ${pct(total.projPctP)}; líder ${liderPec?.c.nome ?? "-"} em ${pct(liderPec?.perfP ?? 0)}.`,
+              piorP ? `Acompanhe ${piorP.c.nome} (${pct(piorP.projPctP)}): oferecer item complementar em toda OS; precisa ${brl(piorP.necP)}/dia.` : "Todos acima de 85%: incentive itens de maior valor."],
+            "proj-total": [`Projeção total ${brl(total.proj)} de ${brl(total.meta)} (${pct(total.projPct)}).`,
+              pior ? `Prioridade: ${pior.c.nome} em ${pct(pior.projPct)} — combine meta diária de ${brl(pior.nec)}.` : "Equipe no ritmo: mantenha a reunião rápida diária."],
+            os: ["Faturado + OS abertas mostram o que ainda dá para fechar no mês.", "Cobre de cada consultor o faturamento das OS prontas antes do fechamento."],
+            "controle-os": ["OS paradas viram prejuízo e risco de reclamação.", "Atualize a planilha toda semana e cobre ação nas OS sinalizadas sem mudança."],
+            mecanicos: ["O faturamento dos técnicos mostra a produtividade da oficina.", "Envie o resumo de Carro e Moto aos grupos e converse com quem está abaixo de 85%."],
+            agregados: ["Agregados medem o aproveitamento de cada passagem.", "Combine com cada consultor 1 agregado por atendimento e acompanhe o aproveitamento."],
+            diario: [`Média da equipe ${brl(total.mediaDia)}/dia; necessário ${brl(total.nec)}/dia.`, total.mediaDia >= total.nec ? "Ritmo diário suficiente: mantenha." : "Identifique os dias fracos e reforce a abertura da manhã."],
+            config: [semMeta ? `${semMeta} consultor(es) sem meta neste mês.` : "Metas e dias configurados.", semMeta ? "Cadastre as metas faltantes para a projeção ficar correta." : "Confira feriados nos dias úteis."],
+          };
+          const [analise, acao] = o[tab] ?? o.painel!;
+          return (
+            <div className="rounded-lg border-l-4 border-primary bg-primary/5 px-4 py-3 text-sm print:hidden">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">Orientação ao gestor</p>
+              <p className="mt-1"><span className="font-medium">Análise:</span> {analise}</p>
+              <p><span className="font-medium">Ação:</span> {acao}</p>
+            </div>
+          );
+        })()}
         {relatorio && (
           <div className="hidden print:block">
             <div className="flex min-h-[250mm] flex-col items-center justify-center text-center">
