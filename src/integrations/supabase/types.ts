@@ -271,6 +271,7 @@ export type Database = {
       }
       mech_month: {
         Row: {
+          grupo: string
           id: string
           mes: string
           meta_pecas: number
@@ -283,6 +284,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          grupo?: string
           id?: string
           mes: string
           meta_pecas?: number
@@ -295,6 +297,7 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          grupo?: string
           id?: string
           mes?: string
           meta_pecas?: number
