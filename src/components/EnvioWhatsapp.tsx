@@ -68,8 +68,10 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
       .sort((a, b) => b.qtd / b.meta - a.qtd / a.meta)[0] ?? null;
   const liderAgg = linhas.filter((x) => perfAgg(x.c.id, x.c.nome) > 0).sort((a, b) => perfAgg(b.c.id, b.c.nome) - perfAgg(a.c.id, a.c.nome))[0] ?? null;
 
+  const SO_PECAS = ["MARCELA.S", "GEOVANA.M", "NAILTON/THIERRY"];
   const montar = (l: LinhaEnvio) => {
     const { passagens, agregados } = dadosAgg(l.c.id, l.c.nome);
+    const semServicos = SO_PECAS.includes(l.c.nome);
     const cmp = (ld: LinhaEnvio | null, minha: number, dele: number) =>
       !ld ? "" : ld.c.id === l.c.id ? "🏆 Você é o líder!" : `🏆 Líder: ${ld.c.nome} (${pct(dele)}) · você está ${num((dele - minha) * 100)} pts atrás`;
     const linhasAgg = agregados.map((a) => {
@@ -82,12 +84,14 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
     return [
       `Olá, ${l.c.nome}! Atualização HAUS MOTORS – ${mes.split("-").reverse().join("/")} (dia ${dec} de ${tot})`,
       "",
-      "🔧 *SERVIÇOS*",
-      `Realizado: ${brl(l.servicos)} de ${brl(l.mS)} (${pct(l.perfS)})`,
-      `Projeção: ${brl(l.projS)} (${pct(l.mS ? l.projS / l.mS : 0)} da meta)`,
-      `Precisa vender: ${brl(l.necS)}/dia`,
-      cmp(liderServ, l.perfS, liderServ?.perfS ?? 0),
-      "",
+      ...(semServicos ? [] : [
+        "🔧 *SERVIÇOS*",
+        `Realizado: ${brl(l.servicos)} de ${brl(l.mS)} (${pct(l.perfS)})`,
+        `Projeção: ${brl(l.projS)} (${pct(l.mS ? l.projS / l.mS : 0)} da meta)`,
+        `Precisa vender: ${brl(l.necS)}/dia`,
+        cmp(liderServ, l.perfS, liderServ?.perfS ?? 0),
+        "",
+      ]),
       "🔩 *PEÇAS*",
       `Realizado: ${brl(l.pecas)} de ${brl(l.mP)} (${pct(l.perfP)})`,
       `Projeção: ${brl(l.projP)} (${pct(l.mP ? l.projP / l.mP : 0)} da meta)`,
