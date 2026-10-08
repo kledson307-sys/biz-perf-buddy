@@ -326,6 +326,33 @@ export type Database = {
         }
         Relationships: []
       }
+      os_imports: {
+        Row: {
+          arquivo: string
+          at: string
+          id: string
+          itens: Json
+          nome: string
+          user_id: string
+        }
+        Insert: {
+          arquivo?: string
+          at?: string
+          id?: string
+          itens?: Json
+          nome?: string
+          user_id?: string
+        }
+        Update: {
+          arquivo?: string
+          at?: string
+          id?: string
+          itens?: Json
+          nome?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       team_members: {
         Row: {
           created_at: string

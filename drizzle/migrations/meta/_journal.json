@@ -50,6 +50,13 @@
       "when": 1791410875164,
       "tag": "0006_persist_open_orders",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791467725750,
+      "tag": "0007_os_control_imports",
+      "breakpoints": true
     }
   ]
 }
