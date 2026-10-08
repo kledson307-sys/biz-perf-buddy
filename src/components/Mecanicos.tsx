@@ -92,11 +92,11 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
         <Kpi label="Necessidade diária" value={brl(EQUIPE.T.nec) + "/dia"} sub={<>serviços {brl(EQUIPE.S.nec)}/dia · peças {brl(EQUIPE.P.nec)}/dia</>} />
       </div>
 
-      <GrupoSec titulo={GRUPO_NOME.carro} b={G.carro} dec={dec} tot={tot} busy={busy} onEdit={editar} onGrupo={mudarGrupo} onRem={remover}
+      <GrupoSec rotulo="Carro" titulo={GRUPO_NOME.carro} b={G.carro} dec={dec} tot={tot} busy={busy} onEdit={editar} onGrupo={mudarGrupo} onRem={remover}
         vazio="Nenhum mecânico de carro neste mês." />
-      <GrupoSec titulo={GRUPO_NOME.moto} b={G.moto} dec={dec} tot={tot} busy={busy} onEdit={editar} onGrupo={mudarGrupo} onRem={remover}
+      <GrupoSec rotulo="Moto" titulo={GRUPO_NOME.moto} b={G.moto} dec={dec} tot={tot} busy={busy} onEdit={editar} onGrupo={mudarGrupo} onRem={remover}
         vazio="Nenhum mecânico de moto neste mês." />
-      {G.outros.n > 0 && <GrupoSec titulo={GRUPO_NOME.outros} b={G.outros} dec={dec} tot={tot} busy={busy} onEdit={editar} onGrupo={mudarGrupo} onRem={remover}
+      {G.outros.n > 0 && <GrupoSec rotulo="" titulo={GRUPO_NOME.outros} b={G.outros} dec={dec} tot={tot} busy={busy} onEdit={editar} onGrupo={mudarGrupo} onRem={remover}
         vazio="" dica="Troque para Carro ou Moto na coluna Grupo." />}
 
       <MecanicosIA mes={mes} tot={tot} dec={dec} blocos={[
@@ -134,16 +134,17 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
   );
 }
 
-function GrupoSec({ titulo, b, dec, tot, busy, onEdit, onGrupo, onRem, vazio, dica }: {
-  titulo: string; b: MecBloco; dec: number; tot: number; busy: boolean;
+function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onEdit, onGrupo, onRem, vazio, dica }: {
+  rotulo: string; titulo: string; b: MecBloco; dec: number; tot: number; busy: boolean;
   onEdit: (r: Mec, k: MecCampo, v: number) => void; onGrupo: (r: Mec, g: Grupo) => void; onRem: (r: Mec) => void;
   vazio: string; dica?: string;
 }) {
+  const suf = rotulo ? ` ${rotulo}` : "";
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <Kpi label="Faturado Serviços" value={brl(b.S.real)} sub={`meta ${brl(b.S.meta)} · ${pct(b.S.perf)}`} cls={tone(b.S.perf)} />
-        <Kpi label="Faturado Peças" value={brl(b.P.real)} sub={`meta ${brl(b.P.meta)} · ${pct(b.P.perf)}`} cls={tone(b.P.perf)} />
+        <Kpi label={`Faturado Serviços${suf}`} value={brl(b.S.real)} sub={`meta ${brl(b.S.meta)} · ${pct(b.S.perf)}`} cls={tone(b.S.perf)} />
+        <Kpi label={`Faturado Peças${suf}`} value={brl(b.P.real)} sub={`meta ${brl(b.P.meta)} · ${pct(b.P.perf)}`} cls={tone(b.P.perf)} />
         <Kpi label="Passagens" value={num(b.pass)} sub={`ticket médio ${brl(div(b.T.real, b.pass))}`} />
         <Kpi label="Projeção Serviços / Peças" value={brl(b.S.proj)} sub={<>peças {brl(b.P.proj)} · {pct(b.S.projP)} / {pct(b.P.projP)}</>} cls={tone(b.S.projP)} />
         <Kpi label="Necessidade diária" value={brl(b.T.nec) + "/dia"} sub={<>serviços {brl(b.S.nec)}/dia · peças {brl(b.P.nec)}/dia</>} />
