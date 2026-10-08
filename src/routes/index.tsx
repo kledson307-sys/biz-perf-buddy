@@ -504,9 +504,9 @@ function Painel({ email }: { email: string }) {
             ))}
           </div>
           {imp === "fat" && <SalesImport cons={cons} depts={depts} onDone={load} onPeriod={setMes} />}
-          {imp === "os" && <OsAbertas linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} />}
-          {imp === "agg" && <div className="space-y-3"><p className="text-sm text-muted-foreground">Importe aqui as planilhas de venda de serviços e de peças. As passagens podem ser coladas em "Lançar / colar" ou importadas no botão Faturamento técnicos (relatório de passagem técnico+consultor).</p><Agregados inicio="importar" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></div>}
-          {imp === "mec" && <div className="space-y-3"><p className="text-sm text-muted-foreground">Use "Importar Excel" para a planilha de venda (Faturamento Líquido dos Produtivos) e para a de passagem — o tipo é reconhecido automaticamente.</p><Mecanicos mes={mes} tot={tot} dec={dec} /></div>}
+          {imp === "os" && <OsAbertas linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} apenasImportacao />}
+          {imp === "agg" && <Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} apenasImportacao />}
+          {imp === "mec" && <Mecanicos mes={mes} tot={tot} dec={dec} apenasImportacao />}
         </div>}
         {tab === "config" && <div className="space-y-6"><Equipe /><Config params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} /></div>}
       </main>

@@ -16,7 +16,7 @@ type Props = {
   deptName: (id: string | null) => string; reloadCons: () => void; relatorio?: boolean;
 };
 
-export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, relatorio, inicio }: Props & { inicio?: "importar" | "lancar" }) {
+export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, relatorio, inicio, apenasImportacao }: Props & { inicio?: "importar" | "lancar"; apenasImportacao?: boolean }) {
   const [sub, setSub] = useState<"servicos" | "pecas" | "ia" | "importar" | "lancar" | "metas">(inicio ?? "servicos");
   const [sales, setSales] = useState<ASale[]>([]);
   const [goals, setGoals] = useState<AGoal[]>([]);
@@ -72,6 +72,13 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
   };
 
   const subs: [typeof sub, string][] = [["servicos", "Serviços agregados"], ["pecas", "Peças agregadas"], ["ia", "Recomendações IA"], ["importar", "Importar Excel"], ["lancar", "Lançar / colar"], ["metas", "Metas"]];
+
+  if (apenasImportacao) return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">Importe as planilhas de venda de serviços e de peças agregadas. As passagens dos consultores podem ser coladas em "Lançar / colar" na aba Agregados ou importadas pelo botão "Faturamento técnicos" (relatório de passagem técnico+consultor).</p>
+      <AgregadosImport allCons={allCons} codigos={codigos} ini={ini} end={end} onDone={() => { load(); reloadCons(); }} />
+    </div>
+  );
 
   return (
     <div className="space-y-6">
