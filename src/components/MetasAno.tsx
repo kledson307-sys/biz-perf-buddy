@@ -66,14 +66,23 @@ export function MetasAno({ cons, irPara }: { cons: Cons[]; irPara: (mes: string)
 
   const salvar = async () => {
     setSalvando(true); setAviso("");
-    const rows = cons.flatMap((c) => NOMES.map((_n, i) => {
+    const linhas: { consultant_id: string; mes: string; servicos: number; pecas: number }[] = [];
+    const apagar: { consultant_id: string; mes: string }[] = [];
+    cons.forEach((c) => NOMES.forEach((_n, i) => {
       const mes = chave(ano, i);
-      const m = val[c.id]?.[mes] ?? vazio;
-      return { consultant_id: c.id, mes, servicos: +m.servicos || 0, pecas: +m.pecas || 0 };
+      const atual = val[c.id]?.[mes];
+      const servicos = +((atual ?? vazio).servicos) || 0;
+      const pecas = +((atual ?? vazio).pecas) || 0;
+      if (servicos || pecas) linhas.push({ consultant_id: c.id, mes, servicos, pecas });
+      else if (atual) apagar.push({ consultant_id: c.id, mes });
     }));
-    for (let i = 0; i < rows.length; i += 300) {
-      const { error } = await supabase.from("goals").upsert(rows.slice(i, i + 300), { onConflict: "consultant_id,mes" });
+    for (let i = 0; i < linhas.length; i += 300) {
+      const { error } = await supabase.from("goals").upsert(linhas.slice(i, i + 300), { onConflict: "consultant_id,mes" });
       if (error) { setSalvando(false); setAviso(`Não deu para salvar: ${error.message}`); return; }
+    }
+    for (const a of apagar) {
+      const { error } = await supabase.from("goals").delete().eq("consultant_id", a.consultant_id).eq("mes", a.mes);
+      if (error) { setSalvando(false); setAviso(`Não deu para limpar: ${error.message}`); return; }
     }
     await carregar();
     setSalvando(false);
