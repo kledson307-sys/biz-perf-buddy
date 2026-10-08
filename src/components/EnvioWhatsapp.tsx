@@ -128,28 +128,26 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
 
   return (
     <Box title="Enviar atualização por WhatsApp">
-      <div className="print:hidden">
-        <p className="mb-4 text-sm text-muted-foreground">Cadastre o celular com DDD. Ao clicar em Enviar, o WhatsApp abre com a mensagem pronta — é só apertar enviar. Nenhum crédito é gasto.</p>
-        <Tabela head={["Consultor", "Celular", "Perf.", "Projeção", ""]}>
-          {linhas.map((l) => (
-            <tr key={l.c.id} className="border-t border-border">
-              <td className="px-3 py-2 font-medium">{l.c.nome}</td>
-              <td className="px-3 py-2">
-                <input aria-label={`Celular de ${l.c.nome}`} inputMode="tel" placeholder="(71) 99999-9999"
-                  value={tel[l.c.id] ?? l.c.telefone} onChange={(e) => setTel({ ...tel, [l.c.id]: e.target.value })}
-                  onBlur={(e) => { if (e.target.value !== l.c.telefone) void salvarTel(l.c.id, e.target.value); }}
-                  className="w-44 rounded-md border border-input bg-background px-3 py-1.5 text-sm" />
-              </td>
-              <td className={`px-3 py-2 font-semibold ${tone(l.perf)}`}>{pct(l.perf)}</td>
-              <td className={`px-3 py-2 ${tone(l.projPct)}`}>{pct(l.projPct)}</td>
-              <td className="px-3 py-2">
-                <Button size="sm" onClick={() => enviar(l)}><MessageCircle />Enviar</Button>
-              </td>
-            </tr>
-          ))}
-        </Tabela>
-        {msg && <p role="status" className="mt-3 text-sm text-muted-foreground">{msg}</p>}
-      </div>
+      <p className="mb-4 text-sm text-muted-foreground">Cadastre o celular com DDD. Ao clicar em Enviar, o WhatsApp abre com a mensagem pronta — é só apertar enviar. Nenhum crédito é gasto.</p>
+      <Tabela head={["Consultor", "Celular", "Perf.", "Projeção", ""]}>
+        {linhas.map((l) => (
+          <tr key={l.c.id} className="border-t border-border">
+            <td className="px-3 py-2 font-medium">{l.c.nome}</td>
+            <td className="px-3 py-2">
+              <input aria-label={`Celular de ${l.c.nome}`} inputMode="tel" placeholder="(71) 99999-9999"
+                value={tel[l.c.id] ?? l.c.telefone} onChange={(e) => setTel({ ...tel, [l.c.id]: e.target.value })}
+                onBlur={(e) => { if (e.target.value !== l.c.telefone) void salvarTel(l.c.id, e.target.value); }}
+                className="w-44 rounded-md border border-input bg-background px-3 py-1.5 text-sm" />
+            </td>
+            <td className={`px-3 py-2 font-semibold ${tone(l.perf)}`}>{pct(l.perf)}</td>
+            <td className={`px-3 py-2 ${tone(l.projPct)}`}>{pct(l.projPct)}</td>
+            <td className="px-3 py-2">
+              <Button size="sm" onClick={() => enviar(l)}><MessageCircle />Enviar</Button>
+            </td>
+          </tr>
+        ))}
+      </Tabela>
+      {msg && <p role="status" className="mt-3 text-sm text-muted-foreground">{msg}</p>}
       <h3 className="mb-3 mt-6 font-semibold">Mensagens prontas</h3>
       <div className="grid gap-4 md:grid-cols-2">
         {linhas.map((l) => (
