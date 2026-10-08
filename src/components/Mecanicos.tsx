@@ -3,7 +3,7 @@ import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Barra, Box, Kpi, Tabela, brl, div, norm, num, parseNum, pct, tone } from "@/components/painel-ui";
-import { GRUPO_NOME, blocoMec, grupoDe, type Grupo, type Mec, type MecBloco, type MecCampo, lerMecanicos } from "@/lib/mecanicos";
+import { GRUPO_NOME, blocoMec, ehRelatorioPassagens, grupoDe, lerPassagens, type Grupo, type Mec, type MecBloco, type MecCampo, lerMecanicos } from "@/lib/mecanicos";
 import { registrarUpdate } from "@/lib/update-log";
 import { MecanicosIA } from "@/components/MecanicosIA";
 
@@ -51,6 +51,7 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
       const XLSX = await import("xlsx");
       const wb = XLSX.read(await f.arrayBuffer(), { type: "array" });
       const raw = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[wb.SheetNames[0] ?? ""]!, { header: 1, defval: "" });
+      if (ehRelatorioPassagens(raw)) { await importarPassagens(raw); return; }
       const r = lerMecanicos(raw);
       if (r.periodo && r.periodo.fim.slice(0, 7) !== mes && !confirm(`O relatório é de ${r.periodo.ini.slice(0, 7)}, mas o mês aberto é ${mes}. Importar mesmo assim neste mês?`)) return;
       const ok = await gravar(r.rows.map(x => ({ ...base(x.nome), servicos: x.servicos, pecas: x.pecas })), "Mecânicos (importação)");
@@ -60,6 +61,30 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
       }
     } catch (e) { setMsg((e as Error).message); }
     if (file.current) file.current.value = "";
+  };
+
+  const importarPassagens = async (raw: unknown[][]) => {
+    const r = lerPassagens(raw);
+    setBusy(true);
+    const mecs = r.mecanicos.map(x => ({ ...base(x.nome), passagens: x.passagens }));
+    const { error: eM } = await supabase.from("mech_month").upsert(mecs.map(({ id: _i, ...m }) => ({ ...m, mes, updated_at: new Date().toISOString() })), { onConflict: "user_id,mes,nome" });
+    if (eM) { setBusy(false); setMsg("Erro ao salvar passagens dos mecânicos: " + eM.message); return; }
+    // consultores: total de O.S. distintas vai para o último dia do mês (substitui o valor daquele dia)
+    const { data: cons } = await supabase.from("consultants").select("id,nome");
+    const byNome = new Map((cons ?? []).map(c => [norm(c.nome).replace(/\s+/g, " "), c.id]));
+    const [y, m] = mes.split("-").map(Number);
+    const dia = `${mes}-${String(new Date(y!, m!, 0).getDate()).padStart(2, "0")}`;
+    const vRows = r.consultores.filter(x => byNome.has(norm(x.nome).replace(/\s+/g, " ")))
+      .map(x => ({ consultant_id: byNome.get(norm(x.nome).replace(/\s+/g, " "))!, dia, passagens: x.passagens }));
+    let ignorados = r.consultores.length - vRows.length;
+    if (vRows.length) {
+      const { error: eV } = await supabase.from("agg_visits").upsert(vRows, { onConflict: "consultant_id,dia" });
+      if (eV) { setBusy(false); setMsg("Erro ao salvar passagens dos consultores: " + eV.message); return; }
+    }
+    setBusy(false);
+    await registrarUpdate("Passagens (importação)");
+    await load();
+    setMsg(`Passagens importadas: ${r.mecanicos.length} mecânicos e ${vRows.length} consultores (O.S. repetidas contadas uma única vez).${ignorados ? ` ${ignorados} consultores do relatório não estão cadastrados e foram ignorados.` : ""} Totais do mês substituídos, sem somar.`);
   };
 
   const colar = async () => {
@@ -108,7 +133,7 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
       <div className="grid gap-4 print:hidden lg:grid-cols-2">
         <Box title="Importar planilha do sistema">
           <div className="space-y-3 p-5 text-sm">
-            <p className="text-muted-foreground">Relatório "Faturamento Líquido dos Produtivos". Usa Srv Total como serviços e Peças; ignora "Sem Apontamento(s)". Reimportar substitui os valores do mês (passagens, metas e grupo ficam). Quem não está na lista de carro nem na de moto entra em "Sem grupo definido".</p>
+            <p className="text-muted-foreground">Relatório "Faturamento Líquido dos Produtivos". Usa Srv Total como serviços e Peças; ignora "Sem Apontamento(s)". Reimportar substitui os valores do mês (passagens, metas e grupo ficam). Quem não está na lista de carro nem na de moto entra em "Sem grupo definido". Também aceita o relatório "Passagem tecnico+consultor": cada O.S. conta uma única vez por mecânico e por consultor, mesmo repetida em várias linhas.</p>
             <input ref={file} type="file" accept=".xls,.xlsx" hidden onChange={e => importar(e.target.files?.[0])} />
             <Button onClick={() => file.current?.click()} disabled={busy}><Upload className="mr-2 size-4" />Importar Excel</Button>
             {msg && <p role="status" className="text-sm">{msg}</p>}

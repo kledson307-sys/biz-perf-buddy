@@ -115,3 +115,40 @@ export function lerMecanicos(raw: unknown[][]): MecReport {
   if (!rows.length) throw new Error("Não encontrei mecânicos. O cabeçalho deve ter Produtivo e Srv Total/Peças.");
   return { rows, periodo };
 }
+
+export type PassReport = { mecanicos: { nome: string; passagens: number }[]; consultores: { nome: string; passagens: number }[] };
+
+/** True quando o cabeçalho é o relatório "Passagem tecnico+consultor" (ID O.S. | Consultor | Produtivo). */
+export function ehRelatorioPassagens(raw: unknown[][]): boolean {
+  return raw.some(r => {
+    const h = r.map(x => norm(String(x ?? "").trim()).replace(/\s+/g, " "));
+    return h.some(x => /^id ?o\.?s\.?$/.test(x)) && h.includes("consultor") && h.includes("produtivo");
+  });
+}
+
+/** Conta passagens = O.S. distintas por pessoa (a O.S. se repete a cada serviço codificado nela). */
+export function lerPassagens(raw: unknown[][]): PassReport {
+  let cols: { os: number; cons: number; prod: number } | null = null;
+  const seenM = new Map<string, Set<string>>(); // produtivo -> conjunto de O.S.
+  const seenC = new Map<string, Set<string>>(); // consultor -> conjunto de O.S.
+  const nomes = new Map<string, string>();
+  for (const row of raw) {
+    const h = row.map(x => norm(String(x ?? "").trim()).replace(/\s+/g, " "));
+    const os = h.findIndex(x => /^id ?o\.?s\.?$/.test(x));
+    if (os >= 0) { cols = { os, cons: h.findIndex(x => x === "consultor"), prod: h.findIndex(x => x === "produtivo") }; continue; }
+    if (!cols) continue;
+    const id = String(row[cols.os] ?? "").trim();
+    if (!id || !/\d/.test(id)) continue;
+    for (const [ci, map] of [[cols.cons, seenC], [cols.prod, seenM]] as const) {
+      const nome = String(row[ci] ?? "").trim();
+      if (!nome) continue;
+      const k = norm(nome).replace(/\s+/g, " ");
+      nomes.set(k, nome.toUpperCase());
+      (map.get(k) ?? map.set(k, new Set()).get(k)!).add(id);
+    }
+  }
+  const out = (m: Map<string, Set<string>>) => [...m.entries()].map(([k, s]) => ({ nome: nomes.get(k)!, passagens: s.size })).sort((a, b) => a.nome.localeCompare(b.nome));
+  const r = { mecanicos: out(seenM), consultores: out(seenC) };
+  if (!r.mecanicos.length && !r.consultores.length) throw new Error("Não encontrei passagens. O cabeçalho deve ter ID O.S., Consultor e Produtivo.");
+  return r;
+}
