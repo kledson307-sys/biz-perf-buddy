@@ -48,6 +48,13 @@ export const GRUPO_NOME: Record<Grupo, string> = {
   outros: "Sem grupo definido",
 };
 
+/** Técnicos de diagnóstico: sem meta, ocultos da lista, mas o faturamento entra nos totais. */
+const OCULTOS = ["VINICIUS", "DELMIR"];
+
+export function ocultoDaLista(nome: string): boolean {
+  return OCULTOS.some(x => lab(x) === lab(nome));
+}
+
 const lab = (v: unknown) => norm(String(v ?? "").trim()).replace(/\s+/g, " ").toUpperCase();
 
 /** Grupo de um mecânico pela lista; quem não está em nenhuma das duas fica "outros". */
