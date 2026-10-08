@@ -116,6 +116,7 @@ function Painel({ email }: { email: string }) {
   const gerarRelatorio = () => { setRelatorio(true); setTimeout(() => window.print(), 1200); };
   const [filtroDept, setFiltroDept] = useState("todos");
   const [lastUp, setLastUp] = useState<{ at: string; nome: string; origem: string } | null>(null);
+  const [abrirWhats, setAbrirWhats] = useState(false);
 
   const load = useCallback(async () => {
     const [y, m] = mes.split("-").map(Number);
@@ -314,6 +315,8 @@ function Painel({ email }: { email: string }) {
             </div>
           </div>
         )}
+        {show("painel") && <Secao titulo="Análise do fechamento"><AnaliseFechamento linhas={linhas} total={total} porDept={porDept} sales={sales} dec={dec} tot={tot} mes={mes} /></Secao>}
+        {show("painel") && <Secao titulo="Reconhecimento"><Reconhecimento linhas={linhas} sales={sales} dec={dec} tot={tot} mes={mes} /></Secao>}
         {show("os") && <Secao titulo="Projeção + Ordens de Serviço abertas"><OsAbertas linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} /></Secao>}
         {show("painel") && (
           <Secao titulo="Resumo executivo">
@@ -350,7 +353,16 @@ function Painel({ email }: { email: string }) {
               </Tabela>
             </Box>
 
-            <div className="print:hidden"><EnvioWhatsapp linhas={linhas} lider={lider} liderServ={liderServ} liderPec={liderPec} mes={mes} dec={dec} tot={tot} reload={load} /></div>
+            <div className="print:hidden">
+              {abrirWhats ? (
+                <div className="space-y-3">
+                  <Button variant="outline" size="sm" onClick={() => setAbrirWhats(false)}>Ocultar envio por WhatsApp</Button>
+                  <EnvioWhatsapp linhas={linhas} lider={lider} liderServ={liderServ} liderPec={liderPec} mes={mes} dec={dec} tot={tot} reload={load} />
+                </div>
+              ) : (
+                <Button variant="outline" onClick={() => setAbrirWhats(true)}>Mostrar envio por WhatsApp</Button>
+              )}
+            </div>
 
             <ResumoPainel linhas={linhas.map((l) => ({ nome: l.c.nome, servicos: l.servicos, pecas: l.pecas, mS: l.mS, mP: l.mP, perfS: l.perfS, perfP: l.perfP, perf: l.perf, projPct: l.projPct, mediaDia: l.mediaDia, necS: l.necS, necP: l.necP, nec: l.nec }))} liderNome={lider?.c.nome ?? null} dec={dec} tot={tot} mes={mes} />
 
@@ -554,8 +566,8 @@ function Diario({ sales, cons, metaTotal, tot }: { sales: Sale[]; cons: Cons[]; 
   );
 }
 
-function Config({ params, salvarParams, depts, cons, goals, mes, reload, deptName }: {
-  params: Params; salvarParams: (p: Params) => void; depts: Dept[]; cons: Cons[]; goals: Goal[]; mes: string; reload: () => void; deptName: (id: string | null) => string;
+function Config({ params, salvarParams, depts, cons, goals, mes, reload, deptName, irPara }: {
+  params: Params; salvarParams: (p: Params) => void; depts: Dept[]; cons: Cons[]; goals: Goal[]; mes: string; reload: () => void; deptName: (id: string | null) => string; irPara: (mes: string) => void;
 }) {
   const [novoDept, setNovoDept] = useState("");
   const [novoCons, setNovoCons] = useState("");
@@ -568,7 +580,9 @@ function Config({ params, salvarParams, depts, cons, goals, mes, reload, deptNam
   };
   const grupos = useMemo(() => [...new Set(cons.map((c) => c.department_id))], [cons]);
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
+    <div className="space-y-6">
+      <MetasAno cons={cons} irPara={irPara} />
+      <div className="grid gap-6 lg:grid-cols-3">
       <section className="space-y-4 rounded-xl border border-border bg-card p-6">
         <h2 className="text-lg font-semibold">Dias do mês {mes}</h2>
         <Num label="Dias úteis totais" v={params.du_totais} on={(v) => salvarParams({ ...params, du_totais: v })} />
@@ -631,6 +645,7 @@ function Config({ params, salvarParams, depts, cons, goals, mes, reload, deptNam
         ))}
         <p className="text-xs text-muted-foreground">As metas são salvas ao sair do campo e valem para o mês selecionado no topo.</p>
       </section>
+      </div>
     </div>
   );
 }
