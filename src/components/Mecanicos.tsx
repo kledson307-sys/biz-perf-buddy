@@ -63,6 +63,30 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
     if (file.current) file.current.value = "";
   };
 
+  const importarPassagens = async (raw: unknown[][]) => {
+    const r = lerPassagens(raw);
+    setBusy(true);
+    const mecs = r.mecanicos.map(x => ({ ...base(x.nome), passagens: x.passagens }));
+    const { error: eM } = await supabase.from("mech_month").upsert(mecs.map(({ id: _i, ...m }) => ({ ...m, mes, updated_at: new Date().toISOString() })), { onConflict: "user_id,mes,nome" });
+    if (eM) { setBusy(false); setMsg("Erro ao salvar passagens dos mecânicos: " + eM.message); return; }
+    // consultores: total de O.S. distintas vai para o último dia do mês (substitui o valor daquele dia)
+    const { data: cons } = await supabase.from("consultants").select("id,nome");
+    const byNome = new Map((cons ?? []).map(c => [norm(c.nome).replace(/\s+/g, " "), c.id]));
+    const [y, m] = mes.split("-").map(Number);
+    const dia = `${mes}-${String(new Date(y!, m!, 0).getDate()).padStart(2, "0")}`;
+    const vRows = r.consultores.filter(x => byNome.has(norm(x.nome).replace(/\s+/g, " ")))
+      .map(x => ({ consultant_id: byNome.get(norm(x.nome).replace(/\s+/g, " "))!, dia, passagens: x.passagens }));
+    let ignorados = r.consultores.length - vRows.length;
+    if (vRows.length) {
+      const { error: eV } = await supabase.from("agg_visits").upsert(vRows, { onConflict: "consultant_id,dia" });
+      if (eV) { setBusy(false); setMsg("Erro ao salvar passagens dos consultores: " + eV.message); return; }
+    }
+    setBusy(false);
+    await registrarUpdate("Passagens (importação)");
+    await load();
+    setMsg(`Passagens importadas: ${r.mecanicos.length} mecânicos e ${vRows.length} consultores (O.S. repetidas contadas uma única vez).${ignorados ? ` ${ignorados} consultores do relatório não estão cadastrados e foram ignorados.` : ""} Totais do mês substituídos, sem somar.`);
+  };
+
   const colar = async () => {
     const lst = cola.split("\n").map(l => l.split(/\t|;/).map(s => s.trim())).filter(c => c[0] && c.length >= 2).map(c => {
       const b = base(c[0]!);
