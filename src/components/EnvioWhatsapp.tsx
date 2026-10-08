@@ -66,9 +66,9 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
       return a ? { id: x.c.id, nome: x.c.nome, qtd: a.qtd, meta: a.meta } : null;
     }).filter((x): x is { id: string; nome: string; qtd: number; meta: number } => !!x && x.meta > 0)
       .sort((a, b) => b.qtd / b.meta - a.qtd / a.meta)[0] ?? null;
-  const liderAgg = linhas.filter((x) => perfAgg(x.c.id, x.c.nome) > 0).sort((a, b) => perfAgg(b.c.id, b.c.nome) - perfAgg(a.c.id, a.c.nome))[0] ?? null;
+  const liderAgg = linhas.filter((x) => !naoVendeAgregado(x.c.nome) && perfAgg(x.c.id, x.c.nome) > 0).sort((a, b) => perfAgg(b.c.id, b.c.nome) - perfAgg(a.c.id, a.c.nome))[0] ?? null;
 
-  // só vendem peças: mensagem sem bloco de serviços e sem agregados
+  // só vendem peças: mensagem sem bloco de serviços (agregados sai pela regra de naoVendeAgregado)
   const SO_PECAS = ["MARCELA.S", "GEOVANA.M", "NAILTON/THIERRY"];
   const montar = (l: LinhaEnvio) => {
     const { passagens, agregados } = dadosAgg(l.c.id, l.c.nome);
@@ -99,7 +99,7 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
       `Precisa vender: ${brl(l.necP)}/dia`,
       cmp(liderPec, l.perfP, liderPec?.perfP ?? 0),
       "",
-      ...(semServicos ? [] : [
+      ...(naoVendeAgregado(l.c.nome) ? [] : [
         "➕ *AGREGADOS*",
         ...linhasAgg,
         passagens ? `Aproveitamento: ${pct(totAgg / passagens)} (${num(totAgg)} itens em ${num(passagens)} passagens)` : "Passagens ainda não lançadas.",
