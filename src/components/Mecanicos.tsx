@@ -133,7 +133,7 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
       <div className="grid gap-4 print:hidden lg:grid-cols-2">
         <Box title="Importar planilha do sistema">
           <div className="space-y-3 p-5 text-sm">
-            <p className="text-muted-foreground">Relatório "Faturamento Líquido dos Produtivos". Usa Srv Total como serviços e Peças; ignora "Sem Apontamento(s)". Reimportar substitui os valores do mês (passagens, metas e grupo ficam). Quem não está na lista de carro nem na de moto entra em "Sem grupo definido".</p>
+            <p className="text-muted-foreground">Relatório "Faturamento Líquido dos Produtivos". Usa Srv Total como serviços e Peças; ignora "Sem Apontamento(s)". Reimportar substitui os valores do mês (passagens, metas e grupo ficam). Quem não está na lista de carro nem na de moto entra em "Sem grupo definido". Também aceita o relatório "Passagem tecnico+consultor": cada O.S. conta uma única vez por mecânico e por consultor, mesmo repetida em várias linhas.</p>
             <input ref={file} type="file" accept=".xls,.xlsx" hidden onChange={e => importar(e.target.files?.[0])} />
             <Button onClick={() => file.current?.click()} disabled={busy}><Upload className="mr-2 size-4" />Importar Excel</Button>
             {msg && <p role="status" className="text-sm">{msg}</p>}

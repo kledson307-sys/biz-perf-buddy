@@ -11,3 +11,4 @@
 - [x] Controle de O.S.: ranking por status só em gráficos de pizza (tabela removida) e verificar no navegador
 - [x] Aba Mecânicos: separar mecânicos de carro e de moto em 2 grupos (coluna grupo salva no banco)
 - [x] Aba Mecânicos: análise de performance dos dois grupos (comparativo carro x moto, líder, gaps, necessidade diária) com IA e análise automática sem créditos
+- [x] Importar relatório "Passagem tecnico+consultor" na aba Mecânicos, contando cada O.S. uma única vez por mecânico e por consultor
