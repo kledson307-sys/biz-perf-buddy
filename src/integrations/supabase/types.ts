@@ -395,6 +395,53 @@ export type Database = {
         }
         Relationships: []
       }
+      supervisor_day: {
+        Row: {
+          consultant_id: string
+          dia: string
+          id: string
+          obj_pecas: number
+          obj_servicos: number
+          obs: string
+          real_pecas: number
+          real_servicos: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          consultant_id: string
+          dia: string
+          id?: string
+          obj_pecas?: number
+          obj_servicos?: number
+          obs?: string
+          real_pecas?: number
+          real_servicos?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          consultant_id?: string
+          dia?: string
+          id?: string
+          obj_pecas?: number
+          obj_servicos?: number
+          obs?: string
+          real_pecas?: number
+          real_servicos?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supervisor_day_consultant_id_fkey"
+            columns: ["consultant_id"]
+            isOneToOne: false
+            referencedRelation: "consultants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_members: {
         Row: {
           created_at: string
