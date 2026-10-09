@@ -228,7 +228,7 @@ function Painel({ email }: { email: string }) {
     a.download = `relatorio-${mes}.csv`; a.click();
   };
 
-  const tabs = [["painel", "Painel"], ["proj-serv", "Serviços"], ["proj-pec", "Peças"], ["proj-total", "Projeção"], ["os", "Projeção + OS"], ["controle-os", "Controle O.S."], ["mecanicos", "Técnicos"], ["agregados", "Agregados"], ["diario", "Diário"], ["config", "Configurar"]];
+  const tabs = [["painel", "Painel"], ["proj-serv", "Serviços"], ["proj-pec", "Peças"], ["proj-total", "Projeção por vendedor"], ["os", "Projeção + OS"], ["controle-os", "Controle O.S."], ["mecanicos", "Técnicos"], ["agregados", "Agregados"], ["diario", "Diário"], ["config", "Configurar"]];
 
   const [anoMes, mesNum] = mes.split("-").map(Number);
   const mesExt = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(anoMes!, mesNum! - 1, 1));

@@ -21,3 +21,4 @@
 - [x] Painel: ocultar o bloco "Comparação com o líder e recomendações" da tela, mantendo-o no relatório de fechamento (PDF)
 - [x] Projeções: exibir quantidades (itens, passagens, metas em unidades) sempre inteiras; percentuais seguem com 1 casa
 - [x] Painel: remover a linha de serviços dos cartões dos departamentos ACESSÓRIOS, ESTÉTICA e BALCÃO (só peças)
+- [x] Painel: renomear a aba "Projeção" para "Projeção por vendedor"
