@@ -112,7 +112,7 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Kpi label="Faturado Serviços (equipe toda)" value={brl(EQUIPE.S.real)} sub={`meta ${brl(EQUIPE.S.meta)} · ${pct(EQUIPE.S.perf)}`} cls={tone(EQUIPE.S.perf)} />
         <Kpi label="Faturado Peças (equipe toda)" value={brl(EQUIPE.P.real)} sub={`meta ${brl(EQUIPE.P.meta)} · ${pct(EQUIPE.P.perf)}`} cls={tone(EQUIPE.P.perf)} />
-        <Kpi label="Passagens (equipe toda)" value={num(EQUIPE.pass)} sub={`ticket médio ${brl(div(EQUIPE.T.real, EQUIPE.pass))}`} />
+        <Kpi label="Passagens (equipe toda)" value={uni(EQUIPE.pass)} sub={`ticket médio ${brl(div(EQUIPE.T.real, EQUIPE.pass))}`} />
         <Kpi label="Projeção Serviços / Peças" value={brl(EQUIPE.S.proj)} sub={<>peças {brl(EQUIPE.P.proj)} · {pct(EQUIPE.S.projP)} / {pct(EQUIPE.P.projP)}</>} cls={tone(EQUIPE.S.projP)} />
         <Kpi label="Necessidade diária" value={brl(EQUIPE.T.nec) + "/dia"} sub={<>serviços {brl(EQUIPE.S.nec)}/dia · peças {brl(EQUIPE.P.nec)}/dia</>} />
       </div>
@@ -172,7 +172,7 @@ function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onEdit, onGrupo, onRem, v
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Kpi label={`Faturado Serviços${suf}`} value={brl(b.S.real)} sub={`meta ${brl(b.S.meta)} · ${pct(b.S.perf)}`} cls={tone(b.S.perf)} />
         <Kpi label={`Faturado Peças${suf}`} value={brl(b.P.real)} sub={`meta ${brl(b.P.meta)} · ${pct(b.P.perf)}`} cls={tone(b.P.perf)} />
-        <Kpi label="Passagens" value={num(b.pass)} sub={`ticket médio ${brl(div(b.T.real, b.pass))}`} />
+        <Kpi label="Passagens" value={uni(b.pass)} sub={`ticket médio ${brl(div(b.T.real, b.pass))}`} />
         <Kpi label="Projeção Serviços / Peças" value={brl(b.S.proj)} sub={<>peças {brl(b.P.proj)} · {pct(b.S.projP)} / {pct(b.P.projP)}</>} cls={tone(b.S.projP)} />
         <Kpi label="Necessidade diária" value={brl(b.T.nec) + "/dia"} sub={<>serviços {brl(b.S.nec)}/dia · peças {brl(b.P.nec)}/dia</>} />
       </div>
@@ -235,7 +235,7 @@ function textoOficina(rotulo: string, b: MecBloco, vis: MecBloco["calcs"], dec: 
     else if (p.meta && p.perf < 1) dicas.push(`peças quase lá: falta ${brl(p.nec)}/dia`);
     if (r.passagens && tkGrupo && tk < tkGrupo * 0.8) dicas.push("valor por carro baixo: aproveite cada passagem pra revisar o veículo todo");
     if (!dicas.length) dicas.push("mandou bem, mantém o ritmo 👏");
-    L.push(`${i + 1}. *${r.nome}*`, `   Serviços ${brl(r.servicos)}${s.meta ? ` (${pc(s.perf)})` : ""} · Peças ${brl(r.pecas)}${p.meta ? ` (${pc(p.perf)})` : ""} · ${num(r.passagens)} carros`,
+    L.push(`${i + 1}. *${r.nome}*`, `   Serviços ${brl(r.servicos)}${s.meta ? ` (${pc(s.perf)})` : ""} · Peças ${brl(r.pecas)}${p.meta ? ` (${pc(p.perf)})` : ""} · ${uni(r.passagens)} carros`,
       ...dicas.map(d => `   👉 ${d}`), "");
   });
   L.push("Bora pra cima, time! 💪");

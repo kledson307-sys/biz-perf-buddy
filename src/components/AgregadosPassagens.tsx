@@ -61,7 +61,7 @@ export function AgregadosPassagens({ allCons, ini, end, onDone }: { allCons: Con
               {prev.map((p) => (
                 <tr key={p.nome} className="border-t border-border">
                   <td className="py-1">{p.nome}{!p.id && <span className="ml-2 text-xs text-muted-foreground">(não cadastrado — ignorado)</span>}</td>
-                  <td className="text-right">{num(p.passagens)}</td>
+                  <td className="text-right">{uni(p.passagens)}</td>
                 </tr>
               ))}
             </tbody>

@@ -56,12 +56,12 @@ export function AgregadosIA({ mes, cons, tot, dec, stat, deptName }: {
             <tr key={l.c.id} className="border-t border-border">
               <td className="px-3 py-2 font-medium">{l.c.nome}</td>
               <td className="px-3 py-2 text-muted-foreground">{deptName(l.c.department_id)}</td>
-              <td className="px-3 py-2">{num(l.pass)}</td>
-              <td className="px-3 py-2">{num(l.qtd)}</td>
-              <td className="px-3 py-2 text-muted-foreground">{num(l.mq)}</td>
+              <td className="px-3 py-2">{uni(l.pass)}</td>
+              <td className="px-3 py-2">{uni(l.qtd)}</td>
+              <td className="px-3 py-2 text-muted-foreground">{uni(l.mq)}</td>
               <td className={`px-3 py-2 font-semibold ${tone(l.perfQ)}`}>{pct(l.perfQ)}</td>
               <td className="px-3 py-2">{pct(l.aprov)}</td>
-              <td className="px-3 py-2">{num(l.projQ)}</td>
+              <td className="px-3 py-2">{uni(l.projQ)}</td>
             </tr>
           ))}
         </Tabela>
