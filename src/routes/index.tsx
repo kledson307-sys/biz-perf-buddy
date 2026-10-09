@@ -371,21 +371,38 @@ function Painel({ email }: { email: string }) {
               <Kpi label="Projeção Total" value={brl(total.proj)} sub={`${pct(total.projPct)} · precisa serviços ${brl(total.necS)}/dia · precisa peças ${brl(total.necP)}/dia`} cls={tone(total.projPct)} />
             </div>
 
-            <Box title="Projeção por departamento">
-              <Tabela head={["Departamento", "Realizado", "Meta", "Perf.", "Proj. Serviços", "Proj. Peças", "Projeção", "Proj. %"]}>
+            <Box title="Resultados por departamento">
+              <div className="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-3">
                 {porDept.map((d) => (
-                  <tr key={d.nome} className="border-t border-border">
-                    <td className="px-3 py-2 font-medium">{d.nome}</td>
-                    <td className="px-3 py-2">{brl(d.real)}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{brl(d.meta)}</td>
-                    <td className={`px-3 py-2 font-semibold ${tone(d.perf)}`}>{pct(d.perf)}</td>
-                    <td className={`px-3 py-2 ${tone(d.projPctS)}`}>{brl(d.projS)} ({pct(d.projPctS)})</td>
-                    <td className={`px-3 py-2 ${tone(d.projPctP)}`}>{brl(d.projP)} ({pct(d.projPctP)})</td>
-                    <td className="px-3 py-2 font-semibold">{brl(d.proj)}</td>
-                    <td className="px-3 py-2"><Barra p={d.projPct} /></td>
-                  </tr>
+                  <div key={d.nome} className="rounded-lg border border-border bg-card p-4">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="font-semibold">{d.nome}</p>
+                      <p className={`text-sm font-semibold ${tone(d.projPct)}`}>Proj. {pct(d.projPct)}</p>
+                    </div>
+                    <div className="mt-2"><Barra p={d.projPct} /></div>
+                    <div className="mt-3 space-y-2 text-sm">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-muted-foreground">Serviços</span>
+                        <span>{brl(d.servicos)} <span className="text-xs text-muted-foreground">meta {brl(d.mS)}</span> <span className={`text-xs font-semibold ${tone(d.perfS)}`}>{pct(d.perfS)}</span></span>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-muted-foreground">Peças</span>
+                        <span>{brl(d.pecas)} <span className="text-xs text-muted-foreground">meta {brl(d.mP)}</span> <span className={`text-xs font-semibold ${tone(d.perfP)}`}>{pct(d.perfP)}</span></span>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-2 border-t border-border pt-2">
+                        <span className="text-muted-foreground">Projeção</span>
+                        <span className="font-semibold">{brl(d.proj)}</span>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-muted-foreground">Realizado / Meta</span>
+                        <span>{brl(d.real)} <span className="text-xs text-muted-foreground">/ {brl(d.meta)}</span> <span className={`text-xs font-semibold ${tone(d.perf)}`}>{pct(d.perf)}</span></span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Precisa por dia: serviços {brl(d.necS)} · peças {brl(d.necP)}</p>
+                    </div>
+                  </div>
                 ))}
-              </Tabela>
+                {!porDept.length && <p className="p-4 text-sm text-muted-foreground">Cadastre consultores e departamentos em "Configurar" para ver os resultados aqui.</p>}
+              </div>
             </Box>
 
             <div className="print:hidden">
