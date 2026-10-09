@@ -1,11 +1,11 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Box, Kpi, Tabela, brl, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
+import { Barra, Box, Kpi, Tabela, brl, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
 import { readSalesReport } from "@/lib/sales-report";
 import { loadOpenOrders, saveOpenOrders, type OpenOrders } from "@/lib/open-orders.functions";
 
-type Linha = { c: { id: string; nome: string }; servicos: number; pecas: number; mS: number; mP: number };
+type Linha = { c: { id: string; nome: string; department_id: string | null }; servicos: number; pecas: number; mS: number; mP: number };
 type Os = OpenOrders;
 const key = (v: string) => norm(v.trim());
 
@@ -45,7 +45,7 @@ function lerOsSistema(raw: unknown[][]): { nome: string; servicos: number; pecas
   return res.length ? res : null;
 }
 
-export function OsAbertas({ linhas, mes, soPecas, tot, dec }: { linhas: Linha[]; mes: string; soPecas: (n: string) => boolean; tot: number; dec: number }) {
+export function OsAbertas({ linhas, mes, soPecas, tot, dec, deptName, semServicos }: { linhas: Linha[]; mes: string; soPecas: (n: string) => boolean; tot: number; dec: number; deptName: (id: string | null) => string; semServicos: (nome: string) => boolean }) {
   const store = `os-abertas-${mes}`;
   const [os, setOs] = useState<Os>({});
   const [txt, setTxt] = useState("");
@@ -153,6 +153,26 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec }: { linhas: Linha[];
   const necS = rest ? Math.max(g.ms - ts, 0) / rest : 0, necP = rest ? Math.max(g.mp - tp, 0) / rest : 0;
   const cell = "px-3 py-2";
 
+  // Cartões por departamento (faturado + OS abertas), mesmo layout do Painel
+  const porDept = [...new Set(rows.map((r) => r.l.c.department_id))].map((id) => {
+    const nome = deptName(id);
+    const semServ = semServicos(nome);
+    const t = rows.filter((r) => r.l.c.department_id === id).reduce((a, r) => ({
+      fs: a.fs + (r.semServ || semServ ? 0 : r.l.servicos), os: a.os + (r.semServ || semServ ? 0 : r.o.s), ms: a.ms + (r.semServ || semServ ? 0 : r.l.mS),
+      fp: a.fp + r.l.pecas, op: a.op + r.o.p, mp: a.mp + r.l.mP,
+    }), { fs: 0, os: 0, ms: 0, fp: 0, op: 0, mp: 0 });
+    const dts = t.fs + t.os, dtp = t.fp + t.op;
+    const dProjS = dec ? div(dts, dec) * tot : 0, dProjP = dec ? div(dtp, dec) * tot : 0;
+    const dProj = dProjS + dProjP, dMeta = t.ms + t.mp, dReal = dts + dtp;
+    return {
+      nome, semServ,
+      servicos: dts, mS: t.ms, perfS: div(dts, t.ms), projS: dProjS, projPctS: div(dProjS, t.ms),
+      pecas: dtp, mP: t.mp, perfP: div(dtp, t.mp), projP: dProjP, projPctP: div(dProjP, t.mp),
+      real: dReal, meta: dMeta, perf: div(dReal, dMeta), proj: dProj, projPct: div(dProj, dMeta),
+      necS: rest ? Math.max(t.ms - dts, 0) / rest : 0, necP: rest ? Math.max(t.mp - dtp, 0) / rest : 0,
+    };
+  });
+
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-semibold">Projeção com OS abertas — {mes}</h2>
@@ -177,6 +197,52 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec }: { linhas: Linha[];
         {loading && !msg && <p className="mt-2 text-sm text-muted-foreground">Carregando O.S. salvas…</p>}
         {msg && <p role="status" className="mt-2 text-sm">{msg}</p>}
       </Box></div>
+
+      <Box title="Resultados por departamento (faturado + OS abertas)">
+        <div className="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-3">
+          {porDept.map((d) => (
+            <div key={d.nome} className="rounded-lg border border-border bg-card p-4">
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="font-semibold">{d.nome}</p>
+                <p className={`text-sm font-semibold ${tone(d.projPct)}`}>Proj. {pct(d.projPct)}</p>
+              </div>
+              <div className="mt-2"><Barra p={d.projPct} /></div>
+              <div className="mt-3 space-y-2 text-sm">
+                {!d.semServ && (
+                  <>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-muted-foreground">Serviços</span>
+                      <span>{brl(d.servicos)} <span className="text-xs text-muted-foreground">meta {brl(d.mS)}</span> <span className={`text-xs font-semibold ${tone(d.perfS)}`}>{pct(d.perfS)}</span></span>
+                    </div>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-xs text-muted-foreground">Projeção serviços</span>
+                      <span className={tone(d.projPctS)}>{brl(d.projS)} <span className="text-xs">{pct(d.projPctS)} da meta</span></span>
+                    </div>
+                  </>
+                )}
+                <div className={`flex items-baseline justify-between gap-2 ${d.semServ ? "" : "border-t border-border pt-2"}`}>
+                  <span className="text-muted-foreground">Peças</span>
+                  <span>{brl(d.pecas)} <span className="text-xs text-muted-foreground">meta {brl(d.mP)}</span> <span className={`text-xs font-semibold ${tone(d.perfP)}`}>{pct(d.perfP)}</span></span>
+                </div>
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">Projeção peças</span>
+                  <span className={tone(d.projPctP)}>{brl(d.projP)} <span className="text-xs">{pct(d.projPctP)} da meta</span></span>
+                </div>
+                <div className="flex items-baseline justify-between gap-2 border-t border-border pt-2">
+                  <span className="text-muted-foreground">Projeção total</span>
+                  <span className="font-semibold">{brl(d.proj)} <span className={`text-xs font-semibold ${tone(d.projPct)}`}>{pct(d.projPct)}</span></span>
+                </div>
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-muted-foreground">Realizado / Meta</span>
+                  <span>{brl(d.real)} <span className="text-xs text-muted-foreground">/ {brl(d.meta)}</span> <span className={`text-xs font-semibold ${tone(d.perf)}`}>{pct(d.perf)}</span></span>
+                </div>
+                <p className="text-xs text-muted-foreground">Precisa por dia: {d.semServ ? `peças ${brl(d.necP)}` : `serviços ${brl(d.necS)} · peças ${brl(d.necP)}`}</p>
+              </div>
+            </div>
+          ))}
+          {!porDept.length && <p className="p-4 text-sm text-muted-foreground">Cadastre consultores e departamentos em "Configurar" para ver os resultados aqui.</p>}
+        </div>
+      </Box>
 
       <Box title="Projeção individual (faturado + OS abertas)">
         <Tabela head={["Consultor", "Grupo", "Faturado", "OS abertas", "Projeção", "Meta", "% da meta", "Falta"]}>

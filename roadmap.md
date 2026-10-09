@@ -23,3 +23,4 @@
 - [x] Painel: remover a linha de serviços dos cartões dos departamentos ACESSÓRIOS, ESTÉTICA e BALCÃO (só peças)
 - [x] Painel: renomear a aba "Projeção" para "Projeção por vendedor"
 - [x] Painel: renomear a aba "Projeção por vendedor" para "Serviços & Peças"
+- [x] Projeção + OS: cartões por departamento iguais aos do Painel (faturado + OS abertas)
