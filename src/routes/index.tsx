@@ -18,6 +18,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Download, LogOut, Printer } from "lucide-react";
 import bmwLogo from "@/assets/bmw-logo.asset.json";
+import { localDay, sourceLabels, tabUpdateStatus, UPDATE_EVENT, type UpdateRecord, type UpdateSource } from "@/lib/update-status";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -116,21 +117,46 @@ function Painel({ email }: { email: string }) {
   useEffect(() => { const f = () => setRelatorio(false); window.addEventListener("afterprint", f); return () => window.removeEventListener("afterprint", f); }, []);
   const gerarRelatorio = () => { setRelatorio(true); setTimeout(() => window.print(), 1200); };
   const [filtroDept, setFiltroDept] = useState("todos");
-  const [lastUp, setLastUp] = useState<{ at: string; nome: string; origem: string } | null>(null);
+  const [updates, setUpdates] = useState<UpdateRecord[]>([]);
+  const [clock, setClock] = useState(() => new Date());
+  const lastUp = updates[0] ?? null;
+  const status = tabUpdateStatus(tab, mes, updates, clock);
   const [abrirWhats, setAbrirWhats] = useState(false);
+
+  const loadUpdates = useCallback(async () => {
+    const { data, error } = await supabase.from("update_log").select("at,nome,origem,mes")
+      .or(`mes.eq.${mes},mes.is.null`).order("at", { ascending: false }).limit(1000);
+    if (!error) setUpdates(data ?? []);
+    setClock(new Date());
+  }, [mes]);
+  useEffect(() => {
+    setUpdates([]);
+    void loadUpdates();
+    const refresh = () => { void loadUpdates(); };
+    window.addEventListener(UPDATE_EVENT, refresh);
+    window.addEventListener("focus", refresh);
+    const timer = window.setInterval(refresh, 60000);
+    return () => {
+      window.removeEventListener(UPDATE_EVENT, refresh);
+      window.removeEventListener("focus", refresh);
+      window.clearInterval(timer);
+    };
+  }, [loadUpdates]);
+  const openUpdate = (source: UpdateSource) => {
+    setTab(source === "faturamento" ? "painel" : source);
+    if (source === "faturamento") setTimeout(() => document.getElementById("colar-dados")?.scrollIntoView({ block: "start" }), 0);
+  };
 
   const load = useCallback(async () => {
     const [y, m] = mes.split("-").map(Number);
     const fim = new Date(y!, m!, 0).getDate();
-    const [d, c, g, s, p, ul] = await Promise.all([
+    const [d, c, g, s, p] = await Promise.all([
       supabase.from("departments").select("id,nome").order("nome"),
       supabase.from("consultants").select("id,nome,department_id,telefone").order("nome"),
       supabase.from("goals").select("consultant_id,servicos,pecas").eq("mes", mes),
       supabase.from("daily_sales").select("consultant_id,dia,servicos,pecas,margem_pecas").gte("dia", `${mes}-01`).lte("dia", `${mes}-${fim}`).order("dia"),
       supabase.from("month_params").select("*").eq("mes", mes).maybeSingle(),
-      supabase.from("update_log").select("at,nome,origem").order("at", { ascending: false }).limit(1).maybeSingle(),
     ]);
-    setLastUp((ul.data as { at: string; nome: string; origem: string } | null) ?? null);
     setDepts(d.data ?? []); setCons(c.data ?? []);
     setGoals((g.data ?? []).map((x) => ({ ...x, servicos: +x.servicos, pecas: +x.pecas })));
     setSales((s.data ?? []).map((x) => ({ ...x, servicos: +x.servicos, pecas: +x.pecas, margem_pecas: +(x.margem_pecas ?? 0) })));
@@ -280,38 +306,33 @@ function Painel({ email }: { email: string }) {
               {depts.map((d) => <option key={d.id} value={d.id}>{d.nome}</option>)}
             </select>
             <nav aria-label="Abas do painel" className="flex min-w-0 flex-wrap gap-1 lg:ml-auto">
-              {tabs.map(([k, l]) => (
-                <Button key={k} onClick={() => { if (k) setTab(k); }} variant={tab === k ? "default" : "ghost"} className={tab === k ? "" : "text-muted-foreground"} aria-current={tab === k ? "page" : undefined}>{l}</Button>
-              ))}
+              {tabs.map(([k, l]) => {
+                if (!k) return null;
+                const stale = tabUpdateStatus(k, mes, updates, clock).stale;
+                return <Button key={k} onClick={() => setTab(k)} variant={tab === k ? "default" : "ghost"}
+                  data-update-status={stale ? "pending" : "current"}
+                  title={stale ? `${l}: atualização pendente` : l}
+                  className={stale ? "update-alert bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:text-destructive-foreground" : tab === k ? "" : "text-muted-foreground"}
+                  aria-current={tab === k ? "page" : undefined}>{l}</Button>;
+              })}
             </nav>
           </div>
         </div>
       </header>
 
-      {(() => {
-        const desat = !lastUp || new Date(lastUp.at).toDateString() !== new Date().toDateString();
-        return (
-          <div className={`border-b print:hidden ${desat ? "animate-pulse border-destructive bg-destructive text-destructive-foreground" : "border-border bg-primary/5 text-muted-foreground"}`}>
-            <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-4 py-2 text-xs sm:px-6">
-              {lastUp ? (
-                <span>
-                  🔄 Última atualização: {new Date(lastUp.at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })} por <span className="font-medium">{lastUp.nome}</span> · {lastUp.origem}
-                </span>
-              ) : (
-                <span>🔄 Nenhuma atualização registrada.</span>
-              )}
-              {desat && (
-                <Button type="button" variant="outline" size="sm" onClick={() => {
-                  setTab("painel");
-                  setTimeout(() => document.getElementById("colar-dados")?.scrollIntoView({ block: "start" }), 0);
-                }} className="ml-auto bg-background font-semibold text-destructive">
-                  ⚠️ Dados desatualizados — importar planilha de hoje
-                </Button>
-              )}
-            </div>
+      {status.latest.length > 0 && <div data-testid="update-banner" className={`border-b print:hidden ${status.stale ? "update-alert border-destructive bg-destructive text-destructive-foreground" : "border-border bg-primary/5 text-muted-foreground"}`}>
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-2 text-xs sm:px-6">
+          <div className="min-w-0 flex-1 space-y-1">
+            {status.latest.map(({ source, record }) => <p key={source} className="break-words">
+              {sourceLabels[source]}: {record ? <>última atualização {dataHora(record.at)} por <span className="font-medium">{record.nome}</span> · {record.origem}</> : "nenhuma atualização registrada."}
+            </p>)}
           </div>
-        );
-      })()}
+          {status.pending.map((source) => <Button key={source} type="button" variant="outline" size="sm" onClick={() => openUpdate(source)} className="h-auto whitespace-normal bg-background font-semibold text-destructive">
+            ⚠️ Atualizar {sourceLabels[source]}{source === "controle-os" ? " da semana" : " de hoje"}
+          </Button>)}
+          {mes !== localDay(clock).slice(0, 7) && <span>Mês arquivado</span>}
+        </div>
+      </div>}
 
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
         {!relatorio && (() => {
