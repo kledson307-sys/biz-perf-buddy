@@ -19,6 +19,28 @@ const toNum = (v: unknown) => {
   return Number.isFinite(n) ? n : 0;
 };
 
+// Tipos de O.S. que entram com apenas 30% do valor na projeção.
+const TIPOS_30 = new Set(["c4", "mg", "ng"]);
+
+// Relatório "O.S. Abertas" em tabela (Número, Tipo, Recep., Serv. Líquido, Itens Líquido…).
+export function lerOsTabela(raw: unknown[][]): { nome: string; servicos: number; pecas: number }[] | null {
+  const h = raw.findIndex((r) => r.some((c) => norm(String(c)).trim() === "tipo") && r.some((c) => norm(String(c)).startsWith("recep")));
+  if (h < 0) return null;
+  const head = (raw[h] ?? []).map((c) => norm(String(c)).trim());
+  const col = (re: RegExp) => head.findIndex((c) => re.test(c));
+  const cT = col(/^tipo$/), cR = col(/^recep/), cS = col(/^serv/), cP = col(/^itens/);
+  if (cS < 0 || cP < 0) return null;
+  const num = (v: unknown) => typeof v === "number" ? v : toNum(v);
+  const res: { nome: string; servicos: number; pecas: number }[] = [];
+  for (const r of raw.slice(h + 1)) {
+    const nome = String(r[cR] ?? "").trim();
+    if (!nome || !OS_PERMITIDOS.has(norm(nome))) continue;
+    const f = TIPOS_30.has(norm(String(r[cT] ?? "")).trim()) ? 0.3 : 1;
+    res.push({ nome, servicos: num(r[cS]) * f, pecas: num(r[cP]) * f });
+  }
+  return res.length ? res : null;
+}
+
 // Relatório do sistema "O.S. Abertas": bloco por O.S. (número na col. C, veículo na col. F,
 // consultor na linha seguinte, Total Líq. Peças col. U e Total Serviços col. W).
 function lerOsSistema(raw: unknown[][]): { nome: string; servicos: number; pecas: number }[] | null {
@@ -101,7 +123,7 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec, deptName, semServico
   };
 
   const aplicar = async (raw: unknown[][]) => {
-    const sys = lerOsSistema(raw);
+    const sys = lerOsTabela(raw) ?? lerOsSistema(raw);
     const rows: { nome: string; servicos: number; pecas: number; completo?: string }[] =
       sys ?? readSalesReport(raw).rows.map((r) => ({ nome: r.nome, servicos: r.servicos, pecas: r.pecas, completo: r.completo }));
     const n: Os = {}; const fora: string[] = [];
