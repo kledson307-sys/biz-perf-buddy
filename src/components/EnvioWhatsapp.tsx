@@ -84,7 +84,7 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
     const totAgg = agregados.reduce((n, a) => n + a.qtd, 0);
     const oport = agregados.filter((a) => a.meta > 0 && a.qtd < a.meta).sort((a, b) => a.qtd / a.meta - b.qtd / b.meta)[0];
     return [
-      `Olá, ${l.c.nome}! Atualização HAUS MOTORS – ${mes.split("-").reverse().join("/")} (dia ${dec} de ${tot})`,
+      `Olá, ${l.c.nome}! Atualização PAINEL ESTRATÉGICO KLEDSON – ${mes.split("-").reverse().join("/")} (dia ${dec} de ${tot})`,
       "",
       ...(semServicos ? [] : [
         "🔧 *SERVIÇOS*",

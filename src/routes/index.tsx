@@ -23,9 +23,9 @@ import { localDay, sourceLabels, tabUpdateStatus, UPDATE_EVENT, type UpdateRecor
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "HAUS MOTORS SALVADOR (KLEDSON) | Metas e Projeções" },
+      { title: "PAINEL ESTRATÉGICO KLEDSON | Metas e Projeções" },
       { name: "description", content: "Metas, projeção de serviços e peças por consultor e departamento, performance diária e relatório mensal." },
-      { property: "og:title", content: "HAUS MOTORS SALVADOR (KLEDSON) | Metas e Projeções" },
+      { property: "og:title", content: "PAINEL ESTRATÉGICO KLEDSON | Metas e Projeções" },
       { property: "og:description", content: "Projeção, performance diária e acumulada, comparação com o líder e recomendações." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -89,7 +89,7 @@ function Login() {
           <img src={bmwLogo.url} alt="BMW" className="size-14" />
           <ThemeToggle />
         </div>
-        <h1 className="text-xl font-bold">HAUS MOTORS SALVADOR <span className="font-medium text-primary">(KLEDSON)</span></h1>
+        <h1 className="text-xl font-bold">PAINEL ESTRATÉGICO <span className="font-medium text-primary">KLEDSON</span></h1>
         <p className="text-sm text-muted-foreground">{modo === "entrar" ? "Entre para acessar seus dados de qualquer lugar." : "Crie sua conta."}</p>
         <input className="w-full rounded-lg border border-input bg-background px-3 py-2" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} />
         <input className="w-full rounded-lg border border-input bg-background px-3 py-2" type="password" placeholder="Senha" value={senha} onChange={(e) => setSenha(e.target.value)} />
@@ -288,7 +288,7 @@ function Painel({ email }: { email: string }) {
           <div className="flex min-w-0 items-center gap-4">
             <img src={bmwLogo.url} alt="BMW" className="size-14 shrink-0" />
             <div className="min-w-0">
-              <h1 className="text-xl font-bold">HAUS MOTORS SALVADOR <span className="inline-block font-medium text-primary">(KLEDSON)</span></h1>
+              <h1 className="text-xl font-bold">PAINEL ESTRATÉGICO <span className="inline-block font-medium text-primary">KLEDSON</span></h1>
               <p className="mt-1 text-xs font-medium text-muted-foreground">PAINEL DE METAS · {params.base === "uteis" ? "Dias úteis" : "Dias corridos"}: {dec} de {tot}</p>
             </div>
           </div>
@@ -374,8 +374,8 @@ function Painel({ email }: { email: string }) {
             <div className="flex min-h-[250mm] flex-col items-center justify-center text-center">
               <img src={bmwLogo.url} alt="BMW" className="size-28" />
               <p className="mt-10 text-sm font-semibold uppercase tracking-[0.3em] text-primary">Relatório de Fechamento</p>
-              <h1 className="mt-3 text-4xl font-bold">HAUS MOTORS SALVADOR</h1>
-              <p className="mt-1 text-xl font-medium text-primary">(KLEDSON)</p>
+              <h1 className="mt-3 text-4xl font-bold">PAINEL ESTRATÉGICO</h1>
+              <p className="mt-1 text-xl font-medium text-primary">KLEDSON</p>
               <p className="mt-8 text-2xl font-semibold">{mesExtenso}</p>
               <div className="mx-auto mt-12 grid w-full max-w-2xl grid-cols-2 gap-4 text-left">
                 <Kpi label="Realizado Serviços" value={brl(total.servicos)} sub={`Meta ${brl(total.mS)} · ${pct(total.perfS)}`} cls={tone(total.perfS)} />

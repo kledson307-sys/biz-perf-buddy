@@ -79,9 +79,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "HAUS MOTORS SALVADOR (KLEDSON)" },
-      { name: "description", content: "Painel de metas e desempenho da HAUS MOTORS SALVADOR." },
-      { property: "og:title", content: "HAUS MOTORS SALVADOR (KLEDSON)" },
+      { title: "PAINEL ESTRATÉGICO KLEDSON" },
+      { name: "description", content: "Painel de metas e desempenho de serviços, peças e agregados por consultor." },
+      { property: "og:title", content: "PAINEL ESTRATÉGICO KLEDSON" },
       { property: "og:description", content: "Acompanhamento de serviços, peças e agregados por consultor." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
