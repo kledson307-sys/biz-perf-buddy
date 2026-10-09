@@ -167,6 +167,9 @@
 }
 
 table { font-variant-numeric: tabular-nums; }
+.update-alert { animation: update-alert-pulse 2s ease-in-out infinite; }
+@keyframes update-alert-pulse { 50% { opacity: 0.6; } }
+@media (prefers-reduced-motion: reduce) { .update-alert { animation: none; } }
 tbody tr { transition: background-color 150ms ease; }
 tbody tr:hover { background-color: var(--accent); }
 input, select, textarea { max-width: 100%; }

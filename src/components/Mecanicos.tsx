@@ -40,7 +40,7 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
     const { error } = await supabase.from("mech_month").upsert(lst.map(({ id: _i, ...r }) => ({ ...r, mes, updated_at: new Date().toISOString() })), { onConflict: "user_id,mes,nome" });
     setBusy(false);
     if (error) { setMsg("Erro ao salvar: " + error.message); return false; }
-    await registrarUpdate(origem); await load(); return true;
+    await registrarUpdate(origem, mes); await load(); return true;
   };
   const base = (nome: string): Mec => rows.find(r => norm(r.nome) === norm(nome)) ?? { nome: nome.trim().toUpperCase(), grupo: grupoDe(nome), servicos: 0, pecas: 0, passagens: 0, meta_servicos: 0, meta_pecas: 0 };
 
@@ -82,7 +82,7 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
       if (eV) { setBusy(false); setMsg("Erro ao salvar passagens dos consultores: " + eV.message); return; }
     }
     setBusy(false);
-    await registrarUpdate("Passagens (importação)");
+    await registrarUpdate("Passagens (importação)", mes);
     await load();
     setMsg(`Passagens importadas: ${r.mecanicos.length} técnicos e ${vRows.length} consultores (O.S. repetidas contadas uma única vez).${ignorados ? ` ${ignorados} consultores do relatório não estão cadastrados e foram ignorados.` : ""} Totais do mês substituídos, sem somar.`);
   };
