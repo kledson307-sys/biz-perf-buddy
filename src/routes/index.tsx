@@ -205,6 +205,8 @@ function Painel({ email }: { email: string }) {
   const liderServ = linhasServ.length ? linhasServ.reduce((a, l) => (l.perfS > a.perfS ? l : a), linhasServ[0]!) : null;
   const liderPec = linhas.length ? linhas.reduce((a, l) => (l.perfP > a.perfP ? l : a), linhas[0]!) : null;
   const total = soma(linhas);
+  // Ideal ponderado de margem de peças (peso = peças vendidas de cada departamento)
+  const idealTotal = div(linhas.reduce((s, l) => s + margemIdeal(deptName(l.c.department_id)) * l.pecas, 0), linhas.reduce((s, l) => s + l.pecas, 0));
   const porDept = [...new Set(linhas.map((l) => l.c.department_id))].map((id) => {
     const nome = deptName(id);
     const ls = linhas.filter((l) => l.c.department_id === id);
