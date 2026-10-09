@@ -3,6 +3,8 @@ import type React from "react";
 export const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 export const pct = (n: number) => (n * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "%";
 export const num = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+/** Quantidades (itens, passagens, metas em unidades): sempre inteiras. */
+export const uni = (n: number) => Math.round(n).toLocaleString("pt-BR");
 export const div = (a: number, b: number) => (b ? a / b : 0);
 export const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 export const tone = (p: number) => (p >= 1 ? "text-success" : p >= 0.85 ? "text-warning" : "text-destructive");

@@ -17,6 +17,7 @@ const digitos = (t: string) => {
 };
 
 const num = (v: number) => v.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+const uni = (v: number) => Math.round(v).toLocaleString("pt-BR");
 
 export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, tot, reload }: {
   linhas: LinhaEnvio[]; lider: LinhaEnvio | undefined; liderServ: LinhaEnvio | null; liderPec: LinhaEnvio | null;

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import ReactMarkdown from "react-markdown";
-import { Box, Tabela, num, pct, tone } from "./painel-ui";
+import { Box, Tabela, uni, pct, tone } from "./painel-ui";
 import { GRUPO_NOME, ITENS } from "@/lib/agregados";
 import { recomendarAgregados, type RecomendacaoInput } from "@/lib/agregados-ia.functions";
 

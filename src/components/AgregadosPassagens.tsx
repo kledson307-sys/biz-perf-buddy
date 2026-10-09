@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { norm, num } from "./painel-ui";
+import { norm, uni } from "./painel-ui";
 import { lerPassagens } from "@/lib/mecanicos";
 import { registrarUpdate } from "@/lib/update-log";
 

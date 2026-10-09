@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Box, Kpi, Tabela, brl, div, num, pct, tone } from "./painel-ui";
+import { Box, Kpi, Tabela, brl, div, uni, pct, tone } from "./painel-ui";
 import { type Grupo, type MecBloco } from "@/lib/mecanicos";
 import { analisarMecanicos, type MecanicosAnaliseInput } from "@/lib/mecanicos-ia.functions";
 
