@@ -652,11 +652,12 @@ function Config({ params, salvarParams, depts, cons, goals, mes, reload, deptNam
   const salvarMeta = async (id: string) => {
     const m = metas[id] ?? { servicos: 0, pecas: 0 };
     await supabase.from("goals").upsert({ consultant_id: id, mes, ...m }, { onConflict: "consultant_id,mes" });
+    reload();
   };
   const grupos = useMemo(() => [...new Set(cons.map((c) => c.department_id))], [cons]);
   return (
     <div className="space-y-6">
-      <MetasAno cons={cons} irPara={irPara} />
+      <MetasAno cons={cons} irPara={irPara} onSaved={reload} />
       <div className="grid gap-6 lg:grid-cols-3">
       <section className="space-y-4 rounded-xl border border-border bg-card p-6">
         <h2 className="text-lg font-semibold">Dias do mês {mes}</h2>

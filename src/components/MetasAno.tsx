@@ -10,7 +10,7 @@ const vazio: Meta = { servicos: "", pecas: "" };
 const NOMES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 const chave = (ano: number, i: number) => `${ano}-${String(i + 1).padStart(2, "0")}`;
 
-export function MetasAno({ cons, irPara }: { cons: Cons[]; irPara: (mes: string) => void }) {
+export function MetasAno({ cons, irPara, onSaved }: { cons: Cons[]; irPara: (mes: string) => void; onSaved?: () => void }) {
   const anoBase = new Date().getFullYear();
   const [ano, setAno] = useState(anoBase + 1);
   const [val, setVal] = useState<Record<string, Record<string, Meta>>>({});
@@ -85,6 +85,7 @@ export function MetasAno({ cons, irPara }: { cons: Cons[]; irPara: (mes: string)
       if (error) { setSalvando(false); setAviso(`Não deu para limpar: ${error.message}`); return; }
     }
     await carregar();
+    onSaved?.();
     setSalvando(false);
     setAviso(`Metas de ${ano} salvas. Elas valem automaticamente quando cada mês chegar.`);
     setTimeout(() => setAviso(""), 5000);
