@@ -36,7 +36,7 @@ export const Route = createFileRoute("/")({
 type Dept = { id: string; nome: string };
 type Cons = { id: string; nome: string; department_id: string | null; telefone: string };
 type Goal = { consultant_id: string; servicos: number; pecas: number };
-type Sale = { consultant_id: string; dia: string; servicos: number; pecas: number };
+type Sale = { consultant_id: string; dia: string; servicos: number; pecas: number; margem_pecas: number };
 type Params = { du_totais: number; du_decorridos: number; dc_totais: number; dc_decorridos: number; base: string };
 
 const defParams: Params = { du_totais: 22, du_decorridos: 1, dc_totais: 30, dc_decorridos: 1, base: "uteis" };
@@ -126,14 +126,14 @@ function Painel({ email }: { email: string }) {
       supabase.from("departments").select("id,nome").order("nome"),
       supabase.from("consultants").select("id,nome,department_id,telefone").order("nome"),
       supabase.from("goals").select("consultant_id,servicos,pecas").eq("mes", mes),
-      supabase.from("daily_sales").select("consultant_id,dia,servicos,pecas").gte("dia", `${mes}-01`).lte("dia", `${mes}-${fim}`).order("dia"),
+      supabase.from("daily_sales").select("consultant_id,dia,servicos,pecas,margem_pecas").gte("dia", `${mes}-01`).lte("dia", `${mes}-${fim}`).order("dia"),
       supabase.from("month_params").select("*").eq("mes", mes).maybeSingle(),
       supabase.from("update_log").select("at,nome,origem").order("at", { ascending: false }).limit(1).maybeSingle(),
     ]);
     setLastUp((ul.data as { at: string; nome: string; origem: string } | null) ?? null);
     setDepts(d.data ?? []); setCons(c.data ?? []);
     setGoals((g.data ?? []).map((x) => ({ ...x, servicos: +x.servicos, pecas: +x.pecas })));
-    setSales((s.data ?? []).map((x) => ({ ...x, servicos: +x.servicos, pecas: +x.pecas })));
+    setSales((s.data ?? []).map((x) => ({ ...x, servicos: +x.servicos, pecas: +x.pecas, margem_pecas: +(x.margem_pecas ?? 0) })));
     let np: Params = p.data ? (p.data as Params) : { ...defParams, dc_totais: fim };
     const hoje = new Date();
     const mesHoje = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
@@ -156,12 +156,12 @@ function Painel({ email }: { email: string }) {
   const tot = params.base === "uteis" ? params.du_totais : params.dc_totais;
   const dec = params.base === "uteis" ? params.du_decorridos : params.dc_decorridos;
 
-  const calc = (servicos: number, pecas: number, mS: number, mP: number) => {
+  const calc = (servicos: number, pecas: number, mS: number, mP: number, margem = 0) => {
     const real = servicos + pecas, meta = mS + mP;
     const projS = div(servicos, dec) * tot, projP = div(pecas, dec) * tot, proj = projS + projP;
     const rest = Math.max(tot - dec, 0);
     return {
-      servicos, pecas, real, mS, mP, meta, projS, projP, proj,
+      servicos, pecas, real, mS, mP, meta, projS, projP, proj, margem, marg: div(margem, pecas),
       perfS: div(servicos, mS), perfP: div(pecas, mP), perf: div(real, meta),
       projPctS: div(projS, mS), projPctP: div(projP, mP), projPct: div(proj, meta),
       mediaDia: div(real, dec),
@@ -171,6 +171,7 @@ function Painel({ email }: { email: string }) {
     };
   };
   type Calc = ReturnType<typeof calc>;
+  const margemTxt = (x: { margem: number; pecas: number }) => (x.margem && x.pecas ? pct(x.margem / x.pecas) : "—");
 
   const deptName = (id: string | null) => depts.find((d) => d.id === id)?.nome ?? "Sem departamento";
   const visiveis = cons.filter((c) => filtroDept === "todos" || c.department_id === filtroDept);
@@ -178,10 +179,10 @@ function Painel({ email }: { email: string }) {
   const linhas = visiveis.map((c) => {
     const ss = sales.filter((s) => s.consultant_id === c.id);
     const g = goals.find((x) => x.consultant_id === c.id) ?? { servicos: 0, pecas: 0 };
-    return { c, ...calc(ss.reduce((a, s) => a + s.servicos, 0), ss.reduce((a, s) => a + s.pecas, 0), g.servicos, g.pecas) };
+    return { c, ...calc(ss.reduce((a, s) => a + s.servicos, 0), ss.reduce((a, s) => a + s.pecas, 0), g.servicos, g.pecas, ss.reduce((a, s) => a + s.margem_pecas, 0)) };
   }).sort((a, b) => b.perf - a.perf);
   const lider = linhas[0];
-  const soma = (arr: (Calc)[]) => calc(arr.reduce((a, l) => a + l.servicos, 0), arr.reduce((a, l) => a + l.pecas, 0), arr.reduce((a, l) => a + l.mS, 0), arr.reduce((a, l) => a + l.mP, 0));
+  const soma = (arr: (Calc)[]) => calc(arr.reduce((a, l) => a + l.servicos, 0), arr.reduce((a, l) => a + l.pecas, 0), arr.reduce((a, l) => a + l.mS, 0), arr.reduce((a, l) => a + l.mP, 0), arr.reduce((a, l) => a + l.margem, 0));
   // Consultores que vendem apenas peças — ficam fora da aba Serviços
   const SO_PECAS = ["MARCELA.S", "GEOVANA.M", "NAILTON/THIERRY"];
   const soPecas = (nome: string) => SO_PECAS.includes(nome.trim().toUpperCase());
@@ -373,7 +374,7 @@ function Painel({ email }: { email: string }) {
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <Kpi label="Realizado Serviços Total" value={brl(total.servicos)} sub={`Meta ${brl(total.mS)} · ${pct(total.perfS)}`} cls={tone(total.perfS)} />
-              <Kpi label="Realizado Peças Total" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)}`} cls={tone(total.perfP)} />
+              <Kpi label="Realizado Peças Total" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)} · margem ${margemTxt(total)}`} cls={tone(total.perfP)} />
               <Kpi label="Projeção Serviços" value={brl(total.projS)} sub={`${pct(total.projPctS)} da meta ${brl(total.mS)}`} cls={tone(total.projPctS)} />
               <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta ${brl(total.mP)}`} cls={tone(total.projPctP)} />
               <Kpi label="Projeção Total" value={brl(total.proj)} sub={`${pct(total.projPct)} · precisa serviços ${brl(total.necS)}/dia · precisa peças ${brl(total.necP)}/dia`} cls={tone(total.projPct)} />
@@ -408,6 +409,10 @@ function Painel({ email }: { email: string }) {
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="text-xs text-muted-foreground">Projeção peças</span>
                         <span className={tone(d.projPctP)}>{brl(d.projP)} <span className="text-xs">{pct(d.projPctP)} da meta</span></span>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-xs text-muted-foreground">Margem peças</span>
+                        <span className="font-semibold">{margemTxt(d)}</span>
                       </div>
                       <div className="flex items-baseline justify-between gap-2 border-t border-border pt-2">
                         <span className="text-muted-foreground">Projeção total</span>
@@ -504,21 +509,23 @@ function Painel({ email }: { email: string }) {
 
         {show("proj-pec") && (
           <Secao titulo="Projeção de Peças">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <Kpi label="Realizado Peças" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)}`} cls={tone(total.perfP)} />
               <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta de ${brl(total.mP)}`} cls={tone(total.projPctP)} />
               <Kpi label="Falta para a meta" value={brl(Math.max(total.mP - total.pecas, 0))} sub={`Precisa ${brl(total.necP)}/dia (${Math.max(tot - dec, 0)} dias restantes)`} />
+              <Kpi label="Margem de Peças" value={margemTxt(total)} sub="Margem líquida sobre o valor líquido de peças" />
               <Kpi label="Líder de Peças" value={liderPec ? liderPec.c.nome : "—"} sub={liderPec ? `${pct(liderPec.perfP)} de performance` : ""} />
             </div>
             <Box title="Projeção individual de peças">
-              <Tabela head={["#", "Consultor", "Depto", "Realizado", "Meta", "Performance", "Projeção", "Proj. %", "Média/dia", "Necessário/dia", "vs. Líder"]}>
-                {linhas.length === 0 && <tr><td colSpan={11} className="px-3 py-10 text-center text-muted-foreground">Sem dados. Cadastre consultores em "Configurar" e cole os dados do dia.</td></tr>}
+              <Tabela head={["#", "Consultor", "Depto", "Realizado", "Margem", "Meta", "Performance", "Projeção", "Proj. %", "Média/dia", "Necessário/dia", "vs. Líder"]}>
+                {linhas.length === 0 && <tr><td colSpan={12} className="px-3 py-10 text-center text-muted-foreground">Sem dados. Cadastre consultores em "Configurar" e cole os dados do dia.</td></tr>}
                 {linhas.map((l, i) => (
                   <tr key={l.c.id} className="border-t border-border">
                     <td className="px-3 py-2">{i + 1}</td>
                     <td className="px-3 py-2 font-medium">{l.c.nome}</td>
                     <td className="px-3 py-2 text-muted-foreground">{deptName(l.c.department_id)}</td>
                     <td className="px-3 py-2">{brl(l.pecas)}</td>
+                    <td className="px-3 py-2">{margemTxt(l)}</td>
                     <td className="px-3 py-2 text-muted-foreground">{brl(l.mP)}</td>
                     <td className={`px-3 py-2 font-semibold ${tone(l.perfP)}`}>{pct(l.perfP)}</td>
                     <td className={`px-3 py-2 ${tone(l.projPctP)}`}>{brl(l.projP)}</td>
