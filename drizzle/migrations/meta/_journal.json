@@ -71,6 +71,13 @@
       "when": 1791471191249,
       "tag": "0009_mech_grupo",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791557232926,
+      "tag": "0010_migration",
+      "breakpoints": true
     }
   ]
 }
