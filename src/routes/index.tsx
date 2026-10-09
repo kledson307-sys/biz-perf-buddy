@@ -185,12 +185,20 @@ function Painel({ email }: { email: string }) {
   // Consultores que vendem apenas peças — ficam fora da aba Serviços
   const SO_PECAS = ["MARCELA.S", "GEOVANA.M", "NAILTON/THIERRY"];
   const soPecas = (nome: string) => SO_PECAS.includes(nome.trim().toUpperCase());
+  // Departamentos que só vendem peças — não mostram a linha de serviços no Painel
+  const SEM_SERVICOS = ["ACESSORIOS", "ESTETICA", "BALCAO"];
+  const semServicos = (nome: string) =>
+    SEM_SERVICOS.includes(nome.trim().toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, ""));
   const linhasServ = linhas.filter((l) => !soPecas(l.c.nome));
   const totalServ = soma(linhasServ);
   const liderServ = linhasServ.length ? linhasServ.reduce((a, l) => (l.perfS > a.perfS ? l : a), linhasServ[0]!) : null;
   const liderPec = linhas.length ? linhas.reduce((a, l) => (l.perfP > a.perfP ? l : a), linhas[0]!) : null;
   const total = soma(linhas);
-  const porDept = [...new Set(linhas.map((l) => l.c.department_id))].map((id) => ({ nome: deptName(id), ...soma(linhas.filter((l) => l.c.department_id === id)) }));
+  const porDept = [...new Set(linhas.map((l) => l.c.department_id))].map((id) => {
+    const nome = deptName(id);
+    const ls = linhas.filter((l) => l.c.department_id === id);
+    return { nome, ...soma(semServicos(nome) ? ls.map((l) => ({ ...l, servicos: 0, mS: 0 })) : ls) };
+  });
 
   const recomendar = (l: (typeof linhas)[number]) => {
     const r: string[] = [];
