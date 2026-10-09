@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Barra, Box, Kpi, Tabela, brl, div, norm, num, parseNum, pct, tone } from "./painel-ui";
+import { Barra, Box, Kpi, Tabela, brl, div, norm, parseNum, pct, tone, uni } from "./painel-ui";
 import { GRUPO_NOME, ITENS, naoVende, naoVendeAgregado, splitCods, type Grupo } from "@/lib/agregados";
 import { AgregadosImport } from "./AgregadosImport";
 import { AgregadosIA } from "./AgregadosIA";
@@ -65,8 +65,9 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
   const exportar = () => {
     const h = ["Grupo", "Item", "Consultor", "Departamento", "Qtd", "Meta Qtd", "Perf. Qtd", "Projeção Qtd", "Valor", "Meta R$", "Perf. R$", "Projeção R$", "Passagens", "Aproveitamento"];
     const f = (n: number) => n.toFixed(2).replace(".", ",");
+    const fi = (n: number) => String(Math.round(n));
     const rows: string[][] = [];
-    for (const it of ITENS) for (const l of ranking([it.k])) rows.push([GRUPO_NOME[it.g], it.nome, l.c.nome, deptName(l.c.department_id), f(l.qtd), f(l.mq), pct(l.perfQ), f(l.projQ), f(l.valor), f(l.mv), pct(l.perfV), f(l.projV), f(l.pass), pct(l.aprov)]);
+    for (const it of ITENS) for (const l of ranking([it.k])) rows.push([GRUPO_NOME[it.g], it.nome, l.c.nome, deptName(l.c.department_id), fi(l.qtd), fi(l.mq), pct(l.perfQ), fi(l.projQ), f(l.valor), f(l.mv), pct(l.perfV), f(l.projV), fi(l.pass), pct(l.aprov)]);
     const csv = "\uFEFF" + [h, ...rows].map((r) => r.map((x) => `"${String(x).replace(/"/g, '""')}"`).join(";")).join("\n");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
@@ -123,8 +124,8 @@ function GrupoView({ g, stat, ranking, ids, deptName, rest }: {
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label="Quantidade vendida" value={num(T.qtd)} cls={tone(T.perfQ)} sub={<ItensDetalhe perItem={perItem} T={T} modo="qtd" />} />
-        <Kpi label="Projeção (qtd)" value={num(T.projQ)} cls={tone(T.projPctQ)} sub={<ItensDetalhe perItem={perItem} T={T} modo="proj" rest={rest} />} />
+        <Kpi label="Quantidade vendida" value={uni(T.qtd)} cls={tone(T.perfQ)} sub={<ItensDetalhe perItem={perItem} T={T} modo="qtd" />} />
+        <Kpi label="Projeção (qtd)" value={uni(T.projQ)} cls={tone(T.projPctQ)} sub={<ItensDetalhe perItem={perItem} T={T} modo="proj" rest={rest} />} />
         <Kpi label="Valor vendido" value={brl(T.valor)} cls={tone(T.perfV)} sub={<ItensDetalhe perItem={perItem} T={T} modo="valor" />} />
         <Kpi label="Aproveitamento" value={pct(T.aprov)} sub={<ItensDetalhe perItem={perItem} T={T} modo="aprov" />} />
       </div>
@@ -136,10 +137,10 @@ function GrupoView({ g, stat, ranking, ids, deptName, rest }: {
             return (
               <tr key={it.k} className="border-t border-border">
                 <td className="px-3 py-2 font-medium">{it.nome}</td>
-                <td className="px-3 py-2">{num(s.qtd)}</td>
-                <td className="px-3 py-2 text-muted-foreground">{num(s.mq)}</td>
+                <td className="px-3 py-2">{uni(s.qtd)}</td>
+                <td className="px-3 py-2 text-muted-foreground">{uni(s.mq)}</td>
                 <td className={`px-3 py-2 font-semibold ${tone(s.perfQ)}`}>{pct(s.perfQ)}</td>
-                <td className="px-3 py-2">{num(s.projQ)}</td>
+                <td className="px-3 py-2">{uni(s.projQ)}</td>
                 <td className="px-3 py-2"><Barra p={s.projPctQ} /></td>
                 <td className="px-3 py-2">{brl(s.valor)}</td>
                 <td className="px-3 py-2 text-muted-foreground">{brl(s.mv)}</td>
@@ -161,15 +162,15 @@ function GrupoView({ g, stat, ranking, ids, deptName, rest }: {
 /** Linha por item dentro dos cartões de KPI: vendido/projeção/valor/aproveitamento de cada tópico, com total. */
 function ItensDetalhe({ perItem, T, modo, rest = 0 }: { perItem: { it: (typeof ITENS)[number]; s: Stat }[]; T: Stat; modo: "qtd" | "proj" | "valor" | "aprov"; rest?: number }) {
   const linha = (s: Stat) =>
-    modo === "qtd" ? `${num(s.qtd)} de ${num(s.mq)}`
-    : modo === "proj" ? `${num(s.projQ)} de ${num(s.mq)}`
+    modo === "qtd" ? `${uni(s.qtd)} de ${uni(s.mq)}`
+    : modo === "proj" ? `${uni(s.projQ)} de ${uni(s.mq)}`
     : modo === "valor" ? `${brl(s.valor)} de ${brl(s.mv)}`
     : `${pct(s.aprov)}`;
   const total =
-    modo === "qtd" ? `${num(T.qtd)} de ${num(T.mq)} · ${pct(T.perfQ)}`
-    : modo === "proj" ? `${num(T.projQ)} de ${num(T.mq)} · ${pct(T.projPctQ)} · precisa ${num(T.necQ)}/dia (${rest} dias)`
+    modo === "qtd" ? `${uni(T.qtd)} de ${uni(T.mq)} · ${pct(T.perfQ)}`
+    : modo === "proj" ? `${uni(T.projQ)} de ${uni(T.mq)} · ${pct(T.projPctQ)} · precisa ${Math.ceil(T.necQ)}/dia (${rest} dias)`
     : modo === "valor" ? `${brl(T.valor)} de ${brl(T.mv)} · ${pct(T.perfV)} · projeção ${brl(T.projV)}`
-    : `${num(T.qtd)} itens em ${num(T.pass)} passagens`;
+    : `${uni(T.qtd)} itens em ${uni(T.pass)} passagens`;
   return (
     <span className="block space-y-1">
       {perItem.map(({ it, s }) => (
@@ -194,22 +195,22 @@ function RankTable({ title, rows, deptName }: { title: string; rows: Row[]; dept
       <Tabela head={["#", "Consultor", "Depto", "Qtd", "Meta", "Perf.", "Projeção", "Proj. %", "Valor", "Meta R$", "Perf. R$", "Aproveit.", "Nec./dia", "vs. Líder"]}>
         {rows.length === 0 && <tr><td colSpan={14} className="px-3 py-8 text-center text-muted-foreground">Nenhum consultor cadastrado.</td></tr>}
         {rows.map((l, i) => {
-          const gap = lider ? (usaMeta ? `−${((lider.perfQ - l.perfQ) * 100).toFixed(1)} pts` : `−${num(lider.qtd - l.qtd)} un.`) : "—";
+          const gap = lider ? (usaMeta ? `−${((lider.perfQ - l.perfQ) * 100).toFixed(1)} pts` : `−${uni(lider.qtd - l.qtd)} un.`) : "—";
           return (
             <tr key={l.c.id} className="border-t border-border">
               <td className="px-3 py-2">{i + 1}</td>
               <td className="px-3 py-2 font-medium">{l.c.nome}</td>
               <td className="px-3 py-2 text-muted-foreground">{deptName(l.c.department_id)}</td>
-              <td className="px-3 py-2 font-semibold">{num(l.qtd)}</td>
-              <td className="px-3 py-2 text-muted-foreground">{num(l.mq)}</td>
+              <td className="px-3 py-2 font-semibold">{uni(l.qtd)}</td>
+              <td className="px-3 py-2 text-muted-foreground">{uni(l.mq)}</td>
               <td className={`px-3 py-2 font-semibold ${tone(l.perfQ)}`}>{pct(l.perfQ)}</td>
-              <td className="px-3 py-2">{num(l.projQ)}</td>
+              <td className="px-3 py-2">{uni(l.projQ)}</td>
               <td className="px-3 py-2"><Barra p={l.projPctQ} /></td>
               <td className="px-3 py-2">{brl(l.valor)}</td>
               <td className="px-3 py-2 text-muted-foreground">{brl(l.mv)}</td>
               <td className={`px-3 py-2 ${tone(l.perfV)}`}>{pct(l.perfV)}</td>
               <td className="px-3 py-2">{pct(l.aprov)}</td>
-              <td className="px-3 py-2">{l.necQ ? num(l.necQ) : "—"}</td>
+              <td className="px-3 py-2">{l.necQ ? Math.ceil(l.necQ) : "—"}</td>
               <td className="whitespace-nowrap px-3 py-2">{lider && lider.c.id === l.c.id ? <span className="font-semibold text-primary">Líder</span> : <span className="text-destructive">{gap}</span>}</td>
             </tr>
           );

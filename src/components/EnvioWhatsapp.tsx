@@ -17,6 +17,7 @@ const digitos = (t: string) => {
 };
 
 const num = (v: number) => v.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+const uni = (v: number) => Math.round(v).toLocaleString("pt-BR");
 
 export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, tot, reload }: {
   linhas: LinhaEnvio[]; lider: LinhaEnvio | undefined; liderServ: LinhaEnvio | null; liderPec: LinhaEnvio | null;
@@ -78,7 +79,7 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
     const linhasAgg = agregados.map((a) => {
       const li = liderItem(a.item);
       const liderTxt = li ? (li.id === l.c.id ? "👑 você é o líder" : `👑 líder: ${li.nome} (${pct(li.qtd / li.meta)})`) : "";
-      return `• ${a.item}: ${num(a.qtd)}${a.meta ? ` de ${num(a.meta)} (${pct(a.qtd / a.meta)}) · proj. ${num(a.proj)} · precisa ${num(Math.ceil(a.nec))}/dia` : " (sem meta)"}${passagens ? ` · aproveit. ${pct(a.aper)}` : ""}${liderTxt ? ` · ${liderTxt}` : ""}`;
+      return `• ${a.item}: ${uni(a.qtd)}${a.meta ? ` de ${uni(a.meta)} (${pct(a.qtd / a.meta)}) · proj. ${uni(a.proj)} · precisa ${Math.ceil(a.nec)}/dia` : " (sem meta)"}${passagens ? ` · aproveit. ${pct(a.aper)}` : ""}${liderTxt ? ` · ${liderTxt}` : ""}`;
     });
     const totAgg = agregados.reduce((n, a) => n + a.qtd, 0);
     const oport = agregados.filter((a) => a.meta > 0 && a.qtd < a.meta).sort((a, b) => a.qtd / a.meta - b.qtd / b.meta)[0];
@@ -102,7 +103,7 @@ export function EnvioWhatsapp({ linhas, lider, liderServ, liderPec, mes, dec, to
       ...(naoVendeAgregado(l.c.nome) ? [] : [
         "➕ *AGREGADOS*",
         ...linhasAgg,
-        passagens ? `Aproveitamento: ${pct(totAgg / passagens)} (${num(totAgg)} itens em ${num(passagens)} passagens)` : "Passagens ainda não lançadas.",
+        passagens ? `Aproveitamento: ${pct(totAgg / passagens)} (${uni(totAgg)} itens em ${uni(passagens)} passagens)` : "Passagens ainda não lançadas.",
         cmp(liderAgg, perfAgg(l.c.id, l.c.nome), liderAgg ? perfAgg(liderAgg.c.id, liderAgg.c.nome) : 0),
         oport ? `🎯 Oportunidade: ${oport.item} está mais longe da meta (${pct(oport.qtd / oport.meta)}) — foque nele.` : "",
       ]),

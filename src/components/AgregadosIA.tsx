@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import ReactMarkdown from "react-markdown";
-import { Box, Tabela, num, pct, tone } from "./painel-ui";
+import { Box, Tabela, uni, pct, tone } from "./painel-ui";
 import { GRUPO_NOME, ITENS } from "@/lib/agregados";
 import { recomendarAgregados, type RecomendacaoInput } from "@/lib/agregados-ia.functions";
 
@@ -34,7 +34,7 @@ export function AgregadosIA({ mes, cons, tot, dec, stat, deptName }: {
         nome: c.nome, depto: deptName(c.department_id), passagens: stat([c.id], todas).pass,
         itens: ITENS.map((it) => {
           const s = stat([c.id], [it.k]);
-          return { item: it.nome, grupo: GRUPO_NOME[it.g], qtd: s.qtd, metaQtd: s.mq, valor: Math.round(s.valor * 100) / 100, metaValor: s.mv, projQtd: Math.round(s.projQ * 10) / 10 };
+          return { item: it.nome, grupo: GRUPO_NOME[it.g], qtd: s.qtd, metaQtd: s.mq, valor: Math.round(s.valor * 100) / 100, metaValor: s.mv, projQtd: Math.round(s.projQ) };
         }),
       })),
     };
@@ -56,12 +56,12 @@ export function AgregadosIA({ mes, cons, tot, dec, stat, deptName }: {
             <tr key={l.c.id} className="border-t border-border">
               <td className="px-3 py-2 font-medium">{l.c.nome}</td>
               <td className="px-3 py-2 text-muted-foreground">{deptName(l.c.department_id)}</td>
-              <td className="px-3 py-2">{num(l.pass)}</td>
-              <td className="px-3 py-2">{num(l.qtd)}</td>
-              <td className="px-3 py-2 text-muted-foreground">{num(l.mq)}</td>
+              <td className="px-3 py-2">{uni(l.pass)}</td>
+              <td className="px-3 py-2">{uni(l.qtd)}</td>
+              <td className="px-3 py-2 text-muted-foreground">{uni(l.mq)}</td>
               <td className={`px-3 py-2 font-semibold ${tone(l.perfQ)}`}>{pct(l.perfQ)}</td>
               <td className="px-3 py-2">{pct(l.aprov)}</td>
-              <td className="px-3 py-2">{num(l.projQ)}</td>
+              <td className="px-3 py-2">{uni(l.projQ)}</td>
             </tr>
           ))}
         </Tabela>

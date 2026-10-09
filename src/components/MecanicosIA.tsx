@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Box, Kpi, Tabela, brl, div, num, pct, tone } from "./painel-ui";
+import { Box, Kpi, Tabela, brl, div, uni, pct, tone } from "./painel-ui";
 import { type Grupo, type MecBloco } from "@/lib/mecanicos";
 import { analisarMecanicos, type MecanicosAnaliseInput } from "@/lib/mecanicos-ia.functions";
 
@@ -87,7 +87,7 @@ export function MecanicosIA({ mes, tot, dec, blocos }: { mes: string; tot: numbe
               <td className={`whitespace-nowrap px-2 py-2 font-semibold ${b.T.meta ? tone(b.T.perf) : "text-muted-foreground"}`}>{b.T.meta ? pct(b.T.perf) : "—"}</td>
               <td className="whitespace-nowrap px-2 py-2">{brl(b.T.proj)}{b.T.meta ? <span className={`ml-1 text-xs font-semibold ${tone(b.T.projP)}`}>{pct(b.T.projP)}</span> : null}</td>
               <td className="whitespace-nowrap px-2 py-2">{b.T.meta ? (b.T.nec ? `${brl(b.T.nec)}/dia` : "✔ batida") : "—"}</td>
-              <td className="whitespace-nowrap px-2 py-2">{num(b.pass)} <span className="text-xs text-muted-foreground">· ticket {brl(div(b.T.real, b.pass))}</span></td>
+              <td className="whitespace-nowrap px-2 py-2">{uni(b.pass)} <span className="text-xs text-muted-foreground">· ticket {brl(div(b.T.real, b.pass))}</span></td>
             </tr>
           ))}
         </Tabela>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Box, brl, norm, num } from "./painel-ui";
+import { Box, brl, norm, uni } from "./painel-ui";
 import { GRUPO_NOME, ITENS, distribuir, lerRanking, splitCods, type Relatorio } from "@/lib/agregados";
 import { registrarUpdate } from "@/lib/update-log";
 import { AgregadosPassagens } from "./AgregadosPassagens";
@@ -125,7 +125,7 @@ export function AgregadosImport({ allCons, codigos, ini, end, onDone }: {
                     <tr key={n} className="border-t border-border">
                       <td className="whitespace-nowrap px-3 py-2 font-medium">{n}{!conhecidos.has(norm(n)) && <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">novo</span>}</td>
                       {itensAtivos.map((it) => { const l = get(n, it.k); return [
-                        <td key={it.k + "q"} className="border-l border-border px-2 py-2 text-right">{l ? num(l.qtd) : "—"}</td>,
+                        <td key={it.k + "q"} className="border-l border-border px-2 py-2 text-right">{l ? uni(l.qtd) : "—"}</td>,
                         <td key={it.k + "v"} className="px-2 py-2 text-right">{l ? brl(l.valor) : "—"}</td>,
                       ]; })}
                     </tr>
@@ -141,7 +141,7 @@ export function AgregadosImport({ allCons, codigos, ini, end, onDone }: {
                   {res.usados.map((u) => (
                     <tr key={u.codigo} className="border-t border-border">
                       <td className="py-1 font-mono">{u.codigo}</td><td>{u.desc}</td><td>{ITENS.find((i) => i.k === u.item)?.nome}</td>
-                      <td className="text-right">{num(u.qtd)}</td><td className="text-right">{brl(u.bruto)}</td><td className="text-right">{brl(u.qtd ? u.bruto / u.qtd : 0)}</td>
+                      <td className="text-right">{uni(u.qtd)}</td><td className="text-right">{brl(u.bruto)}</td><td className="text-right">{brl(u.qtd ? u.bruto / u.qtd : 0)}</td>
                     </tr>
                   ))}
                 </tbody>
