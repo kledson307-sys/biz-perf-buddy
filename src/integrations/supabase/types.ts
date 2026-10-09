@@ -473,6 +473,7 @@ export type Database = {
         Row: {
           at: string
           id: string
+          mes: string | null
           nome: string
           origem: string
           user_id: string
@@ -480,6 +481,7 @@ export type Database = {
         Insert: {
           at?: string
           id?: string
+          mes?: string | null
           nome: string
           origem: string
           user_id?: string
@@ -487,6 +489,7 @@ export type Database = {
         Update: {
           at?: string
           id?: string
+          mes?: string | null
           nome?: string
           origem?: string
           user_id?: string

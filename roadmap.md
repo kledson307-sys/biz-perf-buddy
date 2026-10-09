@@ -1,4 +1,6 @@
 # Tasks
+- [x] Separar alertas vermelhos por fonte/aba e verificar que uma atualização não limpa as demais.
+- [x] Sugerir indicadores adicionais de gestão sem alterar o painel ou a planilha.
 - [x] Persist Projeção + OS in the shared account until replacement and verify reload/replacement.
 - [x] Add Excel sales import from fonte.xls with seller preview and safe cumulative handling.
 - [x] Verify import with the supplied report and the signed-in dashboard.

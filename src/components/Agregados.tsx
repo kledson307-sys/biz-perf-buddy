@@ -250,7 +250,7 @@ function Lancar({ cons, allCons, sales, visits, ini, end, onDone }: {
     const err = a.error || b.error;
     if (err) return setMsg("Erro ao salvar: " + err.message);
     setMsg(`${ids.length} consultores salvos para ${dia.split("-").reverse().join("/")}.`);
-    await registrarUpdate("Agregados (lançamento)");
+    if (ids.length) await registrarUpdate("Agregados (lançamento)", dia.slice(0, 7));
     onDone();
   };
 

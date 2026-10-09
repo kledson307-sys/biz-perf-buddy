@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Barra, Box, Kpi, Tabela, brl, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
 import { readSalesReport } from "@/lib/sales-report";
 import { loadOpenOrders, saveOpenOrders, type OpenOrders } from "@/lib/open-orders.functions";
+import { registrarUpdate } from "@/lib/update-log";
 
 type Linha = { c: { id: string; nome: string; department_id: string | null }; servicos: number; pecas: number; mS: number; mP: number };
 type Os = OpenOrders;
@@ -124,6 +125,7 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec, deptName, semServico
     setMsg("Salvando O.S.…");
     try {
       await saveOpenOrders({ data: { mes, valores: n } });
+      if (Object.keys(n).length) await registrarUpdate("O.S. abertas (importação/edição)", mes);
       setOs(n);
       setMsg("O.S. salvas no painel.");
       try { localStorage.removeItem(store); } catch { /* Shared snapshot is authoritative. */ }

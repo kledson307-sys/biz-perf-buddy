@@ -77,7 +77,7 @@ export function SalesImport({ cons, depts, onDone, onPeriod }: {
         ? await supabase.rpc("import_sales_period", { p_ini: period.ini, p_fim: period.fim, p_rows: rows })
         : await supabase.from("daily_sales").upsert(rows.map(r => ({ ...r, dia })), { onConflict: "consultant_id,dia" });
       if (error) throw error;
-      await registrarUpdate("Faturamento (Excel/colar)");
+      await registrarUpdate("Faturamento (Excel/colar)", period.fim.slice(0, 7));
       setMsg(`${rows.length} consultores salvos: ${dateLabel(period.ini)} a ${dateLabel(period.fim)}. Serviços: ${currency(rows.reduce((n, r) => n + r.servicos, 0))}. Peças: ${currency(rows.reduce((n, r) => n + r.pecas, 0))}.`);
       setReport(null); setTxt(""); setArquivo("");
       onPeriod(period.fim.slice(0, 7)); onDone();

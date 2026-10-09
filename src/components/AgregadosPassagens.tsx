@@ -37,7 +37,7 @@ export function AgregadosPassagens({ allCons, ini, end, onDone }: { allCons: Con
     const up = await supabase.from("agg_visits").insert(ok.map((p) => ({ consultant_id: p.id!, dia: end, passagens: p.passagens })));
     setBusy(false);
     if (up.error) { setMsg("Erro: " + up.error.message); return; }
-    await registrarUpdate("Passagens agregados (importação)");
+    await registrarUpdate("Passagens agregados (importação)", end.slice(0, 7));
     setMsg(`Passagens importadas para ${ok.length} consultores (${br(ini)} a ${br(end)}). O.S. repetidas contadas uma única vez; o mês foi substituído, sem somar.${prev.length > ok.length ? ` ${prev.length - ok.length} não cadastrados foram ignorados.` : ""}`);
     setPrev(null);
     onDone();
