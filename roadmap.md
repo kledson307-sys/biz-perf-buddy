@@ -27,3 +27,10 @@
 - [x] Painel: renomear a aba "Projeção por vendedor" para "Serviços & Peças"
 - [x] Projeção + OS: cartões por departamento iguais aos do Painel (faturado + OS abertas)
 - [x] Painel: novo arquivo "Vendas de Peças e Serviços por Vendedor" (valor líquido), margem % de peças nos relatórios, NAILTON.R + THIERRY.S = NAILTON/THIERRY
+
+## Para depois (guardado, ainda não aprovado)
+- [ ] Conversão de orçamentos: enviados x aprovados e motivos de recusa.
+- [ ] Retrabalho e retorno: carros que voltam pelo mesmo problema, por técnico, com custo da correção.
+- [ ] Lucro das peças em R$ ao lado da margem %.
+- [ ] Produtividade dos técnicos: horas disponíveis x horas vendidas, carro e moto separados.
+- [ ] Prazo prometido x prazo entregue: atrasos por consultor e motivo.
