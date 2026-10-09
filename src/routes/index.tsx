@@ -190,11 +190,23 @@ function Painel({ email }: { email: string }) {
   const SEM_SERVICOS = ["ACESSORIOS", "ESTETICA", "BALCAO"];
   const semServicos = (nome: string) =>
     SEM_SERVICOS.includes(nome.trim().toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, ""));
+  // Margem ideal de peças por departamento — parâmetro de cores do gestor
+  const MARGEM_IDEAL: Record<string, number> = { "SG OFICINA": 0.33, ESTETICA: 0.38, ACESSORIOS: 0.31, BALCAO: 0.31, "SC FUNILARIA": 0.24 };
+  const margemIdeal = (nome: string) =>
+    MARGEM_IDEAL[nome.trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")] ?? 0;
+  // Cor da margem: verde ≥ ideal, amarelo ≥ 85% da ideal, vermelho abaixo
+  const margemTone = (nome: string, m: number, pecas: number) => {
+    const ideal = margemIdeal(nome);
+    if (!ideal || !m || !pecas) return "";
+    return tone(m / pecas / ideal);
+  };
   const linhasServ = linhas.filter((l) => !soPecas(l.c.nome));
   const totalServ = soma(linhasServ);
   const liderServ = linhasServ.length ? linhasServ.reduce((a, l) => (l.perfS > a.perfS ? l : a), linhasServ[0]!) : null;
   const liderPec = linhas.length ? linhas.reduce((a, l) => (l.perfP > a.perfP ? l : a), linhas[0]!) : null;
   const total = soma(linhas);
+  // Ideal ponderado de margem de peças (peso = peças vendidas de cada departamento)
+  const idealTotal = div(linhas.reduce((s, l) => s + margemIdeal(deptName(l.c.department_id)) * l.pecas, 0), linhas.reduce((s, l) => s + l.pecas, 0));
   const porDept = [...new Set(linhas.map((l) => l.c.department_id))].map((id) => {
     const nome = deptName(id);
     const ls = linhas.filter((l) => l.c.department_id === id);
@@ -412,7 +424,7 @@ function Painel({ email }: { email: string }) {
                       </div>
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="text-xs text-muted-foreground">Margem peças</span>
-                        <span className="font-semibold">{margemTxt(d)}</span>
+                        <span className={`font-semibold ${margemTone(d.nome, d.margem, d.pecas)}`}>{margemTxt(d)} <span className="text-xs font-normal text-muted-foreground">ideal {pct(margemIdeal(d.nome))}</span></span>
                       </div>
                       <div className="flex items-baseline justify-between gap-2 border-t border-border pt-2">
                         <span className="text-muted-foreground">Projeção total</span>
@@ -513,7 +525,7 @@ function Painel({ email }: { email: string }) {
               <Kpi label="Realizado Peças" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)}`} cls={tone(total.perfP)} />
               <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta de ${brl(total.mP)}`} cls={tone(total.projPctP)} />
               <Kpi label="Falta para a meta" value={brl(Math.max(total.mP - total.pecas, 0))} sub={`Precisa ${brl(total.necP)}/dia (${Math.max(tot - dec, 0)} dias restantes)`} />
-              <Kpi label="Margem de Peças" value={margemTxt(total)} sub="Margem líquida sobre o valor líquido de peças" />
+              <Kpi label="Margem de Peças" value={margemTxt(total)} sub="Margem líquida sobre o valor líquido de peças" cls={idealTotal ? tone(div(total.marg, idealTotal)) : ""} />
               <Kpi label="Líder de Peças" value={liderPec ? liderPec.c.nome : "—"} sub={liderPec ? `${pct(liderPec.perfP)} de performance` : ""} />
             </div>
             <Box title="Projeção individual de peças">
@@ -525,7 +537,7 @@ function Painel({ email }: { email: string }) {
                     <td className="px-3 py-2 font-medium">{l.c.nome}</td>
                     <td className="px-3 py-2 text-muted-foreground">{deptName(l.c.department_id)}</td>
                     <td className="px-3 py-2">{brl(l.pecas)}</td>
-                    <td className="px-3 py-2">{margemTxt(l)}</td>
+                    <td className={`px-3 py-2 ${margemTone(deptName(l.c.department_id), l.margem, l.pecas)}`}>{margemTxt(l)}</td>
                     <td className="px-3 py-2 text-muted-foreground">{brl(l.mP)}</td>
                     <td className={`px-3 py-2 font-semibold ${tone(l.perfP)}`}>{pct(l.perfP)}</td>
                     <td className={`px-3 py-2 ${tone(l.projPctP)}`}>{brl(l.projP)}</td>
