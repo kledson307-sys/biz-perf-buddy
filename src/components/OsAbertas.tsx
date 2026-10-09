@@ -35,7 +35,7 @@ export function lerOsTabela(raw: unknown[][]): { nome: string; servicos: number;
   const GEO_MIN = new Date(2026, 8, 20).getTime();
   const dataEmissao = (v: unknown): number | null => {
     if (v instanceof Date) return v.getTime();
-    if (typeof v === "number") { const d = XLSX.SSF?.parse_date_code?.(v); return d ? new Date(d.y, d.m - 1, d.d).getTime() : null; }
+    if (typeof v === "number") { const d = new Date(Math.round((v - 25569) * 86400000)); return d.getTime(); }
     const m = String(v ?? "").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})/);
     return m ? new Date(+m[3], +m[2] - 1, +m[1]).getTime() : null;
   };
