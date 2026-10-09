@@ -386,12 +386,20 @@ function Painel({ email }: { email: string }) {
                         <span>{brl(d.servicos)} <span className="text-xs text-muted-foreground">meta {brl(d.mS)}</span> <span className={`text-xs font-semibold ${tone(d.perfS)}`}>{pct(d.perfS)}</span></span>
                       </div>
                       <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-xs text-muted-foreground">Projeção serviços</span>
+                        <span className={tone(d.projPctS)}>{brl(d.projS)} <span className="text-xs">{pct(d.projPctS)} da meta</span></span>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-2 border-t border-border pt-2">
                         <span className="text-muted-foreground">Peças</span>
                         <span>{brl(d.pecas)} <span className="text-xs text-muted-foreground">meta {brl(d.mP)}</span> <span className={`text-xs font-semibold ${tone(d.perfP)}`}>{pct(d.perfP)}</span></span>
                       </div>
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-xs text-muted-foreground">Projeção peças</span>
+                        <span className={tone(d.projPctP)}>{brl(d.projP)} <span className="text-xs">{pct(d.projPctP)} da meta</span></span>
+                      </div>
                       <div className="flex items-baseline justify-between gap-2 border-t border-border pt-2">
-                        <span className="text-muted-foreground">Projeção</span>
-                        <span className="font-semibold">{brl(d.proj)}</span>
+                        <span className="text-muted-foreground">Projeção total</span>
+                        <span className="font-semibold">{brl(d.proj)} <span className={`text-xs font-semibold ${tone(d.projPct)}`}>{pct(d.projPct)}</span></span>
                       </div>
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="text-muted-foreground">Realizado / Meta</span>
