@@ -55,7 +55,7 @@ export function SalesImport({ cons, depts, onDone, onPeriod }: {
     try {
       const departments = new Map(depts.map(d => [key(d.nome), d.id]));
       const consultants = new Map(cons.map(c => [key(c.nome), c.id]));
-      const rows: { consultant_id: string; servicos: number; pecas: number }[] = [];
+      const rows: { consultant_id: string; servicos: number; pecas: number; margem_pecas: number }[] = [];
       for (const r of report.rows) {
         let id = match(r)?.id ?? consultants.get(key(r.nome));
         if (!id) {
@@ -70,8 +70,8 @@ export function SalesImport({ cons, depts, onDone, onPeriod }: {
           id = data.id; consultants.set(key(r.nome), data.id);
         }
         const existing = rows.find(row => row.consultant_id === id);
-        if (existing) { existing.servicos += r.servicos; existing.pecas += r.pecas; }
-        else rows.push({ consultant_id: id, servicos: r.servicos, pecas: r.pecas });
+        if (existing) { existing.servicos += r.servicos; existing.pecas += r.pecas; existing.margem_pecas += r.margem; }
+        else rows.push({ consultant_id: id, servicos: r.servicos, pecas: r.pecas, margem_pecas: r.margem });
       }
       const { error } = report.periodo
         ? await supabase.rpc("import_sales_period", { p_ini: period.ini, p_fim: period.fim, p_rows: rows })
@@ -104,13 +104,13 @@ export function SalesImport({ cons, depts, onDone, onPeriod }: {
           <Button variant="ghost" size="icon" aria-label="Cancelar importação" title="Cancelar importação" disabled={busy} onClick={() => setReport(null)}><X /></Button>
         </div>
         {report.periodo && <p role="note" className="border-l-2 border-primary bg-accent px-4 py-3 text-sm text-accent-foreground">Este relatório é acumulado. Os lançamentos dos consultores presentes, de {dateLabel(period.ini)} a {dateLabel(period.fim)}, serão substituídos. O total ficará em {dateLabel(period.fim)}; este arquivo não informa a divisão diária. Para manter o histórico diário, importe relatórios de um único dia.</p>}
-        <Tabela head={["Vendedor", "Nome completo", "Consultor no painel", "Serviços", "Peças", "Total"]}>
+        <Tabela head={["Vendedor", "Nome completo", "Consultor no painel", "Serviços", "Peças", "Margem peças", "Total"]}>
           {report.rows.map(r => <tr key={r.nome} className="border-t border-border">
             <td className="px-3 py-3 font-medium">{r.nome}</td><td className="px-3 py-3 text-muted-foreground">{r.completo || "—"}</td>
             <td className="px-3 py-3">{match(r)?.nome ?? `${r.nome} (novo)`}</td>
-            <td className="whitespace-nowrap px-3 py-3">{currency(r.servicos)}</td><td className="whitespace-nowrap px-3 py-3">{currency(r.pecas)}</td><td className="whitespace-nowrap px-3 py-3 font-semibold">{currency(r.servicos + r.pecas)}</td>
+            <td className="whitespace-nowrap px-3 py-3">{currency(r.servicos)}</td><td className="whitespace-nowrap px-3 py-3">{currency(r.pecas)}</td><td className="whitespace-nowrap px-3 py-3">{r.margem && r.pecas ? `${(r.margem / r.pecas * 100).toFixed(1).replace(".", ",")}%` : "—"}</td><td className="whitespace-nowrap px-3 py-3 font-semibold">{currency(r.servicos + r.pecas)}</td>
           </tr>)}
-          <tr className="border-t border-border bg-muted font-semibold"><td className="px-3 py-3" colSpan={3}>Total</td><td className="whitespace-nowrap px-3 py-3">{currency(report.rows.reduce((n,r)=>n+r.servicos,0))}</td><td className="whitespace-nowrap px-3 py-3">{currency(report.rows.reduce((n,r)=>n+r.pecas,0))}</td><td className="whitespace-nowrap px-3 py-3">{currency(report.rows.reduce((n,r)=>n+r.servicos+r.pecas,0))}</td></tr>
+          <tr className="border-t border-border bg-muted font-semibold"><td className="px-3 py-3" colSpan={3}>Total</td><td className="whitespace-nowrap px-3 py-3">{currency(report.rows.reduce((n,r)=>n+r.servicos,0))}</td><td className="whitespace-nowrap px-3 py-3">{currency(report.rows.reduce((n,r)=>n+r.pecas,0))}</td><td className="whitespace-nowrap px-3 py-3">{(() => { const p = report.rows.reduce((n,r)=>n+r.pecas,0), m = report.rows.reduce((n,r)=>n+r.margem,0); return m && p ? `${(m / p * 100).toFixed(1).replace(".", ",")}%` : "—"; })()}</td><td className="whitespace-nowrap px-3 py-3">{currency(report.rows.reduce((n,r)=>n+r.servicos+r.pecas,0))}</td></tr>
         </Tabela>
         <Button onClick={() => void save()} disabled={busy || !dia}><Save />{busy ? "Salvando…" : "Confirmar importação"}</Button>
       </div>}
