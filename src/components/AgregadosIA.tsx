@@ -34,7 +34,7 @@ export function AgregadosIA({ mes, cons, tot, dec, stat, deptName }: {
         nome: c.nome, depto: deptName(c.department_id), passagens: stat([c.id], todas).pass,
         itens: ITENS.map((it) => {
           const s = stat([c.id], [it.k]);
-          return { item: it.nome, grupo: GRUPO_NOME[it.g], qtd: s.qtd, metaQtd: s.mq, valor: Math.round(s.valor * 100) / 100, metaValor: s.mv, projQtd: Math.round(s.projQ * 10) / 10 };
+          return { item: it.nome, grupo: GRUPO_NOME[it.g], qtd: s.qtd, metaQtd: s.mq, valor: Math.round(s.valor * 100) / 100, metaValor: s.mv, projQtd: Math.round(s.projQ) };
         }),
       })),
     };
