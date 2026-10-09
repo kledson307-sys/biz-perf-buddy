@@ -153,6 +153,26 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec, deptName, semServico
   const necS = rest ? Math.max(g.ms - ts, 0) / rest : 0, necP = rest ? Math.max(g.mp - tp, 0) / rest : 0;
   const cell = "px-3 py-2";
 
+  // Cartões por departamento (faturado + OS abertas), mesmo layout do Painel
+  const porDept = [...new Set(rows.map((r) => r.l.c.department_id))].map((id) => {
+    const nome = deptName(id);
+    const semServ = semServicos(nome);
+    const t = rows.filter((r) => r.l.c.department_id === id).reduce((a, r) => ({
+      fs: a.fs + (r.semServ || semServ ? 0 : r.l.servicos), os: a.os + (r.semServ || semServ ? 0 : r.o.s), ms: a.ms + (r.semServ || semServ ? 0 : r.l.mS),
+      fp: a.fp + r.l.pecas, op: a.op + r.o.p, mp: a.mp + r.l.mP,
+    }), { fs: 0, os: 0, ms: 0, fp: 0, op: 0, mp: 0 });
+    const dts = t.fs + t.os, dtp = t.fp + t.op;
+    const dProjS = dec ? div(dts, dec) * tot : 0, dProjP = dec ? div(dtp, dec) * tot : 0;
+    const dProj = dProjS + dProjP, dMeta = t.ms + t.mp, dReal = dts + dtp;
+    return {
+      nome, semServ,
+      servicos: dts, mS: t.ms, perfS: div(dts, t.ms), projS: dProjS, projPctS: div(dProjS, t.ms),
+      pecas: dtp, mP: t.mp, perfP: div(dtp, t.mp), projP: dProjP, projPctP: div(dProjP, t.mp),
+      real: dReal, meta: dMeta, perf: div(dReal, dMeta), proj: dProj, projPct: div(dProj, dMeta),
+      necS: rest ? Math.max(t.ms - dts, 0) / rest : 0, necP: rest ? Math.max(t.mp - dtp, 0) / rest : 0,
+    };
+  });
+
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-semibold">Projeção com OS abertas — {mes}</h2>
