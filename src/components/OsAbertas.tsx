@@ -28,13 +28,25 @@ export function lerOsTabela(raw: unknown[][]): { nome: string; servicos: number;
   if (h < 0) return null;
   const head = (raw[h] ?? []).map((c) => norm(String(c)).trim());
   const col = (re: RegExp) => head.findIndex((c) => re.test(c));
-  const cT = col(/^tipo$/), cR = col(/^recep/), cS = col(/^serv/), cP = col(/^itens/);
+  const cT = col(/^tipo$/), cR = col(/^recep/), cS = col(/^serv/), cP = col(/^itens/), cE = col(/^emiss/);
   if (cS < 0 || cP < 0) return null;
   const num = (v: unknown) => typeof v === "number" ? v : toNum(v);
+  // GEOVANA.M: só contam O.S. abertas a partir de 20/09/2026 (data de emissão).
+  const GEO_MIN = new Date(2026, 8, 20).getTime();
+  const dataEmissao = (v: unknown): number | null => {
+    if (v instanceof Date) return v.getTime();
+    if (typeof v === "number") { const d = XLSX.SSF?.parse_date_code?.(v); return d ? new Date(d.y, d.m - 1, d.d).getTime() : null; }
+    const m = String(v ?? "").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+    return m ? new Date(+m[3], +m[2] - 1, +m[1]).getTime() : null;
+  };
   const res: { nome: string; servicos: number; pecas: number }[] = [];
   for (const r of raw.slice(h + 1)) {
     const nome = String(r[cR] ?? "").trim();
     if (!nome || !OS_PERMITIDOS.has(norm(nome))) continue;
+    if (norm(nome) === "geovana.m" && cE >= 0) {
+      const d = dataEmissao(r[cE]);
+      if (d === null || d < GEO_MIN) continue;
+    }
     const f = TIPOS_30.has(norm(String(r[cT] ?? "")).trim()) ? 0.3 : 1;
     res.push({ nome, servicos: num(r[cS]) * f, pecas: num(r[cP]) * f });
   }
