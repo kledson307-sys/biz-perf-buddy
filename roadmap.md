@@ -24,3 +24,4 @@
 - [x] Painel: renomear a aba "Projeção" para "Projeção por vendedor"
 - [x] Painel: renomear a aba "Projeção por vendedor" para "Serviços & Peças"
 - [x] Projeção + OS: cartões por departamento iguais aos do Painel (faturado + OS abertas)
+- [ ] Painel: novo arquivo "Vendas de Peças e Serviços por Vendedor" (valor líquido), margem % de peças nos relatórios, NAILTON.R + THIERRY.S = NAILTON/THIERRY (aguardando OK da prévia)
