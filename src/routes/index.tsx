@@ -185,12 +185,20 @@ function Painel({ email }: { email: string }) {
   // Consultores que vendem apenas peças — ficam fora da aba Serviços
   const SO_PECAS = ["MARCELA.S", "GEOVANA.M", "NAILTON/THIERRY"];
   const soPecas = (nome: string) => SO_PECAS.includes(nome.trim().toUpperCase());
+  // Departamentos que só vendem peças — não mostram a linha de serviços no Painel
+  const SEM_SERVICOS = ["ACESSORIOS", "ESTETICA", "BALCAO"];
+  const semServicos = (nome: string) =>
+    SEM_SERVICOS.includes(nome.trim().toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, ""));
   const linhasServ = linhas.filter((l) => !soPecas(l.c.nome));
   const totalServ = soma(linhasServ);
   const liderServ = linhasServ.length ? linhasServ.reduce((a, l) => (l.perfS > a.perfS ? l : a), linhasServ[0]!) : null;
   const liderPec = linhas.length ? linhas.reduce((a, l) => (l.perfP > a.perfP ? l : a), linhas[0]!) : null;
   const total = soma(linhas);
-  const porDept = [...new Set(linhas.map((l) => l.c.department_id))].map((id) => ({ nome: deptName(id), ...soma(linhas.filter((l) => l.c.department_id === id)) }));
+  const porDept = [...new Set(linhas.map((l) => l.c.department_id))].map((id) => {
+    const nome = deptName(id);
+    const ls = linhas.filter((l) => l.c.department_id === id);
+    return { nome, ...soma(semServicos(nome) ? ls.map((l) => ({ ...l, servicos: 0, mS: 0 })) : ls) };
+  });
 
   const recomendar = (l: (typeof linhas)[number]) => {
     const r: string[] = [];
@@ -381,15 +389,19 @@ function Painel({ email }: { email: string }) {
                     </div>
                     <div className="mt-2"><Barra p={d.projPct} /></div>
                     <div className="mt-3 space-y-2 text-sm">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-muted-foreground">Serviços</span>
-                        <span>{brl(d.servicos)} <span className="text-xs text-muted-foreground">meta {brl(d.mS)}</span> <span className={`text-xs font-semibold ${tone(d.perfS)}`}>{pct(d.perfS)}</span></span>
-                      </div>
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-xs text-muted-foreground">Projeção serviços</span>
-                        <span className={tone(d.projPctS)}>{brl(d.projS)} <span className="text-xs">{pct(d.projPctS)} da meta</span></span>
-                      </div>
-                      <div className="flex items-baseline justify-between gap-2 border-t border-border pt-2">
+                      {!semServicos(d.nome) && (
+                        <>
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="text-muted-foreground">Serviços</span>
+                            <span>{brl(d.servicos)} <span className="text-xs text-muted-foreground">meta {brl(d.mS)}</span> <span className={`text-xs font-semibold ${tone(d.perfS)}`}>{pct(d.perfS)}</span></span>
+                          </div>
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="text-xs text-muted-foreground">Projeção serviços</span>
+                            <span className={tone(d.projPctS)}>{brl(d.projS)} <span className="text-xs">{pct(d.projPctS)} da meta</span></span>
+                          </div>
+                        </>
+                      )}
+                      <div className={`flex items-baseline justify-between gap-2 ${semServicos(d.nome) ? "" : "border-t border-border pt-2"}`}>
                         <span className="text-muted-foreground">Peças</span>
                         <span>{brl(d.pecas)} <span className="text-xs text-muted-foreground">meta {brl(d.mP)}</span> <span className={`text-xs font-semibold ${tone(d.perfP)}`}>{pct(d.perfP)}</span></span>
                       </div>
@@ -405,7 +417,7 @@ function Painel({ email }: { email: string }) {
                         <span className="text-muted-foreground">Realizado / Meta</span>
                         <span>{brl(d.real)} <span className="text-xs text-muted-foreground">/ {brl(d.meta)}</span> <span className={`text-xs font-semibold ${tone(d.perf)}`}>{pct(d.perf)}</span></span>
                       </div>
-                      <p className="text-xs text-muted-foreground">Precisa por dia: serviços {brl(d.necS)} · peças {brl(d.necP)}</p>
+                      <p className="text-xs text-muted-foreground">Precisa por dia: {semServicos(d.nome) ? `peças ${brl(d.necP)}` : `serviços ${brl(d.necS)} · peças ${brl(d.necP)}`}</p>
                     </div>
                   </div>
                 ))}
