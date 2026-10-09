@@ -37,7 +37,7 @@ export function lerOsTabela(raw: unknown[][]): { nome: string; servicos: number;
     if (v instanceof Date) return v.getTime();
     if (typeof v === "number") { const d = new Date(Math.round((v - 25569) * 86400000)); return d.getTime(); }
     const m = String(v ?? "").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})/);
-    return m ? new Date(+m[3], +m[2] - 1, +m[1]).getTime() : null;
+    return m ? new Date(+(m[3] ?? 0), +(m[2] ?? 1) - 1, +(m[1] ?? 1)).getTime() : null;
   };
   const res: { nome: string; servicos: number; pecas: number }[] = [];
   for (const r of raw.slice(h + 1)) {
