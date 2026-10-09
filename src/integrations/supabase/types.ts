@@ -183,6 +183,7 @@ export type Database = {
           consultant_id: string
           dia: string
           id: string
+          margem_pecas: number
           pecas: number
           servicos: number
           user_id: string
@@ -191,6 +192,7 @@ export type Database = {
           consultant_id: string
           dia: string
           id?: string
+          margem_pecas?: number
           pecas?: number
           servicos?: number
           user_id?: string
@@ -199,6 +201,7 @@ export type Database = {
           consultant_id?: string
           dia?: string
           id?: string
+          margem_pecas?: number
           pecas?: number
           servicos?: number
           user_id?: string
