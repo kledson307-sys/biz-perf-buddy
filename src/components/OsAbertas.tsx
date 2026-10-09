@@ -198,6 +198,52 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec, deptName, semServico
         {msg && <p role="status" className="mt-2 text-sm">{msg}</p>}
       </Box></div>
 
+      <Box title="Resultados por departamento (faturado + OS abertas)">
+        <div className="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-3">
+          {porDept.map((d) => (
+            <div key={d.nome} className="rounded-lg border border-border bg-card p-4">
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="font-semibold">{d.nome}</p>
+                <p className={`text-sm font-semibold ${tone(d.projPct)}`}>Proj. {pct(d.projPct)}</p>
+              </div>
+              <div className="mt-2"><Barra p={d.projPct} /></div>
+              <div className="mt-3 space-y-2 text-sm">
+                {!d.semServ && (
+                  <>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-muted-foreground">Serviços</span>
+                      <span>{brl(d.servicos)} <span className="text-xs text-muted-foreground">meta {brl(d.mS)}</span> <span className={`text-xs font-semibold ${tone(d.perfS)}`}>{pct(d.perfS)}</span></span>
+                    </div>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-xs text-muted-foreground">Projeção serviços</span>
+                      <span className={tone(d.projPctS)}>{brl(d.projS)} <span className="text-xs">{pct(d.projPctS)} da meta</span></span>
+                    </div>
+                  </>
+                )}
+                <div className={`flex items-baseline justify-between gap-2 ${d.semServ ? "" : "border-t border-border pt-2"}`}>
+                  <span className="text-muted-foreground">Peças</span>
+                  <span>{brl(d.pecas)} <span className="text-xs text-muted-foreground">meta {brl(d.mP)}</span> <span className={`text-xs font-semibold ${tone(d.perfP)}`}>{pct(d.perfP)}</span></span>
+                </div>
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">Projeção peças</span>
+                  <span className={tone(d.projPctP)}>{brl(d.projP)} <span className="text-xs">{pct(d.projPctP)} da meta</span></span>
+                </div>
+                <div className="flex items-baseline justify-between gap-2 border-t border-border pt-2">
+                  <span className="text-muted-foreground">Projeção total</span>
+                  <span className="font-semibold">{brl(d.proj)} <span className={`text-xs font-semibold ${tone(d.projPct)}`}>{pct(d.projPct)}</span></span>
+                </div>
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-muted-foreground">Realizado / Meta</span>
+                  <span>{brl(d.real)} <span className="text-xs text-muted-foreground">/ {brl(d.meta)}</span> <span className={`text-xs font-semibold ${tone(d.perf)}`}>{pct(d.perf)}</span></span>
+                </div>
+                <p className="text-xs text-muted-foreground">Precisa por dia: {d.semServ ? `peças ${brl(d.necP)}` : `serviços ${brl(d.necS)} · peças ${brl(d.necP)}`}</p>
+              </div>
+            </div>
+          ))}
+          {!porDept.length && <p className="p-4 text-sm text-muted-foreground">Cadastre consultores e departamentos em "Configurar" para ver os resultados aqui.</p>}
+        </div>
+      </Box>
+
       <Box title="Projeção individual (faturado + OS abertas)">
         <Tabela head={["Consultor", "Grupo", "Faturado", "OS abertas", "Projeção", "Meta", "% da meta", "Falta"]}>
           {rows.map(({ l, o, semServ, totS, totP }) => (
