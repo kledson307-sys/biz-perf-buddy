@@ -182,20 +182,22 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec }: { linhas: Linha[];
         <Tabela head={["Consultor", "Grupo", "Faturado", "OS abertas", "Projeção", "Meta", "% da meta", "Falta"]}>
           {rows.map(({ l, o, semServ, totS, totP }) => (
             <Fragment key={l.c.id}>
-              {([["Serviços", l.servicos, "s", totS, l.mS], ["Peças", l.pecas, "p", totP, l.mP]] as const).map(([gr, fat, k, tot, meta], i) => (
+              {([["Serviços", l.servicos, "s", totS, l.mS], ["Peças", l.pecas, "p", totP, l.mP]] as const).map(([gr, fat, k, soma, meta], i) => {
+                const proj = dec ? div(soma, dec) * tot : 0;
+                return (
                 <tr key={gr} className={i === 0 ? "border-t-2 border-border" : ""}>
                   {i === 0 && <td rowSpan={2} className={`${cell} font-medium`}>{l.c.nome}</td>}
                   <td className={cell}>{gr}</td>
                   {k === "s" && semServ ? <td colSpan={6} className={`${cell} text-muted-foreground`}>não vende serviços</td> : <>
                     <td className={cell}>{brl(fat)}</td>
                     <td className={cell}><input disabled={loading || saving || !canEdit} aria-label={`OS ${gr} ${l.c.nome}`} defaultValue={o[k] ? o[k].toLocaleString("pt-BR") : ""} key={`${mes}-${k}-${o[k]}`} onBlur={(e) => editar(l.c.id, k, e.target.value)} className="w-28 rounded border border-input bg-card px-2 py-1 text-right" placeholder="0" /></td>
-                    <td className={`${cell} font-semibold`}>{brl(tot)}</td>
+                    <td className={`${cell} font-semibold`}>{brl(proj)}</td>
                     <td className={`${cell} text-muted-foreground`}>{brl(meta)}</td>
-                    <td className={`${cell} font-semibold ${tone(div(tot, meta))}`}>{pct(div(tot, meta))}</td>
-                    <td className={cell}>{brl(Math.max(meta - tot, 0))}</td>
+                    <td className={`${cell} font-semibold ${tone(div(proj, meta))}`}>{pct(div(proj, meta))}</td>
+                    <td className={cell}>{brl(Math.max(meta - proj, 0))}</td>
                   </>}
                 </tr>
-              ))}
+              );})}
             </Fragment>
           ))}
           <tr className="border-t-2 border-border font-semibold"><td className={cell} rowSpan={2}>GERAL</td><td className={cell}>Serviços</td><td className={cell}>{brl(g.fs)}</td><td className={cell}>{brl(g.os)}</td><td className={cell}>{brl(ts)}</td><td className={cell}>{brl(g.ms)}</td><td className={`${cell} ${tone(div(ts, g.ms))}`}>{pct(div(ts, g.ms))}</td><td className={cell}>{brl(Math.max(g.ms - ts, 0))}</td></tr>
