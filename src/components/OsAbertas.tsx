@@ -1,11 +1,11 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Box, Kpi, Tabela, brl, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
+import { Barra, Box, Kpi, Tabela, brl, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
 import { readSalesReport } from "@/lib/sales-report";
 import { loadOpenOrders, saveOpenOrders, type OpenOrders } from "@/lib/open-orders.functions";
 
-type Linha = { c: { id: string; nome: string }; servicos: number; pecas: number; mS: number; mP: number };
+type Linha = { c: { id: string; nome: string; department_id: string | null }; servicos: number; pecas: number; mS: number; mP: number };
 type Os = OpenOrders;
 const key = (v: string) => norm(v.trim());
 
@@ -45,7 +45,7 @@ function lerOsSistema(raw: unknown[][]): { nome: string; servicos: number; pecas
   return res.length ? res : null;
 }
 
-export function OsAbertas({ linhas, mes, soPecas, tot, dec }: { linhas: Linha[]; mes: string; soPecas: (n: string) => boolean; tot: number; dec: number }) {
+export function OsAbertas({ linhas, mes, soPecas, tot, dec, deptName, semServicos }: { linhas: Linha[]; mes: string; soPecas: (n: string) => boolean; tot: number; dec: number; deptName: (id: string | null) => string; semServicos: (nome: string) => boolean }) {
   const store = `os-abertas-${mes}`;
   const [os, setOs] = useState<Os>({});
   const [txt, setTxt] = useState("");
