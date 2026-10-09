@@ -200,8 +200,8 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec }: { linhas: Linha[];
               );})}
             </Fragment>
           ))}
-          <tr className="border-t-2 border-border font-semibold"><td className={cell} rowSpan={2}>GERAL</td><td className={cell}>Serviços</td><td className={cell}>{brl(g.fs)}</td><td className={cell}>{brl(g.os)}</td><td className={cell}>{brl(ts)}</td><td className={cell}>{brl(g.ms)}</td><td className={`${cell} ${tone(div(ts, g.ms))}`}>{pct(div(ts, g.ms))}</td><td className={cell}>{brl(Math.max(g.ms - ts, 0))}</td></tr>
-          <tr className="font-semibold"><td className={cell}>Peças</td><td className={cell}>{brl(g.fp)}</td><td className={cell}>{brl(g.op)}</td><td className={cell}>{brl(tp)}</td><td className={cell}>{brl(g.mp)}</td><td className={`${cell} ${tone(div(tp, g.mp))}`}>{pct(div(tp, g.mp))}</td><td className={cell}>{brl(Math.max(g.mp - tp, 0))}</td></tr>
+          <tr className="border-t-2 border-border font-semibold"><td className={cell} rowSpan={2}>GERAL</td><td className={cell}>Serviços</td><td className={cell}>{brl(g.fs)}</td><td className={cell}>{brl(g.os)}</td><td className={cell}>{brl(projS)}</td><td className={cell}>{brl(g.ms)}</td><td className={`${cell} ${tone(projPctS)}`}>{pct(projPctS)}</td><td className={cell}>{brl(Math.max(g.ms - projS, 0))}</td></tr>
+          <tr className="font-semibold"><td className={cell}>Peças</td><td className={cell}>{brl(g.fp)}</td><td className={cell}>{brl(g.op)}</td><td className={cell}>{brl(projP)}</td><td className={cell}>{brl(g.mp)}</td><td className={`${cell} ${tone(projPctP)}`}>{pct(projPctP)}</td><td className={cell}>{brl(Math.max(g.mp - projP, 0))}</td></tr>
         </Tabela>
       </Box>
     </div>
