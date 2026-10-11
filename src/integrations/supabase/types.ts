@@ -447,6 +447,7 @@ export type Database = {
       }
       team_members: {
         Row: {
+          consultant_id: string | null
           created_at: string
           email: string
           id: string
@@ -454,6 +455,7 @@ export type Database = {
           papel: string
         }
         Insert: {
+          consultant_id?: string | null
           created_at?: string
           email: string
           id?: string
@@ -461,13 +463,22 @@ export type Database = {
           papel?: string
         }
         Update: {
+          consultant_id?: string | null
           created_at?: string
           email?: string
           id?: string
           owner_id?: string
           papel?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "team_members_consultant_id_fkey"
+            columns: ["consultant_id"]
+            isOneToOne: false
+            referencedRelation: "consultants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       update_log: {
         Row: {
@@ -507,6 +518,7 @@ export type Database = {
         Args: { p_fim: string; p_ini: string; p_rows: Json }
         Returns: number
       }
+      minha_performance: { Args: { p_mes: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
