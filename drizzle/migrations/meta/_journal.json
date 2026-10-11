@@ -85,6 +85,13 @@
       "when": 1791570504932,
       "tag": "0011_scope_update_log_month",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791684191647,
+      "tag": "0012_seller_access",
+      "breakpoints": true
     }
   ]
 }
