@@ -12,6 +12,7 @@ import { OsAbertas } from "@/components/OsAbertas";
 import { ControleOS } from "@/components/ControleOS";
 import { Mecanicos } from "@/components/Mecanicos";
 import { Equipe } from "@/components/Equipe";
+import { MinhaPerformance } from "@/components/MinhaPerformance";
 import { MetasAno } from "@/components/MetasAno";
 import { AnaliseFechamento, Reconhecimento } from "@/components/RelatorioAnalise";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -61,8 +62,15 @@ function Index() {
     supabase.auth.getSession().then(({ data }) => { setSession(data.session); setReady(true); });
     return () => data.subscription.unsubscribe();
   }, []);
-  if (!ready) return <div className="p-10 text-center text-muted-foreground">Carregando…</div>;
-  return session ? <Painel email={session.user.email ?? ""} /> : <Login />;
+  const [papel, setPapel] = useState<string | null | undefined>(undefined);
+  const email = session?.user.email ?? "";
+  useEffect(() => {
+    if (!session) { setPapel(undefined); return; }
+    supabase.from("team_members").select("papel").ilike("email", email).maybeSingle().then(({ data }) => setPapel(data?.papel ?? null));
+  }, [session, email]);
+  if (!ready || (session && papel === undefined)) return <div className="p-10 text-center text-muted-foreground">Carregando…</div>;
+  if (!session) return <Login />;
+  return papel === "vendedor" ? <MinhaPerformance /> : <Painel email={email} />;
 }
 
 function Login() {
