@@ -40,8 +40,8 @@ export function RetornosVendedor() {
       <div className="flex items-center gap-2 font-semibold text-destructive"><BellRing className="size-5" />Retorno ao cliente hoje ({pend.length})</div>
       {pend.map(({ i, due, prev }) => <div key={i.n} className="space-y-2 rounded border border-border bg-card p-3 text-sm">
         <div><b>O.S. {i.n}</b> · {i.cli} · {i.mod} {i.placa}</div>
-        <div className="text-xs text-muted-foreground">Aguardando peça · retorno previsto em {fmt(due)} · {prev ? `peça prevista para ${fmt(prev)}` : "sem previsão da peça"}</div>
-        <textarea rows={2} value={notas[i.n] ?? ""} onChange={e => setNotas(p => ({ ...p, [i.n]: e.target.value }))} placeholder="O que foi dito ao cliente (canal, previsão informada)…"
+        <div className="text-xs text-muted-foreground">{i.st === "diag" ? "Em diagnóstico há mais de 7 dias sem mudança" : "Aguardando peça"} · retorno previsto em {fmt(due)}{i.st === "pecas" ? ` · ${prev ? `peça prevista para ${fmt(prev)}` : "sem previsão da peça"}` : ""}</div>
+        <textarea rows={2} value={notas[i.n] ?? ""} onChange={e => setNotas(p => ({ ...p, [i.n]: e.target.value }))} placeholder="O que foi dito ao cliente (canal, prazo do diagnóstico/peça informado)…"
           aria-label={`Retorno O.S. ${i.n}`} className="block w-full rounded border border-input bg-background px-2 py-1 text-sm" />
         <Button size="sm" onClick={() => void feito(i.n, due)}>Marcar como feito</Button>
       </div>)}
