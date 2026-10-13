@@ -28,6 +28,15 @@ export function Box({ title, children, right }: { title: string; children: React
     </section>
   );
 }
+/** Stable section identity keeps imports and forms mounted during dashboard refreshes. */
+export function Secao({ titulo, children, relatorio }: { titulo: string; children: React.ReactNode; relatorio: boolean }) {
+  return (
+    <section className={relatorio ? "print-page" : ""}>
+      {relatorio && <h2 className="mb-4 hidden border-b-2 border-primary pb-2 text-lg font-bold uppercase tracking-wide print:block">{titulo}</h2>}
+      {children}
+    </section>
+  );
+}
 export function Tabela({ head, children }: { head: string[]; children: React.ReactNode }) {
   return (
     <div className="overflow-x-auto">

@@ -3,7 +3,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } f
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { Barra, Box, Cmp, Kpi, Num, Tabela, bg, brl, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
+import { Barra, Box, Cmp, Kpi, Num, Secao, Tabela, bg, brl, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
 import { Agregados } from "@/components/Agregados";
 import { SalesImport } from "@/components/SalesImport";
 import { EnvioWhatsapp } from "@/components/EnvioWhatsapp";
@@ -282,14 +282,6 @@ function Painel({ email }: { email: string }) {
   const mesExt = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(anoMes!, mesNum! - 1, 1));
   const mesExtenso = mesExt.charAt(0).toUpperCase() + mesExt.slice(1);
   const dataHora = (iso: string) => new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-  // Seção do relatório de fechamento: título só na impressão e quebra de página entre seções.
-  const Secao = ({ titulo, children }: { titulo: string; children: ReactNode }) => (
-    <section className={relatorio ? "print-page" : ""}>
-      {relatorio && <h2 className="mb-4 hidden border-b-2 border-primary pb-2 text-lg font-bold uppercase tracking-wide print:block">{titulo}</h2>}
-      {children}
-    </section>
-  );
-
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-t-4 border-primary border-b border-border bg-card print:hidden">
