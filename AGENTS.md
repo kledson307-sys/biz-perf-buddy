@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Architecture rules
+- The shared notification bell reuses team O.S. reads and the seller-only minhas_os RPC; refresh on focus, timer and O.S. completion events to preserve access isolation and existing acknowledgement semantics.
 - Dashboard section wrappers must have module-level component identities, with report mode passed as a prop, so freshness refreshes never reset imports or form state.
 - Ranking uses compact seller cards below the desktop table breakpoint with the same computed results; keep all metrics available without horizontal scrolling.
 - Open orders use one shared monthly snapshot in open_order_snapshots via auth-protected server functions and team RLS; replace the JSON snapshot atomically to avoid duplicate totals or partial imports.

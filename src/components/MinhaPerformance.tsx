@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { RetornosVendedor } from "@/components/RetornosVendedor";
+import { Notificacoes } from "@/components/Notificacoes";
 import { supabase } from "@/integrations/supabase/client";
 import { Box, Kpi, brl, div, pct, tone, uni } from "@/components/painel-ui";
 import { ITENS } from "@/lib/agregados";
@@ -53,6 +54,7 @@ export function MinhaPerformance() {
           <div className="flex items-center gap-2">
             <input type="month" className="h-9 rounded-md border bg-background px-2 text-sm" value={mes} onChange={(e) => setMes(e.target.value)} />
             <ThemeToggle />
+            <Notificacoes vendedor abrir={() => document.getElementById("retornos-vendedor")?.scrollIntoView({ behavior: "smooth", block: "start" })} />
             <Button size="sm" variant="outline" onClick={() => supabase.auth.signOut()}><LogOut className="size-4" /> Sair</Button>
           </div>
         </header>

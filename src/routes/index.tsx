@@ -10,6 +10,7 @@ import { EnvioWhatsapp } from "@/components/EnvioWhatsapp";
 import { ResumoPainel } from "@/components/ResumoPainel";
 import { OsAbertas } from "@/components/OsAbertas";
 import { ControleOS } from "@/components/ControleOS";
+import { Notificacoes } from "@/components/Notificacoes";
 import { Mecanicos } from "@/components/Mecanicos";
 import { Equipe } from "@/components/Equipe";
 import { MinhaPerformance } from "@/components/MinhaPerformance";
@@ -296,6 +297,7 @@ function Painel({ email }: { email: string }) {
           <div className="flex shrink-0 items-center gap-1 sm:gap-3">
             <p className="hidden break-all text-xs text-muted-foreground sm:block">{email}</p>
             <ThemeToggle />
+            <Notificacoes abrir={() => setTab("controle-os")} />
             <Button variant="ghost" size="icon" title="Sair" aria-label="Sair" onClick={() => void supabase.auth.signOut()}><LogOut /></Button>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { brl, Box, Pizza, Tabela } from "@/components/painel-ui";
 import { analisar, fmt, hoje, retornoDevido, lerRelatorio, STATUS, type Analise, type OsImport, type OsItem, type Status } from "@/lib/os-controle";
 import { registrarUpdate } from "@/lib/update-log";
+import { NOTIFICATIONS_EVENT } from "@/components/Notificacoes";
 
 const cor = { alto: "text-destructive", medio: "text-warning", info: "text-muted-foreground" } as const;
 type Retorno = { id: string; os_n: string; consultor: string; data_ref: string; nota: string; feito_por: string; feito_at: string; visto: boolean };
@@ -33,7 +34,7 @@ export function ControleOS() {
   useEffect(() => { void load(); }, []);
   const ciente = async (ids: string[]) => {
     const { error } = await supabase.from("os_retornos").update({ visto: true }).in("id", ids);
-    if (error) setMsg(error.message); else setRets(p => p.map(r => ids.includes(r.id) ? { ...r, visto: true } : r));
+    if (error) setMsg(error.message); else { setRets(p => p.map(r => ids.includes(r.id) ? { ...r, visto: true } : r)); window.dispatchEvent(new Event(NOTIFICATIONS_EVENT)); }
   };
   const salvarAcomp = async (n: string, v: Acomp) => {
     setAcomp(p => ({ ...p, [n]: v }));
@@ -63,6 +64,7 @@ export function ControleOS() {
       const { error } = await supabase.from("os_imports").insert({ arquivo: f.name, nome: u.user?.email ?? "", itens: itens as never });
       if (error) throw error;
       await registrarUpdate("Controle de O.S.");
+      window.dispatchEvent(new Event(NOTIFICATIONS_EVENT));
       setMsg(`${itens.length} O.S. importadas.`); setSel(0); await load();
     } catch (e) { setMsg("Erro: " + (e as Error).message); }
     finally { setBusy(false); }
