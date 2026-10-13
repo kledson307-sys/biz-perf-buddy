@@ -278,7 +278,7 @@ function Painel({ email }: { email: string }) {
     a.download = `relatorio-${mes}.csv`; a.click();
   };
 
-  const tabs = [["painel", "Painel"], ["ranking", "Ranking"], ["proj-serv", "Serviços"], ["proj-pec", "Peças"], ["proj-total", "Serviços & Peças"], ["os", "Projeção + OS"], ["controle-os", "Controle O.S."], ["mecanicos", "Técnicos"], ["agregados", "Agregados"], ["diario", "Diário"], ["config", "Configurar"]];
+  const tabs = [["painel", "Painel"], ["ranking", "Ranking"], ["proj-serv", "Serviços"], ["proj-pec", "Peças"], ["proj-total", "Serviços & Peças"], ["os", "Projeção + OS"], ["controle-os", "Controle O.S."], ["mecanicos", "Técnicos"], ["agregados", "Agregados"], ["config", "Configurar"]];
 
   const [anoMes, mesNum] = mes.split("-").map(Number);
   const mesExt = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(anoMes!, mesNum! - 1, 1));
@@ -361,7 +361,6 @@ function Painel({ email }: { email: string }) {
             "controle-os": ["OS paradas viram prejuízo e risco de reclamação.", "Atualize a planilha toda semana e cobre ação nas OS sinalizadas sem mudança."],
             mecanicos: ["O faturamento dos técnicos mostra a produtividade da oficina.", "Envie o resumo de Carro e Moto aos grupos e converse com quem está abaixo de 85%."],
             agregados: ["Agregados medem o aproveitamento de cada passagem.", "Combine com cada consultor 1 agregado por atendimento e acompanhe o aproveitamento."],
-            diario: [`Média da equipe ${brl(total.mediaDia)}/dia; necessário ${brl(total.nec)}/dia.`, total.mediaDia >= total.nec ? "Ritmo diário suficiente: mantenha." : "Identifique os dias fracos e reforce a abertura da manhã."],
             config: [semMeta ? `${semMeta} consultor(es) sem meta neste mês.` : "Metas e dias configurados.", semMeta ? "Cadastre as metas faltantes para a projeção ficar correta." : "Confira feriados nos dias úteis."],
           };
           const [analise, acao] = o[tab] ?? o["painel"]!;
@@ -663,53 +662,11 @@ function Painel({ email }: { email: string }) {
           </Box>
         )}
         {show("agregados") && <Secao relatorio={relatorio} titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} /></Secao>}
-        {show("diario") && <Secao relatorio={relatorio} titulo="Performance diária e acumulada"><Diario sales={sales} cons={visiveis} metaTotal={total.meta} tot={tot} /></Secao>}
         {tab === "controle-os" && <ControleOS />}
         {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} /></Secao>}
         {tab === "config" && <div className="space-y-6"><Equipe /><Config params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div>}
       </main>
     </div>
-  );
-}
-
-function Diario({ sales, cons, metaTotal, tot }: { sales: Sale[]; cons: Cons[]; metaTotal: number; tot: number }) {
-  const [sel, setSel] = useState("todos");
-  const ids = new Set(sel === "todos" ? cons.map((c) => c.id) : [sel]);
-  const dias = [...new Set(sales.map((s) => s.dia))].sort();
-  let acS = 0, acP = 0;
-  const rows = dias.map((d) => {
-    const ss = sales.filter((s) => s.dia === d && ids.has(s.consultant_id));
-    const s = ss.reduce((a, x) => a + x.servicos, 0), p = ss.reduce((a, x) => a + x.pecas, 0);
-    acS += s; acP += p;
-    return { d, s, p, t: s + p, acS, acP, ac: acS + acP };
-  });
-  const max = Math.max(1, ...rows.map((r) => r.t));
-  const metaDia = div(metaTotal, tot);
-  return (
-    <Box title="Performance diária e acumulada do mês">
-      <div className="flex items-center gap-2 p-4">
-        <select value={sel} onChange={(e) => setSel(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm">
-          <option value="todos">Todos os consultores</option>
-          {cons.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-        </select>
-        {sel === "todos" && <span className="text-sm text-muted-foreground">Meta diária necessária: {brl(metaDia)}</span>}
-      </div>
-      <Tabela head={["Dia", "Serviços", "Peças", "Total do dia", "", "Acum. Serviços", "Acum. Peças", "Acumulado"]}>
-        {rows.length === 0 && <tr><td colSpan={8} className="px-3 py-10 text-center text-muted-foreground">Nenhum lançamento neste mês.</td></tr>}
-        {rows.map((r) => (
-          <tr key={r.d} className="border-t border-border">
-            <td className="px-3 py-2 font-medium">{r.d.split("-").reverse().join("/")}</td>
-            <td className="px-3 py-2">{brl(r.s)}</td>
-            <td className="px-3 py-2">{brl(r.p)}</td>
-            <td className="px-3 py-2 font-semibold">{brl(r.t)}</td>
-            <td className="px-3 py-2"><div className="h-2 w-32 rounded bg-muted"><div className={`h-full rounded ${sel === "todos" && metaDia ? bg(r.t / metaDia) : "bg-primary"}`} style={{ width: `${(r.t / max) * 100}%` }} /></div></td>
-            <td className="px-3 py-2">{brl(r.acS)}</td>
-            <td className="px-3 py-2">{brl(r.acP)}</td>
-            <td className="px-3 py-2 font-semibold">{brl(r.ac)}{sel === "todos" && metaTotal ? <span className="ml-2 text-xs text-muted-foreground">({pct(r.ac / metaTotal)})</span> : null}</td>
-          </tr>
-        ))}
-      </Tabela>
-    </Box>
   );
 }
 
