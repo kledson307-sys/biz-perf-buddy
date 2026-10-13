@@ -3,10 +3,11 @@ import { AlertTriangle, Bell, ChevronDown, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { brl, Box, Pizza, Tabela } from "@/components/painel-ui";
-import { analisar, fmt, hoje, lerRelatorio, STATUS, type Analise, type OsImport, type OsItem, type Status } from "@/lib/os-controle";
+import { analisar, fmt, hoje, retornoDevido, lerRelatorio, STATUS, type Analise, type OsImport, type OsItem, type Status } from "@/lib/os-controle";
 import { registrarUpdate } from "@/lib/update-log";
 
 const cor = { alto: "text-destructive", medio: "text-warning", info: "text-muted-foreground" } as const;
+type Retorno = { id: string; os_n: string; consultor: string; data_ref: string; nota: string; feito_por: string; feito_at: string; visto: boolean };
 type Acomp = { acoes: Record<string, { feito: boolean; nota: string; at?: string }>; prev_manual: string | null };
 
 export function ControleOS() {
@@ -19,14 +20,21 @@ export function ControleOS() {
   const [aberto, setAberto] = useState<string | null>(null);
 
   const [acomp, setAcomp] = useState<Record<string, Acomp>>({});
+  const [rets, setRets] = useState<Retorno[]>([]);
   const load = async () => {
     const { data, error } = await supabase.from("os_imports").select("id,at,nome,arquivo,itens").order("at", { ascending: false }).limit(60);
     if (error) { setMsg(error.message); return; }
     setImps((data ?? []).map(d => ({ ...d, itens: d.itens as unknown as OsItem[] })));
     const r = await supabase.from("os_acompanhamento").select("os_n,acoes,prev_manual");
     if (!r.error) setAcomp(Object.fromEntries((r.data ?? []).map(x => [x.os_n, { acoes: (x.acoes ?? {}) as Acomp["acoes"], prev_manual: x.prev_manual }])));
+    const rr = await supabase.from("os_retornos").select("*").order("feito_at", { ascending: false });
+    if (!rr.error) setRets((rr.data ?? []) as Retorno[]);
   };
   useEffect(() => { void load(); }, []);
+  const ciente = async (ids: string[]) => {
+    const { error } = await supabase.from("os_retornos").update({ visto: true }).in("id", ids);
+    if (error) setMsg(error.message); else setRets(p => p.map(r => ids.includes(r.id) ? { ...r, visto: true } : r));
+  };
   const salvarAcomp = async (n: string, v: Acomp) => {
     setAcomp(p => ({ ...p, [n]: v }));
     const { error } = await supabase.from("os_acompanhamento").upsert({ os_n: n, acoes: v.acoes as never, prev_manual: v.prev_manual || null, updated_at: new Date().toISOString() }, { onConflict: "user_id,os_n" });
@@ -38,6 +46,8 @@ export function ControleOS() {
   const ref = atual ? (sel === 0 ? hoje() : atual.at.slice(0, 10)) : hoje();
   const lista = useMemo<Analise[]>(() => (atual?.itens ?? []).map(i => analisar(i, anterior, ref, acomp[i.n]?.prev_manual)), [atual, anterior, ref, acomp]);
   const lembretes = lista.filter(a => (a.item.st === "diag" && a.diasStatus >= 7) || a.contatoHoje || (a.semMudanca && (a.item.st === "pronto" || a.item.st === "faturar")) || (a.item.st === "pecas" && a.diasStatus > 30));
+  const novos = rets.filter(r => !r.visto);
+  const atrasados = sel === 0 ? lista.map(a => ({ a, due: retornoDevido(a.item, ref) })).filter(x => x.due && !rets.some(r => r.os_n === x.a.item.n && r.data_ref >= x.due!)) : [];
   const saidas = anterior ? anterior.itens.filter(i => !atual?.itens.some(x => x.n === i.n)) : [];
 
   const importar = async (f?: File) => {
@@ -112,6 +122,25 @@ export function ControleOS() {
           </div>
         </Box>
 
+        {novos.length > 0 && <Box title={`Retornos feitos pelos vendedores (${novos.length})`} right={<Button size="sm" variant="outline" onClick={() => void ciente(novos.map(r => r.id))}>Ciente de todos</Button>}>
+          <ul className="divide-y divide-border text-sm">
+            {novos.map(r => <li key={r.id} className="flex flex-wrap items-center gap-x-3 px-5 py-2">
+              <span className="font-semibold">O.S. {r.os_n}</span><span>{r.consultor}</span>
+              <span className="text-muted-foreground">{new Date(r.feito_at).toLocaleString("pt-BR")}</span>
+              <span className="flex-1">{r.nota}</span>
+              <Button size="sm" variant="ghost" onClick={() => void ciente([r.id])}>Ciente</Button>
+            </li>)}
+          </ul>
+        </Box>}
+        {atrasados.length > 0 && <Box title={`Retornos ao cliente pendentes dos vendedores (${atrasados.length})`} right={<Bell className="size-4 text-destructive" />}>
+          <ul className="divide-y divide-border text-sm">
+            {atrasados.map(({ a, due }) => <li key={a.item.n} className="flex flex-wrap gap-x-3 px-5 py-2">
+              <span className="font-semibold">O.S. {a.item.n}</span><span>{a.item.cons}</span>
+              <span className="text-destructive">retorno devido desde {fmt(due!)} — aguardando o vendedor marcar como feito</span>
+            </li>)}
+          </ul>
+        </Box>}
+
         {lembretes.length > 0 && <Box title={`Lembretes de hoje (${lembretes.length})`} right={<Bell className="size-4" />}>
           <ul className="divide-y divide-border text-sm">
             {lembretes.map(a => <li key={a.item.n} className="flex flex-wrap gap-x-3 px-5 py-2">
@@ -130,7 +159,7 @@ export function ControleOS() {
             </div>
             <Tabela head={["O.S.", "Cliente / Modelo", "Valor", "Na oficina", "No status", aba === "pecas" ? "Previsão / contato" : "Situação", "Alertas", ""]}>
               {l.map(a => <FragmentRow key={a.item.n} a={a} aba={aba} aberto={aberto === a.item.n} toggle={() => setAberto(aberto === a.item.n ? null : a.item.n)}
-                ac={acomp[a.item.n] ?? { acoes: {}, prev_manual: null }} salvar={v => void salvarAcomp(a.item.n, v)} />)}
+                ac={acomp[a.item.n] ?? { acoes: {}, prev_manual: null }} hist={rets.filter(r => r.os_n === a.item.n)} salvar={v => void salvarAcomp(a.item.n, v)} />)}
             </Tabela>
           </div>)}
         </Box>
@@ -173,7 +202,7 @@ function CartaoPizza({ titulo, sub, dados, fmt, onClick }: {
   );
 }
 
-function FragmentRow({ a, aba, aberto, toggle, ac, salvar }: { a: Analise; aba: Status; aberto: boolean; toggle: () => void; ac: Acomp; salvar: (v: Acomp) => void }) {
+function FragmentRow({ a, aba, aberto, toggle, ac, salvar, hist }: { hist: Retorno[]; a: Analise; aba: Status; aberto: boolean; toggle: () => void; ac: Acomp; salvar: (v: Acomp) => void }) {
   const feitas = a.acoes.filter(x => ac.acoes[x]?.feito).length;
   const alto = a.alertas.some(x => x.nivel === "alto");
   return <>
@@ -207,6 +236,8 @@ function FragmentRow({ a, aba, aberto, toggle, ac, salvar }: { a: Analise; aba: 
           {r.at && (r.feito || r.nota) && <div className="ml-6 text-[11px] text-muted-foreground">Atualizado em {new Date(r.at).toLocaleString("pt-BR")}</div>}
         </li>;
       })}</ul>
+      {hist.length > 0 && <div className="mt-3"><div className="text-xs font-semibold">Histórico de retornos ao cliente</div>
+        <ul className="mt-1 space-y-1 text-xs">{hist.map(r => <li key={r.id}>{new Date(r.feito_at).toLocaleString("pt-BR")} · {r.feito_por}: {r.nota}</li>)}</ul></div>}
       <p className="mt-2 text-xs text-muted-foreground">Observação: {a.item.obs || "—"}</p>
     </td></tr>}
   </>;
