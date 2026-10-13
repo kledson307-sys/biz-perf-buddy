@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Box } from "@/components/painel-ui";
 import { criarAcessoVendedor } from "@/lib/vendedores.functions";
+import { UsuariosAdmin } from "@/components/UsuariosAdmin";
 
 type M = { id: string; email: string; papel: string; owner_id: string; consultant_id: string | null };
 type C = { id: string; nome: string };
@@ -75,6 +76,7 @@ export function Equipe() {
 
   return (
     <div className="space-y-4">
+      <UsuariosAdmin lista={lista} cons={cons} onChange={() => void load()} />
       <Box title="Acesso dos vendedores (cada um vê só a sua performance)">
         <div className="p-5">
           <p className="mb-3 text-sm text-muted-foreground">
