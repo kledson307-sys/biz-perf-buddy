@@ -76,11 +76,11 @@ export function previsao(obs: string, ref: string): string | null {
 export type Alerta = { nivel: "alto" | "medio" | "info"; texto: string };
 export type Analise = { item: OsItem; diasStatus: number; semMudanca: boolean; alertas: Alerta[]; acoes: string[]; prev: string | null; proxContato: string | undefined; contatoHoje: boolean };
 
-export function analisar(item: OsItem, anterior: OsImport | undefined, ref: string): Analise {
+export function analisar(item: OsItem, anterior: OsImport | undefined, ref: string, prevManual?: string | null): Analise {
   const a = anterior?.itens.find(i => i.n === item.n);
   const semMudanca = Boolean(a && a.st === item.st);
   const diasStatus = Math.max(0, diasEntre(item.desde, ref));
-  const prev = previsao(item.obs, ref);
+  const prev = prevManual || previsao(item.obs, ref);
   const alertas: Alerta[] = []; let acoes: string[] = []; let proxContato: string | undefined; let contatoHoje = false;
   switch (item.st) {
     case "pronto":

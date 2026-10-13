@@ -371,6 +371,33 @@ export type Database = {
         }
         Relationships: []
       }
+      os_acompanhamento: {
+        Row: {
+          acoes: Json
+          id: string
+          os_n: string
+          prev_manual: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          acoes?: Json
+          id?: string
+          os_n: string
+          prev_manual?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          acoes?: Json
+          id?: string
+          os_n?: string
+          prev_manual?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       os_imports: {
         Row: {
           arquivo: string

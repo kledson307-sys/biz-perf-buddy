@@ -7,6 +7,7 @@ import { analisar, fmt, hoje, lerRelatorio, STATUS, type Analise, type OsImport,
 import { registrarUpdate } from "@/lib/update-log";
 
 const cor = { alto: "text-destructive", medio: "text-warning", info: "text-muted-foreground" } as const;
+type Acomp = { acoes: Record<string, { feito: boolean; nota: string; at?: string }>; prev_manual: string | null };
 
 export function ControleOS() {
   const file = useRef<HTMLInputElement>(null);
@@ -17,17 +18,25 @@ export function ControleOS() {
   const [busy, setBusy] = useState(false);
   const [aberto, setAberto] = useState<string | null>(null);
 
+  const [acomp, setAcomp] = useState<Record<string, Acomp>>({});
   const load = async () => {
     const { data, error } = await supabase.from("os_imports").select("id,at,nome,arquivo,itens").order("at", { ascending: false }).limit(60);
     if (error) { setMsg(error.message); return; }
     setImps((data ?? []).map(d => ({ ...d, itens: d.itens as unknown as OsItem[] })));
+    const r = await supabase.from("os_acompanhamento").select("os_n,acoes,prev_manual");
+    if (!r.error) setAcomp(Object.fromEntries((r.data ?? []).map(x => [x.os_n, { acoes: (x.acoes ?? {}) as Acomp["acoes"], prev_manual: x.prev_manual }])));
   };
   useEffect(() => { void load(); }, []);
+  const salvarAcomp = async (n: string, v: Acomp) => {
+    setAcomp(p => ({ ...p, [n]: v }));
+    const { error } = await supabase.from("os_acompanhamento").upsert({ os_n: n, acoes: v.acoes as never, prev_manual: v.prev_manual || null, updated_at: new Date().toISOString() }, { onConflict: "user_id,os_n" });
+    if (error) setMsg("Erro ao salvar: " + error.message);
+  };
 
   const atual = imps[sel];
   const anterior = imps[sel + 1];
   const ref = atual ? (sel === 0 ? hoje() : atual.at.slice(0, 10)) : hoje();
-  const lista = useMemo<Analise[]>(() => (atual?.itens ?? []).map(i => analisar(i, anterior, ref)), [atual, anterior, ref]);
+  const lista = useMemo<Analise[]>(() => (atual?.itens ?? []).map(i => analisar(i, anterior, ref, acomp[i.n]?.prev_manual)), [atual, anterior, ref, acomp]);
   const lembretes = lista.filter(a => (a.item.st === "diag" && a.diasStatus >= 7) || a.contatoHoje || (a.semMudanca && (a.item.st === "pronto" || a.item.st === "faturar")) || (a.item.st === "pecas" && a.diasStatus > 30));
   const saidas = anterior ? anterior.itens.filter(i => !atual?.itens.some(x => x.n === i.n)) : [];
 
@@ -120,7 +129,8 @@ export function ControleOS() {
               <span>{aba === "pronto" || aba === "faturar" ? "A faturar: " : "Valor: "}{brl(l.reduce((n, a) => n + a.item.valor, 0))}</span>
             </div>
             <Tabela head={["O.S.", "Cliente / Modelo", "Valor", "Na oficina", "No status", aba === "pecas" ? "Previsão / contato" : "Situação", "Alertas", ""]}>
-              {l.map(a => <FragmentRow key={a.item.n} a={a} aba={aba} aberto={aberto === a.item.n} toggle={() => setAberto(aberto === a.item.n ? null : a.item.n)} />)}
+              {l.map(a => <FragmentRow key={a.item.n} a={a} aba={aba} aberto={aberto === a.item.n} toggle={() => setAberto(aberto === a.item.n ? null : a.item.n)}
+                ac={acomp[a.item.n] ?? { acoes: {}, prev_manual: null }} salvar={v => void salvarAcomp(a.item.n, v)} />)}
             </Tabela>
           </div>)}
         </Box>
@@ -163,7 +173,8 @@ function CartaoPizza({ titulo, sub, dados, fmt, onClick }: {
   );
 }
 
-function FragmentRow({ a, aba, aberto, toggle }: { a: Analise; aba: Status; aberto: boolean; toggle: () => void }) {
+function FragmentRow({ a, aba, aberto, toggle, ac, salvar }: { a: Analise; aba: Status; aberto: boolean; toggle: () => void; ac: Acomp; salvar: (v: Acomp) => void }) {
+  const feitas = a.acoes.filter(x => ac.acoes[x]?.feito).length;
   const alto = a.alertas.some(x => x.nivel === "alto");
   return <>
     <tr className="border-t border-border align-top">
@@ -172,13 +183,30 @@ function FragmentRow({ a, aba, aberto, toggle }: { a: Analise; aba: Status; aber
       <td className="whitespace-nowrap px-3 py-2">{brl(a.item.valor)}</td>
       <td className="px-3 py-2">{a.item.dias} d</td>
       <td className="px-3 py-2">{a.diasStatus} d</td>
-      <td className="max-w-xs px-3 py-2 text-xs">{aba === "pecas" ? <>{a.prev ? `Chega ${fmt(a.prev)}` : "Sem previsão"}{a.proxContato && <div className={a.contatoHoje ? "font-semibold text-destructive" : "text-muted-foreground"}>Contato: {a.contatoHoje ? "HOJE" : fmt(a.proxContato)}</div>}</> : a.item.obs}</td>
+      <td className="max-w-xs px-3 py-2 text-xs">{aba === "pecas" ? <>
+        <label className="block text-muted-foreground">Previsão de chegada
+          <input type="date" aria-label={`Previsão de chegada O.S. ${a.item.n}`} value={ac.prev_manual ?? a.prev ?? ""} onChange={e => salvar({ ...ac, prev_manual: e.target.value || null })}
+            className="mt-1 block w-full rounded border border-input bg-background px-2 py-1 text-xs text-foreground" />
+        </label>
+        {ac.prev_manual && <div className="text-muted-foreground">alterada manualmente</div>}
+        {a.proxContato && <div className={a.contatoHoje ? "font-semibold text-destructive" : "text-muted-foreground"}>Contato: {a.contatoHoje ? "HOJE" : fmt(a.proxContato)}</div>}</> : a.item.obs}</td>
       <td className="max-w-sm px-3 py-2 text-xs">{a.alertas.map((x, i) => <div key={i} className={cor[x.nivel]}>{x.nivel === "alto" && <AlertTriangle className="mr-1 inline size-3" />}{x.texto}</div>)}</td>
-      <td className="px-3 py-2"><Button size="sm" variant={alto ? "default" : "ghost"} onClick={toggle}>Ações<ChevronDown className={aberto ? "rotate-180" : ""} /></Button></td>
+      <td className="px-3 py-2"><Button size="sm" variant={alto ? "default" : "ghost"} onClick={toggle}>Ações{feitas > 0 && ` (${feitas}/${a.acoes.length})`}<ChevronDown className={aberto ? "rotate-180" : ""} /></Button></td>
     </tr>
     {aberto && <tr className="bg-muted/40"><td colSpan={8} className="px-5 py-3 text-sm">
       {aba === "pecas" && <p className="mb-2 text-xs text-muted-foreground">Cronograma de contato semanal: {Array.from({ length: 4 }, (_, k) => fmt(new Date(Date.parse(a.proxContato ?? a.item.desde) + k * 7 * 86400e3).toISOString().slice(0, 10))).join(" · ")}</p>}
-      <ul className="list-disc space-y-1 pl-5">{a.acoes.map(x => <li key={x}>{x}</li>)}</ul>
+      <ul className="space-y-3">{a.acoes.map(x => {
+        const r = ac.acoes[x] ?? { feito: false, nota: "" };
+        const set = (v: Partial<typeof r>) => salvar({ ...ac, acoes: { ...ac.acoes, [x]: { ...r, ...v, at: new Date().toISOString() } } });
+        return <li key={x} className="space-y-1">
+          <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={r.feito} onChange={e => set({ feito: e.target.checked })} />
+            <span className={r.feito ? "text-muted-foreground line-through" : ""}>{x}</span></label>
+          <textarea key={r.nota} defaultValue={r.nota} rows={1} placeholder="Ação tomada (o que foi feito, quando, com quem)…" aria-label={`Ação tomada: ${x}`}
+            onBlur={e => { if (e.target.value !== r.nota) set({ nota: e.target.value, feito: r.feito || !!e.target.value.trim() }); }}
+            className="ml-6 block w-[calc(100%-1.5rem)] rounded border border-input bg-background px-2 py-1 text-xs" />
+          {r.at && (r.feito || r.nota) && <div className="ml-6 text-[11px] text-muted-foreground">Atualizado em {new Date(r.at).toLocaleString("pt-BR")}</div>}
+        </li>;
+      })}</ul>
       <p className="mt-2 text-xs text-muted-foreground">Observação: {a.item.obs || "—"}</p>
     </td></tr>}
   </>;
