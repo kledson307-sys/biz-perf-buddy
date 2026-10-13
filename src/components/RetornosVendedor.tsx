@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { BellRing } from "lucide-react";
+import { NOTIFICATIONS_EVENT } from "@/components/Notificacoes";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { analisar, fmt, hoje, retornoDevido, type OsItem } from "@/lib/os-controle";
@@ -32,11 +33,11 @@ export function RetornosVendedor() {
     const nota = (notas[n] ?? "").trim();
     if (!nota) { setMsg("Escreva o que foi dito ao cliente antes de marcar como feito."); return; }
     const { error } = await supabase.rpc("registrar_retorno", { p_os: n, p_data: due, p_nota: nota });
-    if (error) setMsg(error.message); else { setMsg(""); await load(); }
+    if (error) setMsg(error.message); else { setMsg(""); await load(); window.dispatchEvent(new Event(NOTIFICATIONS_EVENT)); }
   };
 
   return (
-    <div className="update-alert space-y-3 rounded-lg border-2 border-destructive bg-destructive/10 p-4">
+    <div id="retornos-vendedor" className="update-alert space-y-3 rounded-lg border-2 border-destructive bg-destructive/10 p-4">
       <div className="flex items-center gap-2 font-semibold text-destructive"><BellRing className="size-5" />Retorno ao cliente hoje ({pend.length})</div>
       {pend.map(({ i, due, prev }) => <div key={i.n} className="space-y-2 rounded border border-border bg-card p-3 text-sm">
         <div><b>O.S. {i.n}</b> · {i.cli} · {i.mod} {i.placa}</div>
