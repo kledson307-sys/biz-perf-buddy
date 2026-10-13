@@ -1,5 +1,5 @@
 # Tasks
-- [ ] Ajustar Painel e Ranking à largura do celular e verificar com os dados reais, sem rolagem lateral.
+- [x] Ajustar Painel e Ranking à largura do celular e verificar com os dados reais, sem rolagem lateral (320, 390, 768 e 1280 px).
 - [x] Separar alertas vermelhos por fonte/aba e verificar que uma atualização não limpa as demais.
 - [x] Sugerir indicadores adicionais de gestão sem alterar o painel ou a planilha.
 - [x] Persist Projeção + OS in the shared account until replacement and verify reload/replacement.
