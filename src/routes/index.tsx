@@ -13,6 +13,7 @@ import { ControleOS } from "@/components/ControleOS";
 import { Mecanicos } from "@/components/Mecanicos";
 import { Equipe } from "@/components/Equipe";
 import { MinhaPerformance } from "@/components/MinhaPerformance";
+import { RankingMobile } from "@/components/RankingMobile";
 import { MetasAno } from "@/components/MetasAno";
 import { AnaliseFechamento, Reconhecimento } from "@/components/RelatorioAnalise";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -292,35 +293,35 @@ function Painel({ email }: { email: string }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-t-4 border-primary border-b border-border bg-card print:hidden">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-6 sm:px-6">
-          <div className="flex min-w-0 items-center gap-4">
-            <img src={bmwLogo.url} alt="BMW" className="size-14 shrink-0" />
+        <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-4 sm:flex sm:flex-wrap sm:justify-between sm:px-6 sm:py-6">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+            <img src={bmwLogo.url} alt="BMW" className="size-9 shrink-0 sm:size-14" />
             <div className="min-w-0">
-              <h1 className="text-xl font-bold">PAINEL ESTRATÉGICO <span className="inline-block font-medium text-primary">KLEDSON</span></h1>
+              <h1 className="text-sm font-bold sm:text-xl">PAINEL ESTRATÉGICO <span className="inline-block font-medium text-primary">KLEDSON</span></h1>
               <p className="mt-1 text-xs font-medium text-muted-foreground">PAINEL DE METAS · {params.base === "uteis" ? "Dias úteis" : "Dias corridos"}: {dec} de {tot}</p>
             </div>
           </div>
-          <div className="flex min-w-0 items-center gap-3">
-            <p className="break-all text-xs text-muted-foreground">{email}</p>
+          <div className="flex shrink-0 items-center gap-1 sm:gap-3">
+            <p className="hidden break-all text-xs text-muted-foreground sm:block">{email}</p>
             <ThemeToggle />
             <Button variant="ghost" size="icon" title="Sair" aria-label="Sair" onClick={() => void supabase.auth.signOut()}><LogOut /></Button>
           </div>
         </div>
         <div className="border-t border-border bg-muted/40">
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
-            <input aria-label="Mês do relatório" type="month" value={mes} onChange={(e) => setMes(e.target.value)} className="rounded-md border border-input bg-card px-3 py-2 text-sm" />
-            <select aria-label="Departamento" value={filtroDept} onChange={(e) => setFiltroDept(e.target.value)} className="max-w-full rounded-md border border-input bg-card px-3 py-2 text-sm">
+          <div className="mx-auto grid max-w-7xl grid-cols-2 items-center gap-2 px-3 py-3 sm:flex sm:flex-wrap sm:gap-3 sm:px-6">
+            <input aria-label="Mês do relatório" type="month" value={mes} onChange={(e) => setMes(e.target.value)} className="min-w-0 w-full rounded-md border border-input bg-card px-2 py-2 text-sm sm:w-auto" />
+            <select aria-label="Departamento" value={filtroDept} onChange={(e) => setFiltroDept(e.target.value)} className="min-w-0 w-full rounded-md border border-input bg-card px-2 py-2 text-sm sm:w-auto">
               <option value="todos">Todos departamentos</option>
               {depts.map((d) => <option key={d.id} value={d.id}>{d.nome}</option>)}
             </select>
-            <nav aria-label="Abas do painel" className="flex min-w-0 flex-wrap gap-1 lg:ml-auto">
+            <nav aria-label="Abas do painel" className="col-span-2 grid min-w-0 grid-cols-3 gap-1 sm:flex sm:flex-wrap lg:ml-auto">
               {tabs.map(([k, l]) => {
                 if (!k) return null;
                 const stale = tabUpdateStatus(k, mes, updates, clock).stale;
                 return <Button key={k} onClick={() => setTab(k)} variant={tab === k ? "default" : "ghost"}
                   data-update-status={stale ? "pending" : "current"}
                   title={stale ? `${l}: atualização pendente` : l}
-                  className={stale ? "update-alert bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:text-destructive-foreground" : tab === k ? "" : "text-muted-foreground"}
+                  className={`h-auto min-h-9 min-w-0 whitespace-normal px-1 py-2 text-xs sm:px-4 sm:text-sm ${stale ? "update-alert bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:text-destructive-foreground" : tab === k ? "" : "text-muted-foreground"}`}
                   aria-current={tab === k ? "page" : undefined}>{l}</Button>;
               })}
             </nav>
@@ -342,7 +343,7 @@ function Painel({ email }: { email: string }) {
         </div>
       </div>}
 
-      <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
+      <main className={`mx-auto min-w-0 max-w-7xl space-y-4 px-3 py-4 sm:space-y-6 sm:px-6 sm:py-8 ${tab === "painel" ? "painel-phone" : ""}`}>
         {!relatorio && (() => {
           const rest = Math.max(tot - dec, 0);
           type L = (typeof linhas)[number];
@@ -407,13 +408,13 @@ function Painel({ email }: { email: string }) {
           <Secao titulo="Resumo executivo">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-lg font-semibold">Relatório de {mes}</h2>
-              <div className="flex gap-2 print:hidden">
+              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap print:hidden">
                 <Button onClick={exportar}><Download />Exportar Excel (CSV)</Button>
                 <Button variant="outline" onClick={() => window.print()}><Printer />Imprimir / PDF</Button>
-                <Button onClick={gerarRelatorio}><Printer />Relatório de fechamento (PDF)</Button>
+                <Button className="col-span-2" onClick={gerarRelatorio}><Printer />Relatório de fechamento (PDF)</Button>
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-5 painel-kpis">
               <Kpi label="Realizado Serviços Total" value={brl(total.servicos)} sub={`Meta ${brl(total.mS)} · ${pct(total.perfS)}`} cls={tone(total.perfS)} />
               <Kpi label="Realizado Peças Total" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)} · margem ${margemTxt(total)}`} cls={tone(total.perfP)} />
               <Kpi label="Projeção Serviços" value={brl(total.projS)} sub={`${pct(total.projPctS)} da meta ${brl(total.mS)}`} cls={tone(total.projPctS)} />
@@ -640,7 +641,8 @@ function Painel({ email }: { email: string }) {
 
         {tab === "ranking" && (
           <Box title={`Ranking geral das vendedoras · ${mesExtenso}`}>
-            <div className="overflow-x-auto">
+            <RankingMobile linhas={linhas} total={total} deptName={deptName} soPecas={soPecas} />
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead className="text-left text-xs uppercase text-muted-foreground">
                   <tr className="border-b"><th className="p-2">#</th><th className="p-2">Vendedor</th><th className="p-2 text-right">Serviços / meta</th><th className="p-2 text-right">Peças / meta</th><th className="p-2 text-right">Total / meta</th><th className="p-2 text-right">Perf.</th><th className="p-2 text-right">Projeção</th><th className="p-2 text-right">Precisa/dia</th></tr>
