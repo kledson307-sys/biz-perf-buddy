@@ -7,6 +7,7 @@ import { analisar, fmt, hoje, lerRelatorio, STATUS, type Analise, type OsImport,
 import { registrarUpdate } from "@/lib/update-log";
 
 const cor = { alto: "text-destructive", medio: "text-warning", info: "text-muted-foreground" } as const;
+type Acomp = { acoes: Record<string, { feito: boolean; nota: string; at?: string }>; prev_manual: string | null };
 
 export function ControleOS() {
   const file = useRef<HTMLInputElement>(null);
@@ -172,7 +173,8 @@ function CartaoPizza({ titulo, sub, dados, fmt, onClick }: {
   );
 }
 
-function FragmentRow({ a, aba, aberto, toggle }: { a: Analise; aba: Status; aberto: boolean; toggle: () => void }) {
+function FragmentRow({ a, aba, aberto, toggle, ac, salvar }: { a: Analise; aba: Status; aberto: boolean; toggle: () => void; ac: Acomp; salvar: (v: Acomp) => void }) {
+  const feitas = a.acoes.filter(x => ac.acoes[x]?.feito).length;
   const alto = a.alertas.some(x => x.nivel === "alto");
   return <>
     <tr className="border-t border-border align-top">
