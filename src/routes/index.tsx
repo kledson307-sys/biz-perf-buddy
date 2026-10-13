@@ -393,11 +393,11 @@ function Painel({ email }: { email: string }) {
             </div>
           </div>
         )}
-        {relatorio && <Secao titulo="Análise do fechamento"><AnaliseFechamento linhas={linhas} total={total} porDept={porDept} sales={sales} dec={dec} tot={tot} mes={mes} /></Secao>}
-        {relatorio && <Secao titulo="Reconhecimento"><Reconhecimento linhas={linhas} sales={sales} dec={dec} tot={tot} mes={mes} /></Secao>}
-        {show("os") && <Secao titulo="Projeção + Ordens de Serviço abertas"><OsAbertas linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} deptName={deptName} semServicos={semServicos} /></Secao>}
+        {relatorio && <Secao relatorio={relatorio} titulo="Análise do fechamento"><AnaliseFechamento linhas={linhas} total={total} porDept={porDept} sales={sales} dec={dec} tot={tot} mes={mes} /></Secao>}
+        {relatorio && <Secao relatorio={relatorio} titulo="Reconhecimento"><Reconhecimento linhas={linhas} sales={sales} dec={dec} tot={tot} mes={mes} /></Secao>}
+        {show("os") && <Secao relatorio={relatorio} titulo="Projeção + Ordens de Serviço abertas"><OsAbertas linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} deptName={deptName} semServicos={semServicos} /></Secao>}
         {show("painel") && (
-          <Secao titulo="Resumo executivo">
+          <Secao relatorio={relatorio} titulo="Resumo executivo">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-lg font-semibold">Relatório de {mes}</h2>
               <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap print:hidden">
@@ -511,7 +511,7 @@ function Painel({ email }: { email: string }) {
         )}
 
         {show("proj-serv") && (
-          <Secao titulo="Projeção de Serviços">
+          <Secao relatorio={relatorio} titulo="Projeção de Serviços">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Kpi label="Realizado Serviços" value={brl(totalServ.servicos)} sub={`Meta ${brl(totalServ.mS)} · ${pct(totalServ.perfS)}`} cls={tone(totalServ.perfS)} />
               <Kpi label="Projeção Serviços" value={brl(totalServ.projS)} sub={`${pct(totalServ.projPctS)} da meta de ${brl(totalServ.mS)}`} cls={tone(totalServ.projPctS)} />
@@ -542,7 +542,7 @@ function Painel({ email }: { email: string }) {
         )}
 
         {show("proj-pec") && (
-          <Secao titulo="Projeção de Peças">
+          <Secao relatorio={relatorio} titulo="Projeção de Peças">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <Kpi label="Realizado Peças" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)}`} cls={tone(total.perfP)} />
               <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta de ${brl(total.mP)}`} cls={tone(total.projPctP)} />
@@ -575,7 +575,7 @@ function Painel({ email }: { email: string }) {
         )}
 
         {show("proj-total") && (
-          <Secao titulo="Projeção Individual (Serviços + Peças)">
+          <Secao relatorio={relatorio} titulo="Projeção Individual (Serviços + Peças)">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Kpi label="Realizado Total" value={brl(total.real)} sub={`Meta ${brl(total.meta)} · ${pct(total.perf)}`} cls={tone(total.perf)} />
               <Kpi label="Projeção Total" value={brl(total.proj)} sub={`Serviços ${brl(total.projS)} + Peças ${brl(total.projP)}`} cls={tone(total.projPct)} />
@@ -658,10 +658,10 @@ function Painel({ email }: { email: string }) {
             </div>
           </Box>
         )}
-        {show("agregados") && <Secao titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} /></Secao>}
-        {show("diario") && <Secao titulo="Performance diária e acumulada"><Diario sales={sales} cons={visiveis} metaTotal={total.meta} tot={tot} /></Secao>}
+        {show("agregados") && <Secao relatorio={relatorio} titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} /></Secao>}
+        {show("diario") && <Secao relatorio={relatorio} titulo="Performance diária e acumulada"><Diario sales={sales} cons={visiveis} metaTotal={total.meta} tot={tot} /></Secao>}
         {tab === "controle-os" && <ControleOS />}
-        {show("mecanicos") && <Secao titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} /></Secao>}
+        {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} /></Secao>}
         {tab === "config" && <div className="space-y-6"><Equipe /><Config params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div>}
       </main>
     </div>
