@@ -1,4 +1,5 @@
 # Tasks
+- [x] Mostrar na aba Painel O.S. com status igual entre atualizações semanais, com número e departamento.
 - [x] Adicionar sino no topo do gestor e vendedor com contador de retornos pendentes/realizados e acesso aos avisos existentes.
 - [x] Corrigir a prévia de importação apagada pelas atualizações de avisos do Painel; conferir Dados_Faturamento_M.O_PÇ_vendedores.xls e preservar a prévia ao retornar à janela, sem salvar vendas.
 - [x] Ajustar Painel e Ranking à largura do celular e verificar com os dados reais, sem rolagem lateral (320, 390, 768 e 1280 px).

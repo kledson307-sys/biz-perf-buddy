@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Architecture rules
+- Painel's unchanged-O.S. warning compares the latest two shared Controle O.S. snapshots using analisar, resolving departments from consultant logins; never infer stagnation from sales freshness.
 - The shared notification bell reuses team O.S. reads and the seller-only minhas_os RPC; refresh on focus, timer and O.S. completion events to preserve access isolation and existing acknowledgement semantics.
 - Dashboard section wrappers must have module-level component identities, with report mode passed as a prop, so freshness refreshes never reset imports or form state.
 - Ranking uses compact seller cards below the desktop table breakpoint with the same computed results; keep all metrics available without horizontal scrolling.
