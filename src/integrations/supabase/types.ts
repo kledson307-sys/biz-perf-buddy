@@ -425,6 +425,42 @@ export type Database = {
         }
         Relationships: []
       }
+      os_retornos: {
+        Row: {
+          consultor: string
+          data_ref: string
+          feito_at: string
+          feito_por: string
+          id: string
+          nota: string
+          os_n: string
+          user_id: string
+          visto: boolean
+        }
+        Insert: {
+          consultor?: string
+          data_ref: string
+          feito_at?: string
+          feito_por?: string
+          id?: string
+          nota?: string
+          os_n: string
+          user_id?: string
+          visto?: boolean
+        }
+        Update: {
+          consultor?: string
+          data_ref?: string
+          feito_at?: string
+          feito_por?: string
+          id?: string
+          nota?: string
+          os_n?: string
+          user_id?: string
+          visto?: boolean
+        }
+        Relationships: []
+      }
       supervisor_day: {
         Row: {
           consultant_id: string
@@ -546,6 +582,11 @@ export type Database = {
         Returns: number
       }
       minha_performance: { Args: { p_mes: string }; Returns: Json }
+      minhas_os: { Args: never; Returns: Json }
+      registrar_retorno: {
+        Args: { p_data: string; p_nota: string; p_os: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
