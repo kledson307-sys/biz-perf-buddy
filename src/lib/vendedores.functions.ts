@@ -31,6 +31,8 @@ export const criarAcessoVendedor = createServerFn({ method: "POST" })
 
     const criado = await supabaseAdmin.auth.admin.createUser({ email: data.email, password: data.senha, email_confirm: true });
     if (criado.error) {
+      console.error("createUser", criado.error.code, criado.error.message);
+      if (criado.error.code === "weak_password") throw new Error("Senha fraca demais: foi recusada por ser muito comum ou já ter vazado na internet. Use uma senha mais forte.");
       let id: string | undefined;
       for (let page = 1; page <= 20 && !id; page++) {
         const { data: l } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 200 });
