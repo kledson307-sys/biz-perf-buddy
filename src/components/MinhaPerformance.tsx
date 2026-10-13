@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { RetornosVendedor } from "@/components/RetornosVendedor";
 import { supabase } from "@/integrations/supabase/client";
 import { Box, Kpi, brl, div, pct, tone, uni } from "@/components/painel-ui";
 import { ITENS } from "@/lib/agregados";
@@ -55,6 +56,7 @@ export function MinhaPerformance() {
             <Button size="sm" variant="outline" onClick={() => supabase.auth.signOut()}><LogOut className="size-4" /> Sair</Button>
           </div>
         </header>
+        <RetornosVendedor />
         {erro && <p className="text-sm text-destructive">{erro}</p>}
         {d && (
           <>

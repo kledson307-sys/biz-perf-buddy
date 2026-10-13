@@ -36,7 +36,7 @@ export function RetornosVendedor() {
   };
 
   return (
-    <div className="animate-pulse-slow space-y-3 rounded-lg border-2 border-destructive bg-destructive/10 p-4">
+    <div className="update-alert space-y-3 rounded-lg border-2 border-destructive bg-destructive/10 p-4">
       <div className="flex items-center gap-2 font-semibold text-destructive"><BellRing className="size-5" />Retorno ao cliente hoje ({pend.length})</div>
       {pend.map(({ i, due, prev }) => <div key={i.n} className="space-y-2 rounded border border-border bg-card p-3 text-sm">
         <div><b>O.S. {i.n}</b> · {i.cli} · {i.mod} {i.placa}</div>
