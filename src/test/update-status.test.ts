@@ -9,11 +9,11 @@ describe("Independent tab freshness", () => {
   it("an agregado update cannot clear sales, technician or open order alerts", () => {
     const records = [record("Agregados (importação)")];
     expect(status("agregados", records).stale).toBe(false);
-    for (const tab of ["painel", "proj-serv", "proj-pec", "proj-total", "diario", "mecanicos", "os"]) expect(status(tab, records).stale).toBe(true);
+    for (const tab of ["painel", "proj-serv", "proj-pec", "proj-total", "mecanicos", "os"]) expect(status(tab, records).stale).toBe(true);
   });
   it("all sales views refresh together but OS still requires its own import", () => {
     const records = [record("Faturamento (Excel/colar)")];
-    for (const tab of ["painel", "proj-serv", "proj-pec", "proj-total", "diario"]) expect(status(tab, records).stale).toBe(false);
+    for (const tab of ["painel", "proj-serv", "proj-pec", "proj-total"]) expect(status(tab, records).stale).toBe(false);
     expect(status("os", records).pending).toEqual(["os"]);
     expect(status("os", [...records, record("O.S. abertas (importação/edição)")]).stale).toBe(false);
     expect(status("agregados", records).stale).toBe(true);
