@@ -17,17 +17,25 @@ export function ControleOS() {
   const [busy, setBusy] = useState(false);
   const [aberto, setAberto] = useState<string | null>(null);
 
+  const [acomp, setAcomp] = useState<Record<string, Acomp>>({});
   const load = async () => {
     const { data, error } = await supabase.from("os_imports").select("id,at,nome,arquivo,itens").order("at", { ascending: false }).limit(60);
     if (error) { setMsg(error.message); return; }
     setImps((data ?? []).map(d => ({ ...d, itens: d.itens as unknown as OsItem[] })));
+    const r = await supabase.from("os_acompanhamento").select("os_n,acoes,prev_manual");
+    if (!r.error) setAcomp(Object.fromEntries((r.data ?? []).map(x => [x.os_n, { acoes: (x.acoes ?? {}) as Acomp["acoes"], prev_manual: x.prev_manual }])));
   };
   useEffect(() => { void load(); }, []);
+  const salvarAcomp = async (n: string, v: Acomp) => {
+    setAcomp(p => ({ ...p, [n]: v }));
+    const { error } = await supabase.from("os_acompanhamento").upsert({ os_n: n, acoes: v.acoes as never, prev_manual: v.prev_manual || null, updated_at: new Date().toISOString() }, { onConflict: "user_id,os_n" });
+    if (error) setMsg("Erro ao salvar: " + error.message);
+  };
 
   const atual = imps[sel];
   const anterior = imps[sel + 1];
   const ref = atual ? (sel === 0 ? hoje() : atual.at.slice(0, 10)) : hoje();
-  const lista = useMemo<Analise[]>(() => (atual?.itens ?? []).map(i => analisar(i, anterior, ref)), [atual, anterior, ref]);
+  const lista = useMemo<Analise[]>(() => (atual?.itens ?? []).map(i => analisar(i, anterior, ref, acomp[i.n]?.prev_manual)), [atual, anterior, ref, acomp]);
   const lembretes = lista.filter(a => (a.item.st === "diag" && a.diasStatus >= 7) || a.contatoHoje || (a.semMudanca && (a.item.st === "pronto" || a.item.st === "faturar")) || (a.item.st === "pecas" && a.diasStatus > 30));
   const saidas = anterior ? anterior.itens.filter(i => !atual?.itens.some(x => x.n === i.n)) : [];
 
@@ -120,7 +128,8 @@ export function ControleOS() {
               <span>{aba === "pronto" || aba === "faturar" ? "A faturar: " : "Valor: "}{brl(l.reduce((n, a) => n + a.item.valor, 0))}</span>
             </div>
             <Tabela head={["O.S.", "Cliente / Modelo", "Valor", "Na oficina", "No status", aba === "pecas" ? "Previsão / contato" : "Situação", "Alertas", ""]}>
-              {l.map(a => <FragmentRow key={a.item.n} a={a} aba={aba} aberto={aberto === a.item.n} toggle={() => setAberto(aberto === a.item.n ? null : a.item.n)} />)}
+              {l.map(a => <FragmentRow key={a.item.n} a={a} aba={aba} aberto={aberto === a.item.n} toggle={() => setAberto(aberto === a.item.n ? null : a.item.n)}
+                ac={acomp[a.item.n] ?? { acoes: {}, prev_manual: null }} salvar={v => void salvarAcomp(a.item.n, v)} />)}
             </Tabela>
           </div>)}
         </Box>
