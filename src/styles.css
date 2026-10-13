@@ -173,6 +173,25 @@ table { font-variant-numeric: tabular-nums; }
 tbody tr { transition: background-color 150ms ease; }
 tbody tr:hover { background-color: var(--accent); }
 input, select, textarea { max-width: 100%; }
+@media screen and (max-width: 639px) {
+  .painel-phone .painel-kpis > div { padding: 12px; }
+  .painel-phone .painel-kpis > div:last-child { grid-column: 1 / -1; }
+  .painel-phone .painel-kpis > div > p:nth-child(2) { font-size: 18px; }
+  .painel-phone .painel-kpis > div > div { margin-block: 8px; }
+  .painel-phone .painel-kpis > div > p:first-child { font-size: 10px; }
+  .painel-phone section > div.grid > div > div.flex.items-baseline {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .painel-phone section > div.grid > div > div.space-y-2 > div.flex {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+  .painel-phone section > div.grid > div > div.space-y-2 > div.flex > span { min-width: 0; overflow-wrap: anywhere; }
+  .painel-phone section > div.grid > div > div.space-y-2 > div.flex > span:last-child { text-align: right; }
+  .painel-phone button { max-width: 100%; height: auto; min-height: 36px; white-space: normal; }
+}
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
 /* Relatório de fechamento (PDF): layout claro de apresentação, capa e quebras por seção */
