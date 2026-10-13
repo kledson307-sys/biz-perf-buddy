@@ -129,3 +129,11 @@ export function analisar(item: OsItem, anterior: OsImport | undefined, ref: stri
 }
 
 export const fmt = (d: string) => d.split("-").reverse().join("/");
+
+/** Data do retorno semanal ao cliente que está vencido (aguardando peças), ou null. */
+export function retornoDevido(item: OsItem, ref: string): string | null {
+  if (item.st !== "pecas") return null;
+  const d = Math.max(0, diasEntre(item.desde, ref));
+  if (d < 7) return null;
+  return addDias(item.desde, Math.floor(d / 7) * 7);
+}
