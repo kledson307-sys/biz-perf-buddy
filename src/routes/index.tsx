@@ -275,7 +275,7 @@ function Painel({ email }: { email: string }) {
     a.download = `relatorio-${mes}.csv`; a.click();
   };
 
-  const tabs = [["painel", "Painel"], ["proj-serv", "Serviços"], ["proj-pec", "Peças"], ["proj-total", "Serviços & Peças"], ["os", "Projeção + OS"], ["controle-os", "Controle O.S."], ["mecanicos", "Técnicos"], ["agregados", "Agregados"], ["diario", "Diário"], ["config", "Configurar"]];
+  const tabs = [["painel", "Painel"], ["ranking", "Ranking"], ["proj-serv", "Serviços"], ["proj-pec", "Peças"], ["proj-total", "Serviços & Peças"], ["os", "Projeção + OS"], ["controle-os", "Controle O.S."], ["mecanicos", "Técnicos"], ["agregados", "Agregados"], ["diario", "Diário"], ["config", "Configurar"]];
 
   const [anoMes, mesNum] = mes.split("-").map(Number);
   const mesExt = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(anoMes!, mesNum! - 1, 1));
@@ -638,6 +638,32 @@ function Painel({ email }: { email: string }) {
           </Secao>
         )}
 
+        {tab === "ranking" && (
+          <Box title={`Ranking geral das vendedoras · ${mesExtenso}`}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-xs uppercase text-muted-foreground">
+                  <tr className="border-b"><th className="p-2">#</th><th className="p-2">Vendedor</th><th className="p-2 text-right">Serviços / meta</th><th className="p-2 text-right">Peças / meta</th><th className="p-2 text-right">Total / meta</th><th className="p-2 text-right">Perf.</th><th className="p-2 text-right">Projeção</th><th className="p-2 text-right">Precisa/dia</th></tr>
+                </thead>
+                <tbody>
+                  {linhas.map((l, i) => (
+                    <tr key={l.c.id} className="border-b last:border-0">
+                      <td className="p-2 font-bold">{i + 1}º</td>
+                      <td className="p-2"><b>{l.c.nome}</b><div className="text-xs text-muted-foreground">{deptName(l.c.department_id)}</div></td>
+                      <td className="p-2 text-right">{soPecas(l.c.nome) ? "—" : <>{brl(l.servicos)}<div className="text-xs text-muted-foreground">{brl(l.mS)}</div></>}</td>
+                      <td className="p-2 text-right">{brl(l.pecas)}<div className="text-xs text-muted-foreground">{brl(l.mP)}</div></td>
+                      <td className="p-2 text-right">{brl(l.real)}<div className="text-xs text-muted-foreground">{brl(l.meta)}</div></td>
+                      <td className={`p-2 text-right font-bold ${l.meta ? tone(l.perf) : ""}`}>{l.meta ? pct(l.perf) : "sem meta"}</td>
+                      <td className={`p-2 text-right font-bold ${l.meta ? tone(l.projPct) : ""}`}>{l.meta ? pct(l.projPct) : "—"}</td>
+                      <td className="p-2 text-right">{brl(l.nec)}</td>
+                    </tr>
+                  ))}
+                  <tr className="font-bold"><td className="p-2" /><td className="p-2">TOTAL</td><td className="p-2 text-right">{brl(total.servicos)}<div className="text-xs text-muted-foreground">{brl(total.mS)}</div></td><td className="p-2 text-right">{brl(total.pecas)}<div className="text-xs text-muted-foreground">{brl(total.mP)}</div></td><td className="p-2 text-right">{brl(total.real)}<div className="text-xs text-muted-foreground">{brl(total.meta)}</div></td><td className={`p-2 text-right ${tone(total.perf)}`}>{pct(total.perf)}</td><td className={`p-2 text-right ${tone(total.projPct)}`}>{pct(total.projPct)}</td><td className="p-2 text-right">{brl(total.nec)}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </Box>
+        )}
         {show("agregados") && <Secao titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} /></Secao>}
         {show("diario") && <Secao titulo="Performance diária e acumulada"><Diario sales={sales} cons={visiveis} metaTotal={total.meta} tot={tot} /></Secao>}
         {tab === "controle-os" && <ControleOS />}
