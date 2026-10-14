@@ -75,6 +75,7 @@ export type Database = {
       }
       agg_sales: {
         Row: {
+          codigo: string
           consultant_id: string
           dia: string
           id: string
@@ -84,6 +85,7 @@ export type Database = {
           valor: number
         }
         Insert: {
+          codigo?: string
           consultant_id: string
           dia: string
           id?: string
@@ -93,6 +95,7 @@ export type Database = {
           valor?: number
         }
         Update: {
+          codigo?: string
           consultant_id?: string
           dia?: string
           id?: string
