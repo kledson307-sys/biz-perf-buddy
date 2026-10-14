@@ -94,10 +94,10 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
       </div>
 
       {relatorio ? (<>
-        <GrupoView g="servicos" stat={stat} ranking={ranking} ids={consAgg.map((c) => c.id)} deptName={deptName} rest={rest} />
-        <GrupoView g="pecas" stat={stat} ranking={ranking} ids={consAgg.map((c) => c.id)} deptName={deptName} rest={rest} />
+        <GrupoView g="servicos" stat={stat} ranking={ranking} ids={consAgg.map((c) => c.id)} deptName={deptName} rest={rest} sales={sales} />
+        <GrupoView g="pecas" stat={stat} ranking={ranking} ids={consAgg.map((c) => c.id)} deptName={deptName} rest={rest} sales={sales} />
       </>) : (sub === "servicos" || sub === "pecas") && (
-        <GrupoView g={sub} stat={stat} ranking={ranking} ids={consAgg.map((c) => c.id)} deptName={deptName} rest={rest} />
+        <GrupoView g={sub} stat={stat} ranking={ranking} ids={consAgg.map((c) => c.id)} deptName={deptName} rest={rest} sales={sales} />
       )}
       {sub === "ia" && <AgregadosIA mes={mes} cons={consAgg} tot={tot} dec={dec} stat={stat} deptName={deptName} />}
       {sub === "importar" && (
@@ -114,8 +114,8 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
 type Stat = { qtd: number; valor: number; mq: number; mv: number; pass: number; projQ: number; projV: number; perfQ: number; perfV: number; projPctQ: number; projPctV: number; aprov: number; necQ: number };
 type Row = Stat & { c: Cons };
 
-function GrupoView({ g, stat, ranking, ids, deptName, rest }: {
-  g: Grupo; stat: (ids: string[], items: string[]) => Stat; ranking: (items: string[]) => Row[]; ids: string[]; deptName: (id: string | null) => string; rest: number;
+function GrupoView({ g, stat, ranking, ids, deptName, rest, sales }: {
+  g: Grupo; stat: (ids: string[], items: string[]) => Stat; ranking: (items: string[]) => Row[]; ids: string[]; deptName: (id: string | null) => string; rest: number; sales: ASale[];
 }) {
   const items = ITENS.filter((i) => i.g === g);
   const keys = items.map((i) => i.k);
@@ -153,8 +153,8 @@ function GrupoView({ g, stat, ranking, ids, deptName, rest }: {
         </Tabela>
       </Box>
 
-      <RankTable title={`Ranking geral — ${GRUPO_NOME[g]}`} rows={ranking(keys)} deptName={deptName} />
-      {items.map((it) => <RankTable key={it.k} title={`Ranking — ${it.nome}`} rows={ranking([it.k])} deptName={deptName} />)}
+      <RankTable title={`Ranking geral — ${GRUPO_NOME[g]}`} rows={ranking(keys)} deptName={deptName} sales={sales} items={keys} />
+      {items.map((it) => <RankTable key={it.k} title={`Ranking — ${it.nome}`} rows={ranking([it.k])} deptName={deptName} sales={sales} items={[it.k]} />)}
     </>
   );
 }
