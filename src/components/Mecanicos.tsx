@@ -30,10 +30,10 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
   const [lote, setLote] = useState<{ grupo: Grupo; s: string; p: string }>({ grupo: "carro", s: "", p: "" });
 
   const loadUlt = async () => {
-    const { data } = await supabase.from("update_log").select("origem,nome,created_at").eq("mes", mes).order("created_at", { ascending: false }).limit(200);
+    const { data } = await supabase.from("update_log").select("origem,nome,at").eq("mes", mes).order("at", { ascending: false }).limit(200);
     const out: typeof ult = {};
     for (const r of data ?? []) {
-      const v = { quando: new Date(r.created_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }), nome: String(r.nome ?? "").split("@")[0]! };
+      const v = { quando: new Date(r.at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }), nome: String(r.nome ?? "").split("@")[0]! };
       if (!out.pass && /^Passagens/.test(r.origem)) out.pass = v;
       if (!out.fat && /^Técnicos \((importação|colar)\)/.test(r.origem)) out.fat = v;
     }
