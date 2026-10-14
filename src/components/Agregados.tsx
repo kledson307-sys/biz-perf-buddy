@@ -7,7 +7,7 @@ import { AgregadosIA } from "./AgregadosIA";
 import { registrarUpdate } from "@/lib/update-log";
 
 type Cons = { id: string; nome: string; department_id: string | null };
-type ASale = { consultant_id: string; dia: string; item: string; qtd: number; valor: number };
+type ASale = { consultant_id: string; dia: string; item: string; codigo: string; qtd: number; valor: number };
 type AGoal = { consultant_id: string; item: string; meta_qtd: number; meta_valor: number };
 type AVisit = { consultant_id: string; dia: string; passagens: number };
 
@@ -29,7 +29,7 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
 
   const load = useCallback(async () => {
     const [s, g, v, c] = await Promise.all([
-      supabase.from("agg_sales").select("consultant_id,dia,item,qtd,valor").gte("dia", ini).lte("dia", end),
+      supabase.from("agg_sales").select("consultant_id,dia,item,codigo,qtd,valor").gte("dia", ini).lte("dia", end),
       supabase.from("agg_goals").select("consultant_id,item,meta_qtd,meta_valor").eq("mes", mes),
       supabase.from("agg_visits").select("consultant_id,dia,passagens").gte("dia", ini).lte("dia", end),
       supabase.from("agg_codes").select("item,codigos"),
@@ -244,7 +244,7 @@ function Lancar({ cons, allCons, sales, visits, ini, end, onDone }: {
     const sRows = ids.flatMap((cid) => ITENS.map((it) => ({ consultant_id: cid, dia, item: it.k, qtd: d[cid]![`${it.k}_q`] ?? 0, valor: d[cid]![`${it.k}_v`] ?? 0 })));
     const vRows = ids.map((cid) => ({ consultant_id: cid, dia, passagens: d[cid]!["pass"] ?? 0 }));
     const [a, b] = await Promise.all([
-      sRows.length ? supabase.from("agg_sales").upsert(sRows, { onConflict: "consultant_id,dia,item" }) : Promise.resolve({ error: null }),
+      sRows.length ? supabase.from("agg_sales").upsert(sRows, { onConflict: "consultant_id,dia,item,codigo" }) : Promise.resolve({ error: null }),
       vRows.length ? supabase.from("agg_visits").upsert(vRows, { onConflict: "consultant_id,dia" }) : Promise.resolve({ error: null }),
     ]);
     const err = a.error || b.error;
