@@ -276,7 +276,7 @@ function Lancar({ cons, allCons, sales, visits, ini, end, onDone }: {
 
   useEffect(() => {
     const d: Draft = {};
-    for (const s of sales) if (s.dia === dia) { const r = (d[s.consultant_id] ??= {}); r[`${s.item}_q`] = s.qtd; r[`${s.item}_v`] = s.valor; }
+    for (const s of sales) if (s.dia === dia) { const r = (d[s.consultant_id] ??= {}); r[`${s.item}_q`] = (r[`${s.item}_q`] ?? 0) + s.qtd; r[`${s.item}_v`] = (r[`${s.item}_v`] ?? 0) + s.valor; }
     for (const v of visits) if (v.dia === dia) (d[v.consultant_id] ??= {})["pass"] = v.passagens;
     setDraft(d);
   }, [dia, sales, visits]);
