@@ -33,7 +33,7 @@ export const splitCods = (s: string) => s.split(/[,;\n]+/).map((c) => c.trim().r
 
 type Cell = string | number | null | undefined;
 /** Venda de um vendedor. `valor` e `dia` só existem quando o relatório traz cada venda separada (lista de itens). */
-export type Venda = { nome: string; qtd: number; valor?: number; dia?: string };
+export type Venda = { nome: string; qtd: number; valor?: number; dia?: string; codigo?: string };
 export type Servico = { codigo: string; desc: string; qtd: number; bruto: number; vendedores: Venda[] };
 /** `porDia`: o relatório traz a data de cada venda, então os valores ficam no dia certo (e não acumulados no último dia). */
 export type Relatorio = { periodo: { ini: string; fim: string } | null; servicos: Servico[]; porDia?: boolean };
@@ -118,7 +118,7 @@ export function lerRanking(rows: Cell[][]): Relatorio {
 }
 
 export type Linha = { nome: string; item: string; qtd: number; valor: number };
-export type Registro = Linha & { dia?: string };
+export type Registro = Linha & { dia?: string; codigo?: string };
 
 /**
  * Distribui cada item entre os vendedores. No ranking: valor do vendedor = (valor bruto ÷ qtd total) × qtd do vendedor.
@@ -146,7 +146,7 @@ export function distribuir(rel: Relatorio, codigos: Record<string, string[]>) {
     for (const v of s.vendedores) {
       const valor = v.valor ?? v.qtd * unit;
       somar(acc, `${v.nome}|${item}`, { nome: v.nome, item, qtd: 0, valor: 0 }, v.qtd, valor);
-      somar(reg, `${v.nome}|${item}|${v.dia ?? ""}`, { nome: v.nome, item, qtd: 0, valor: 0, ...(v.dia ? { dia: v.dia } : {}) }, v.qtd, valor);
+      somar(reg, `${v.nome}|${item}|${s.codigo}|${v.dia ?? ""}`, { nome: v.nome, item, qtd: 0, valor: 0, codigo: s.codigo, ...(v.dia ? { dia: v.dia } : {}) }, v.qtd, valor);
     }
   }
   for (const l of [...acc.values(), ...reg.values()]) l.valor = Math.round(l.valor * 100) / 100;

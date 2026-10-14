@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Barra, Box, Kpi, Tabela, brl, div, norm, parseNum, pct, tone, uni } from "./painel-ui";
 import { GRUPO_NOME, ITENS, naoVende, naoVendeAgregado, splitCods, type Grupo } from "@/lib/agregados";
@@ -7,7 +7,7 @@ import { AgregadosIA } from "./AgregadosIA";
 import { registrarUpdate } from "@/lib/update-log";
 
 type Cons = { id: string; nome: string; department_id: string | null };
-type ASale = { consultant_id: string; dia: string; item: string; qtd: number; valor: number };
+type ASale = { consultant_id: string; dia: string; item: string; codigo: string; qtd: number; valor: number };
 type AGoal = { consultant_id: string; item: string; meta_qtd: number; meta_valor: number };
 type AVisit = { consultant_id: string; dia: string; passagens: number };
 
@@ -29,7 +29,7 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
 
   const load = useCallback(async () => {
     const [s, g, v, c] = await Promise.all([
-      supabase.from("agg_sales").select("consultant_id,dia,item,qtd,valor").gte("dia", ini).lte("dia", end),
+      supabase.from("agg_sales").select("consultant_id,dia,item,codigo,qtd,valor").gte("dia", ini).lte("dia", end),
       supabase.from("agg_goals").select("consultant_id,item,meta_qtd,meta_valor").eq("mes", mes),
       supabase.from("agg_visits").select("consultant_id,dia,passagens").gte("dia", ini).lte("dia", end),
       supabase.from("agg_codes").select("item,codigos"),
@@ -94,10 +94,10 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
       </div>
 
       {relatorio ? (<>
-        <GrupoView g="servicos" stat={stat} ranking={ranking} ids={consAgg.map((c) => c.id)} deptName={deptName} rest={rest} />
-        <GrupoView g="pecas" stat={stat} ranking={ranking} ids={consAgg.map((c) => c.id)} deptName={deptName} rest={rest} />
+        <GrupoView g="servicos" stat={stat} ranking={ranking} ids={consAgg.map((c) => c.id)} deptName={deptName} rest={rest} sales={sales} />
+        <GrupoView g="pecas" stat={stat} ranking={ranking} ids={consAgg.map((c) => c.id)} deptName={deptName} rest={rest} sales={sales} />
       </>) : (sub === "servicos" || sub === "pecas") && (
-        <GrupoView g={sub} stat={stat} ranking={ranking} ids={consAgg.map((c) => c.id)} deptName={deptName} rest={rest} />
+        <GrupoView g={sub} stat={stat} ranking={ranking} ids={consAgg.map((c) => c.id)} deptName={deptName} rest={rest} sales={sales} />
       )}
       {sub === "ia" && <AgregadosIA mes={mes} cons={consAgg} tot={tot} dec={dec} stat={stat} deptName={deptName} />}
       {sub === "importar" && (
@@ -114,8 +114,8 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
 type Stat = { qtd: number; valor: number; mq: number; mv: number; pass: number; projQ: number; projV: number; perfQ: number; perfV: number; projPctQ: number; projPctV: number; aprov: number; necQ: number };
 type Row = Stat & { c: Cons };
 
-function GrupoView({ g, stat, ranking, ids, deptName, rest }: {
-  g: Grupo; stat: (ids: string[], items: string[]) => Stat; ranking: (items: string[]) => Row[]; ids: string[]; deptName: (id: string | null) => string; rest: number;
+function GrupoView({ g, stat, ranking, ids, deptName, rest, sales }: {
+  g: Grupo; stat: (ids: string[], items: string[]) => Stat; ranking: (items: string[]) => Row[]; ids: string[]; deptName: (id: string | null) => string; rest: number; sales: ASale[];
 }) {
   const items = ITENS.filter((i) => i.g === g);
   const keys = items.map((i) => i.k);
@@ -153,8 +153,8 @@ function GrupoView({ g, stat, ranking, ids, deptName, rest }: {
         </Tabela>
       </Box>
 
-      <RankTable title={`Ranking geral — ${GRUPO_NOME[g]}`} rows={ranking(keys)} deptName={deptName} />
-      {items.map((it) => <RankTable key={it.k} title={`Ranking — ${it.nome}`} rows={ranking([it.k])} deptName={deptName} />)}
+      <RankTable title={`Ranking geral — ${GRUPO_NOME[g]}`} rows={ranking(keys)} deptName={deptName} sales={sales} items={keys} />
+      {items.map((it) => <RankTable key={it.k} title={`Ranking — ${it.nome}`} rows={ranking([it.k])} deptName={deptName} sales={sales} items={[it.k]} />)}
     </>
   );
 }
@@ -187,19 +187,39 @@ function ItensDetalhe({ perItem, T, modo, rest = 0 }: { perItem: { it: (typeof I
   );
 }
 
-function RankTable({ title, rows, deptName }: { title: string; rows: Row[]; deptName: (id: string | null) => string }) {
+function RankTable({ title, rows, deptName, sales, items }: { title: string; rows: Row[]; deptName: (id: string | null) => string; sales: ASale[]; items: string[] }) {
   const lider = rows[0] && (rows[0].qtd > 0 || rows[0].perfQ > 0) ? rows[0] : null;
   const usaMeta = rows.some((r) => r.mq > 0);
+  const [aberto, setAberto] = useState<string | null>(null);
+  const itSet = new Set(items);
+  /** Detalhe por código de um consultor, só dos itens deste ranking. */
+  const detalhe = (cid: string) => {
+    const m = new Map<string, { codigo: string; qtd: number; valor: number }>();
+    for (const s of sales) {
+      if (s.consultant_id !== cid || !itSet.has(s.item)) continue;
+      const k = s.codigo || "(sem código)";
+      const r = m.get(k) ?? { codigo: k, qtd: 0, valor: 0 };
+      r.qtd += s.qtd; r.valor += s.valor;
+      m.set(k, r);
+    }
+    return [...m.values()].sort((a, b) => b.qtd - a.qtd);
+  };
   return (
     <Box title={title}>
       <Tabela head={["#", "Consultor", "Depto", "Qtd", "Meta", "Perf.", "Projeção", "Proj. %", "Valor", "Meta R$", "Perf. R$", "Aproveit.", "Nec./dia", "vs. Líder"]}>
         {rows.length === 0 && <tr><td colSpan={14} className="px-3 py-8 text-center text-muted-foreground">Nenhum consultor cadastrado.</td></tr>}
         {rows.map((l, i) => {
           const gap = lider ? (usaMeta ? `−${((lider.perfQ - l.perfQ) * 100).toFixed(1)} pts` : `−${uni(lider.qtd - l.qtd)} un.`) : "—";
+          const det = aberto === l.c.id ? detalhe(l.c.id) : null;
           return (
-            <tr key={l.c.id} className="border-t border-border">
+            <Fragment key={l.c.id}>
+            <tr className="border-t border-border">
               <td className="px-3 py-2">{i + 1}</td>
-              <td className="px-3 py-2 font-medium">{l.c.nome}</td>
+              <td className="px-3 py-2 font-medium">
+                <button onClick={() => setAberto(aberto === l.c.id ? null : l.c.id)} className="underline decoration-dotted underline-offset-2 hover:text-primary" title="Ver detalhe por código">
+                  {l.c.nome} {aberto === l.c.id ? "▴" : "▾"}
+                </button>
+              </td>
               <td className="px-3 py-2 text-muted-foreground">{deptName(l.c.department_id)}</td>
               <td className="px-3 py-2 font-semibold">{uni(l.qtd)}</td>
               <td className="px-3 py-2 text-muted-foreground">{uni(l.mq)}</td>
@@ -213,6 +233,29 @@ function RankTable({ title, rows, deptName }: { title: string; rows: Row[]; dept
               <td className="px-3 py-2">{l.necQ ? Math.ceil(l.necQ) : "—"}</td>
               <td className="whitespace-nowrap px-3 py-2">{lider && lider.c.id === l.c.id ? <span className="font-semibold text-primary">Líder</span> : <span className="text-destructive">{gap}</span>}</td>
             </tr>
+            {det && (
+              <tr className="border-t border-border bg-muted/40">
+                <td colSpan={14} className="px-6 py-2">
+                  {det.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Sem detalhe por código — reimporte o relatório do mês para gravar os códigos.</p>
+                  ) : (
+                    <table className="w-full text-xs">
+                      <thead className="text-left text-muted-foreground"><tr><th className="py-1">Código</th><th className="text-right">Vendas</th><th className="text-right">Valor</th></tr></thead>
+                      <tbody>
+                        {det.map((d) => (
+                          <tr key={d.codigo} className="border-t border-border/50">
+                            <td className="py-1 font-mono">{d.codigo}</td>
+                            <td className="text-right">{uni(d.qtd)}</td>
+                            <td className="text-right">{brl(d.valor)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </td>
+              </tr>
+            )}
+            </Fragment>
           );
         })}
       </Tabela>
@@ -233,7 +276,7 @@ function Lancar({ cons, allCons, sales, visits, ini, end, onDone }: {
 
   useEffect(() => {
     const d: Draft = {};
-    for (const s of sales) if (s.dia === dia) { const r = (d[s.consultant_id] ??= {}); r[`${s.item}_q`] = s.qtd; r[`${s.item}_v`] = s.valor; }
+    for (const s of sales) if (s.dia === dia) { const r = (d[s.consultant_id] ??= {}); r[`${s.item}_q`] = (r[`${s.item}_q`] ?? 0) + s.qtd; r[`${s.item}_v`] = (r[`${s.item}_v`] ?? 0) + s.valor; }
     for (const v of visits) if (v.dia === dia) (d[v.consultant_id] ??= {})["pass"] = v.passagens;
     setDraft(d);
   }, [dia, sales, visits]);
@@ -244,7 +287,7 @@ function Lancar({ cons, allCons, sales, visits, ini, end, onDone }: {
     const sRows = ids.flatMap((cid) => ITENS.map((it) => ({ consultant_id: cid, dia, item: it.k, qtd: d[cid]![`${it.k}_q`] ?? 0, valor: d[cid]![`${it.k}_v`] ?? 0 })));
     const vRows = ids.map((cid) => ({ consultant_id: cid, dia, passagens: d[cid]!["pass"] ?? 0 }));
     const [a, b] = await Promise.all([
-      sRows.length ? supabase.from("agg_sales").upsert(sRows, { onConflict: "consultant_id,dia,item" }) : Promise.resolve({ error: null }),
+      sRows.length ? supabase.from("agg_sales").upsert(sRows, { onConflict: "consultant_id,dia,item,codigo" }) : Promise.resolve({ error: null }),
       vRows.length ? supabase.from("agg_visits").upsert(vRows, { onConflict: "consultant_id,dia" }) : Promise.resolve({ error: null }),
     ]);
     const err = a.error || b.error;
