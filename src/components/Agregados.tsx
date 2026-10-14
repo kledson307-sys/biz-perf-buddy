@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Barra, Box, Kpi, Tabela, brl, div, norm, parseNum, pct, tone, uni } from "./painel-ui";
 import { GRUPO_NOME, ITENS, naoVende, naoVendeAgregado, splitCods, type Grupo } from "@/lib/agregados";
@@ -233,6 +233,29 @@ function RankTable({ title, rows, deptName, sales, items }: { title: string; row
               <td className="px-3 py-2">{l.necQ ? Math.ceil(l.necQ) : "—"}</td>
               <td className="whitespace-nowrap px-3 py-2">{lider && lider.c.id === l.c.id ? <span className="font-semibold text-primary">Líder</span> : <span className="text-destructive">{gap}</span>}</td>
             </tr>
+            {det && (
+              <tr className="border-t border-border bg-muted/40">
+                <td colSpan={14} className="px-6 py-2">
+                  {det.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Sem detalhe por código — reimporte o relatório do mês para gravar os códigos.</p>
+                  ) : (
+                    <table className="w-full text-xs">
+                      <thead className="text-left text-muted-foreground"><tr><th className="py-1">Código</th><th className="text-right">Vendas</th><th className="text-right">Valor</th></tr></thead>
+                      <tbody>
+                        {det.map((d) => (
+                          <tr key={d.codigo} className="border-t border-border/50">
+                            <td className="py-1 font-mono">{d.codigo}</td>
+                            <td className="text-right">{uni(d.qtd)}</td>
+                            <td className="text-right">{brl(d.valor)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </td>
+              </tr>
+            )}
+            </Fragment>
           );
         })}
       </Tabela>
