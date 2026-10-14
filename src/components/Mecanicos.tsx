@@ -285,6 +285,44 @@ function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onEdit, onGrupo, onRem, v
       </div>
 
       <Box title={titulo} right={<span className="text-xs">{visiveis.length} {visiveis.length === 1 ? "técnico" : "técnicos"}{ocultos ? ` + ${ocultos} técnico${ocultos > 1 ? "s" : ""} de diagnóstico (somado nos totais)` : ""} · {dec} de {tot} dias{dica ? ` · ${dica}` : ""}</span>}>
+        <div className="space-y-3 p-3 md:hidden print:hidden">
+          {visiveis.map(({ r, s, p, t }, i) => (
+            <div key={r.nome} className="rounded-xl border border-border bg-card p-3">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="font-semibold leading-tight">{i + 1}. {r.nome}</div>
+                  <select value={r.grupo} disabled={busy} onChange={e => onGrupo(r, e.target.value as Grupo)} className="mt-1 rounded border border-input bg-background px-1 py-0.5 text-[11px] text-muted-foreground">
+                    <option value="carro">Carro</option><option value="moto">Moto</option><option value="outros">Sem grupo</option>
+                  </select>
+                </div>
+                <div className="text-right text-xs">
+                  <div className="text-base font-bold">{brl(t.real)}</div>
+                  <div className={tone(t.perf)}>{t.meta ? pct(t.perf) : "sem meta"}</div>
+                </div>
+              </div>
+              {([["Serviços", s, "servicos", "meta_servicos"], ["Peças", p, "pecas", "meta_pecas"]] as const).map(([g, x, kR, kM]) => (
+                <div key={g} className="mt-3 space-y-1 border-t border-border pt-2 text-xs">
+                  <div className="flex items-center justify-between gap-2"><b>{g}</b><Barra p={x.perf} /></div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="text-muted-foreground">Faturado<In v={r[kR]} on={v => onEdit(r, kR, v)} dis={busy} w="w-full" /></label>
+                    <label className="text-muted-foreground">Meta<In v={r[kM]} on={v => onEdit(r, kM, v)} dis={busy} w="w-full" /></label>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Projeção <b className={x.meta ? tone(x.projP) : ""}>{brl(x.proj)}</b></span>
+                    <span>{x.meta ? (x.nec ? `falta ${brl(x.nec)}/dia` : "✔ batida") : "sem meta"}</span>
+                  </div>
+                </div>
+              ))}
+              <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-2 text-xs">
+                <label className="flex items-center gap-2 text-muted-foreground">Passagens <In v={r.passagens} on={v => onEdit(r, "passagens", v)} dis={busy} money={false} w="w-16" /></label>
+                <span className="text-muted-foreground">ticket {brl(div(t.real, r.passagens))}</span>
+                <button onClick={() => onRem(r)} className="text-destructive">remover</button>
+              </div>
+            </div>
+          ))}
+          {!visiveis.length && <p className="py-6 text-center text-sm text-muted-foreground">{vazio || "Importe o relatório de faturamento para começar."}</p>}
+        </div>
+        <div className="hidden md:block print:block">
         <Tabela head={["#", "Técnico", "Linha", "Faturado", "Meta", "Perf.", "Projeção", "Média · Precisa/dia", "Passagens", ""]}>
           {visiveis.map(({ r, s, p, t }, i) => (["Serviços", "Peças", "Total"] as const).map((g, j) => {
             const x = j === 0 ? s : j === 1 ? p : t;
@@ -320,6 +358,7 @@ function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onEdit, onGrupo, onRem, v
           }))}
           {!visiveis.length && <tr><td colSpan={10} className="px-3 py-6 text-center text-muted-foreground">{vazio || "Importe o relatório \"Faturamento Líquido dos Produtivos\" para começar."}</td></tr>}
         </Tabela>
+        </div>
       </Box>
       {rotulo && visiveis.length > 0 && <Oficina rotulo={rotulo} b={b} visiveis={visiveis} dec={dec} tot={tot} />}
     </div>
