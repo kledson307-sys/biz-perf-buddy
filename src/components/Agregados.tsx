@@ -187,19 +187,39 @@ function ItensDetalhe({ perItem, T, modo, rest = 0 }: { perItem: { it: (typeof I
   );
 }
 
-function RankTable({ title, rows, deptName }: { title: string; rows: Row[]; deptName: (id: string | null) => string }) {
+function RankTable({ title, rows, deptName, sales, items }: { title: string; rows: Row[]; deptName: (id: string | null) => string; sales: ASale[]; items: string[] }) {
   const lider = rows[0] && (rows[0].qtd > 0 || rows[0].perfQ > 0) ? rows[0] : null;
   const usaMeta = rows.some((r) => r.mq > 0);
+  const [aberto, setAberto] = useState<string | null>(null);
+  const itSet = new Set(items);
+  /** Detalhe por código de um consultor, só dos itens deste ranking. */
+  const detalhe = (cid: string) => {
+    const m = new Map<string, { codigo: string; qtd: number; valor: number }>();
+    for (const s of sales) {
+      if (s.consultant_id !== cid || !itSet.has(s.item)) continue;
+      const k = s.codigo || "(sem código)";
+      const r = m.get(k) ?? { codigo: k, qtd: 0, valor: 0 };
+      r.qtd += s.qtd; r.valor += s.valor;
+      m.set(k, r);
+    }
+    return [...m.values()].sort((a, b) => b.qtd - a.qtd);
+  };
   return (
     <Box title={title}>
       <Tabela head={["#", "Consultor", "Depto", "Qtd", "Meta", "Perf.", "Projeção", "Proj. %", "Valor", "Meta R$", "Perf. R$", "Aproveit.", "Nec./dia", "vs. Líder"]}>
         {rows.length === 0 && <tr><td colSpan={14} className="px-3 py-8 text-center text-muted-foreground">Nenhum consultor cadastrado.</td></tr>}
         {rows.map((l, i) => {
           const gap = lider ? (usaMeta ? `−${((lider.perfQ - l.perfQ) * 100).toFixed(1)} pts` : `−${uni(lider.qtd - l.qtd)} un.`) : "—";
+          const det = aberto === l.c.id ? detalhe(l.c.id) : null;
           return (
-            <tr key={l.c.id} className="border-t border-border">
+            <Fragment key={l.c.id}>
+            <tr className="border-t border-border">
               <td className="px-3 py-2">{i + 1}</td>
-              <td className="px-3 py-2 font-medium">{l.c.nome}</td>
+              <td className="px-3 py-2 font-medium">
+                <button onClick={() => setAberto(aberto === l.c.id ? null : l.c.id)} className="underline decoration-dotted underline-offset-2 hover:text-primary" title="Ver detalhe por código">
+                  {l.c.nome} {aberto === l.c.id ? "▴" : "▾"}
+                </button>
+              </td>
               <td className="px-3 py-2 text-muted-foreground">{deptName(l.c.department_id)}</td>
               <td className="px-3 py-2 font-semibold">{uni(l.qtd)}</td>
               <td className="px-3 py-2 text-muted-foreground">{uni(l.mq)}</td>
