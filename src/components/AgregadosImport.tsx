@@ -57,9 +57,9 @@ export function AgregadosImport({ allCons, codigos, ini, end, onDone }: {
       const items = itensSubst.map((i) => i.k);
       const del = await supabase.from("agg_sales").delete().in("item", items).gte("dia", periodo.ini).lte("dia", periodo.fim);
       if (del.error) throw del.error;
-      const rows = res.registros.map((l) => ({ consultant_id: cmap.get(norm(l.nome))!, dia: l.dia ?? periodo.fim, item: l.item, qtd: l.qtd, valor: l.valor }));
+      const rows = res.registros.map((l) => ({ consultant_id: cmap.get(norm(l.nome))!, dia: l.dia ?? periodo.fim, item: l.item, codigo: l.codigo ?? "", qtd: l.qtd, valor: l.valor }));
       if (rows.length) {
-        const up = await supabase.from("agg_sales").upsert(rows, { onConflict: "consultant_id,dia,item" });
+        const up = await supabase.from("agg_sales").upsert(rows, { onConflict: "consultant_id,dia,item,codigo" });
         if (up.error) throw up.error;
       }
       setMsg(`Importado: ${rows.length} lançamentos de ${br(periodo.ini)} a ${br(periodo.fim)}. Importar de novo o mesmo período substitui os valores.`);
