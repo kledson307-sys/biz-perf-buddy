@@ -197,7 +197,7 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
         { k: "outros", nome: GRUPO_NOME.outros, b: G.outros },
       ]} />
 
-      <div className="grid gap-4 print:hidden lg:grid-cols-2">
+      <div className="grid gap-4 print:hidden">
         <Box title="Importar planilhas do sistema">
           <div className="space-y-4 p-5 text-sm">
             <div className="space-y-2">
@@ -232,43 +232,15 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
             {msg && <p role="status" className="text-sm">{msg}</p>}
           </div>
         </Box>
-        <Box title="Metas em lote">
-          <div className="space-y-3 p-5 text-sm">
-            <p className="text-muted-foreground">Define a mesma meta para todos os técnicos do grupo (técnicos de diagnóstico ficam de fora). Deixe em branco o que não quiser mudar.</p>
-            <div className="flex flex-wrap items-center gap-2">
-              <select value={lote.grupo} onChange={e => setLote({ ...lote, grupo: e.target.value as Grupo })} className="rounded-lg border border-input bg-background px-2 py-2">
-                <option value="carro">Carro</option>
-                <option value="moto">Moto</option>
-              </select>
-              <input value={lote.s} onChange={e => setLote({ ...lote, s: e.target.value })} placeholder="Meta serviços" inputMode="decimal" className="w-32 rounded-lg border border-input bg-background px-3 py-2" />
-              <input value={lote.p} onChange={e => setLote({ ...lote, p: e.target.value })} placeholder="Meta peças" inputMode="decimal" className="w-32 rounded-lg border border-input bg-background px-3 py-2" />
-              <Button onClick={aplicarLote} disabled={busy}>Aplicar</Button>
-            </div>
-          </div>
-        </Box>
-        <Box title="Colar passagens / valores">
-          <div className="space-y-3 p-5 text-sm">
-            <p className="text-muted-foreground">Uma linha por técnico: <b>Nome ⇥ Passagens</b> ou <b>Nome ⇥ Serviços ⇥ Peças ⇥ Passagens</b>. Substitui o valor do mês.</p>
-            <textarea value={cola} onChange={e => setCola(e.target.value)} rows={4} className="w-full rounded-lg border border-input bg-background p-2 font-mono text-xs" />
-            <div className="flex flex-wrap items-center gap-2">
-              <Button onClick={colar} disabled={busy}>Salvar colagem</Button>
-              <input value={novo} onChange={e => setNovo(e.target.value)} placeholder="Novo técnico" className="rounded-lg border border-input bg-background px-3 py-2" />
-              <select value={grupoNovo} onChange={e => setGrupoNovo(e.target.value as Grupo)} className="rounded-lg border border-input bg-background px-2 py-2">
-                <option value="carro">Carro</option>
-                <option value="moto">Moto</option>
-              </select>
-              <Button variant="outline" disabled={!novo.trim() || busy} onClick={async () => { if (await gravar([{ ...base(novo), grupo: grupoNovo }], "Técnicos (edição)")) setNovo(""); }}>Adicionar</Button>
-            </div>
-          </div>
-        </Box>
+        <p className="text-xs text-muted-foreground">Faturamento e passagens vêm só das planilhas importadas. As metas dos técnicos são lançadas em <b>Configurar → Técnicos e metas</b>.</p>
       </div>
     </div>
   );
 }
 
-function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onEdit, onGrupo, onRem, vazio, dica }: {
+function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onGrupo, onRem, vazio, dica }: {
   rotulo: string; titulo: string; b: MecBloco; dec: number; tot: number; busy: boolean;
-  onEdit: (r: Mec, k: MecCampo, v: number) => void; onGrupo: (r: Mec, g: Grupo) => void; onRem: (r: Mec) => void;
+  onGrupo: (r: Mec, g: Grupo) => void; onRem: (r: Mec) => void;
   vazio: string; dica?: string;
 }) {
   const suf = rotulo ? ` ${rotulo}` : "";
@@ -300,12 +272,12 @@ function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onEdit, onGrupo, onRem, v
                   <div className={tone(t.perf)}>{t.meta ? pct(t.perf) : "sem meta"}</div>
                 </div>
               </div>
-              {([["Serviços", s, "servicos", "meta_servicos"], ["Peças", p, "pecas", "meta_pecas"]] as const).map(([g, x, kR, kM]) => (
+              {([["Serviços", s], ["Peças", p]] as const).map(([g, x]) => (
                 <div key={g} className="mt-3 space-y-1 border-t border-border pt-2 text-xs">
                   <div className="flex items-center justify-between gap-2"><b>{g}</b><Barra p={x.perf} /></div>
                   <div className="grid grid-cols-2 gap-2">
-                    <label className="text-muted-foreground">Faturado<In v={r[kR]} on={v => onEdit(r, kR, v)} dis={busy} w="w-full" /></label>
-                    <label className="text-muted-foreground">Meta<In v={r[kM]} on={v => onEdit(r, kM, v)} dis={busy} w="w-full" /></label>
+                    <div className="text-muted-foreground">Faturado<div className="font-semibold text-foreground">{brl(x.real)}</div></div>
+                    <div className="text-muted-foreground">Meta<div className="font-semibold text-foreground">{x.meta ? brl(x.meta) : "sem meta"}</div></div>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                     <span>Projeção <b className={x.meta ? tone(x.projP) : ""}>{brl(x.proj)}</b></span>
@@ -314,7 +286,7 @@ function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onEdit, onGrupo, onRem, v
                 </div>
               ))}
               <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-2 text-xs">
-                <label className="flex items-center gap-2 text-muted-foreground">Passagens <In v={r.passagens} on={v => onEdit(r, "passagens", v)} dis={busy} money={false} w="w-16" /></label>
+                <span className="text-muted-foreground">Passagens <b className="text-foreground">{uni(r.passagens)}</b></span>
                 <span className="text-muted-foreground">ticket {brl(div(t.real, r.passagens))}</span>
                 <button onClick={() => onRem(r)} className="text-destructive">remover</button>
               </div>
@@ -326,7 +298,6 @@ function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onEdit, onGrupo, onRem, v
         <Tabela head={["#", "Técnico", "Linha", "Faturado", "Meta", "Perf.", "Projeção", "Média · Precisa/dia", "Passagens", ""]}>
           {visiveis.map(({ r, s, p, t }, i) => (["Serviços", "Peças", "Total"] as const).map((g, j) => {
             const x = j === 0 ? s : j === 1 ? p : t;
-            const metaK = j === 0 ? "meta_servicos" : j === 1 ? "meta_pecas" : null;
             return (
               <tr key={r.nome + g} className={`border-t border-border ${j === 2 ? "bg-muted/50 font-semibold" : ""}`}>
                 {j === 0 && <><td rowSpan={3} className="px-2 py-1.5 align-top text-xs">{i + 1}</td>
@@ -340,8 +311,8 @@ function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onEdit, onGrupo, onRem, v
                     </select>
                   </td></>}
                 <td className="whitespace-nowrap px-2 py-1.5">{g}</td>
-                <td className="px-2 py-1.5">{j < 2 ? <In v={j === 0 ? r.servicos : r.pecas} on={v => onEdit(r, j === 0 ? "servicos" : "pecas", v)} dis={busy} w="w-24" /> : brl(x.real)}</td>
-                <td className="px-2 py-1.5">{metaK ? <In v={r[metaK]} on={v => onEdit(r, metaK, v)} dis={busy} w="w-24" /> : brl(x.meta)}</td>
+                <td className="whitespace-nowrap px-2 py-1.5">{brl(x.real)}</td>
+                <td className="whitespace-nowrap px-2 py-1.5 text-muted-foreground">{x.meta ? brl(x.meta) : "sem meta"}</td>
                 <td className="whitespace-nowrap px-2 py-1.5"><Barra p={x.perf} /></td>
                 <td className="whitespace-nowrap px-2 py-1.5">{brl(x.proj)}{x.meta ? <span className={`ml-1 text-xs font-semibold ${tone(x.projP)}`}>{pct(x.projP)}</span> : null}</td>
                 <td className="whitespace-nowrap px-2 py-1.5 text-xs">
@@ -349,7 +320,7 @@ function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onEdit, onGrupo, onRem, v
                   <div>{x.meta ? (x.nec ? `falta ${brl(x.nec)}/dia` : "✔ batida") : "sem meta"}</div>
                 </td>
                 {j === 0 && <><td rowSpan={3} className="whitespace-nowrap px-2 py-1.5 align-top">
-                    <In v={r.passagens} on={v => onEdit(r, "passagens", v)} dis={busy} money={false} w="w-16" />
+                    <div className="font-medium">{uni(r.passagens)}</div>
                     <div className="mt-1 text-[11px] text-muted-foreground">ticket {brl(div(t.real, r.passagens))}</div>
                   </td>
                   <td rowSpan={3} className="px-2 py-1.5 align-top print:hidden"><button onClick={() => onRem(r)} className="text-xs text-destructive">remover</button></td></>}
@@ -411,9 +382,3 @@ function Oficina({ rotulo, b, visiveis, dec, tot }: { rotulo: string; b: MecBloc
   );
 }
 
-function In({ v, on, dis, money = true, w = "w-24" }: { v: number; on: (v: number) => void; dis: boolean; money?: boolean; w?: string }) {
-  const [t, setT] = useState(String(v));
-  useEffect(() => setT(String(v)), [v]);
-  return <input value={t} disabled={dis} onChange={e => setT(e.target.value)} onBlur={() => on(parseNum(t))} title={money ? brl(v) : num(v)}
-    className={`${w} rounded border border-input bg-background px-2 py-1 text-right print:border-0`} />;
-}
