@@ -312,7 +312,7 @@ function Painel({ email }: { email: string }) {
             <nav aria-label="Abas do painel" className="col-span-2 grid min-w-0 grid-cols-3 gap-1 sm:flex sm:flex-wrap lg:ml-auto">
               {tabs.map(([k, l]) => {
                 if (!k) return null;
-                const stale = tabUpdateStatus(k, mes, updates, clock).stale;
+                const stale = k === "importacoes" ? status.pending.some((x) => x !== "controle-os") : tabUpdateStatus(k, mes, updates, clock).stale;
                 return <Button key={k} onClick={() => setTab(k)} variant={tab === k ? "default" : "ghost"}
                   data-update-status={stale ? "pending" : "current"}
                   title={stale ? `${l}: atualização pendente` : l}
