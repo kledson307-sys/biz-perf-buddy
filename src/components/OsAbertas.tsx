@@ -80,7 +80,7 @@ function lerOsSistema(raw: unknown[][]): { nome: string; servicos: number; pecas
   return res.length ? res : null;
 }
 
-export function OsAbertas({ linhas, mes, soPecas, tot, dec, deptName, semServicos }: { linhas: Linha[]; mes: string; soPecas: (n: string) => boolean; tot: number; dec: number; deptName: (id: string | null) => string; semServicos: (nome: string) => boolean }) {
+export function OsAbertas({ linhas, mes, soPecas, tot, dec, deptName, semServicos, modo = "ver" }: { modo?: "ver" | "importar"; linhas: Linha[]; mes: string; soPecas: (n: string) => boolean; tot: number; dec: number; deptName: (id: string | null) => string; semServicos: (nome: string) => boolean }) {
   const store = `os-abertas-${mes}`;
   const [os, setOs] = useState<Os>({});
   const [txt, setTxt] = useState("");
@@ -209,20 +209,10 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec, deptName, semServico
     };
   });
 
-  return (
-    <div className="space-y-6">
-      <h2 className="text-lg font-semibold">Projeção com OS abertas — {mes}</h2>
-      <p className="text-sm text-muted-foreground">Faturado (dados já importados) + ordens de serviço abertas que ainda serão faturadas. Não altera as outras abas.</p>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <Kpi label="Realizado Serviços Total" value={brl(ts)} sub={`Meta ${brl(g.ms)} · ${pct(div(ts, g.ms))}`} cls={tone(div(ts, g.ms))} />
-        <Kpi label="Realizado Peças Total" value={brl(tp)} sub={`Meta ${brl(g.mp)} · ${pct(div(tp, g.mp))}`} cls={tone(div(tp, g.mp))} />
-        <Kpi label="Projeção Serviços" value={brl(projS)} sub={`${pct(projPctS)} da meta ${brl(g.ms)}`} cls={tone(projPctS)} />
-        <Kpi label="Projeção Peças" value={brl(projP)} sub={`${pct(projPctP)} da meta ${brl(g.mp)}`} cls={tone(projPctP)} />
-        <Kpi label="Projeção Total" value={brl(projS + projP)} sub={`${pct(projPct)} · precisa serviços ${brl(necS)}/dia · precisa peças ${brl(necP)}/dia`} cls={tone(projPct)} />
-      </div>
-
-      <div className="print:hidden"><Box title="Importar OS abertas (Excel ou colar)">
-        <p className="mb-3 text-sm text-muted-foreground">Aceita o relatório "O.S. Abertas" do sistema (peças e serviços separados) ou colar vendedor/serviços/peças. Só são considerados: P.BENIGNO, ANDRESSA.O, GILBERTO.S, WESLEY.F, RENAN.O, GEOVANA.M e MARCELA.S. Importar substitui as OS abertas do mês. Também dá para digitar direto na tabela abaixo.</p>
+  if (modo === "importar") return (
+    <Box title="O.S. abertas (Excel ou colar) — alimenta Projeção + OS">
+      <div className="p-4">
+        <p className="mb-3 text-sm text-muted-foreground">Aceita o relatório "O.S. Abertas" do sistema (peças e serviços separados) ou colar vendedor/serviços/peças. Só são considerados: P.BENIGNO, ANDRESSA.O, GILBERTO.S, WESLEY.F, RENAN.O, GEOVANA.M e MARCELA.S. Importar substitui as OS abertas do mês.</p>
         <div className="flex flex-wrap gap-2">
           <input ref={file} type="file" accept=".xls,.xlsx,.csv" className="hidden" onChange={(e) => void abrir(e.target.files?.[0])} />
           <Button disabled={loading || saving || !canEdit} onClick={() => file.current?.click()}><Upload />Importar Excel de OS abertas</Button>
@@ -232,7 +222,21 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec, deptName, semServico
         <Button variant="outline" className="mt-2" onClick={() => void colar()} disabled={!txt.trim() || loading || saving || !canEdit}>Ler dados colados</Button>
         {loading && !msg && <p className="mt-2 text-sm text-muted-foreground">Carregando O.S. salvas…</p>}
         {msg && <p role="status" className="mt-2 text-sm">{msg}</p>}
-      </Box></div>
+      </div>
+    </Box>
+  );
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-lg font-semibold">Projeção com OS abertas — {mes}</h2>
+      <p className="text-sm text-muted-foreground">Faturado (dados já importados) + ordens de serviço abertas que ainda serão faturadas. A importação das OS abertas fica na aba Importações.</p>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <Kpi label="Realizado Serviços Total" value={brl(ts)} sub={`Meta ${brl(g.ms)} · ${pct(div(ts, g.ms))}`} cls={tone(div(ts, g.ms))} />
+        <Kpi label="Realizado Peças Total" value={brl(tp)} sub={`Meta ${brl(g.mp)} · ${pct(div(tp, g.mp))}`} cls={tone(div(tp, g.mp))} />
+        <Kpi label="Projeção Serviços" value={brl(projS)} sub={`${pct(projPctS)} da meta ${brl(g.ms)}`} cls={tone(projPctS)} />
+        <Kpi label="Projeção Peças" value={brl(projP)} sub={`${pct(projPctP)} da meta ${brl(g.mp)}`} cls={tone(projPctP)} />
+        <Kpi label="Projeção Total" value={brl(projS + projP)} sub={`${pct(projPct)} · precisa serviços ${brl(necS)}/dia · precisa peças ${brl(necP)}/dia`} cls={tone(projPct)} />
+      </div>
 
       <Box title="Resultados por departamento (faturado + OS abertas)">
         <div className="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-3">
