@@ -3,7 +3,7 @@ import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Barra, Box, Kpi, Tabela, brl, div, norm, num, parseNum, pct, tone, uni } from "@/components/painel-ui";
-import { GRUPO_NOME, blocoMec, ehRelatorioPassagens, grupoDe, lerPassagens, ocultoDaLista, type Grupo, type Mec, type MecBloco, type MecCampo, type PassReport, lerMecanicos } from "@/lib/mecanicos";
+import { GRUPO_NOME, blocoMec, ehRelatorioPassagens, grupoDe, lerPassagens, ocultoDaLista, type Grupo, type Mec, type MecBloco, type PassReport, lerMecanicos } from "@/lib/mecanicos";
 import { registrarUpdate } from "@/lib/update-log";
 import { MecanicosIA } from "@/components/MecanicosIA";
 
@@ -21,13 +21,9 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
   const [rows, setRows] = useState<Mec[]>([]);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
-  const [cola, setCola] = useState("");
-  const [novo, setNovo] = useState("");
-  const [grupoNovo, setGrupoNovo] = useState<Grupo>("carro");
   const [previa, setPrevia] = useState<Previa | null>(null);
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [ult, setUlt] = useState<{ fat?: { quando: string; nome: string }; pass?: { quando: string; nome: string } }>({});
-  const [lote, setLote] = useState<{ grupo: Grupo; s: string; p: string }>({ grupo: "carro", s: "", p: "" });
 
   const loadUlt = async () => {
     const { data } = await supabase.from("update_log").select("origem,nome,at").eq("mes", mes).order("at", { ascending: false }).limit(200);
@@ -128,27 +124,6 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
     setMsg(`Passagens importadas: ${r.mecanicos.length} técnicos e ${vRows.length} consultores (O.S. repetidas contadas uma única vez).${ignorados ? ` ${ignorados} consultores não cadastrados foram ignorados.` : ""} Totais do mês substituídos, sem somar.`);
   };
 
-  const colar = async () => {
-    const lst = cola.split("\n").map(l => l.split(/\t|;/).map(s => s.trim())).filter(c => c[0] && c.length >= 2).map(c => {
-      const b = base(c[0]!);
-      return c.length === 2 ? { ...b, passagens: parseNum(c[1]!) } : { ...b, servicos: parseNum(c[1]!), pecas: parseNum(c[2] ?? ""), ...(c[3] ? { passagens: parseNum(c[3]) } : {}) };
-    });
-    if (!lst.length) { setMsg("Nada para colar. Use: Nome ⇥ Passagens  ou  Nome ⇥ Serviços ⇥ Peças ⇥ Passagens"); return; }
-    if (await gravar(lst, "Técnicos (colar)")) { setCola(""); setMsg(`${lst.length} linhas salvas.`); }
-  };
-
-  const aplicarLote = async () => {
-    const alvo = rows.filter(r => r.grupo === lote.grupo && !ocultoDaLista(r.nome));
-    if (!alvo.length) { setMsg("Nenhum técnico nesse grupo."); return; }
-    const s = lote.s.trim() ? parseNum(lote.s) : null, p = lote.p.trim() ? parseNum(lote.p) : null;
-    if (s === null && p === null) { setMsg("Informe a meta de serviços e/ou de peças."); return; }
-    if (!confirm(`Aplicar ${s !== null ? `meta de serviços ${brl(s)}` : ""}${s !== null && p !== null ? " e " : ""}${p !== null ? `meta de peças ${brl(p)}` : ""} para ${alvo.length} técnicos (${GRUPO_NOME[lote.grupo]})?`)) return;
-    if (await gravar(alvo.map(r => ({ ...r, ...(s !== null ? { meta_servicos: s } : {}), ...(p !== null ? { meta_pecas: p } : {}) })), "Técnicos (metas em lote)")) {
-      setMsg(`Metas aplicadas a ${alvo.length} técnicos.`); setLote({ ...lote, s: "", p: "" });
-    }
-  };
-
-  const editar = (r: Mec, k: MecCampo, v: number) => { if (r[k] !== v) void gravar([{ ...r, [k]: v }], "Técnicos (edição)"); };
   const mudarGrupo = (r: Mec, g: Grupo) => { if (r.grupo !== g) void gravar([{ ...r, grupo: g }], "Técnicos (grupo)"); };
   const remover = async (r: Mec) => { if (r.id && confirm(`Remover ${r.nome} deste mês?`)) { await supabase.from("mech_month").delete().eq("id", r.id); await load(); } };
 
@@ -184,11 +159,11 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
         <Kpi label="Necessidade diária" value={brl(EQUIPE.T.nec) + "/dia"} sub={<>serviços {brl(EQUIPE.S.nec)}/dia · peças {brl(EQUIPE.P.nec)}/dia</>} />
       </div>}
 
-      {ver("carro") && <GrupoSec rotulo="Carro" titulo={GRUPO_NOME.carro} b={G.carro} dec={dec} tot={tot} busy={busy} onEdit={editar} onGrupo={mudarGrupo} onRem={remover}
+      {ver("carro") && <GrupoSec rotulo="Carro" titulo={GRUPO_NOME.carro} b={G.carro} dec={dec} tot={tot} busy={busy} onGrupo={mudarGrupo} onRem={remover}
         vazio="Nenhum técnico de carro neste mês." />}
-      {ver("moto") && <GrupoSec rotulo="Moto" titulo={GRUPO_NOME.moto} b={G.moto} dec={dec} tot={tot} busy={busy} onEdit={editar} onGrupo={mudarGrupo} onRem={remover}
+      {ver("moto") && <GrupoSec rotulo="Moto" titulo={GRUPO_NOME.moto} b={G.moto} dec={dec} tot={tot} busy={busy} onGrupo={mudarGrupo} onRem={remover}
         vazio="Nenhum técnico de moto neste mês." />}
-      {filtro === "todos" && G.outros.n > 0 && <GrupoSec rotulo="" titulo={GRUPO_NOME.outros} b={G.outros} dec={dec} tot={tot} busy={busy} onEdit={editar} onGrupo={mudarGrupo} onRem={remover}
+      {filtro === "todos" && G.outros.n > 0 && <GrupoSec rotulo="" titulo={GRUPO_NOME.outros} b={G.outros} dec={dec} tot={tot} busy={busy} onGrupo={mudarGrupo} onRem={remover}
         vazio="" dica="Troque para Carro ou Moto no seletor abaixo do nome." />}
 
       <MecanicosIA mes={mes} tot={tot} dec={dec} blocos={[
