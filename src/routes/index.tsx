@@ -155,8 +155,7 @@ function Painel({ email }: { email: string }) {
     };
   }, [loadUpdates]);
   const openUpdate = (source: UpdateSource) => {
-    setTab(source === "faturamento" ? "painel" : source);
-    if (source === "faturamento") setTimeout(() => document.getElementById("colar-dados")?.scrollIntoView({ block: "start" }), 0);
+    setTab(source === "controle-os" ? source : "importacoes");
   };
 
   const load = useCallback(async () => {
@@ -279,7 +278,7 @@ function Painel({ email }: { email: string }) {
     a.download = `relatorio-${mes}.csv`; a.click();
   };
 
-  const tabs = [["painel", "Painel"], ["ranking", "Ranking"], ["proj-serv", "Serviços"], ["proj-pec", "Peças"], ["proj-total", "Serviços & Peças"], ["os", "Projeção + OS"], ["controle-os", "Controle O.S."], ["mecanicos", "Técnicos"], ["agregados", "Agregados"], ["config", "Configurar"]];
+  const tabs = [["importacoes", "Importações"], ["painel", "Painel"], ["ranking", "Ranking"], ["proj-serv", "Serviços"], ["proj-pec", "Peças"], ["proj-total", "Serviços & Peças"], ["os", "Projeção + OS"], ["controle-os", "Controle O.S."], ["mecanicos", "Técnicos"], ["agregados", "Agregados"], ["config", "Configurar"]];
 
   const [anoMes, mesNum] = mes.split("-").map(Number);
   const mesExt = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(anoMes!, mesNum! - 1, 1));
@@ -507,10 +506,6 @@ function Painel({ email }: { email: string }) {
                 </div>
               </Box>
             </div>
-            {tab === "painel" && !relatorio && <div id="colar-dados" className="scroll-mt-6 space-y-4 border-t border-border pt-6 print:hidden">
-              <h2 className="text-lg font-semibold">Colar dados</h2>
-              <SalesImport cons={cons} depts={depts} onDone={load} onPeriod={setMes} />
-            </div>}
           </Secao>
         )}
 
@@ -664,6 +659,20 @@ function Painel({ email }: { email: string }) {
         )}
         {show("agregados") && <Secao relatorio={relatorio} titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} /></Secao>}
         {tab === "controle-os" && <ControleOS />}
+        {tab === "importacoes" && !relatorio && <div className="space-y-6 print:hidden">
+          <div>
+            <h2 className="text-lg font-semibold">Central de importações · {mes}</h2>
+            <p className="text-sm text-muted-foreground">Todas as planilhas do dia em um só lugar. Cada bloco tem seu botão, prévia e confirmação. O Controle O.S. semanal continua na própria aba.</p>
+          </div>
+          <section className="space-y-3"><h3 className="font-semibold">1. Faturamento geral de vendas <span className="text-xs font-normal text-muted-foreground">— alimenta Painel, Ranking, Serviços, Peças</span></h3>
+            <SalesImport cons={cons} depts={depts} onDone={load} onPeriod={setMes} /></section>
+          <section className="space-y-3"><h3 className="font-semibold">2. O.S. abertas <span className="text-xs font-normal text-muted-foreground">— alimenta Projeção + OS</span></h3>
+            <OsAbertas modo="importar" linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} deptName={deptName} semServicos={semServicos} /></section>
+          <section className="space-y-3"><h3 className="font-semibold">3. Técnicos — faturamento e passagens <span className="text-xs font-normal text-muted-foreground">— alimenta Técnicos</span></h3>
+            <Mecanicos modo="importar" mes={mes} tot={tot} dec={dec} /></section>
+          <section className="space-y-3"><h3 className="font-semibold">4. Agregados — vendas de itens e passagens <span className="text-xs font-normal text-muted-foreground">— alimenta Agregados</span></h3>
+            <Agregados modo="importar" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section>
+        </div>}
         {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} /></Secao>}
         {tab === "config" && <div className="space-y-6"><Equipe /><Config params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div>}
       </main>

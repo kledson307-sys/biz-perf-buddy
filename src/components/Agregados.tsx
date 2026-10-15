@@ -16,7 +16,7 @@ type Props = {
   deptName: (id: string | null) => string; reloadCons: () => void; relatorio?: boolean;
 };
 
-export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, relatorio }: Props) {
+export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, relatorio, modo = "ver" }: Props & { modo?: "ver" | "importar" }) {
   const [sub, setSub] = useState<"servicos" | "pecas" | "ia" | "importar" | "lancar" | "metas">("servicos");
   const [sales, setSales] = useState<ASale[]>([]);
   const [goals, setGoals] = useState<AGoal[]>([]);
@@ -74,7 +74,11 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
     a.download = `agregados-${mes}.csv`; a.click();
   };
 
-  const subs: [typeof sub, string][] = [["servicos", "Serviços agregados"], ["pecas", "Peças agregadas"], ["ia", "Recomendações IA"], ["importar", "Importar Excel"], ["lancar", "Lançar / colar"], ["metas", "Metas"]];
+  const subs: [typeof sub, string][] = [["servicos", "Serviços agregados"], ["pecas", "Peças agregadas"], ["ia", "Recomendações IA"], ["lancar", "Lançar / colar"], ["metas", "Metas"]];
+
+  if (modo === "importar") return (
+    <AgregadosImport allCons={allCons} codigos={codigos} ini={ini} end={end} onDone={() => { load(); reloadCons(); }} />
+  );
 
   return (
     <div className="space-y-6">
@@ -100,9 +104,6 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
         <GrupoView g={sub} stat={stat} ranking={ranking} ids={consAgg.map((c) => c.id)} deptName={deptName} rest={rest} sales={sales} />
       )}
       {sub === "ia" && <AgregadosIA mes={mes} cons={consAgg} tot={tot} dec={dec} stat={stat} deptName={deptName} />}
-      {sub === "importar" && (
-        <AgregadosImport allCons={allCons} codigos={codigos} ini={ini} end={end} onDone={() => { load(); reloadCons(); }} />
-      )}
       {sub === "lancar" && (
         <Lancar cons={cons} allCons={allCons} sales={sales} visits={visits} ini={ini} end={end} onDone={() => { load(); reloadCons(); }} />
       )}
