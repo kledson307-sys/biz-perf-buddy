@@ -15,7 +15,7 @@ type Previa =
 type Filtro = "todos" | "carro" | "moto";
 const dataBR = (s: string) => s.split("-").reverse().join("/");
 
-export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: number }) {
+export function Mecanicos({ mes, tot, dec, modo = "ver" }: { mes: string; tot: number; dec: number; modo?: "ver" | "importar" }) {
   const fileFat = useRef<HTMLInputElement>(null);
   const filePass = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<Mec[]>([]);
@@ -138,19 +138,20 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-2 print:hidden">
-        <div className="inline-flex rounded-lg border border-border p-1">
+        {modo === "ver" && <div className="inline-flex rounded-lg border border-border p-1">
           {(["todos", "carro", "moto"] as const).map(f => (
             <button key={f} onClick={() => setFiltro(f)} className={`rounded-md px-3 py-1.5 text-sm font-medium ${filtro === f ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
               {f === "todos" ? "Todos" : f === "carro" ? "Carro" : "Moto"}
             </button>
           ))}
-        </div>
+        </div>}
         <div className="flex flex-wrap gap-2 text-xs">
           <span className={`rounded-md px-2 py-1 ${ult.fat ? "bg-muted" : "bg-destructive/15 text-destructive"}`}>Faturamento: {ult.fat ? `${ult.fat.quando} · ${ult.fat.nome}` : "não importado neste mês"}</span>
           <span className={`rounded-md px-2 py-1 ${ult.pass ? "bg-muted" : "bg-destructive/15 text-destructive"}`}>Passagens: {ult.pass ? `${ult.pass.quando} · ${ult.pass.nome}` : "não importadas neste mês"}</span>
         </div>
       </div>
 
+      {modo === "ver" && <>
       {filtro === "todos" && <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Kpi label="Faturado Serviços (equipe toda)" value={brl(EQUIPE.S.real)} sub={`meta ${brl(EQUIPE.S.meta)} · ${pct(EQUIPE.S.perf)}`} cls={tone(EQUIPE.S.perf)} />
         <Kpi label="Faturado Peças (equipe toda)" value={brl(EQUIPE.P.real)} sub={`meta ${brl(EQUIPE.P.meta)} · ${pct(EQUIPE.P.perf)}`} cls={tone(EQUIPE.P.perf)} />
@@ -171,8 +172,10 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
         { k: "moto", nome: GRUPO_NOME.moto, b: G.moto },
         { k: "outros", nome: GRUPO_NOME.outros, b: G.outros },
       ]} />
+      <p className="text-xs text-muted-foreground print:hidden">Faturamento e passagens são importados na aba <b>Importações</b>. As metas dos técnicos ficam em <b>Configurar → Técnicos e metas</b>.</p>
+      </>}
 
-      <div className="grid gap-4 print:hidden">
+      {modo === "importar" && <div className="grid gap-4 print:hidden">
         <Box title="Importar planilhas do sistema">
           <div className="space-y-4 p-5 text-sm">
             <div className="space-y-2">
@@ -207,8 +210,7 @@ export function Mecanicos({ mes, tot, dec }: { mes: string; tot: number; dec: nu
             {msg && <p role="status" className="text-sm">{msg}</p>}
           </div>
         </Box>
-        <p className="text-xs text-muted-foreground">Faturamento e passagens vêm só das planilhas importadas. As metas dos técnicos são lançadas em <b>Configurar → Técnicos e metas</b>.</p>
-      </div>
+      </div>}
     </div>
   );
 }

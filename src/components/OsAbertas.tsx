@@ -80,7 +80,7 @@ function lerOsSistema(raw: unknown[][]): { nome: string; servicos: number; pecas
   return res.length ? res : null;
 }
 
-export function OsAbertas({ linhas, mes, soPecas, tot, dec, deptName, semServicos }: { linhas: Linha[]; mes: string; soPecas: (n: string) => boolean; tot: number; dec: number; deptName: (id: string | null) => string; semServicos: (nome: string) => boolean }) {
+export function OsAbertas({ linhas, mes, soPecas, tot, dec, deptName, semServicos, modo = "ver" }: { modo?: "ver" | "importar"; linhas: Linha[]; mes: string; soPecas: (n: string) => boolean; tot: number; dec: number; deptName: (id: string | null) => string; semServicos: (nome: string) => boolean }) {
   const store = `os-abertas-${mes}`;
   const [os, setOs] = useState<Os>({});
   const [txt, setTxt] = useState("");
@@ -209,9 +209,7 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec, deptName, semServico
     };
   });
 
-  return (
-    <div className="space-y-6">
-      <h2 className="text-lg font-semibold">Projeção com OS abertas — {mes}</h2>
+  const importBox = <div className="print:hidden"><Box title="Importar OS abertas (Excel ou colar)"> — {mes}</h2>
       <p className="text-sm text-muted-foreground">Faturado (dados já importados) + ordens de serviço abertas que ainda serão faturadas. Não altera as outras abas.</p>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Kpi label="Realizado Serviços Total" value={brl(ts)} sub={`Meta ${brl(g.ms)} · ${pct(div(ts, g.ms))}`} cls={tone(div(ts, g.ms))} />
