@@ -1,3 +1,4 @@
+import { TecnicosMetas } from "@/components/TecnicosMetas";
 import { createFileRoute } from "@tanstack/react-router";
 import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
@@ -751,6 +752,7 @@ function Config({ params, salvarParams, depts, cons, goals, mes, reload, deptNam
         <p className="text-xs text-muted-foreground">As metas são salvas ao sair do campo e valem para o mês selecionado no topo.</p>
       </section>
       </div>
+      <TecnicosMetas mes={mes} />
     </div>
   );
 }
