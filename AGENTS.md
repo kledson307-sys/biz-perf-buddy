@@ -23,7 +23,7 @@
 - System codes are matched ignoring spaces and case (`normCod`); code lists are split only on comma/semicolon/newline because some codes contain spaces.
 - AI calls go through Lovable AI Gateway from server-only helpers in `src/lib/ai/*.server.ts`, invoked by auth-protected `createServerFn`s in `src/lib/*.functions.ts`; the browser sends computed stats, never the key.
 - Main sales Excel/paste parsing lives in `src/lib/sales-report.ts` and the import UI in `SalesImport`; match seller login before full name to preserve existing consultant identities.
-- Render SalesImport inside the Painel tab, excluded from print reports; freshness actions open the import tab for the missing data source.
+- All daily imports (sales, open O.S., technicians, agregados) render only in the Importações tab via each component's `modo="importar"`; result tabs stay read-only and Controle O.S. keeps its own weekly import.
 - Derive tab freshness from month-scoped update_log records using shared update-status helpers; sales views share their source, Projeção + OS requires both sales and open orders, and Controle O.S. uses its weekly cadence so unrelated imports never clear alerts.
 - Cumulative main-sales reports use the authenticated SECURITY INVOKER `import_sales_period` RPC to replace included consultants' period atomically and store totals on the final day; period totals cannot reconstruct daily sales.
 - Brand primary and performance colors use independent semantic tokens so changing the brand never changes success/warning thresholds.
