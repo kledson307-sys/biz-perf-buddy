@@ -81,9 +81,11 @@ export function lerRanking(rows: Cell[][]): Relatorio {
   });
   if (li >= 0) return lerLista(rows, li);
   let periodo: Relatorio["periodo"] = null;
-  for (const r of rows) for (const c of r) {
-    const m = txt(c).match(/(\d{2})\/(\d{2})\/(\d{4})\s*a\s*(\d{2})\/(\d{2})\/(\d{4})/);
-    if (m && /per[ií]odo/i.test(txt(c))) { periodo = { ini: `${m[3]}-${m[2]}-${m[1]}`, fim: `${m[6]}-${m[5]}-${m[4]}` }; break; }
+  // Procura duas datas (DD/MM/AAAA, aceitando "a", "até", "-") na mesma linha do cabeçalho, mesmo em células separadas.
+  for (const r of rows.slice(0, 15)) {
+    const linha = r.map(txt).join(" ");
+    const ds = [...linha.matchAll(/(\d{1,2})\/(\d{1,2})\/(\d{4})/g)].map((m) => `${m[3]}-${m[2]!.padStart(2, "0")}-${m[1]!.padStart(2, "0")}`);
+    if (ds.length >= 2 && (/per[ií]odo|\bat[eé]\b|\sa\s/i.test(linha))) { periodo = { ini: ds[0]!, fim: ds[1]! }; break; }
   }
   const hi = rows.findIndex((r) => r.some((c) => norm(txt(c)) === "rank") && r.some((c) => /^qtde?\.?$|^quantidade$/.test(norm(txt(c)))));
   if (hi < 0) throw new Error('Não encontrei o cabeçalho do relatório (ranking com "Rank", "Serviço"/"Peça", "Qtde", "Bruto", ou lista de itens com "Cód. Item", "Quantidade", "Preço Final", "Vendedor").');
