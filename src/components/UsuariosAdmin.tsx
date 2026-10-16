@@ -7,7 +7,7 @@ import { redefinirSenhaUsuario } from "@/lib/usuarios.functions";
 
 type M = { id: string; email: string; papel: string; consultant_id: string | null };
 type C = { id: string; nome: string };
-const PAPEIS: Record<string, string> = { vendedor: "Vendedor", editor: "Editor", viewer: "Visualizador" };
+const PAPEIS: Record<string, string> = { vendedor: "Vendedor", tecnico: "Técnico", editor: "Editor", viewer: "Visualizador" };
 
 export function UsuariosAdmin({ lista, cons, onChange }: { lista: M[]; cons: C[]; onChange: () => void }) {
   const [busca, setBusca] = useState("");
@@ -49,6 +49,7 @@ export function UsuariosAdmin({ lista, cons, onChange }: { lista: M[]; cons: C[]
                   <select className="h-8 rounded-md border bg-background px-2" value={m.papel}
                     onChange={(e) => {
                       const p = e.target.value;
+                      if (p === "tecnico") return setMsg("Para criar acesso de técnico, use o bloco Acesso dos técnicos.");
                       if (p === "vendedor" && !m.consultant_id) return setMsg("Para virar vendedor, escolha o vendedor ligado primeiro (crie o acesso em Acesso dos vendedores).");
                       void upd(m.id, { papel: p, consultant_id: p === "vendedor" ? m.consultant_id : null });
                     }}>

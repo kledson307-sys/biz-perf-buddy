@@ -519,6 +519,7 @@ export type Database = {
           id: string
           owner_id: string
           papel: string
+          tecnico_nome: string | null
         }
         Insert: {
           consultant_id?: string | null
@@ -527,6 +528,7 @@ export type Database = {
           id?: string
           owner_id?: string
           papel?: string
+          tecnico_nome?: string | null
         }
         Update: {
           consultant_id?: string | null
@@ -535,6 +537,7 @@ export type Database = {
           id?: string
           owner_id?: string
           papel?: string
+          tecnico_nome?: string | null
         }
         Relationships: [
           {
@@ -584,6 +587,7 @@ export type Database = {
         Args: { p_fim: string; p_ini: string; p_rows: Json }
         Returns: number
       }
+      meu_desempenho_tecnico: { Args: { p_mes: string }; Returns: Json }
       minha_performance: { Args: { p_mes: string }; Returns: Json }
       minhas_os: { Args: never; Returns: Json }
       registrar_retorno: {

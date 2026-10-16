@@ -38,3 +38,4 @@
 - [ ] Lucro das peças em R$ ao lado da margem %.
 - [ ] Produtividade dos técnicos: horas disponíveis x horas vendidas, carro e moto separados.
 - [ ] Prazo prometido x prazo entregue: atrasos por consultor e motivo.
+- Acesso de técnicos: concluído\n- Relatório de acessos em Configurar: pendente

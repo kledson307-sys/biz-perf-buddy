@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Box } from "@/components/painel-ui";
 import { criarAcessoVendedor } from "@/lib/vendedores.functions";
 import { UsuariosAdmin } from "@/components/UsuariosAdmin";
+import { AcessoTecnicos } from "@/components/AcessoTecnicos";
 
 type M = { id: string; email: string; papel: string; owner_id: string; consultant_id: string | null };
 type C = { id: string; nome: string };
@@ -71,12 +72,13 @@ export function Equipe() {
   };
 
   const nomeCons = (id: string | null) => cons.find((c) => c.id === id)?.nome ?? "—";
-  const gestores = lista.filter((m) => m.papel !== "vendedor");
+  const gestores = lista.filter((m) => m.papel !== "vendedor" && m.papel !== "tecnico");
   const vendedores = lista.filter((m) => m.papel === "vendedor");
 
   return (
     <div className="space-y-4">
       <UsuariosAdmin lista={lista} cons={cons} onChange={() => void load()} />
+      <AcessoTecnicos lista={lista} onChange={() => void load()} />
       <Box title="Acesso dos vendedores (cada um vê só a sua performance)">
         <div className="p-5">
           <p className="mb-3 text-sm text-muted-foreground">

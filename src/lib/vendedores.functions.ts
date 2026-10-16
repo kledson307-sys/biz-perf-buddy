@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-type In = { consultantId: string; email: string; senha: string };
+type In = { consultantId?: string; tecnicoNome?: string; email: string; senha: string };
 
 /** Dono do painel cria (ou redefine a senha de) um acesso de vendedor ligado a um consultor. */
 export const criarAcessoVendedor = createServerFn({ method: "POST" })
@@ -11,7 +11,9 @@ export const criarAcessoVendedor = createServerFn({ method: "POST" })
     const senha = String(d.senha ?? "");
     if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error("E-mail inválido.");
     if (senha.length < 6) throw new Error("A senha precisa ter pelo menos 6 caracteres.");
-    return { consultantId: String(d.consultantId), email, senha };
+    const tecnicoNome = d.tecnicoNome ? String(d.tecnicoNome).trim().toUpperCase() : "";
+    if (!tecnicoNome && !d.consultantId) throw new Error("Escolha a pessoa.");
+    return { consultantId: tecnicoNome ? "" : String(d.consultantId), tecnicoNome, email, senha };
   })
   .handler(async ({ data, context }) => {
     const { supabase, userId, claims } = context;
@@ -20,8 +22,13 @@ export const criarAcessoVendedor = createServerFn({ method: "POST" })
     // Só o dono do painel (quem não é membro de equipe) pode criar acessos.
     const { data: membro } = await supabase.from("team_members").select("id").ilike("email", meuEmail).maybeSingle();
     if (membro) throw new Error("Só o dono do painel pode criar acessos.");
-    const { data: cons } = await supabase.from("consultants").select("id").eq("id", data.consultantId).eq("user_id", userId).maybeSingle();
-    if (!cons) throw new Error("Consultor não encontrado.");
+    if (data.tecnicoNome) {
+      const { data: t } = await supabase.from("mech_month").select("id").eq("user_id", userId).ilike("nome", data.tecnicoNome).limit(1);
+      if (!t?.length) throw new Error("Técnico não encontrado.");
+    } else {
+      const { data: cons } = await supabase.from("consultants").select("id").eq("id", data.consultantId).eq("user_id", userId).maybeSingle();
+      if (!cons) throw new Error("Consultor não encontrado.");
+    }
 
     const { data: outro } = await supabase.from("team_members").select("id,owner_id").ilike("email", data.email).maybeSingle();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -43,7 +50,9 @@ export const criarAcessoVendedor = createServerFn({ method: "POST" })
       const up = await supabaseAdmin.auth.admin.updateUserById(id, { password: data.senha, email_confirm: true });
       if (up.error) throw new Error("Não foi possível atualizar a senha.");
     }
-    const row = { email: data.email, papel: "vendedor", consultant_id: data.consultantId };
+    const row: { email: string; papel: string; consultant_id: string | null; tecnico_nome: string | null } = data.tecnicoNome
+      ? { email: data.email, papel: "tecnico", consultant_id: null, tecnico_nome: data.tecnicoNome }
+      : { email: data.email, papel: "vendedor", consultant_id: data.consultantId, tecnico_nome: null };
     const r = outro
       ? await supabase.from("team_members").update(row).eq("id", outro.id)
       : await supabase.from("team_members").insert(row);
