@@ -34,3 +34,6 @@
 - Installable "app version" is manifest-only (`public/manifest.webmanifest` + PNG icons in `public/icons/`, head tags in `__root.tsx`); never add a service worker or `vite-plugin-pwa` so Lovable previews stay safe.
 - Seller logins: team_members papel 'vendedor' + consultant_id; data_owner() returns NULL for them so all table reads are blocked, and they read only their own stats via the SECURITY DEFINER minha_performance RPC (ranking without colleagues' values). Accounts are created by the owner through the criarAcessoVendedor server function.
 - Technician logins use team_members papel 'tecnico' + tecnico_nome; data_owner() is NULL for them and they read only via SECURITY DEFINER meu_desempenho_tecnico RPC.
+- Judicial O.S. are flagged in `os_acompanhamento.acoes.__judicial` (helpers in `os-controle.ts`); they are treated as status judicial and excluded from the Painel warning, the bell and the seller `minhas_os` RPC.
+- User access frequency is recorded once per user/day via the SECURITY DEFINER `registrar_acesso` RPC into `access_log` (owner-scoped), shown in Configurar.
+- Open-order import accepts only the homologated O.S. types in `TIPOS_OK` (`OsAbertas.tsx`) and applies seller aliases.
