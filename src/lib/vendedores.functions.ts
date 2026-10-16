@@ -50,7 +50,7 @@ export const criarAcessoVendedor = createServerFn({ method: "POST" })
       const up = await supabaseAdmin.auth.admin.updateUserById(id, { password: data.senha, email_confirm: true });
       if (up.error) throw new Error("Não foi possível atualizar a senha.");
     }
-    const row = data.tecnicoNome
+    const row: { email: string; papel: string; consultant_id: string | null; tecnico_nome: string | null } = data.tecnicoNome
       ? { email: data.email, papel: "tecnico", consultant_id: null, tecnico_nome: data.tecnicoNome }
       : { email: data.email, papel: "vendedor", consultant_id: data.consultantId, tecnico_nome: null };
     const r = outro
