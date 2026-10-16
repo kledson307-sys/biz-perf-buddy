@@ -104,9 +104,6 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
         <GrupoView g={sub} stat={stat} ranking={ranking} ids={consAgg.map((c) => c.id)} deptName={deptName} rest={rest} sales={sales} />
       )}
       {sub === "ia" && <AgregadosIA mes={mes} cons={consAgg} tot={tot} dec={dec} stat={stat} deptName={deptName} />}
-      {false && (
-        <Lancar cons={cons} allCons={allCons} sales={sales} visits={visits} ini={ini} end={end} onDone={() => { load(); reloadCons(); }} />
-      )}
       {sub === "metas" && <Metas cons={consAgg} goals={goals} mes={mes} deptName={deptName} onSaved={load} />}
     </div>
   );
