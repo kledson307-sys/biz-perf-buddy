@@ -625,6 +625,7 @@ export type Database = {
         Args: { p_data: string; p_nota: string; p_os: string }
         Returns: undefined
       }
+      sou_editor_de: { Args: { p_owner: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
