@@ -72,6 +72,7 @@ function Index() {
   useEffect(() => {
     if (!session) { setPapel(undefined); return; }
     supabase.from("team_members").select("papel").ilike("email", email).maybeSingle().then(({ data }) => setPapel(data?.papel ?? null));
+    void supabase.rpc("registrar_acesso");
   }, [session, email]);
   if (!ready || (session && papel === undefined)) return <div className="p-10 text-center text-muted-foreground">Carregando…</div>;
   if (!session) return <Login />;
@@ -660,6 +661,7 @@ function Painel({ email }: { email: string }) {
           </Box>
         )}
         {show("agregados") && <Secao relatorio={relatorio} titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} /></Secao>}
+        {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} /></Secao>}
         {tab === "controle-os" && <ControleOS />}
         {tab === "importacoes" && !relatorio && <div className="space-y-6 print:hidden">
           <div>
@@ -675,7 +677,6 @@ function Painel({ email }: { email: string }) {
           <section className="space-y-3"><h3 className="font-semibold">4. Agregados — vendas de itens e passagens <span className="text-xs font-normal text-muted-foreground">— alimenta Agregados</span></h3>
             <Agregados modo="importar" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section>
         </div>}
-        {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} /></Secao>}
         {tab === "config" && <div className="space-y-6"><Equipe /><Config params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div>}
       </main>
     </div>

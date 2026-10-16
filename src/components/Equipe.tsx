@@ -6,6 +6,7 @@ import { Box } from "@/components/painel-ui";
 import { criarAcessoVendedor } from "@/lib/vendedores.functions";
 import { UsuariosAdmin } from "@/components/UsuariosAdmin";
 import { AcessoTecnicos } from "@/components/AcessoTecnicos";
+import { AcessosUsuarios } from "@/components/AcessosUsuarios";
 
 type M = { id: string; email: string; papel: string; owner_id: string; consultant_id: string | null };
 type C = { id: string; nome: string };
@@ -77,6 +78,7 @@ export function Equipe() {
 
   return (
     <div className="space-y-4">
+      <AcessosUsuarios />
       <UsuariosAdmin lista={lista} cons={cons} onChange={() => void load()} />
       <AcessoTecnicos lista={lista} onChange={() => void load()} />
       <Box title="Acesso dos vendedores (cada um vê só a sua performance)">
