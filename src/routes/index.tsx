@@ -16,6 +16,7 @@ import { Notificacoes } from "@/components/Notificacoes";
 import { Mecanicos } from "@/components/Mecanicos";
 import { Equipe } from "@/components/Equipe";
 import { MinhaPerformance } from "@/components/MinhaPerformance";
+import { MeuDesempenhoTecnico } from "@/components/MeuDesempenhoTecnico";
 import { RankingMobile } from "@/components/RankingMobile";
 import { MetasAno } from "@/components/MetasAno";
 import { AnaliseFechamento, Reconhecimento } from "@/components/RelatorioAnalise";
@@ -74,6 +75,7 @@ function Index() {
   }, [session, email]);
   if (!ready || (session && papel === undefined)) return <div className="p-10 text-center text-muted-foreground">Carregando…</div>;
   if (!session) return <Login />;
+  if (papel === "tecnico") return <MeuDesempenhoTecnico />;
   return papel === "vendedor" ? <MinhaPerformance /> : <Painel email={email} />;
 }
 
