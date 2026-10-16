@@ -125,6 +125,7 @@ export function analisar(item: OsItem, anterior: OsImport | undefined, ref: stri
       acoes = ["Faturar a O.S. hoje ou registrar o motivo do bloqueio", "Conferir pendências com o financeiro (crédito, pagamento, nota)", "Encerrar no sistema para não inflar as O.S. abertas"];
       break;
     case "garantia":
+    case "autorizacao":
       if (semMudanca && diasStatus >= 15) alertas.push({ nivel: "medio", texto: `Aguardando autorização há ${diasStatus} dias.` });
       acoes = ["Cobrar a autorização com a montadora/garantia", "Conferir se toda a documentação do processo foi enviada", "Faturar assim que autorizado"];
       break;
