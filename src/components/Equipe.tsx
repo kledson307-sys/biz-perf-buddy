@@ -40,12 +40,15 @@ export function Equipe() {
 
   if (meu) {
     return (
-      <Box title="Equipe">
-        <p className="p-5 text-sm text-muted-foreground">
-          Você acessa o painel compartilhado como <b>{meu.papel === "editor" ? "Editor" : "Visualizador"}</b>.
-          {meu.papel !== "editor" && " Você pode ver tudo, mas não alterar dados."}
-        </p>
-      </Box>
+      <div className="space-y-4">
+        {meu.papel === "editor" && <AcessosUsuarios />}
+        <Box title="Equipe">
+          <p className="p-5 text-sm text-muted-foreground">
+            Você acessa o painel compartilhado como <b>{meu.papel === "editor" ? "Editor" : "Visualizador"}</b>.
+            {meu.papel !== "editor" && " Você pode ver tudo, mas não alterar dados."}
+          </p>
+        </Box>
+      </div>
     );
   }
 
