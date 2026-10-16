@@ -65,7 +65,7 @@ export function AgregadosIA({ mes, cons, tot, dec, stat, deptName }: {
             </tr>
           ))}
         </Tabela>
-        <p className="px-4 py-3 text-xs text-muted-foreground">Resultados e passagens vêm de "Importar Excel" e "Lançar / colar"; as metas, de "Metas". Atualize lá antes de gerar as recomendações.</p>
+        <p className="px-4 py-3 text-xs text-muted-foreground">Resultados e passagens vêm da aba "Importações"; as metas, de "Metas". Atualize lá antes de gerar as recomendações.</p>
       </Box>
 
       <section className="space-y-4 rounded-xl border border-border bg-card p-6 print:hidden">

@@ -17,7 +17,7 @@ type Props = {
 };
 
 export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, relatorio, modo = "ver" }: Props & { modo?: "ver" | "importar" }) {
-  const [sub, setSub] = useState<"servicos" | "pecas" | "ia" | "importar" | "lancar" | "metas">("servicos");
+  const [sub, setSub] = useState<"servicos" | "pecas" | "ia" | "importar" | "metas">("servicos");
   const [sales, setSales] = useState<ASale[]>([]);
   const [goals, setGoals] = useState<AGoal[]>([]);
   const [visits, setVisits] = useState<AVisit[]>([]);
@@ -104,9 +104,6 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
         <GrupoView g={sub} stat={stat} ranking={ranking} ids={consAgg.map((c) => c.id)} deptName={deptName} rest={rest} sales={sales} />
       )}
       {sub === "ia" && <AgregadosIA mes={mes} cons={consAgg} tot={tot} dec={dec} stat={stat} deptName={deptName} />}
-      {false && (
-        <Lancar cons={cons} allCons={allCons} sales={sales} visits={visits} ini={ini} end={end} onDone={() => { load(); reloadCons(); }} />
-      )}
       {sub === "metas" && <Metas cons={consAgg} goals={goals} mes={mes} deptName={deptName} onSaved={load} />}
     </div>
   );
@@ -264,125 +261,6 @@ function RankTable({ title, rows, deptName, sales, items }: { title: string; row
   );
 }
 
-type Draft = Record<string, Record<string, number>>;
-
-function Lancar({ cons, allCons, sales, visits, ini, end, onDone }: {
-  cons: Cons[]; allCons: Cons[]; sales: ASale[]; visits: AVisit[]; ini: string; end: string; onDone: () => void;
-}) {
-  const hoje = new Date().toISOString().slice(0, 10);
-  const [dia, setDia] = useState(hoje >= ini && hoje <= end ? hoje : ini);
-  const [draft, setDraft] = useState<Draft>({});
-  const [txt, setTxt] = useState("");
-  const [msg, setMsg] = useState("");
-
-  useEffect(() => {
-    const d: Draft = {};
-    for (const s of sales) if (s.dia === dia) { const r = (d[s.consultant_id] ??= {}); r[`${s.item}_q`] = (r[`${s.item}_q`] ?? 0) + s.qtd; r[`${s.item}_v`] = (r[`${s.item}_v`] ?? 0) + s.valor; }
-    for (const v of visits) if (v.dia === dia) (d[v.consultant_id] ??= {})["pass"] = v.passagens;
-    setDraft(d);
-  }, [dia, sales, visits]);
-
-  const salvar = async (d: Draft) => {
-    setMsg("Salvando…");
-    const ids = Object.keys(d);
-    const sRows = ids.flatMap((cid) => ITENS.map((it) => ({ consultant_id: cid, dia, item: it.k, qtd: d[cid]![`${it.k}_q`] ?? 0, valor: d[cid]![`${it.k}_v`] ?? 0 })));
-    const vRows = ids.map((cid) => ({ consultant_id: cid, dia, passagens: d[cid]!["pass"] ?? 0 }));
-    const [a, b] = await Promise.all([
-      sRows.length ? supabase.from("agg_sales").upsert(sRows, { onConflict: "consultant_id,dia,item,codigo" }) : Promise.resolve({ error: null }),
-      vRows.length ? supabase.from("agg_visits").upsert(vRows, { onConflict: "consultant_id,dia" }) : Promise.resolve({ error: null }),
-    ]);
-    const err = a.error || b.error;
-    if (err) return setMsg("Erro ao salvar: " + err.message);
-    setMsg(`${ids.length} consultores salvos para ${dia.split("-").reverse().join("/")}.`);
-    if (ids.length) await registrarUpdate("Agregados (lançamento)", dia.slice(0, 7));
-    onDone();
-  };
-
-  const set = (cid: string, k: string, v: number) => setDraft({ ...draft, [cid]: { ...(draft[cid] ?? {}), [k]: v } });
-
-  const importar = async () => {
-    const lines = txt.split(/\r?\n/).filter((l) => l.trim());
-    if (lines.length < 2) return setMsg("Cole o cabeçalho e ao menos uma linha.");
-    const sep = lines[0]!.includes("\t") ? "\t" : ";";
-    const head = lines[0]!.split(sep).map(norm);
-    const ci = head.findIndex((h) => /consult|vendedor|nome|colaborador/.test(h));
-    const pi = head.findIndex((h) => /passag|atendim|ordens|^os$|^o\.s/.test(h));
-    const cols = head.map((h, j) => {
-      const it = ITENS.find((i) => i.re.test(h));
-      return it ? { j, key: `${it.k}_${/r\$|valor|vlr|fatur/.test(h) ? "v" : "q"}` } : null;
-    }).filter((x): x is { j: number; key: string } => !!x);
-    if (ci < 0 || cols.length === 0) return setMsg("O cabeçalho precisa ter Consultor e ao menos um item (Limpar, Alinhamento, Oxi, Brazzo, Tunap).");
-    const cmap = new Map(allCons.map((c) => [norm(c.nome), c.id]));
-    const d: Draft = {};
-    for (const l of lines.slice(1)) {
-      const c = l.split(sep);
-      const nome = (c[ci] || "").trim();
-      if (!nome || /^total/i.test(nome)) continue;
-      let id = cmap.get(norm(nome));
-      if (!id) {
-        const { data } = await supabase.from("consultants").insert({ nome }).select("id").single();
-        if (!data) continue;
-        id = data.id; cmap.set(norm(nome), id);
-      }
-      const r = (d[id] ??= {});
-      if (pi >= 0) r["pass"] = (r["pass"] ?? 0) + parseNum(c[pi] ?? "");
-      for (const col of cols) r[col.key] = (r[col.key] ?? 0) + parseNum(c[col.j] ?? "");
-    }
-    await salvar(d);
-    setTxt("");
-  };
-
-  const inp = "w-16 rounded border border-input bg-background px-2 py-1 text-right";
-  return (
-    <div className="space-y-6">
-      <Box title="Lançamento do dia" right={
-        <div className="flex items-center gap-2">
-          <input type="date" value={dia} min={ini} max={end} onChange={(e) => setDia(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm" />
-          <button onClick={() => salvar(Object.fromEntries(cons.map((c) => [c.id, draft[c.id] ?? {}])))} className="rounded-lg bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground">Salvar dia</button>
-        </div>
-      }>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted text-xs uppercase text-muted-foreground">
-              <tr>
-                <th className="px-3 py-2 text-left" rowSpan={2}>Consultor</th>
-                <th className="px-3 py-2" rowSpan={2}>Passagens</th>
-                {ITENS.map((it) => <th key={it.k} colSpan={2} className="border-l border-border px-3 py-2">{it.nome}</th>)}
-              </tr>
-              <tr>{ITENS.map((it) => [<th key={it.k + "q"} className="border-l border-border px-2 py-1">Qtd</th>, <th key={it.k + "v"} className="px-2 py-1">R$</th>])}</tr>
-            </thead>
-            <tbody>
-              {cons.length === 0 && <tr><td colSpan={12} className="px-3 py-8 text-center text-muted-foreground">Cadastre consultores em "Configurar".</td></tr>}
-              {cons.map((c) => {
-                const r = draft[c.id] ?? {};
-                return (
-                  <tr key={c.id} className="border-t border-border">
-                    <td className="whitespace-nowrap px-3 py-2 font-medium">{c.nome}</td>
-                    <td className="px-2 py-1 text-center"><input type="number" value={r["pass"] || ""} onChange={(e) => set(c.id, "pass", +e.target.value)} className={inp} /></td>
-                    {ITENS.map((it) => [
-                      <td key={it.k + "q"} className="border-l border-border px-2 py-1"><input type="number" value={r[`${it.k}_q`] || ""} onChange={(e) => set(c.id, `${it.k}_q`, +e.target.value)} className={inp} /></td>,
-                      <td key={it.k + "v"} className="px-2 py-1"><input type="number" value={r[`${it.k}_v`] || ""} onChange={(e) => set(c.id, `${it.k}_v`, +e.target.value)} className={`${inp} w-20`} /></td>,
-                    ])}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        {msg && <p className="px-4 py-3 text-sm text-muted-foreground">{msg}</p>}
-      </Box>
-
-      <section className="space-y-3 rounded-xl border border-border bg-card p-6">
-        <h3 className="font-semibold">Colar da planilha (agregados do dia {dia.split("-").reverse().join("/")})</h3>
-        <p className="text-sm text-muted-foreground">
-          Copie do Excel <b>incluindo o cabeçalho</b>. Colunas: <b>Consultor</b>, <b>Passagens</b> (opcional) e os itens pelo nome — <b>Limpar</b>, <b>Alinhamento</b>, <b>Oxi</b>, <b>Brazzo</b>, <b>Tunap</b> para quantidade, e o mesmo nome com <b>R$</b> ou <b>Valor</b> para o valor (ex.: "Brazzo R$"). Colar de novo na mesma data substitui aquele dia.
-        </p>
-        <textarea value={txt} onChange={(e) => setTxt(e.target.value)} rows={8} placeholder={"Consultor\tPassagens\tLimpar\tLimpar R$\tAlinhamento\tOxi\tBrazzo\tBrazzo R$\tTunap\tTunap R$\nJoão\t12\t3\t450,00\t2\t1\t4\t320,00\t2\t180,00"} className="w-full rounded-lg border border-input bg-background p-3 font-mono text-xs" />
-        <button onClick={importar} className="rounded-lg bg-primary px-5 py-2 font-medium text-primary-foreground">Salvar colagem</button>
-      </section>
-    </div>
-  );
-}
 
 function Metas({ cons, goals, mes, deptName, onSaved }: { cons: Cons[]; goals: AGoal[]; mes: string; deptName: (id: string | null) => string; onSaved: () => void }) {
   const [m, setM] = useState<Record<string, { q: number; v: number }>>({});

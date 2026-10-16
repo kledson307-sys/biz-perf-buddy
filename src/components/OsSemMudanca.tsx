@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { analisar, hoje, STATUS, type OsImport, type OsItem } from "@/lib/os-controle";
+import { analisar, ehJudicial, hoje, STATUS, type OsImport, type OsItem } from "@/lib/os-controle";
 import { norm } from "@/components/painel-ui";
 import { nomeVendedor } from "@/lib/sales-report";
 import { NOTIFICATIONS_EVENT } from "@/components/Notificacoes";
@@ -13,10 +13,15 @@ export function OsSemMudanca({ cons, deptName, abrir }: {
 }) {
   const [imports, setImports] = useState<OsImport[]>([]);
   const [error, setError] = useState(false);
+  const [judiciais, setJudiciais] = useState<Set<string>>(new Set());
   useEffect(() => {
     let active = true;
     const load = async () => {
-      const result = await supabase.from("os_imports").select("id,at,nome,arquivo,itens").order("at", { ascending: false }).limit(2);
+      const [result, ac] = await Promise.all([
+        supabase.from("os_imports").select("id,at,nome,arquivo,itens").order("at", { ascending: false }).limit(2),
+        supabase.from("os_acompanhamento").select("os_n,acoes"),
+      ]);
+      if (active && !ac.error) setJudiciais(new Set((ac.data ?? []).filter(x => ehJudicial(x.acoes)).map(x => x.os_n)));
       if (!active) return;
       setError(Boolean(result.error));
       if (!result.error) setImports((result.data ?? []).map(i => ({ ...i, itens: i.itens as unknown as OsItem[] })));
@@ -36,7 +41,7 @@ export function OsSemMudanca({ cons, deptName, abrir }: {
   if (error) return <p role="status" className="my-4 text-sm text-destructive print:hidden">Não foi possível conferir as O.S. sem mudança.</p>;
   const anterior = imports[1];
   if (!anterior) return null;
-  const paradas = (imports[0]?.itens ?? []).map(i => analisar(i, anterior, hoje())).filter(a => a.semMudanca);
+  const paradas = (imports[0]?.itens ?? []).map(i => analisar(i, anterior, hoje())).filter(a => a.semMudanca && a.item.st !== "judicial" && !judiciais.has(a.item.n));
   if (!paradas.length) return null;
   const chave = (s: string) => norm(nomeVendedor(s)).replace(/\s+/g, "");
   return (

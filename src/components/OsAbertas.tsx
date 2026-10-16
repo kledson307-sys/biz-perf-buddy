@@ -2,7 +2,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Barra, Box, Kpi, Tabela, brl, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
-import { readSalesReport } from "@/lib/sales-report";
+import { nomeVendedor, readSalesReport } from "@/lib/sales-report";
 import { loadOpenOrders, saveOpenOrders, type OpenOrders } from "@/lib/open-orders.functions";
 import { registrarUpdate } from "@/lib/update-log";
 
@@ -22,6 +22,8 @@ const toNum = (v: unknown) => {
 
 // Tipos de O.S. que entram com apenas 30% do valor na projeção.
 const TIPOS_30 = new Set(["c4", "mg", "ng"]);
+// Únicos tipos de O.S. considerados na importação; os demais são ignorados.
+export const TIPOS_OK = new Set(["ac", "bs", "c4", "c7", "cf", "c5", "mc", "mf", "ms", "mg", "nc", "n7", "n5", "nf", "ng"]);
 
 // Relatório "O.S. Abertas" em tabela (Número, Tipo, Recep., Serv. Líquido, Itens Líquido…).
 export function lerOsTabela(raw: unknown[][]): { nome: string; servicos: number; pecas: number }[] | null {
@@ -42,13 +44,15 @@ export function lerOsTabela(raw: unknown[][]): { nome: string; servicos: number;
   };
   const res: { nome: string; servicos: number; pecas: number }[] = [];
   for (const r of raw.slice(h + 1)) {
-    const nome = String(r[cR] ?? "").trim();
+    const nome = nomeVendedor(String(r[cR] ?? ""));
     if (!nome || !OS_PERMITIDOS.has(norm(nome))) continue;
+    const tipo = norm(String(r[cT] ?? "")).trim();
+    if (cT >= 0 && !TIPOS_OK.has(tipo)) continue;
     if (norm(nome) === "geovana.m" && cE >= 0) {
       const d = dataEmissao(r[cE]);
       if (d === null || d < GEO_MIN) continue;
     }
-    const f = TIPOS_30.has(norm(String(r[cT] ?? "")).trim()) ? 0.3 : 1;
+    const f = TIPOS_30.has(tipo) ? 0.3 : 1;
     res.push({ nome, servicos: num(r[cS]) * f, pecas: num(r[cP]) * f });
   }
   return res.length ? res : null;
@@ -72,7 +76,7 @@ function lerOsSistema(raw: unknown[][]): { nome: string; servicos: number; pecas
     let cons = "";
     for (let j = i + 1; j < Math.min(i + 5, raw.length); j++) {
       const v = String(raw[j]?.[off + 3] ?? "").trim();
-      if (v) { cons = v; break; }
+      if (v) { cons = nomeVendedor(v); break; }
     }
     if (!cons || !OS_PERMITIDOS.has(norm(cons))) continue;
     res.push({ nome: cons, servicos: toNum(raw[i]?.[off + 20]), pecas: toNum(raw[i]?.[off + 18]) });
@@ -212,7 +216,7 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec, deptName, semServico
   if (modo === "importar") return (
     <Box title="O.S. abertas (Excel ou colar) — alimenta Projeção + OS">
       <div className="p-4">
-        <p className="mb-3 text-sm text-muted-foreground">Aceita o relatório "O.S. Abertas" do sistema (peças e serviços separados) ou colar vendedor/serviços/peças. Só são considerados: P.BENIGNO, ANDRESSA.O, GILBERTO.S, WESLEY.F, RENAN.O, GEOVANA.M e MARCELA.S. Importar substitui as OS abertas do mês.</p>
+        <p className="mb-3 text-sm text-muted-foreground">Aceita o relatório "O.S. Abertas" do sistema (peças e serviços separados) ou colar vendedor/serviços/peças. Só entram os tipos AC, BS, C4, C7, CF, C5, MC, MF, MS, MG, NC, N7, N5, NF e NG (C4, MG e NG valem 30%). Só são considerados: P.BENIGNO, ANDRESSA.O, GILBERTO.S, WESLEY.F, RENAN.O, GEOVANA.M e MARCELA.S. Importar substitui as OS abertas do mês.</p>
         <div className="flex flex-wrap gap-2">
           <input ref={file} type="file" accept=".xls,.xlsx,.csv" className="hidden" onChange={(e) => void abrir(e.target.files?.[0])} />
           <Button disabled={loading || saving || !canEdit} onClick={() => file.current?.click()}><Upload />Importar Excel de OS abertas</Button>

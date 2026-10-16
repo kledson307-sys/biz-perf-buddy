@@ -43,6 +43,15 @@ export function AgregadosImport({ allCons, codigos, ini, end, onDone }: {
     ler(XLSX.utils.sheet_to_json<(string | number)[]>(ws, { header: 1, raw: true, defval: "" }), f.name);
   };
 
+  const zerar = async () => {
+    if (!window.confirm(`Apagar TODAS as vendas de agregados de ${br(ini)} a ${br(end)}? Passagens, metas e códigos não são apagados. Depois importe o relatório novamente.`)) return;
+    setSalvando(true);
+    const { error } = await supabase.from("agg_sales").delete().gte("dia", ini).lte("dia", end);
+    setMsg(error ? "Erro ao zerar: " + error.message : "Vendas de agregados do mês zeradas. Importe o relatório de novo.");
+    if (!error) onDone();
+    setSalvando(false);
+  };
+
   const salvar = async () => {
     if (!res) return;
     setSalvando(true); setMsg("Salvando…");
@@ -55,7 +64,9 @@ export function AgregadosImport({ allCons, codigos, ini, end, onDone }: {
         cmap.set(norm(l.nome), data.id);
       }
       const items = itensSubst.map((i) => i.k);
-      const del = await supabase.from("agg_sales").delete().in("item", items).gte("dia", periodo.ini).lte("dia", periodo.fim);
+      // Relatório acumulado: apaga do 1º dia do mês até o fim do período, para nunca somar importações antigas.
+      const delIni = rel?.porDia ? periodo.ini : [periodo.ini, periodo.fim.slice(0, 8) + "01"].sort()[0]!;
+      const del = await supabase.from("agg_sales").delete().in("item", items).gte("dia", delIni).lte("dia", periodo.fim);
       if (del.error) throw del.error;
       const rows = res.registros.map((l) => ({ consultant_id: cmap.get(norm(l.nome))!, dia: l.dia ?? periodo.fim, item: l.item, codigo: l.codigo ?? "", qtd: l.qtd, valor: l.valor }));
       if (rows.length) {
@@ -90,6 +101,7 @@ export function AgregadosImport({ allCons, codigos, ini, end, onDone }: {
             <input type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={(e) => { abrir(e.target.files?.[0]); e.target.value = ""; }} />
           </label>
           {arquivo && <span className="text-sm text-muted-foreground">{arquivo}</span>}
+          <button onClick={zerar} disabled={salvando} className="rounded-lg border border-destructive px-4 py-2 text-sm font-medium text-destructive disabled:opacity-50">Zerar vendas de agregados do mês</button>
         </div>
         <details className="text-sm">
           <summary className="cursor-pointer text-muted-foreground">Ou colar o relatório copiado do Excel</summary>

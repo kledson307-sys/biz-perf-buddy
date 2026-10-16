@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_log: {
+        Row: {
+          dia: string
+          email: string
+          id: string
+          primeiro_at: string
+          ultimo_at: string
+          user_id: string
+          vezes: number
+        }
+        Insert: {
+          dia?: string
+          email: string
+          id?: string
+          primeiro_at?: string
+          ultimo_at?: string
+          user_id: string
+          vezes?: number
+        }
+        Update: {
+          dia?: string
+          email?: string
+          id?: string
+          primeiro_at?: string
+          ultimo_at?: string
+          user_id?: string
+          vezes?: number
+        }
+        Relationships: []
+      }
       agg_codes: {
         Row: {
           codigos: string
@@ -590,6 +620,7 @@ export type Database = {
       meu_desempenho_tecnico: { Args: { p_mes: string }; Returns: Json }
       minha_performance: { Args: { p_mes: string }; Returns: Json }
       minhas_os: { Args: never; Returns: Json }
+      registrar_acesso: { Args: never; Returns: undefined }
       registrar_retorno: {
         Args: { p_data: string; p_nota: string; p_os: string }
         Returns: undefined
