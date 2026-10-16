@@ -19,7 +19,7 @@
 - Shared dashboard formatters and UI primitives live in `src/components/painel-ui.tsx`; import from there instead of redefining them in routes.
 - Agregados data lives in its own tables (`agg_sales`, `agg_goals`, `agg_visits`) and its own component; never mix it into `daily_sales`/`goals` totals — the user tracks it separately.
 - Agregados item catalogue (`ITENS`, with default system service codes) and the system-report parser live in `src/lib/agregados.ts`; adding an item only requires a new entry there. User-edited codes per item are stored in `agg_codes` and override the defaults.
-- Agregados Excel import replaces only the item group (serviços or peças) found in the report for the whole report period; ranking reports store the period total on its last day, item-list reports (one row per sale) store each sale on its own day — so re-importing never double-counts and importing one group never wipes the other.
+- Agregados import replaces only the item group in the report, from month start for cumulative ranking reports (total on last day) or per sale day for item lists, so re-imports never double-count.
 - System codes are matched ignoring spaces and case (`normCod`); code lists are split only on comma/semicolon/newline because some codes contain spaces.
 - AI calls go through Lovable AI Gateway from server-only helpers in `src/lib/ai/*.server.ts`, invoked by auth-protected `createServerFn`s in `src/lib/*.functions.ts`; the browser sends computed stats, never the key.
 - Main sales Excel/paste parsing lives in `src/lib/sales-report.ts` and the import UI in `SalesImport`; match seller login before full name to preserve existing consultant identities.
@@ -30,9 +30,9 @@
 - Team WhatsApp updates open wa.me links per consultant (manager sends manually) with AI tips from `whatsapp-ia.functions.ts`; no automated bulk sending.
 - Team sharing: all data tables default `user_id` to `data_owner()` (owner resolved via `team_members` by JWT email) and RLS uses `data_owner()`/`can_edit()`; never filter by `auth.uid()` directly so viewers/editors see the owner's data.
 - Controle de O.S. weekly imports are stored as full JSON snapshots in `os_imports`; status, "sem mudança" and days-in-status are derived by comparing with the previous snapshot (`src/lib/os-controle.ts`).
-- Main sales report aliases (NAILTON.R/THIERRY.S → NAILTON/THIERRY, GEOVANA.L → GEOVANA.M) live in `nomeVendedor` in `src/lib/sales-report.ts`; parts margin is stored as R$ in `daily_sales.margem_pecas` and % is always derived as margem ÷ peças so totals aggregate correctly.
+- Seller aliases live in `nomeVendedor` (`src/lib/sales-report.ts`); parts margin stored in R$, % always derived as margem ÷ peças.
 - Installable "app version" is manifest-only (`public/manifest.webmanifest` + PNG icons in `public/icons/`, head tags in `__root.tsx`); never add a service worker or `vite-plugin-pwa` so Lovable previews stay safe.
-- Seller logins: team_members papel 'vendedor' + consultant_id; data_owner() returns NULL for them so all table reads are blocked, and they read only their own stats via the SECURITY DEFINER minha_performance RPC (ranking without colleagues' values). Accounts are created by the owner through the criarAcessoVendedor server function.
+- Seller logins: team_members papel 'vendedor' + consultant_id; data_owner() is NULL for them and they read only via SECURITY DEFINER minha_performance; accounts created by criarAcessoVendedor.
 - Technician logins use team_members papel 'tecnico' + tecnico_nome; data_owner() is NULL for them and they read only via SECURITY DEFINER meu_desempenho_tecnico RPC.
 - Judicial O.S. flag lives in `os_acompanhamento.acoes.__judicial` (os-controle helpers); excluded from Painel warning, bell and `minhas_os`.
 - Access frequency: `registrar_acesso` RPC writes one `access_log` row per user/day (owner-scoped).
