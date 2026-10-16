@@ -120,6 +120,13 @@
       "when": 1791938695937,
       "tag": "0016_agg_sales_codigo",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792114999662,
+      "tag": "0017_migration",
+      "breakpoints": true
     }
   ]
 }
