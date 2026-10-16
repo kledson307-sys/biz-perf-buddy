@@ -137,3 +137,8 @@ export function retornoDevido(item: OsItem, ref: string): string | null {
   if (d < 7) return null;
   return addDias(item.desde, Math.floor(d / 7) * 7);
 }
+
+/** O.S. marked by the manager as a judicial case: moved to "Processos judiciais" and silenced from alerts/bell. */
+export const JUDICIAL_KEY = "__judicial";
+export const ehJudicial = (acoes: unknown) => Boolean((acoes as Record<string, { feito?: boolean }> | null)?.[JUDICIAL_KEY]?.feito);
+export const comJudicial = (i: OsItem, judicial: boolean): OsItem => (judicial ? { ...i, st: "judicial" } : i);

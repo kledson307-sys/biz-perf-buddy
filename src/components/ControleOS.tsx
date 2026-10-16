@@ -45,7 +45,7 @@ export function ControleOS() {
   const atual = imps[sel];
   const anterior = imps[sel + 1];
   const ref = atual ? (sel === 0 ? hoje() : atual.at.slice(0, 10)) : hoje();
-  const lista = useMemo<Analise[]>(() => (atual?.itens ?? []).map(i => analisar(i, anterior, ref, acomp[i.n]?.prev_manual)), [atual, anterior, ref, acomp]);
+  const lista = useMemo<Analise[]>(() => (atual?.itens ?? []).map(i => analisar(comJudicial(i, ehJudicial(acomp[i.n]?.acoes)), anterior, ref, acomp[i.n]?.prev_manual)), [atual, anterior, ref, acomp]);
   const lembretes = lista.filter(a => (a.item.st === "diag" && a.diasStatus >= 7) || a.contatoHoje || (a.semMudanca && (a.item.st === "pronto" || a.item.st === "faturar")) || (a.item.st === "pecas" && a.diasStatus > 30));
   const novos = rets.filter(r => !r.visto);
   const atrasados = sel === 0 ? lista.map(a => ({ a, due: retornoDevido(a.item, ref) })).filter(x => x.due && !rets.some(r => r.os_n === x.a.item.n && r.data_ref >= x.due!)) : [];
@@ -225,8 +225,10 @@ function FragmentRow({ a, aba, aberto, toggle, ac, salvar, hist }: { hist: Retor
       <td className="px-3 py-2"><Button size="sm" variant={alto ? "default" : "ghost"} onClick={toggle}>Ações{feitas > 0 && ` (${feitas}/${a.acoes.length})`}<ChevronDown className={aberto ? "rotate-180" : ""} /></Button></td>
     </tr>
     {aberto && <tr className="bg-muted/40"><td colSpan={8} className="px-5 py-3 text-sm">
+      <label className="mb-3 flex items-start gap-2 rounded border border-destructive/40 bg-destructive/5 p-2 text-xs"><input type="checkbox" className="mt-0.5" checked={ehJudicial(ac.acoes)} onChange={e => salvar({ ...ac, acoes: { ...ac.acoes, [JUDICIAL_KEY]: { feito: e.target.checked, nota: "", at: new Date().toISOString() } } })} />
+        <span><b>Processo judicial — pausar alertas.</b> A O.S. vai para "Processos judiciais", sai do aviso do Painel e do sino, e o vendedor deixa de receber cobrança de retorno. Cuidados: veículo coberto e protegido, bateria no mantenedor, fotos mensais do estado do carro, nada de desmontar sem autorização e alinhar cada passo com o jurídico.</span></label>
       {aba === "pecas" && <p className="mb-2 text-xs text-muted-foreground">Cronograma de contato semanal: {Array.from({ length: 4 }, (_, k) => fmt(new Date(Date.parse(a.proxContato ?? a.item.desde) + k * 7 * 86400e3).toISOString().slice(0, 10))).join(" · ")}</p>}
-      <ul className="space-y-3">{a.acoes.map(x => {
+      <ul className="space-y-3">{a.acoes.filter(x => x !== JUDICIAL_KEY).map(x => {
         const r = ac.acoes[x] ?? { feito: false, nota: "" };
         const set = (v: Partial<typeof r>) => salvar({ ...ac, acoes: { ...ac.acoes, [x]: { ...r, ...v, at: new Date().toISOString() } } });
         return <li key={x} className="space-y-1">
