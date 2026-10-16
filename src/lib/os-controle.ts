@@ -1,6 +1,7 @@
 import { norm } from "@/components/painel-ui";
 
-export type Status = "pronto" | "pecas" | "judicial" | "diag" | "faturar" | "garantia" | "outros";
+/** "faturar" is legacy: merged into "pronto" (Prontos / Faturar). */
+export type Status = "pronto" | "pecas" | "judicial" | "diag" | "faturar" | "garantia" | "autorizacao" | "outros";
 export type OsItem = {
   n: string; cons: string; cli: string; mod: string; placa: string; emi: string;
   pec: number; serv: number; valor: number; dias: number; obs: string; st: Status; desde: string;
@@ -8,25 +9,31 @@ export type OsItem = {
 export type OsImport = { id: string; at: string; nome: string; arquivo: string; itens: OsItem[] };
 
 export const STATUS: { k: Status; nome: string }[] = [
-  { k: "pronto", nome: "Prontos" },
+  { k: "pronto", nome: "Prontos / Faturar" },
   { k: "pecas", nome: "Aguardando peças" },
   { k: "judicial", nome: "Processos judiciais" },
   { k: "diag", nome: "Em diagnóstico" },
-  { k: "faturar", nome: "Faturar" },
-  { k: "garantia", nome: "Garantia / autorização" },
+  { k: "garantia", nome: "Garantia" },
+  { k: "autorizacao", nome: "Autorização" },
   { k: "outros", nome: "Outros" },
 ];
 
 export function classificar(obs: string): Status {
   const o = norm(obs);
   if (/judic|justica/.test(o)) return "judicial";
-  if (/garantia/.test(o) && /autoriza/.test(o)) return "garantia";
-  if (/faturar/.test(o)) return "faturar";
-  if (/pronto|aguard\w* retirada|liberado, aguardando pagamento/.test(o)) return "pronto";
+  if (/garantia/.test(o)) return "garantia";
+  if (/autoriza/.test(o)) return "autorizacao";
+  if (/faturar|pronto|aguard\w* retirada|liberado, aguardando pagamento/.test(o)) return "pronto";
   if (/aguardando pe[cç]a/.test(o)) return "pecas";
   if (/diagnost/.test(o)) return "diag";
   return "outros";
 }
+
+/** Re-applies current grouping to saved snapshots (old ones had "faturar" and a combined garantia/autorização). */
+export const normalizar = (itens: OsItem[]): OsItem[] => itens.map(i => {
+  const st = i.st === "faturar" ? "pronto" : i.st === "garantia" ? classificar(i.obs) : i.st;
+  return st === i.st ? i : { ...i, st };
+});
 
 const toNum = (v: unknown) => typeof v === "number" ? v : Number(String(v ?? "").replace(/\./g, "").replace(",", ".")) || 0;
 const iso = (d: Date) => d.toISOString().slice(0, 10);

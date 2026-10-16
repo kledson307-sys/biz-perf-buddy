@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { analisar, ehJudicial, hoje, STATUS, type OsImport, type OsItem } from "@/lib/os-controle";
+import { analisar, normalizar, ehJudicial, hoje, STATUS, type OsImport, type OsItem } from "@/lib/os-controle";
 import { norm } from "@/components/painel-ui";
 import { nomeVendedor } from "@/lib/sales-report";
 import { NOTIFICATIONS_EVENT } from "@/components/Notificacoes";
@@ -24,7 +24,7 @@ export function OsSemMudanca({ cons, deptName, abrir }: {
       if (active && !ac.error) setJudiciais(new Set((ac.data ?? []).filter(x => ehJudicial(x.acoes)).map(x => x.os_n)));
       if (!active) return;
       setError(Boolean(result.error));
-      if (!result.error) setImports((result.data ?? []).map(i => ({ ...i, itens: i.itens as unknown as OsItem[] })));
+      if (!result.error) setImports((result.data ?? []).map(i => ({ ...i, itens: normalizar(i.itens as unknown as OsItem[]) })));
     };
     const refresh = () => { void load(); };
     refresh();
