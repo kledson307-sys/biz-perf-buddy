@@ -3,7 +3,7 @@ import { Bell, CheckCheck, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
-import { fmt, hoje, retornoDevido, type OsItem } from "@/lib/os-controle";
+import { ehJudicial, fmt, hoje, retornoDevido, type OsItem } from "@/lib/os-controle";
 
 export const NOTIFICATIONS_EVENT = "os-notifications-updated";
 type Retorno = { id: string; os_n: string; consultor: string; data_ref: string; nota: string; visto: boolean };
@@ -27,13 +27,15 @@ export function Notificacoes({ vendedor = false, abrir }: { vendedor?: boolean; 
         itens = data?.itens ?? [];
         retornos = data?.retornos ?? [];
       } else {
-        const [snapshot, history] = await Promise.all([
+        const [snapshot, history, acomp] = await Promise.all([
           supabase.from("os_imports").select("itens").order("at", { ascending: false }).limit(1),
           supabase.from("os_retornos").select("id,os_n,consultor,data_ref,nota,visto").order("feito_at", { ascending: false }),
+          supabase.from("os_acompanhamento").select("os_n,acoes"),
         ]);
+        const judiciais = new Set((acomp.data ?? []).filter(x => ehJudicial(x.acoes)).map(x => x.os_n));
         if (snapshot.error) throw snapshot.error;
         if (history.error) throw history.error;
-        itens = (snapshot.data?.[0]?.itens ?? []) as unknown as OsItem[];
+        itens = ((snapshot.data?.[0]?.itens ?? []) as unknown as OsItem[]).filter(i => !judiciais.has(i.n));
         retornos = history.data ?? [];
         novos = (history.data ?? []).filter(r => !r.visto);
       }
