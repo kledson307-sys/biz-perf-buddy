@@ -3,7 +3,7 @@ import { AlertTriangle, Bell, ChevronDown, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { brl, Box, Pizza, Tabela } from "@/components/painel-ui";
-import { analisar, comJudicial, ehJudicial, JUDICIAL_KEY, fmt, hoje, retornoDevido, lerRelatorio, STATUS, type Analise, type OsImport, type OsItem, type Status } from "@/lib/os-controle";
+import { analisar, normalizar, comJudicial, ehJudicial, JUDICIAL_KEY, fmt, hoje, retornoDevido, lerRelatorio, STATUS, type Analise, type OsImport, type OsItem, type Status } from "@/lib/os-controle";
 import { registrarUpdate } from "@/lib/update-log";
 import { NOTIFICATIONS_EVENT } from "@/components/Notificacoes";
 
@@ -25,7 +25,7 @@ export function ControleOS() {
   const load = async () => {
     const { data, error } = await supabase.from("os_imports").select("id,at,nome,arquivo,itens").order("at", { ascending: false }).limit(60);
     if (error) { setMsg(error.message); return; }
-    setImps((data ?? []).map(d => ({ ...d, itens: d.itens as unknown as OsItem[] })));
+    setImps((data ?? []).map(d => ({ ...d, itens: normalizar(d.itens as unknown as OsItem[]) })));
     const r = await supabase.from("os_acompanhamento").select("os_n,acoes,prev_manual");
     if (!r.error) setAcomp(Object.fromEntries((r.data ?? []).map(x => [x.os_n, { acoes: (x.acoes ?? {}) as Acomp["acoes"], prev_manual: x.prev_manual }])));
     const rr = await supabase.from("os_retornos").select("*").order("feito_at", { ascending: false });
@@ -46,7 +46,7 @@ export function ControleOS() {
   const anterior = imps[sel + 1];
   const ref = atual ? (sel === 0 ? hoje() : atual.at.slice(0, 10)) : hoje();
   const lista = useMemo<Analise[]>(() => (atual?.itens ?? []).map(i => analisar(comJudicial(i, ehJudicial(acomp[i.n]?.acoes)), anterior, ref, acomp[i.n]?.prev_manual)), [atual, anterior, ref, acomp]);
-  const lembretes = lista.filter(a => (a.item.st === "diag" && a.diasStatus >= 7) || a.contatoHoje || (a.semMudanca && (a.item.st === "pronto" || a.item.st === "faturar")) || (a.item.st === "pecas" && a.diasStatus > 30));
+  const lembretes = lista.filter(a => (a.item.st === "diag" && a.diasStatus >= 7) || a.contatoHoje || (a.semMudanca && a.item.st === "pronto") || (a.item.st === "pecas" && a.diasStatus > 30));
   const novos = rets.filter(r => !r.visto);
   const atrasados = sel === 0 ? lista.map(a => ({ a, due: retornoDevido(a.item, ref) })).filter(x => x.due && !rets.some(r => r.os_n === x.a.item.n && r.data_ref >= x.due!)) : [];
   const saidas = anterior ? anterior.itens.filter(i => !atual?.itens.some(x => x.n === i.n)) : [];
@@ -157,7 +157,7 @@ export function ControleOS() {
           {porCons.map(({ c, l }) => <div key={c} className="border-t border-border first:border-t-0">
             <div className="flex flex-wrap justify-between gap-2 bg-muted px-5 py-2 text-sm font-semibold">
               <span>{c} · {l.length} O.S.</span>
-              <span>{aba === "pronto" || aba === "faturar" ? "A faturar: " : "Valor: "}{brl(l.reduce((n, a) => n + a.item.valor, 0))}</span>
+              <span>{aba === "pronto" ? "A faturar: " : "Valor: "}{brl(l.reduce((n, a) => n + a.item.valor, 0))}</span>
             </div>
             <Tabela head={["O.S.", "Cliente / Modelo", "Valor", "Na oficina", "No status", aba === "pecas" ? "Previsão / contato" : "Situação", "Alertas", ""]}>
               {l.map(a => <FragmentRow key={a.item.n} a={a} aba={aba} aberto={aberto === a.item.n} toggle={() => setAberto(aberto === a.item.n ? null : a.item.n)}
