@@ -76,7 +76,7 @@ function lerOsSistema(raw: unknown[][]): { nome: string; servicos: number; pecas
     let cons = "";
     for (let j = i + 1; j < Math.min(i + 5, raw.length); j++) {
       const v = String(raw[j]?.[off + 3] ?? "").trim();
-      if (v) { cons = v; break; }
+      if (v) { cons = nomeVendedor(v); break; }
     }
     if (!cons || !OS_PERMITIDOS.has(norm(cons))) continue;
     res.push({ nome: cons, servicos: toNum(raw[i]?.[off + 20]), pecas: toNum(raw[i]?.[off + 18]) });
@@ -216,7 +216,7 @@ export function OsAbertas({ linhas, mes, soPecas, tot, dec, deptName, semServico
   if (modo === "importar") return (
     <Box title="O.S. abertas (Excel ou colar) — alimenta Projeção + OS">
       <div className="p-4">
-        <p className="mb-3 text-sm text-muted-foreground">Aceita o relatório "O.S. Abertas" do sistema (peças e serviços separados) ou colar vendedor/serviços/peças. Só são considerados: P.BENIGNO, ANDRESSA.O, GILBERTO.S, WESLEY.F, RENAN.O, GEOVANA.M e MARCELA.S. Importar substitui as OS abertas do mês.</p>
+        <p className="mb-3 text-sm text-muted-foreground">Aceita o relatório "O.S. Abertas" do sistema (peças e serviços separados) ou colar vendedor/serviços/peças. Só entram os tipos AC, BS, C4, C7, CF, C5, MC, MF, MS, MG, NC, N7, N5, NF e NG (C4, MG e NG valem 30%). Só são considerados: P.BENIGNO, ANDRESSA.O, GILBERTO.S, WESLEY.F, RENAN.O, GEOVANA.M e MARCELA.S. Importar substitui as OS abertas do mês.</p>
         <div className="flex flex-wrap gap-2">
           <input ref={file} type="file" accept=".xls,.xlsx,.csv" className="hidden" onChange={(e) => void abrir(e.target.files?.[0])} />
           <Button disabled={loading || saving || !canEdit} onClick={() => file.current?.click()}><Upload />Importar Excel de OS abertas</Button>
