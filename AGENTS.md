@@ -24,7 +24,7 @@
 - AI calls go through Lovable AI Gateway from server-only helpers in `src/lib/ai/*.server.ts`, invoked by auth-protected `createServerFn`s in `src/lib/*.functions.ts`; the browser sends computed stats, never the key.
 - Main sales Excel/paste parsing lives in `src/lib/sales-report.ts` and the import UI in `SalesImport`; match seller login before full name to preserve existing consultant identities.
 - All daily imports (sales, open O.S., technicians, agregados) render only in the Importações tab via each component's `modo="importar"`; result tabs stay read-only and Controle O.S. keeps its own weekly import.
-- Derive tab freshness from month-scoped update_log records using shared update-status helpers; sales views share their source, Projeção + OS requires both sales and open orders, and Controle O.S. uses its weekly cadence so unrelated imports never clear alerts.
+- Derive tab freshness from month-scoped update_log records using shared update-status helpers (sourceStatus also flags updates made today, shown as ✅/❌ per Importações block); sales views share their source, Projeção + OS requires both sales and open orders, and Controle O.S. uses its weekly cadence.
 - Cumulative main-sales reports use the authenticated SECURITY INVOKER `import_sales_period` RPC to replace included consultants' period atomically and store totals on the final day; period totals cannot reconstruct daily sales.
 - Brand primary and performance colors use independent semantic tokens so changing the brand never changes success/warning thresholds.
 - Team WhatsApp updates open wa.me links per consultant (manager sends manually) with AI tips from `whatsapp-ia.functions.ts`; no automated bulk sending.
