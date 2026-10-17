@@ -4,7 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } f
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { Barra, Box, Cmp, Kpi, Num, Posicao, Secao, Tabela, bg, brl, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
+import { Barra, Box, Cmp, Kpi, Num, Posicao, Secao, Tabela, bg, brl, dataHora, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
 import { Agregados } from "@/components/Agregados";
 import { SalesImport } from "@/components/SalesImport";
 import { EnvioWhatsapp } from "@/components/EnvioWhatsapp";
@@ -23,7 +23,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Download, LogOut, Printer } from "lucide-react";
 import bmwLogo from "@/assets/bmw-logo.asset.json";
-import { localDay, sourceLabels, tabUpdateStatus, UPDATE_EVENT, type UpdateRecord, type UpdateSource } from "@/lib/update-status";
+import { localDay, sourceLabels, sourceStatus, tabUpdateStatus, UPDATE_EVENT, type UpdateRecord, type UpdateSource } from "@/lib/update-status";
 
 export const Route = createFileRoute("/")({
   head: () => ({
