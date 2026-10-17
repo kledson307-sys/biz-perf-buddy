@@ -68,15 +68,28 @@ export function RankingTecnicos({ mes, tot, dec }: { mes: string; tot: number; d
           <div key={g}>
             <h3 className="px-3 pt-2 font-semibold">{GRUPO_NOME[g]}</h3>
             <ul className="divide-y divide-border">
-              {ls.map((l, i) => (
-                <li key={l.nome} className="grid grid-cols-2 gap-2 p-3 text-sm sm:grid-cols-6 sm:items-center">
-                  <div className="col-span-2 flex items-center gap-2"><Posicao i={i} /><b className="break-words">{l.nome}</b></div>
-                  <div><span className="block text-xs text-muted-foreground">Faturado / meta</span>{brl(l.real)} / {brl(l.meta)}</div>
-                  <div><span className="block text-xs text-muted-foreground">Perf.</span><b className={l.meta ? tone(l.perf) : ""}>{l.meta ? pct(l.perf) : "sem meta"}</b></div>
-                  <div><span className="block text-xs text-muted-foreground">Projeção</span><b className={l.meta ? tone(l.proj) : ""}>{l.meta ? pct(l.proj) : "—"}</b></div>
-                  <div><span className="block text-xs text-muted-foreground">Passagens</span>{uni(l.passagens)}</div>
-                </li>
-              ))}
+              {ls.map((l, i) => {
+                const bloco = (rot: string, v: number, m: number) => {
+                  const pf = div(v, m), pj = div(div(v, dec) * tot, m), nec = Math.max(m - v, 0) / Math.max(tot - dec, 1);
+                  return (
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 sm:items-center">
+                      <div className="font-medium text-muted-foreground">{rot}</div>
+                      <div><span className="block text-xs text-muted-foreground">Realizado / meta</span>{brl(v)} / {brl(m)}</div>
+                      <div><span className="block text-xs text-muted-foreground">Perf.</span><b className={m ? tone(pf) : ""}>{m ? pct(pf) : "sem meta"}</b></div>
+                      <div><span className="block text-xs text-muted-foreground">Projeção</span><b className={m ? tone(pj) : ""}>{m ? pct(pj) : "—"}</b></div>
+                      <div><span className="block text-xs text-muted-foreground">Precisa por dia</span>{brl(nec)}</div>
+                    </div>
+                  );
+                };
+                return (
+                  <li key={l.nome} className="space-y-2 p-3 text-sm">
+                    <div className="flex flex-wrap items-center gap-2"><Posicao i={i} /><b className="break-words">{l.nome}</b><span className="text-xs text-muted-foreground">· {uni(l.passagens)} passagens</span></div>
+                    {bloco("Serviços", l.servicos, l.meta_servicos)}
+                    {bloco("Peças", l.pecas, l.meta_pecas)}
+                    <div className="border-t border-border pt-2 font-semibold">{bloco("Total", l.real, l.meta)}</div>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         );
