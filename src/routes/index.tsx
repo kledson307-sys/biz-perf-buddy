@@ -580,7 +580,46 @@ function Painel({ email }: { email: string }) {
               <Kpi label="Falta para a meta" value={brl(Math.max(total.meta - total.real, 0))} sub={`Precisa ${brl(total.nec)}/dia (${Math.max(tot - dec, 0)} dias restantes)`} />
               <Kpi label="Líder" value={lider ? lider.c.nome : "—"} sub={lider ? `${pct(lider.perf)} de performance` : ""} />
             </div>
-            <Box title="Projeção individual (serviços + peças)">
+          <Box title={`Projeção individual (serviços + peças) · ${mesExtenso}`}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-xs uppercase text-muted-foreground">
+                  <tr className="border-b"><th className="p-2">#</th><th className="p-2">Vendedor</th><th className="p-2 text-right">Serviços / meta</th><th className="p-2 text-right">Peças / meta</th><th className="p-2 text-right">Total / meta</th><th className="p-2 text-right">Perf.</th><th className="p-2 text-right">Projeção</th><th className="p-2 text-right">Precisa/dia</th></tr>
+                </thead>
+                <tbody>
+                  {linhas.map((l, i) => (
+                    <tr key={l.c.id} className="border-b last:border-0">
+                      <td className="p-2 font-bold">{i + 1}º</td>
+                      <td className="p-2"><b>{l.c.nome}</b><div className="text-xs text-muted-foreground">{deptName(l.c.department_id)}</div></td>
+                      <td className="p-2 text-right">{soPecas(l.c.nome) ? "—" : <>{brl(l.servicos)}<div className="text-xs text-muted-foreground">{brl(l.mS)}</div></>}</td>
+                      <td className="p-2 text-right">{brl(l.pecas)}<div className="text-xs text-muted-foreground">{brl(l.mP)}</div></td>
+                      <td className="p-2 text-right">{brl(l.real)}<div className="text-xs text-muted-foreground">{brl(l.meta)}</div></td>
+                      <td className={`p-2 text-right font-bold ${l.meta ? tone(l.perf) : ""}`}>{l.meta ? pct(l.perf) : "sem meta"}</td>
+                      <td className={`p-2 text-right font-bold ${l.meta ? tone(l.projPct) : ""}`}>{l.meta ? pct(l.projPct) : "—"}</td>
+                      <td className="p-2 text-right">{brl(l.nec)}</td>
+                    </tr>
+                  ))}
+                  <tr className="font-bold"><td className="p-2" /><td className="p-2">TOTAL</td><td className="p-2 text-right">{brl(total.servicos)}<div className="text-xs text-muted-foreground">{brl(total.mS)}</div></td><td className="p-2 text-right">{brl(total.pecas)}<div className="text-xs text-muted-foreground">{brl(total.mP)}</div></td><td className="p-2 text-right">{brl(total.real)}<div className="text-xs text-muted-foreground">{brl(total.meta)}</div></td><td className={`p-2 text-right ${tone(total.perf)}`}>{pct(total.perf)}</td><td className={`p-2 text-right ${tone(total.projPct)}`}>{pct(total.projPct)}</td><td className="p-2 text-right">{brl(total.nec)}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </Box>
+          </Secao>
+        )}
+
+        {tab === "ranking" && (
+          <div className="flex flex-wrap gap-2 print:hidden" role="tablist" aria-label="Tipo de ranking">
+            {([["geral", "Geral"], ["agregados", "Agregados"], ["tecnicos", "Técnicos"]] as const).map(([k, n]) => (
+              <button key={k} role="tab" aria-selected={rankSub === k} onClick={() => setRankSub(k)} className={`rounded-full border px-4 py-1.5 text-sm font-medium ${rankSub === k ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground"}`}>{n}</button>
+            ))}
+          </div>
+        )}
+        {tab === "ranking" && rankSub === "agregados" && <Box title={`Ranking de agregados · ${mesExtenso}`}><RankingAgregados mes={mes} cons={visiveis} deptName={deptName} tot={tot} dec={dec} /></Box>}
+        {tab === "ranking" && rankSub === "tecnicos" && <Box title={`Ranking dos técnicos · ${mesExtenso}`}><RankingTecnicos mes={mes} tot={tot} dec={dec} /></Box>}
+        {tab === "ranking" && rankSub === "geral" && (
+            <Box title={`Ranking geral das vendedoras · ${mesExtenso}`}>
+            <RankingMobile linhas={linhas} total={total} deptName={deptName} soPecas={soPecas} />
+            <div className="hidden md:block">
               <Tabela head={["#", "Consultor", "Depto", "Grupo", "Realizado", "Meta", "Performance", "Projeção", "Proj. %", "Necessário/dia", "vs. Líder"]}>
                 {linhas.length === 0 && <tr><td colSpan={11} className="px-3 py-10 text-center text-muted-foreground">Sem dados. Cadastre consultores em "Configurar" e cole os dados do dia.</td></tr>}
                 {linhas.map((l, i) => {
@@ -625,45 +664,8 @@ function Painel({ email }: { email: string }) {
                   );
                 })}
               </Tabela>
-            </Box>
-          </Secao>
-        )}
-
-        {tab === "ranking" && (
-          <div className="flex flex-wrap gap-2 print:hidden" role="tablist" aria-label="Tipo de ranking">
-            {([["geral", "Geral"], ["agregados", "Agregados"], ["tecnicos", "Técnicos"]] as const).map(([k, n]) => (
-              <button key={k} role="tab" aria-selected={rankSub === k} onClick={() => setRankSub(k)} className={`rounded-full border px-4 py-1.5 text-sm font-medium ${rankSub === k ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground"}`}>{n}</button>
-            ))}
-          </div>
-        )}
-        {tab === "ranking" && rankSub === "agregados" && <Box title={`Ranking de agregados · ${mesExtenso}`}><RankingAgregados mes={mes} cons={visiveis} deptName={deptName} tot={tot} dec={dec} /></Box>}
-        {tab === "ranking" && rankSub === "tecnicos" && <Box title={`Ranking dos técnicos · ${mesExtenso}`}><RankingTecnicos mes={mes} tot={tot} dec={dec} /></Box>}
-        {tab === "ranking" && rankSub === "geral" && (
-          <Box title={`Ranking geral das vendedoras · ${mesExtenso}`}>
-            <RankingMobile linhas={linhas} total={total} deptName={deptName} soPecas={soPecas} />
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full text-sm">
-                <thead className="text-left text-xs uppercase text-muted-foreground">
-                  <tr className="border-b"><th className="p-2">#</th><th className="p-2">Vendedor</th><th className="p-2 text-right">Serviços / meta</th><th className="p-2 text-right">Peças / meta</th><th className="p-2 text-right">Total / meta</th><th className="p-2 text-right">Perf.</th><th className="p-2 text-right">Projeção</th><th className="p-2 text-right">Precisa/dia</th></tr>
-                </thead>
-                <tbody>
-                  {linhas.map((l, i) => (
-                    <tr key={l.c.id} className="border-b last:border-0">
-                      <td className="p-2 font-bold">{i + 1}º</td>
-                      <td className="p-2"><b>{l.c.nome}</b><div className="text-xs text-muted-foreground">{deptName(l.c.department_id)}</div></td>
-                      <td className="p-2 text-right">{soPecas(l.c.nome) ? "—" : <>{brl(l.servicos)}<div className="text-xs text-muted-foreground">{brl(l.mS)}</div></>}</td>
-                      <td className="p-2 text-right">{brl(l.pecas)}<div className="text-xs text-muted-foreground">{brl(l.mP)}</div></td>
-                      <td className="p-2 text-right">{brl(l.real)}<div className="text-xs text-muted-foreground">{brl(l.meta)}</div></td>
-                      <td className={`p-2 text-right font-bold ${l.meta ? tone(l.perf) : ""}`}>{l.meta ? pct(l.perf) : "sem meta"}</td>
-                      <td className={`p-2 text-right font-bold ${l.meta ? tone(l.projPct) : ""}`}>{l.meta ? pct(l.projPct) : "—"}</td>
-                      <td className="p-2 text-right">{brl(l.nec)}</td>
-                    </tr>
-                  ))}
-                  <tr className="font-bold"><td className="p-2" /><td className="p-2">TOTAL</td><td className="p-2 text-right">{brl(total.servicos)}<div className="text-xs text-muted-foreground">{brl(total.mS)}</div></td><td className="p-2 text-right">{brl(total.pecas)}<div className="text-xs text-muted-foreground">{brl(total.mP)}</div></td><td className="p-2 text-right">{brl(total.real)}<div className="text-xs text-muted-foreground">{brl(total.meta)}</div></td><td className={`p-2 text-right ${tone(total.perf)}`}>{pct(total.perf)}</td><td className={`p-2 text-right ${tone(total.projPct)}`}>{pct(total.projPct)}</td><td className="p-2 text-right">{brl(total.nec)}</td></tr>
-                </tbody>
-              </table>
             </div>
-          </Box>
+            </Box>
         )}
         {show("agregados") && <Secao relatorio={relatorio} titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} /></Secao>}
         {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} /></Secao>}

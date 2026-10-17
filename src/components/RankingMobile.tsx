@@ -24,7 +24,7 @@ export function RankingMobile({ linhas, total, deptName, soPecas }: {
   return <div className="space-y-3 p-3 md:hidden" data-testid="ranking-mobile">
     {linhas.map((l, i) => <article key={l.c.id} className="min-w-0 rounded-lg border border-border p-3">
       <header className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
-        <div className="min-w-0"><h3 className="break-words text-sm font-bold">{i + 1}º · {l.c.nome}</h3><p className="break-words text-xs text-muted-foreground">{deptName(l.c.department_id)}</p></div>
+        <div className="min-w-0"><h3 className="break-words text-sm font-bold">{["🥇 ","🥈 ","🥉 "][i] ?? `${i + 1}º · `}{l.c.nome}</h3><p className="break-words text-xs text-muted-foreground">{deptName(l.c.department_id)}</p></div>
         <div className="shrink-0 text-right"><p className={`text-sm font-bold ${l.meta ? tone(l.perf) : "text-muted-foreground"}`}>{l.meta ? pct(l.perf) : "Sem meta"}</p><p className="text-xs text-muted-foreground">Performance</p></div>
       </header>
       <Metrics result={l} onlyParts={soPecas(l.c.nome)} />
