@@ -52,6 +52,11 @@ export function Mecanicos({ mes, tot, dec, modo = "ver" }: { mes: string; tot: n
     void loadUlt();
   };
   useEffect(() => { void load(); setPrevia(null); }, [mes]);
+  useEffect(() => {
+    const f = () => { void load(); };
+    window.addEventListener("tecnicos-atualizados", f); window.addEventListener("focus", f);
+    return () => { window.removeEventListener("tecnicos-atualizados", f); window.removeEventListener("focus", f); };
+  }, [mes]);
 
   const gravar = async (lst: Mec[], origem: string) => {
     if (!lst.length) return false;

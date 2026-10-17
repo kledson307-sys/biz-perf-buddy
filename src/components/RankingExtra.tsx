@@ -49,8 +49,11 @@ export function RankingAgregados({ mes, cons, deptName, tot, dec }: { mes: strin
 export function RankingTecnicos({ mes, tot, dec }: { mes: string; tot: number; dec: number }) {
   const [rows, setRows] = useState<{ nome: string; grupo: string; servicos: number; pecas: number; meta_servicos: number; meta_pecas: number; passagens: number }[]>([]);
   useEffect(() => {
-    void supabase.from("mech_month").select("nome,grupo,servicos,pecas,meta_servicos,meta_pecas,passagens").eq("mes", mes)
+    const f = () => void supabase.from("mech_month").select("nome,grupo,servicos,pecas,meta_servicos,meta_pecas,passagens").eq("mes", mes)
       .then(({ data }) => setRows((data ?? []).map(r => ({ ...r, servicos: +r.servicos, pecas: +r.pecas, meta_servicos: +r.meta_servicos, meta_pecas: +r.meta_pecas, passagens: +r.passagens }))));
+    f();
+    window.addEventListener("tecnicos-atualizados", f);
+    return () => window.removeEventListener("tecnicos-atualizados", f);
   }, [mes]);
   const grupos: Grupo[] = ["carro", "moto"];
   const lista = rows.filter(r => !ocultoDaLista(r.nome)).map(r => {
