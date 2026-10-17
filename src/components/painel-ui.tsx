@@ -3,6 +3,8 @@ import type React from "react";
 export const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 export const pct = (n: number) => (n * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "%";
 export const num = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+/** Data e hora como aparecem nos avisos de última atualização. */
+export const dataHora = (iso: string) => new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 /** Quantidades (itens, passagens, metas em unidades): sempre inteiras. */
 export const uni = (n: number) => Math.round(n).toLocaleString("pt-BR");
 export const div = (a: number, b: number) => (b ? a / b : 0);

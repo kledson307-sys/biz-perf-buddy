@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { tabUpdateStatus, type UpdateRecord } from "@/lib/update-status";
+import { sourceStatus, tabUpdateStatus, type UpdateRecord } from "@/lib/update-status";
 
 const now = new Date("2026-10-09T18:27:00Z");
 const record = (origem: string, at = now.toISOString(), mes: string | null = "2026-10"): UpdateRecord => ({ origem, at, mes, nome: "Gestor" });
@@ -30,6 +30,12 @@ describe("Independent tab freshness", () => {
     expect(status("controle-os", [record("Controle de O.S.", "2026-10-02T18:00:00Z", null)]).stale).toBe(true);
     expect(status("painel", [], "2026-09").stale).toBe(false);
     expect(status("config", []).stale).toBe(false);
+  });
+  it("marks only an update made today as fresh for the ✅/❌ badge", () => {
+    expect(sourceStatus("faturamento", "2026-10", [record("Faturamento (Excel/colar)")], now).fresh).toBe(true);
+    expect(sourceStatus("faturamento", "2026-10", [record("Faturamento (Excel/colar)", "2026-10-08T18:00:00Z")], now).fresh).toBe(false);
+    expect(sourceStatus("faturamento", "2026-10", [], now).fresh).toBe(false);
+    expect(sourceStatus("agregados", "2026-10", [record("Faturamento (Excel/colar)")], now).record).toBeUndefined();
   });
   it("group changes do not refresh technician results", () => {
     expect(status("mecanicos", [record("Técnicos (grupo)")]).stale).toBe(true);

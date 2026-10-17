@@ -27,17 +27,20 @@ export const localDay = (date: Date) => new Intl.DateTimeFormat("en-CA", {
   timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit",
 }).format(date);
 
-export function tabUpdateStatus(tab: string, mes: string, records: UpdateRecord[], now = new Date()) {
+/** Estado de uma fonte: último registro, se está desatualizada e se a atualização foi feita hoje. */
+export function sourceStatus(source: UpdateSource, mes: string, records: UpdateRecord[], now = new Date()) {
   const today = localDay(now);
   const historical = mes !== today.slice(0, 7);
-  const sources = sourcesForTab(tab);
-  const latest = sources.map((source) => {
-    const record = records.filter((r) => updateSources(r.origem).includes(source)
-      && (source === "controle-os" || (r.mes ?? localDay(new Date(r.at)).slice(0, 7)) === mes))
-      .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))[0];
-    const age = record ? (Date.parse(`${today}T00:00:00Z`) - Date.parse(`${localDay(new Date(record.at))}T00:00:00Z`)) / 86400000 : Infinity;
-    const stale = !historical && (source === "controle-os" ? age >= 7 : age > 0);
-    return { source, record, stale };
-  });
+  const record = records.filter((r) => updateSources(r.origem).includes(source)
+    && (source === "controle-os" || (r.mes ?? localDay(new Date(r.at)).slice(0, 7)) === mes))
+    .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))[0];
+  const age = record ? (Date.parse(`${today}T00:00:00Z`) - Date.parse(`${localDay(new Date(record.at))}T00:00:00Z`)) / 86400000 : Infinity;
+  const stale = !historical && (source === "controle-os" ? age >= 7 : age > 0);
+  const fresh = !!record && localDay(new Date(record.at)) === today;
+  return { record, stale, fresh };
+}
+
+export function tabUpdateStatus(tab: string, mes: string, records: UpdateRecord[], now = new Date()) {
+  const latest = sourcesForTab(tab).map((source) => ({ source, ...sourceStatus(source, mes, records, now) }));
   return { latest, stale: latest.some((s) => s.stale), pending: latest.filter((s) => s.stale).map((s) => s.source) };
 }

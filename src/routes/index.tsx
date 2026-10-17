@@ -4,7 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } f
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { Barra, Box, Cmp, Kpi, Num, Posicao, Secao, Tabela, bg, brl, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
+import { Barra, Box, Cmp, Kpi, Num, Posicao, Secao, Tabela, bg, brl, dataHora, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
 import { Agregados } from "@/components/Agregados";
 import { SalesImport } from "@/components/SalesImport";
 import { EnvioWhatsapp } from "@/components/EnvioWhatsapp";
@@ -23,7 +23,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Download, LogOut, Printer } from "lucide-react";
 import bmwLogo from "@/assets/bmw-logo.asset.json";
-import { localDay, sourceLabels, tabUpdateStatus, UPDATE_EVENT, type UpdateRecord, type UpdateSource } from "@/lib/update-status";
+import { localDay, sourceLabels, sourceStatus, tabUpdateStatus, UPDATE_EVENT, type UpdateRecord, type UpdateSource } from "@/lib/update-status";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -285,7 +285,6 @@ function Painel({ email }: { email: string }) {
   const [anoMes, mesNum] = mes.split("-").map(Number);
   const mesExt = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(anoMes!, mesNum! - 1, 1));
   const mesExtenso = mesExt.charAt(0).toUpperCase() + mesExt.slice(1);
-  const dataHora = (iso: string) => new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-t-4 border-primary border-b border-border bg-card print:hidden">
@@ -335,8 +334,8 @@ function Painel({ email }: { email: string }) {
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-2 text-xs sm:px-6">
           <div className="min-w-0 flex-1 space-y-1">
             {status.pending.length > 0 && <p className="text-sm font-semibold">⚠️ {status.pending.length} fonte(s) pendente(s) de atualização: {status.pending.map((x) => sourceLabels[x]).join(", ")}.</p>}
-            {status.latest.map(({ source, record }) => <p key={source} className="break-words">
-              {sourceLabels[source]}: {record ? <>última atualização {dataHora(record.at)} por <span className="font-medium">{record.nome}</span> · {record.origem}</> : "nenhuma atualização registrada."}
+            {status.latest.map(({ source, record, stale, fresh }) => <p key={source} className="break-words">
+              {sourceLabels[source]}: {record ? <>{fresh ? "✅" : stale ? "❌" : ""} última atualização {dataHora(record.at)} por <span className="font-medium">{record.nome}</span> · {record.origem}</> : "❌ nenhuma atualização registrada."}
             </p>)}
           </div>
           {status.pending.map((source) => <Button key={source} type="button" variant="outline" size="sm" onClick={() => openUpdate(source)} className="h-auto whitespace-normal bg-background font-semibold text-destructive">
@@ -664,18 +663,30 @@ function Painel({ email }: { email: string }) {
             <p className="text-sm text-muted-foreground">Todas as planilhas do dia em um só lugar. Cada bloco tem seu botão, prévia e confirmação. O Controle O.S. semanal continua na própria aba.</p>
           </div>
           <section className="space-y-3"><h3 className="font-semibold">1. Faturamento geral de vendas <span className="text-xs font-normal text-muted-foreground">— alimenta Painel, Ranking, Serviços, Peças</span></h3>
+            <StatusFonte source="faturamento" mes={mes} updates={updates} clock={clock} />
             <SalesImport cons={cons} depts={depts} onDone={load} onPeriod={setMes} /></section>
           <section className="space-y-3"><h3 className="font-semibold">2. O.S. abertas <span className="text-xs font-normal text-muted-foreground">— alimenta Projeção + OS</span></h3>
+            <StatusFonte source="os" mes={mes} updates={updates} clock={clock} />
             <OsAbertas modo="importar" linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} deptName={deptName} semServicos={semServicos} /></section>
           <section className="space-y-3"><h3 className="font-semibold">3. Técnicos — faturamento e passagens <span className="text-xs font-normal text-muted-foreground">— alimenta Técnicos</span></h3>
+            <StatusFonte source="mecanicos" mes={mes} updates={updates} clock={clock} />
             <Mecanicos modo="importar" mes={mes} tot={tot} dec={dec} /></section>
           <section className="space-y-3"><h3 className="font-semibold">4. Agregados — vendas de itens e passagens <span className="text-xs font-normal text-muted-foreground">— alimenta Agregados</span></h3>
+            <StatusFonte source="agregados" mes={mes} updates={updates} clock={clock} />
             <Agregados modo="importar" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section>
         </div>}
         {tab === "config" && <div className="space-y-6"><Equipe /><Config params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div>}
       </main>
     </div>
   );
+}
+
+/** ✅ quando a fonte foi atualizada hoje; ❌ quando está desatualizada. */
+function StatusFonte({ source, mes, updates, clock }: { source: UpdateSource; mes: string; updates: UpdateRecord[]; clock: Date }) {
+  const { record, fresh } = sourceStatus(source, mes, updates, clock);
+  return <p data-testid={`status-${source}`} className="text-xs font-medium text-muted-foreground">{record
+    ? <>{fresh ? "✅" : "❌"} Última atualização {dataHora(record.at)} por <span className="font-medium">{record.nome}</span> · {record.origem}</>
+    : <>❌ Nenhuma atualização registrada neste mês.</>}</p>;
 }
 
 function Config({ params, salvarParams, depts, cons, goals, mes, reload, deptName, irPara }: {
