@@ -31,6 +31,7 @@
 - [x] Painel: renomear a aba "Projeção por vendedor" para "Serviços & Peças"
 - [x] Projeção + OS: cartões por departamento iguais aos do Painel (faturado + OS abertas)
 - [x] Painel: novo arquivo "Vendas de Peças e Serviços por Vendedor" (valor líquido), margem % de peças nos relatórios, NAILTON.R + THIERRY.S = NAILTON/THIERRY
+- [x] Aba Importações: ✅ ao lado da última atualização feita hoje e ❌ quando está desatualizada, em cada fonte
 
 ## Para depois (guardado, ainda não aprovado)
 - [ ] Conversão de orçamentos: enviados x aprovados e motivos de recusa.
