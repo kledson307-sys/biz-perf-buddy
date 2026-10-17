@@ -1,7 +1,7 @@
 import { norm } from "@/components/painel-ui";
 
 /** "faturar" is legacy: merged into "pronto" (Prontos / Faturar). */
-export type Status = "pronto" | "pecas" | "judicial" | "diag" | "faturar" | "garantia" | "autorizacao" | "outros";
+export type Status = "pronto" | "pecas" | "judicial" | "diag" | "faturar" | "garantia" | "autorizacao" | "outros" | "encerrado";
 export type OsItem = {
   n: string; cons: string; cli: string; mod: string; placa: string; emi: string;
   pec: number; serv: number; valor: number; dias: number; obs: string; st: Status; desde: string;
@@ -16,6 +16,7 @@ export const STATUS: { k: Status; nome: string }[] = [
   { k: "garantia", nome: "Garantia" },
   { k: "autorizacao", nome: "Autorização" },
   { k: "outros", nome: "Outros" },
+  { k: "encerrado", nome: "Encerrados" },
 ];
 
 export function classificar(obs: string): Status {
@@ -129,6 +130,9 @@ export function analisar(item: OsItem, anterior: OsImport | undefined, ref: stri
       if (semMudanca && diasStatus >= 15) alertas.push({ nivel: "medio", texto: `Aguardando autorização há ${diasStatus} dias.` });
       acoes = ["Cobrar a autorização com a montadora/garantia", "Conferir se toda a documentação do processo foi enviada", "Faturar assim que autorizado"];
       break;
+    case "encerrado":
+      acoes = [];
+      break;
     default:
       if (semMudanca && diasStatus >= 14) alertas.push({ nivel: "medio", texto: `Sem mudança há ${diasStatus} dias.` });
       acoes = ["Definir próximo passo e responsável", "Atualizar a observação da O.S. no sistema"];
@@ -150,3 +154,9 @@ export function retornoDevido(item: OsItem, ref: string): string | null {
 export const JUDICIAL_KEY = "__judicial";
 export const ehJudicial = (acoes: unknown) => Boolean((acoes as Record<string, { feito?: boolean }> | null)?.[JUDICIAL_KEY]?.feito);
 export const comJudicial = (i: OsItem, judicial: boolean): OsItem => (judicial ? { ...i, st: "judicial" } : i);
+
+/** O.S. closed by the manager (vehicle handled and released): moved to "Encerrados" and silenced from alerts/bell. */
+export const ENCERRADO_KEY = "__encerrado";
+export const ehEncerrado = (acoes: unknown) => Boolean((acoes as Record<string, { feito?: boolean }> | null)?.[ENCERRADO_KEY]?.feito);
+export const foraDosAlertas = (acoes: unknown) => ehJudicial(acoes) || ehEncerrado(acoes);
+export const PODE_ENCERRAR = ["kledson307@gmail.com", "vhdorosario@gmail.com"];

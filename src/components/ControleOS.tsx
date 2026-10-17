@@ -3,7 +3,7 @@ import { AlertTriangle, Bell, ChevronDown, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { brl, Box, Pizza, Tabela } from "@/components/painel-ui";
-import { analisar, normalizar, comJudicial, ehJudicial, JUDICIAL_KEY, fmt, hoje, retornoDevido, lerRelatorio, STATUS, type Analise, type OsImport, type OsItem, type Status } from "@/lib/os-controle";
+import { analisar, normalizar, comJudicial, ehJudicial, JUDICIAL_KEY, ENCERRADO_KEY, ehEncerrado, PODE_ENCERRAR, fmt, hoje, retornoDevido, lerRelatorio, STATUS, type Analise, type OsImport, type OsItem, type Status } from "@/lib/os-controle";
 import { registrarUpdate } from "@/lib/update-log";
 import { NOTIFICATIONS_EVENT } from "@/components/Notificacoes";
 
@@ -21,6 +21,8 @@ export function ControleOS() {
   const [aberto, setAberto] = useState<string | null>(null);
 
   const [acomp, setAcomp] = useState<Record<string, Acomp>>({});
+  const [podeEncerrar, setPodeEncerrar] = useState(false);
+  useEffect(() => { void supabase.auth.getUser().then(({ data }) => setPodeEncerrar(PODE_ENCERRAR.includes((data.user?.email ?? "").toLowerCase()))); }, []);
   const [rets, setRets] = useState<Retorno[]>([]);
   const load = async () => {
     const { data, error } = await supabase.from("os_imports").select("id,at,nome,arquivo,itens").order("at", { ascending: false }).limit(60);
@@ -45,7 +47,7 @@ export function ControleOS() {
   const atual = imps[sel];
   const anterior = imps[sel + 1];
   const ref = atual ? (sel === 0 ? hoje() : atual.at.slice(0, 10)) : hoje();
-  const lista = useMemo<Analise[]>(() => (atual?.itens ?? []).map(i => analisar(comJudicial(i, ehJudicial(acomp[i.n]?.acoes)), anterior, ref, acomp[i.n]?.prev_manual)), [atual, anterior, ref, acomp]);
+  const lista = useMemo<Analise[]>(() => (atual?.itens ?? []).map(i => analisar(ehEncerrado(acomp[i.n]?.acoes) ? { ...i, st: "encerrado" } : comJudicial(i, ehJudicial(acomp[i.n]?.acoes)), anterior, ref, acomp[i.n]?.prev_manual)), [atual, anterior, ref, acomp]);
   const lembretes = lista.filter(a => (a.item.st === "diag" && a.diasStatus >= 7) || a.contatoHoje || (a.semMudanca && a.item.st === "pronto") || (a.item.st === "pecas" && a.diasStatus > 30));
   const novos = rets.filter(r => !r.visto);
   const atrasados = sel === 0 ? lista.map(a => ({ a, due: retornoDevido(a.item, ref) })).filter(x => x.due && !rets.some(r => r.os_n === x.a.item.n && r.data_ref >= x.due!)) : [];
@@ -99,7 +101,7 @@ export function ControleOS() {
       {msg && <p role="status" className="text-sm text-muted-foreground">{msg}</p>}
 
       {atual && <>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-8">
           {STATUS.map(s => {
             const l = lista.filter(a => a.item.st === s.k);
             const al = l.filter(a => a.alertas.some(x => x.nivel === "alto")).length;
@@ -160,7 +162,7 @@ export function ControleOS() {
               <span>{aba === "pronto" ? "A faturar: " : "Valor: "}{brl(l.reduce((n, a) => n + a.item.valor, 0))}</span>
             </div>
             <Tabela head={["O.S.", "Cliente / Modelo", "Valor", "Na oficina", "No status", aba === "pecas" ? "Previsão / contato" : "Situação", "Alertas", ""]}>
-              {l.map(a => <FragmentRow key={a.item.n} a={a} aba={aba} aberto={aberto === a.item.n} toggle={() => setAberto(aberto === a.item.n ? null : a.item.n)}
+              {l.map(a => <FragmentRow key={a.item.n} podeEncerrar={podeEncerrar} a={a} aba={aba} aberto={aberto === a.item.n} toggle={() => setAberto(aberto === a.item.n ? null : a.item.n)}
                 ac={acomp[a.item.n] ?? { acoes: {}, prev_manual: null }} hist={rets.filter(r => r.os_n === a.item.n)} salvar={v => void salvarAcomp(a.item.n, v)} />)}
             </Tabela>
           </div>)}
@@ -204,7 +206,7 @@ function CartaoPizza({ titulo, sub, dados, fmt, onClick }: {
   );
 }
 
-function FragmentRow({ a, aba, aberto, toggle, ac, salvar, hist }: { hist: Retorno[]; a: Analise; aba: Status; aberto: boolean; toggle: () => void; ac: Acomp; salvar: (v: Acomp) => void }) {
+function FragmentRow({ a, aba, aberto, toggle, ac, salvar, hist, podeEncerrar }: { podeEncerrar: boolean; hist: Retorno[]; a: Analise; aba: Status; aberto: boolean; toggle: () => void; ac: Acomp; salvar: (v: Acomp) => void }) {
   const feitas = a.acoes.filter(x => ac.acoes[x]?.feito).length;
   const alto = a.alertas.some(x => x.nivel === "alto");
   return <>
@@ -225,10 +227,12 @@ function FragmentRow({ a, aba, aberto, toggle, ac, salvar, hist }: { hist: Retor
       <td className="px-3 py-2"><Button size="sm" variant={alto ? "default" : "ghost"} onClick={toggle}>Ações{feitas > 0 && ` (${feitas}/${a.acoes.length})`}<ChevronDown className={aberto ? "rotate-180" : ""} /></Button></td>
     </tr>
     {aberto && <tr className="bg-muted/40"><td colSpan={8} className="px-5 py-3 text-sm">
+      {podeEncerrar && <label className="mb-3 flex items-start gap-2 rounded border border-success/40 bg-success/5 p-2 text-xs"><input type="checkbox" className="mt-0.5" checked={ehEncerrado(ac.acoes)} onChange={e => { if (e.target.checked && !confirm(`Encerrar a O.S. ${a.item.n}?`)) return; salvar({ ...ac, acoes: { ...ac.acoes, [ENCERRADO_KEY]: { feito: e.target.checked, nota: "", at: new Date().toISOString() } } }); }} />
+        <span><b>Encerrar lead — veículo tratado e liberado.</b> A O.S. vai para "Encerrados", sai dos alertas e do sino, e o vendedor deixa de receber cobrança. Desmarque para reabrir.</span></label>}
       <label className="mb-3 flex items-start gap-2 rounded border border-destructive/40 bg-destructive/5 p-2 text-xs"><input type="checkbox" className="mt-0.5" checked={ehJudicial(ac.acoes)} onChange={e => salvar({ ...ac, acoes: { ...ac.acoes, [JUDICIAL_KEY]: { feito: e.target.checked, nota: "", at: new Date().toISOString() } } })} />
         <span><b>Processo judicial — pausar alertas.</b> A O.S. vai para "Processos judiciais", sai do aviso do Painel e do sino, e o vendedor deixa de receber cobrança de retorno. Cuidados: veículo coberto e protegido, bateria no mantenedor, fotos mensais do estado do carro, nada de desmontar sem autorização e alinhar cada passo com o jurídico.</span></label>
       {aba === "pecas" && <p className="mb-2 text-xs text-muted-foreground">Cronograma de contato semanal: {Array.from({ length: 4 }, (_, k) => fmt(new Date(Date.parse(a.proxContato ?? a.item.desde) + k * 7 * 86400e3).toISOString().slice(0, 10))).join(" · ")}</p>}
-      <ul className="space-y-3">{a.acoes.filter(x => x !== JUDICIAL_KEY).map(x => {
+      <ul className="space-y-3">{a.acoes.filter(x => x !== JUDICIAL_KEY && x !== ENCERRADO_KEY).map(x => {
         const r = ac.acoes[x] ?? { feito: false, nota: "" };
         const set = (v: Partial<typeof r>) => salvar({ ...ac, acoes: { ...ac.acoes, [x]: { ...r, ...v, at: new Date().toISOString() } } });
         return <li key={x} className="space-y-1">
