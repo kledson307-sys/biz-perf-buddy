@@ -4,7 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } f
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { Barra, Box, Cmp, Kpi, Num, Secao, Tabela, bg, brl, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
+import { Barra, Box, Cmp, Kpi, Num, Posicao, Secao, Tabela, bg, brl, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
 import { Agregados } from "@/components/Agregados";
 import { SalesImport } from "@/components/SalesImport";
 import { EnvioWhatsapp } from "@/components/EnvioWhatsapp";
@@ -296,6 +296,10 @@ function Painel({ email }: { email: string }) {
             <div className="min-w-0">
               <h1 className="text-sm font-bold sm:text-xl">PAINEL ESTRATÉGICO <span className="inline-block font-medium text-primary">KLEDSON</span></h1>
               <p className="mt-1 text-xs font-medium text-muted-foreground">PAINEL DE METAS · {params.base === "uteis" ? "Dias úteis" : "Dias corridos"}: {dec} de {tot}</p>
+              <div className="mt-1.5 flex items-center gap-2" title="Tempo decorrido do mês = ritmo esperado da meta">
+                <div className="h-1.5 w-28 overflow-hidden rounded-full bg-muted sm:w-48"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(div(dec, tot) * 100, 100)}%` }} /></div>
+                <span className="text-[11px] text-muted-foreground">Ritmo esperado {pct(div(dec, tot))}</span>
+              </div>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-1 sm:gap-3">
@@ -312,15 +316,16 @@ function Painel({ email }: { email: string }) {
               <option value="todos">Todos departamentos</option>
               {depts.map((d) => <option key={d.id} value={d.id}>{d.nome}</option>)}
             </select>
-            <nav aria-label="Abas do painel" className="col-span-2 grid min-w-0 grid-cols-3 gap-1 sm:flex sm:flex-wrap lg:ml-auto">
+            <nav aria-label="Abas do painel" className="col-span-2 -mx-3 flex min-w-0 gap-1 overflow-x-auto px-3 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 lg:ml-auto">
               {tabs.map(([k, l]) => {
                 if (!k) return null;
+                const sep = k === "proj-serv" || k === "importacoes";
                 const stale = k === "importacoes" ? status.pending.some((x) => x !== "controle-os") : tabUpdateStatus(k, mes, updates, clock).stale;
-                return <Button key={k} onClick={() => setTab(k)} variant={tab === k ? "default" : "ghost"}
+                return <Fragment key={k}>{sep && <span aria-hidden className="mx-1 hidden w-px self-stretch bg-border sm:block" />}<Button onClick={() => setTab(k)} variant={tab === k ? "default" : "ghost"}
                   data-update-status={stale ? "pending" : "current"}
                   title={stale ? `${l}: atualização pendente` : l}
-                  className={`h-auto min-h-9 min-w-0 whitespace-normal px-1 py-2 text-xs sm:px-4 sm:text-sm ${stale ? "update-alert bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:text-destructive-foreground" : tab === k ? "" : "text-muted-foreground"}`}
-                  aria-current={tab === k ? "page" : undefined}>{l}</Button>;
+                  className={`h-9 shrink-0 whitespace-nowrap rounded-full px-3 text-xs sm:px-4 sm:text-sm ${stale ? "update-alert bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:text-destructive-foreground" : tab === k ? "" : "text-muted-foreground"}`}
+                  aria-current={tab === k ? "page" : undefined}>{l}</Button></Fragment>;
               })}
             </nav>
           </div>
@@ -330,6 +335,7 @@ function Painel({ email }: { email: string }) {
       {status.latest.length > 0 && <div data-testid="update-banner" className={`border-b print:hidden ${status.stale ? "update-alert border-destructive bg-destructive text-destructive-foreground" : "border-border bg-primary/5 text-muted-foreground"}`}>
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-2 text-xs sm:px-6">
           <div className="min-w-0 flex-1 space-y-1">
+            {status.pending.length > 0 && <p className="text-sm font-semibold">⚠️ {status.pending.length} fonte(s) pendente(s) de atualização: {status.pending.map((x) => sourceLabels[x]).join(", ")}.</p>}
             {status.latest.map(({ source, record }) => <p key={source} className="break-words">
               {sourceLabels[source]}: {record ? <>última atualização {dataHora(record.at)} por <span className="font-medium">{record.nome}</span> · {record.origem}</> : "nenhuma atualização registrada."}
             </p>)}
@@ -386,7 +392,7 @@ function Painel({ email }: { email: string }) {
               <div className="mx-auto mt-12 grid w-full max-w-2xl grid-cols-2 gap-4 text-left">
                 <Kpi label="Realizado Serviços" value={brl(total.servicos)} sub={`Meta ${brl(total.mS)} · ${pct(total.perfS)}`} cls={tone(total.perfS)} />
                 <Kpi label="Realizado Peças" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)}`} cls={tone(total.perfP)} />
-                <Kpi label="Projeção Serviços" value={brl(total.projS)} sub={`${pct(total.projPctS)} da meta ${brl(total.mS)}`} cls={tone(total.projPctS)} />
+                <Kpi label="Projeção Serviços" value={brl(total.projS)} sub={`${pct(total.projPctS)} da meta ${brl(total.mS)}`} cls={tone(total.projPctS)} p={total.projPctS} />
                 <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta ${brl(total.mP)}`} cls={tone(total.projPctP)} />
               </div>
               <p className="mt-8 text-2xl font-bold">Projeção Total: {brl(total.proj)} <span className={tone(total.projPct)}>({pct(total.projPct)} da meta)</span></p>
@@ -413,56 +419,47 @@ function Painel({ email }: { email: string }) {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-5 painel-kpis">
-              <Kpi label="Realizado Serviços Total" value={brl(total.servicos)} sub={`Meta ${brl(total.mS)} · ${pct(total.perfS)}`} cls={tone(total.perfS)} />
-              <Kpi label="Realizado Peças Total" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)} · margem ${margemTxt(total)}`} cls={tone(total.perfP)} />
-              <Kpi label="Projeção Serviços" value={brl(total.projS)} sub={`${pct(total.projPctS)} da meta ${brl(total.mS)}`} cls={tone(total.projPctS)} />
-              <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta ${brl(total.mP)}`} cls={tone(total.projPctP)} />
-              <Kpi label="Projeção Total" value={brl(total.proj)} sub={`${pct(total.projPct)} · precisa serviços ${brl(total.necS)}/dia · precisa peças ${brl(total.necP)}/dia`} cls={tone(total.projPct)} />
+              <Kpi label="Realizado Serviços Total" value={brl(total.servicos)} sub={`Meta ${brl(total.mS)} · ${pct(total.perfS)}`} cls={tone(total.perfS)} p={total.perfS} />
+              <Kpi label="Realizado Peças Total" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)} · margem ${margemTxt(total)}`} cls={tone(total.perfP)} p={total.perfP} />
+              <Kpi label="Projeção Serviços" value={brl(total.projS)} sub={`${pct(total.projPctS)} da meta ${brl(total.mS)}`} cls={tone(total.projPctS)} p={total.projPctS} />
+              <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta ${brl(total.mP)}`} cls={tone(total.projPctP)} p={total.projPctP} />
+              <Kpi label="Projeção Total" value={brl(total.proj)} sub={`${pct(total.projPct)} · precisa serviços ${brl(total.necS)}/dia · precisa peças ${brl(total.necP)}/dia`} cls={tone(total.projPct)} p={total.projPct} destaque />
             </div>
 
             <Box title="Resultados por departamento">
               <div className="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-3">
                 {porDept.map((d) => (
-                  <div key={d.nome} className="rounded-lg border border-border bg-card p-4">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <p className="font-semibold">{d.nome}</p>
-                      <p className={`text-sm font-semibold ${tone(d.projPct)}`}>Proj. {pct(d.projPct)}</p>
+                  <div key={d.nome} className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                    <div className="space-y-2 p-4">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <p className="font-semibold">{d.nome}</p>
+                        <p className={`text-sm font-semibold ${tone(d.projPct)}`}>Proj. {pct(d.projPct)} · {d.projPct >= 1 ? "No ritmo" : d.projPct >= 0.85 ? "Atenção" : "Crítico"}</p>
+                      </div>
+                      <Barra p={d.projPct} />
                     </div>
-                    <div className="mt-2"><Barra p={d.projPct} /></div>
-                    <div className="mt-3 space-y-2 text-sm">
+                    <div className={`grid border-t border-border text-sm ${semServicos(d.nome) ? "" : "grid-cols-2 divide-x divide-border"}`}>
                       {!semServicos(d.nome) && (
-                        <>
-                          <div className="flex items-baseline justify-between gap-2">
-                            <span className="text-muted-foreground">Serviços</span>
-                            <span>{brl(d.servicos)} <span className="text-xs text-muted-foreground">meta {brl(d.mS)}</span> <span className={`text-xs font-semibold ${tone(d.perfS)}`}>{pct(d.perfS)}</span></span>
-                          </div>
-                          <div className="flex items-baseline justify-between gap-2">
-                            <span className="text-xs text-muted-foreground">Projeção serviços</span>
-                            <span className={tone(d.projPctS)}>{brl(d.projS)} <span className="text-xs">{pct(d.projPctS)} da meta</span></span>
-                          </div>
-                        </>
+                        <div className="min-w-0 space-y-1 p-3">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Serviços</p>
+                          <p className="break-words font-semibold">{brl(d.servicos)} <span className={`text-xs ${tone(d.perfS)}`}>{pct(d.perfS)}</span></p>
+                          <p className={`break-words text-xs ${tone(d.projPctS)}`}>Proj. {brl(d.projS)} ({pct(d.projPctS)})</p>
+                          <p className="break-words text-xs text-muted-foreground">Meta {brl(d.mS)}</p>
+                        </div>
                       )}
-                      <div className={`flex items-baseline justify-between gap-2 ${semServicos(d.nome) ? "" : "border-t border-border pt-2"}`}>
-                        <span className="text-muted-foreground">Peças</span>
-                        <span>{brl(d.pecas)} <span className="text-xs text-muted-foreground">meta {brl(d.mP)}</span> <span className={`text-xs font-semibold ${tone(d.perfP)}`}>{pct(d.perfP)}</span></span>
+                      <div className="min-w-0 space-y-1 p-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Peças</p>
+                        <p className="break-words font-semibold">{brl(d.pecas)} <span className={`text-xs ${tone(d.perfP)}`}>{pct(d.perfP)}</span></p>
+                        <p className={`break-words text-xs ${tone(d.projPctP)}`}>Proj. {brl(d.projP)} ({pct(d.projPctP)})</p>
+                        <p className="break-words text-xs text-muted-foreground">Meta {brl(d.mP)}</p>
+                        <p className="text-xs">Margem <span className={`font-semibold ${margemTone(d.nome, d.margem, d.pecas)}`}>{margemTxt(d)}</span> <span className="text-muted-foreground">ideal {pct(margemIdeal(d.nome))}</span></p>
                       </div>
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-xs text-muted-foreground">Projeção peças</span>
-                        <span className={tone(d.projPctP)}>{brl(d.projP)} <span className="text-xs">{pct(d.projPctP)} da meta</span></span>
-                      </div>
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-xs text-muted-foreground">Margem peças</span>
-                        <span className={`font-semibold ${margemTone(d.nome, d.margem, d.pecas)}`}>{margemTxt(d)} <span className="text-xs font-normal text-muted-foreground">ideal {pct(margemIdeal(d.nome))}</span></span>
-                      </div>
-                      <div className="flex items-baseline justify-between gap-2 border-t border-border pt-2">
+                    </div>
+                    <div className="space-y-1 border-t border-border bg-muted/40 px-4 py-3 text-sm">
+                      <div className="flex flex-wrap items-baseline justify-between gap-2">
                         <span className="text-muted-foreground">Projeção total</span>
-                        <span className="font-semibold">{brl(d.proj)} <span className={`text-xs font-semibold ${tone(d.projPct)}`}>{pct(d.projPct)}</span></span>
+                        <span className="font-semibold">{brl(d.proj)} <span className="text-xs font-normal text-muted-foreground">/ meta {brl(d.meta)}</span></span>
                       </div>
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-muted-foreground">Realizado / Meta</span>
-                        <span>{brl(d.real)} <span className="text-xs text-muted-foreground">/ {brl(d.meta)}</span> <span className={`text-xs font-semibold ${tone(d.perf)}`}>{pct(d.perf)}</span></span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">Precisa por dia: {semServicos(d.nome) ? `peças ${brl(d.necP)}` : `serviços ${brl(d.necS)} · peças ${brl(d.necP)}`}</p>
+                      <p className="text-xs text-muted-foreground">Realizado {brl(d.real)} ({pct(d.perf)}) · 👉 Precisa por dia: {semServicos(d.nome) ? `peças ${brl(d.necP)}` : `serviços ${brl(d.necS)} · peças ${brl(d.necP)}`}</p>
                     </div>
                   </div>
                 ))}
@@ -525,7 +522,7 @@ function Painel({ email }: { email: string }) {
                 {linhasServ.length === 0 && <tr><td colSpan={11} className="px-3 py-10 text-center text-muted-foreground">Sem dados. Cadastre consultores em "Configurar" e cole os dados do dia.</td></tr>}
                 {linhasServ.map((l, i) => (
                   <tr key={l.c.id} className="border-t border-border">
-                    <td className="px-3 py-2">{i + 1}</td>
+                    <td className="px-3 py-2"><Posicao i={i} /></td>
                     <td className="px-3 py-2 font-medium">{l.c.nome}</td>
                     <td className="px-3 py-2 text-muted-foreground">{deptName(l.c.department_id)}</td>
                     <td className="px-3 py-2">{brl(l.servicos)}</td>
@@ -557,7 +554,7 @@ function Painel({ email }: { email: string }) {
                 {linhas.length === 0 && <tr><td colSpan={12} className="px-3 py-10 text-center text-muted-foreground">Sem dados. Cadastre consultores em "Configurar" e cole os dados do dia.</td></tr>}
                 {linhas.map((l, i) => (
                   <tr key={l.c.id} className="border-t border-border">
-                    <td className="px-3 py-2">{i + 1}</td>
+                    <td className="px-3 py-2"><Posicao i={i} /></td>
                     <td className="px-3 py-2 font-medium">{l.c.nome}</td>
                     <td className="px-3 py-2 text-muted-foreground">{deptName(l.c.department_id)}</td>
                     <td className="px-3 py-2">{brl(l.pecas)}</td>
@@ -593,7 +590,7 @@ function Painel({ email }: { email: string }) {
                   return (
                     <Fragment key={l.c.id}>
                       <tr className="border-t border-border">
-                        <td className="px-3 py-2 align-top" rowSpan={3}>{i + 1}</td>
+                        <td className="px-3 py-2 align-top" rowSpan={3}><Posicao i={i} /></td>
                         <td className="px-3 py-2 align-top font-medium" rowSpan={3}>{l.c.nome}</td>
                         <td className="px-3 py-2 align-top text-muted-foreground" rowSpan={3}>{deptName(l.c.department_id)}</td>
                         <td className="px-3 py-2 font-semibold text-primary">Serviços{semServ && <span className="ml-1 text-xs font-normal text-muted-foreground">(não vende)</span>}</td>

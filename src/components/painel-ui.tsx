@@ -41,8 +41,8 @@ export function Tabela({ head, children }: { head: string[]; children: React.Rea
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
-        <thead className="bg-muted text-left text-xs uppercase text-muted-foreground"><tr>{head.map((h, i) => <th key={i} className="whitespace-nowrap px-3 py-3">{h}</th>)}</tr></thead>
-        <tbody>{children}</tbody>
+        <thead className="sticky top-0 bg-muted text-left text-xs uppercase text-muted-foreground"><tr>{head.map((h, i) => <th key={i} className="whitespace-nowrap px-3 py-3">{h}</th>)}</tr></thead>
+        <tbody className="[&>tr:nth-child(even)]:bg-muted/30 [&>tr:hover]:bg-muted/50">{children}</tbody>
       </table>
     </div>
   );
@@ -63,12 +63,17 @@ export function Cmp({ label, a, b }: { label: string; a: number; b: number }) {
     </div>
   );
 }
-export function Kpi({ label, value, sub, cls = "" }: { label: string; value: string; sub?: React.ReactNode; cls?: string }) {
+/** Posição no ranking com destaque de pódio (1º, 2º, 3º). */
+export function Posicao({ i }: { i: number }) {
+  const medal = ["🥇", "🥈", "🥉"][i];
+  return medal ? <span title={`${i + 1}º lugar`} className="text-base">{medal}</span> : <span className="text-muted-foreground">{i + 1}</span>;
+}
+export function Kpi({ label, value, sub, cls = "", p, destaque = false }: { label: string; value: string; sub?: React.ReactNode; cls?: string; p?: number; destaque?: boolean }) {
   return (
-    <div className="relative min-w-0 overflow-hidden rounded-lg border border-border bg-card p-5 shadow-sm before:absolute before:left-0 before:top-0 before:h-full before:w-1 before:bg-primary">
+    <div className={`relative min-w-0 overflow-hidden rounded-xl border p-4 shadow-sm sm:p-5 before:absolute before:left-0 before:top-0 before:h-full before:w-1 before:bg-primary ${destaque ? "border-primary/50 bg-primary/10" : "border-border bg-card"}`}>
       <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className={`mt-2 break-words text-2xl font-bold ${cls}`}>{value}</p>
-      <div className="my-3 h-1 rounded-full bg-muted" />
+      <div className="my-3 h-1.5 overflow-hidden rounded-full bg-muted">{p !== undefined && <div className={`h-full rounded-full ${bg(p)}`} style={{ width: `${Math.min(p * 100, 100)}%` }} />}</div>
       {sub && <p className="mt-1 text-xs text-muted-foreground">{sub}</p>}
     </div>
   );
