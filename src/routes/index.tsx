@@ -4,7 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } f
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { Barra, Box, Cmp, Kpi, Num, Secao, Tabela, bg, brl, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
+import { Barra, Box, Cmp, Kpi, Num, Posicao, Secao, Tabela, bg, brl, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
 import { Agregados } from "@/components/Agregados";
 import { SalesImport } from "@/components/SalesImport";
 import { EnvioWhatsapp } from "@/components/EnvioWhatsapp";
@@ -296,6 +296,10 @@ function Painel({ email }: { email: string }) {
             <div className="min-w-0">
               <h1 className="text-sm font-bold sm:text-xl">PAINEL ESTRATÉGICO <span className="inline-block font-medium text-primary">KLEDSON</span></h1>
               <p className="mt-1 text-xs font-medium text-muted-foreground">PAINEL DE METAS · {params.base === "uteis" ? "Dias úteis" : "Dias corridos"}: {dec} de {tot}</p>
+              <div className="mt-1.5 flex items-center gap-2" title="Tempo decorrido do mês = ritmo esperado da meta">
+                <div className="h-1.5 w-28 overflow-hidden rounded-full bg-muted sm:w-48"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(div(dec, tot) * 100, 100)}%` }} /></div>
+                <span className="text-[11px] text-muted-foreground">Ritmo esperado {pct(div(dec, tot))}</span>
+              </div>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-1 sm:gap-3">
@@ -312,15 +316,16 @@ function Painel({ email }: { email: string }) {
               <option value="todos">Todos departamentos</option>
               {depts.map((d) => <option key={d.id} value={d.id}>{d.nome}</option>)}
             </select>
-            <nav aria-label="Abas do painel" className="col-span-2 grid min-w-0 grid-cols-3 gap-1 sm:flex sm:flex-wrap lg:ml-auto">
+            <nav aria-label="Abas do painel" className="col-span-2 -mx-3 flex min-w-0 gap-1 overflow-x-auto px-3 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 lg:ml-auto">
               {tabs.map(([k, l]) => {
                 if (!k) return null;
+                const sep = k === "proj-serv" || k === "importacoes";
                 const stale = k === "importacoes" ? status.pending.some((x) => x !== "controle-os") : tabUpdateStatus(k, mes, updates, clock).stale;
-                return <Button key={k} onClick={() => setTab(k)} variant={tab === k ? "default" : "ghost"}
+                return <Fragment key={k}>{sep && <span aria-hidden className="mx-1 hidden w-px self-stretch bg-border sm:block" />}<Button onClick={() => setTab(k)} variant={tab === k ? "default" : "ghost"}
                   data-update-status={stale ? "pending" : "current"}
                   title={stale ? `${l}: atualização pendente` : l}
-                  className={`h-auto min-h-9 min-w-0 whitespace-normal px-1 py-2 text-xs sm:px-4 sm:text-sm ${stale ? "update-alert bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:text-destructive-foreground" : tab === k ? "" : "text-muted-foreground"}`}
-                  aria-current={tab === k ? "page" : undefined}>{l}</Button>;
+                  className={`h-9 shrink-0 whitespace-nowrap rounded-full px-3 text-xs sm:px-4 sm:text-sm ${stale ? "update-alert bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:text-destructive-foreground" : tab === k ? "" : "text-muted-foreground"}`}
+                  aria-current={tab === k ? "page" : undefined}>{l}</Button></Fragment>;
               })}
             </nav>
           </div>
@@ -386,7 +391,7 @@ function Painel({ email }: { email: string }) {
               <div className="mx-auto mt-12 grid w-full max-w-2xl grid-cols-2 gap-4 text-left">
                 <Kpi label="Realizado Serviços" value={brl(total.servicos)} sub={`Meta ${brl(total.mS)} · ${pct(total.perfS)}`} cls={tone(total.perfS)} />
                 <Kpi label="Realizado Peças" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)}`} cls={tone(total.perfP)} />
-                <Kpi label="Projeção Serviços" value={brl(total.projS)} sub={`${pct(total.projPctS)} da meta ${brl(total.mS)}`} cls={tone(total.projPctS)} />
+                <Kpi label="Projeção Serviços" value={brl(total.projS)} sub={`${pct(total.projPctS)} da meta ${brl(total.mS)}`} cls={tone(total.projPctS)} p={total.projPctS} />
                 <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta ${brl(total.mP)}`} cls={tone(total.projPctP)} />
               </div>
               <p className="mt-8 text-2xl font-bold">Projeção Total: {brl(total.proj)} <span className={tone(total.projPct)}>({pct(total.projPct)} da meta)</span></p>
@@ -413,11 +418,11 @@ function Painel({ email }: { email: string }) {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-5 painel-kpis">
-              <Kpi label="Realizado Serviços Total" value={brl(total.servicos)} sub={`Meta ${brl(total.mS)} · ${pct(total.perfS)}`} cls={tone(total.perfS)} />
-              <Kpi label="Realizado Peças Total" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)} · margem ${margemTxt(total)}`} cls={tone(total.perfP)} />
-              <Kpi label="Projeção Serviços" value={brl(total.projS)} sub={`${pct(total.projPctS)} da meta ${brl(total.mS)}`} cls={tone(total.projPctS)} />
-              <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta ${brl(total.mP)}`} cls={tone(total.projPctP)} />
-              <Kpi label="Projeção Total" value={brl(total.proj)} sub={`${pct(total.projPct)} · precisa serviços ${brl(total.necS)}/dia · precisa peças ${brl(total.necP)}/dia`} cls={tone(total.projPct)} />
+              <Kpi label="Realizado Serviços Total" value={brl(total.servicos)} sub={`Meta ${brl(total.mS)} · ${pct(total.perfS)}`} cls={tone(total.perfS)} p={total.perfS} />
+              <Kpi label="Realizado Peças Total" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)} · margem ${margemTxt(total)}`} cls={tone(total.perfP)} p={total.perfP} />
+              <Kpi label="Projeção Serviços" value={brl(total.projS)} sub={`${pct(total.projPctS)} da meta ${brl(total.mS)}`} cls={tone(total.projPctS)} p={total.projPctS} />
+              <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta ${brl(total.mP)}`} cls={tone(total.projPctP)} p={total.projPctP} />
+              <Kpi label="Projeção Total" value={brl(total.proj)} sub={`${pct(total.projPct)} · precisa serviços ${brl(total.necS)}/dia · precisa peças ${brl(total.necP)}/dia`} cls={tone(total.projPct)} p={total.projPct} destaque />
             </div>
 
             <Box title="Resultados por departamento">
@@ -525,7 +530,7 @@ function Painel({ email }: { email: string }) {
                 {linhasServ.length === 0 && <tr><td colSpan={11} className="px-3 py-10 text-center text-muted-foreground">Sem dados. Cadastre consultores em "Configurar" e cole os dados do dia.</td></tr>}
                 {linhasServ.map((l, i) => (
                   <tr key={l.c.id} className="border-t border-border">
-                    <td className="px-3 py-2">{i + 1}</td>
+                    <td className="px-3 py-2"><Posicao i={i} /></td>
                     <td className="px-3 py-2 font-medium">{l.c.nome}</td>
                     <td className="px-3 py-2 text-muted-foreground">{deptName(l.c.department_id)}</td>
                     <td className="px-3 py-2">{brl(l.servicos)}</td>
@@ -557,7 +562,7 @@ function Painel({ email }: { email: string }) {
                 {linhas.length === 0 && <tr><td colSpan={12} className="px-3 py-10 text-center text-muted-foreground">Sem dados. Cadastre consultores em "Configurar" e cole os dados do dia.</td></tr>}
                 {linhas.map((l, i) => (
                   <tr key={l.c.id} className="border-t border-border">
-                    <td className="px-3 py-2">{i + 1}</td>
+                    <td className="px-3 py-2"><Posicao i={i} /></td>
                     <td className="px-3 py-2 font-medium">{l.c.nome}</td>
                     <td className="px-3 py-2 text-muted-foreground">{deptName(l.c.department_id)}</td>
                     <td className="px-3 py-2">{brl(l.pecas)}</td>
@@ -593,7 +598,7 @@ function Painel({ email }: { email: string }) {
                   return (
                     <Fragment key={l.c.id}>
                       <tr className="border-t border-border">
-                        <td className="px-3 py-2 align-top" rowSpan={3}>{i + 1}</td>
+                        <td className="px-3 py-2 align-top" rowSpan={3}><Posicao i={i} /></td>
                         <td className="px-3 py-2 align-top font-medium" rowSpan={3}>{l.c.nome}</td>
                         <td className="px-3 py-2 align-top text-muted-foreground" rowSpan={3}>{deptName(l.c.department_id)}</td>
                         <td className="px-3 py-2 font-semibold text-primary">Serviços{semServ && <span className="ml-1 text-xs font-normal text-muted-foreground">(não vende)</span>}</td>
