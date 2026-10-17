@@ -32,7 +32,9 @@ export function TecnicosMetas({ mes }: { mes: string }) {
     const { error } = await supabase.from("mech_month").upsert(lst.map(({ id: _i, ...r }) => ({ ...r, mes, updated_at: new Date().toISOString() })), { onConflict: "user_id,mes,nome" });
     setBusy(false);
     if (error) { setMsg("Erro ao salvar: " + error.message); return false; }
-    await registrarUpdate(origem, mes); await load(); return true;
+    await registrarUpdate(origem, mes); await load();
+    window.dispatchEvent(new Event("tecnicos-atualizados"));
+    return true;
   };
 
   const salvarUm = (r: Row) => {
@@ -41,12 +43,18 @@ export function TecnicosMetas({ mes }: { mes: string }) {
     if (s !== r.meta_servicos || p !== r.meta_pecas) void gravar([{ ...r, meta_servicos: s, meta_pecas: p }], "Técnicos (metas)");
   };
 
+  const [confirmar, setConfirmar] = useState(false);
   const aplicarLote = async () => {
     const alvo = rows.filter(r => r.grupo === lote.grupo);
     if (!alvo.length) { setMsg("Nenhum técnico nesse grupo."); return; }
     const s = lote.s.trim() ? parseNum(lote.s) : null, p = lote.p.trim() ? parseNum(lote.p) : null;
     if (s === null && p === null) { setMsg("Informe a meta de serviços e/ou de peças."); return; }
-    if (!confirm(`Aplicar para ${alvo.length} técnicos (${GRUPO_NOME[lote.grupo]})?${s !== null ? ` Serviços ${brl(s)}.` : ""}${p !== null ? ` Peças ${brl(p)}.` : ""}`)) return;
+    if (!confirmar) {
+      setConfirmar(true);
+      setMsg(`Clique em "Confirmar" para aplicar a ${alvo.length} técnicos (${GRUPO_NOME[lote.grupo]}).${s !== null ? ` Serviços ${brl(s)}.` : ""}${p !== null ? ` Peças ${brl(p)}.` : ""}`);
+      return;
+    }
+    setConfirmar(false);
     if (await gravar(alvo.map(r => ({ ...r, ...(s !== null ? { meta_servicos: s } : {}), ...(p !== null ? { meta_pecas: p } : {}) })), "Técnicos (metas em lote)")) {
       setMsg(`Metas aplicadas a ${alvo.length} técnicos.`); setLote({ ...lote, s: "", p: "" });
     }
@@ -69,7 +77,8 @@ export function TecnicosMetas({ mes }: { mes: string }) {
         </select>
         <input value={lote.s} onChange={e => setLote({ ...lote, s: e.target.value })} placeholder="Meta serviços" inputMode="decimal" className="w-32 rounded-lg border border-input bg-background px-3 py-2" />
         <input value={lote.p} onChange={e => setLote({ ...lote, p: e.target.value })} placeholder="Meta peças" inputMode="decimal" className="w-32 rounded-lg border border-input bg-background px-3 py-2" />
-        <Button onClick={aplicarLote} disabled={busy}>Aplicar</Button>
+        <Button onClick={aplicarLote} disabled={busy}>{confirmar ? "Confirmar" : "Aplicar"}</Button>
+        {confirmar && <Button variant="outline" onClick={() => { setConfirmar(false); setMsg(""); }}>Cancelar</Button>}
       </div>
       {(["carro", "moto", "outros"] as const).map(g => {
         const lst = rows.filter(r => r.grupo === g);
