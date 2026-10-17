@@ -7,7 +7,7 @@ export type SalesReport = {
 const label = (v: unknown) => norm(String(v ?? "").trim()).replace(/\s+/g, " ");
 const money = (v: unknown) => typeof v === "number" ? v : parseNum(String(v ?? ""));
 /** Vendedores que entram somados em outro nome no painel. */
-const APELIDOS: Record<string, string> = { "NAILTON.R": "NAILTON/THIERRY", "THIERRY.S": "NAILTON/THIERRY", "THERRY.S": "NAILTON/THIERRY", "GEOVANA.L": "GEOVANA.M" };
+const APELIDOS: Record<string, string> = { "NAILTON.R": "NAILTON/THIERRY", "THIERRY.S": "NAILTON/THIERRY", "THERRY.S": "NAILTON/THIERRY", "GEOVANA.L": "GEOVANA.M", "VENDE.ML": "NAILTON/THIERRY" };
 export const nomeVendedor = (nome: string) => APELIDOS[nome.trim().toUpperCase().replace(/\s+/g, "")] ?? nome.trim();
 function iso(value: string) {
   const [d, m, y] = value.split("/").map(Number);
