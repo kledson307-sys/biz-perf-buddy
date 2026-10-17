@@ -335,6 +335,7 @@ function Painel({ email }: { email: string }) {
       {status.latest.length > 0 && <div data-testid="update-banner" className={`border-b print:hidden ${status.stale ? "update-alert border-destructive bg-destructive text-destructive-foreground" : "border-border bg-primary/5 text-muted-foreground"}`}>
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-2 text-xs sm:px-6">
           <div className="min-w-0 flex-1 space-y-1">
+            {status.pending.length > 0 && <p className="text-sm font-semibold">⚠️ {status.pending.length} fonte(s) pendente(s) de atualização: {status.pending.map((x) => sourceLabels[x]).join(", ")}.</p>}
             {status.latest.map(({ source, record }) => <p key={source} className="break-words">
               {sourceLabels[source]}: {record ? <>última atualização {dataHora(record.at)} por <span className="font-medium">{record.nome}</span> · {record.origem}</> : "nenhuma atualização registrada."}
             </p>)}
@@ -428,46 +429,37 @@ function Painel({ email }: { email: string }) {
             <Box title="Resultados por departamento">
               <div className="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-3">
                 {porDept.map((d) => (
-                  <div key={d.nome} className="rounded-lg border border-border bg-card p-4">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <p className="font-semibold">{d.nome}</p>
-                      <p className={`text-sm font-semibold ${tone(d.projPct)}`}>Proj. {pct(d.projPct)}</p>
+                  <div key={d.nome} className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                    <div className="space-y-2 p-4">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <p className="font-semibold">{d.nome}</p>
+                        <p className={`text-sm font-semibold ${tone(d.projPct)}`}>Proj. {pct(d.projPct)} · {d.projPct >= 1 ? "No ritmo" : d.projPct >= 0.85 ? "Atenção" : "Crítico"}</p>
+                      </div>
+                      <Barra p={d.projPct} />
                     </div>
-                    <div className="mt-2"><Barra p={d.projPct} /></div>
-                    <div className="mt-3 space-y-2 text-sm">
+                    <div className={`grid border-t border-border text-sm ${semServicos(d.nome) ? "" : "grid-cols-2 divide-x divide-border"}`}>
                       {!semServicos(d.nome) && (
-                        <>
-                          <div className="flex items-baseline justify-between gap-2">
-                            <span className="text-muted-foreground">Serviços</span>
-                            <span>{brl(d.servicos)} <span className="text-xs text-muted-foreground">meta {brl(d.mS)}</span> <span className={`text-xs font-semibold ${tone(d.perfS)}`}>{pct(d.perfS)}</span></span>
-                          </div>
-                          <div className="flex items-baseline justify-between gap-2">
-                            <span className="text-xs text-muted-foreground">Projeção serviços</span>
-                            <span className={tone(d.projPctS)}>{brl(d.projS)} <span className="text-xs">{pct(d.projPctS)} da meta</span></span>
-                          </div>
-                        </>
+                        <div className="min-w-0 space-y-1 p-3">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Serviços</p>
+                          <p className="break-words font-semibold">{brl(d.servicos)} <span className={`text-xs ${tone(d.perfS)}`}>{pct(d.perfS)}</span></p>
+                          <p className={`break-words text-xs ${tone(d.projPctS)}`}>Proj. {brl(d.projS)} ({pct(d.projPctS)})</p>
+                          <p className="break-words text-xs text-muted-foreground">Meta {brl(d.mS)}</p>
+                        </div>
                       )}
-                      <div className={`flex items-baseline justify-between gap-2 ${semServicos(d.nome) ? "" : "border-t border-border pt-2"}`}>
-                        <span className="text-muted-foreground">Peças</span>
-                        <span>{brl(d.pecas)} <span className="text-xs text-muted-foreground">meta {brl(d.mP)}</span> <span className={`text-xs font-semibold ${tone(d.perfP)}`}>{pct(d.perfP)}</span></span>
+                      <div className="min-w-0 space-y-1 p-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Peças</p>
+                        <p className="break-words font-semibold">{brl(d.pecas)} <span className={`text-xs ${tone(d.perfP)}`}>{pct(d.perfP)}</span></p>
+                        <p className={`break-words text-xs ${tone(d.projPctP)}`}>Proj. {brl(d.projP)} ({pct(d.projPctP)})</p>
+                        <p className="break-words text-xs text-muted-foreground">Meta {brl(d.mP)}</p>
+                        <p className="text-xs">Margem <span className={`font-semibold ${margemTone(d.nome, d.margem, d.pecas)}`}>{margemTxt(d)}</span> <span className="text-muted-foreground">ideal {pct(margemIdeal(d.nome))}</span></p>
                       </div>
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-xs text-muted-foreground">Projeção peças</span>
-                        <span className={tone(d.projPctP)}>{brl(d.projP)} <span className="text-xs">{pct(d.projPctP)} da meta</span></span>
-                      </div>
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-xs text-muted-foreground">Margem peças</span>
-                        <span className={`font-semibold ${margemTone(d.nome, d.margem, d.pecas)}`}>{margemTxt(d)} <span className="text-xs font-normal text-muted-foreground">ideal {pct(margemIdeal(d.nome))}</span></span>
-                      </div>
-                      <div className="flex items-baseline justify-between gap-2 border-t border-border pt-2">
+                    </div>
+                    <div className="space-y-1 border-t border-border bg-muted/40 px-4 py-3 text-sm">
+                      <div className="flex flex-wrap items-baseline justify-between gap-2">
                         <span className="text-muted-foreground">Projeção total</span>
-                        <span className="font-semibold">{brl(d.proj)} <span className={`text-xs font-semibold ${tone(d.projPct)}`}>{pct(d.projPct)}</span></span>
+                        <span className="font-semibold">{brl(d.proj)} <span className="text-xs font-normal text-muted-foreground">/ meta {brl(d.meta)}</span></span>
                       </div>
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-muted-foreground">Realizado / Meta</span>
-                        <span>{brl(d.real)} <span className="text-xs text-muted-foreground">/ {brl(d.meta)}</span> <span className={`text-xs font-semibold ${tone(d.perf)}`}>{pct(d.perf)}</span></span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">Precisa por dia: {semServicos(d.nome) ? `peças ${brl(d.necP)}` : `serviços ${brl(d.necS)} · peças ${brl(d.necP)}`}</p>
+                      <p className="text-xs text-muted-foreground">Realizado {brl(d.real)} ({pct(d.perf)}) · 👉 Precisa por dia: {semServicos(d.nome) ? `peças ${brl(d.necP)}` : `serviços ${brl(d.necS)} · peças ${brl(d.necP)}`}</p>
                     </div>
                   </div>
                 ))}
