@@ -42,3 +42,4 @@
 - Acesso de técnicos: concluído\n- Relatório de acessos em Configurar: concluído
 - [x] Associar VENDE.ML a NAILTON/THIERRY
 - [x] Ranking com sub-abas Geral, Agregados e Técnicos
+- [x] Encerrar lead no Controle O.S. (só Kledson e vhdorosario)
