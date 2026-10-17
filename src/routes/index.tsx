@@ -17,6 +17,7 @@ import { Equipe } from "@/components/Equipe";
 import { MinhaPerformance } from "@/components/MinhaPerformance";
 import { MeuDesempenhoTecnico } from "@/components/MeuDesempenhoTecnico";
 import { RankingMobile } from "@/components/RankingMobile";
+import { RankingAgregados, RankingTecnicos } from "@/components/RankingExtra";
 import { MetasAno } from "@/components/MetasAno";
 import { AnaliseFechamento, Reconhecimento } from "@/components/RelatorioAnalise";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -126,6 +127,7 @@ function Painel({ email }: { email: string }) {
   const [sales, setSales] = useState<Sale[]>([]);
   const [params, setParams] = useState<Params>(defParams);
   const [tab, setTab] = useState("painel");
+  const [rankSub, setRankSub] = useState<"geral" | "agregados" | "tecnicos">("geral");
   const [relatorio, setRelatorio] = useState(false);
   const show = (k: string) => tab === k || relatorio;
   useEffect(() => { const f = () => setRelatorio(false); window.addEventListener("afterprint", f); return () => window.removeEventListener("afterprint", f); }, []);
@@ -628,6 +630,15 @@ function Painel({ email }: { email: string }) {
         )}
 
         {tab === "ranking" && (
+          <div className="flex flex-wrap gap-2 print:hidden" role="tablist" aria-label="Tipo de ranking">
+            {([["geral", "Geral"], ["agregados", "Agregados"], ["tecnicos", "Técnicos"]] as const).map(([k, n]) => (
+              <button key={k} role="tab" aria-selected={rankSub === k} onClick={() => setRankSub(k)} className={`rounded-full border px-4 py-1.5 text-sm font-medium ${rankSub === k ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground"}`}>{n}</button>
+            ))}
+          </div>
+        )}
+        {tab === "ranking" && rankSub === "agregados" && <Box title={`Ranking de agregados · ${mesExtenso}`}><RankingAgregados mes={mes} cons={visiveis} deptName={deptName} tot={tot} dec={dec} /></Box>}
+        {tab === "ranking" && rankSub === "tecnicos" && <Box title={`Ranking dos técnicos · ${mesExtenso}`}><RankingTecnicos mes={mes} tot={tot} dec={dec} /></Box>}
+        {tab === "ranking" && rankSub === "geral" && (
           <Box title={`Ranking geral das vendedoras · ${mesExtenso}`}>
             <RankingMobile linhas={linhas} total={total} deptName={deptName} soPecas={soPecas} />
             <div className="hidden overflow-x-auto md:block">

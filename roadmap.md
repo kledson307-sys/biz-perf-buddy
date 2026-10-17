@@ -40,3 +40,5 @@
 - [ ] Produtividade dos técnicos: horas disponíveis x horas vendidas, carro e moto separados.
 - [ ] Prazo prometido x prazo entregue: atrasos por consultor e motivo.
 - Acesso de técnicos: concluído\n- Relatório de acessos em Configurar: concluído
+- [x] Associar VENDE.ML a NAILTON/THIERRY
+- [x] Ranking com sub-abas Geral, Agregados e Técnicos
