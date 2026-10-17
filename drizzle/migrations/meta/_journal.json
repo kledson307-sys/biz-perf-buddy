@@ -141,6 +141,13 @@
       "when": 1792185196355,
       "tag": "0019_editor_reads_team",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792242539129,
+      "tag": "0020_os_encerrado",
+      "breakpoints": true
     }
   ]
 }
