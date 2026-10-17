@@ -11,7 +11,6 @@ import { EnvioWhatsapp } from "@/components/EnvioWhatsapp";
 import { ResumoPainel } from "@/components/ResumoPainel";
 import { OsAbertas } from "@/components/OsAbertas";
 import { ControleOS } from "@/components/ControleOS";
-import { OsSemMudanca } from "@/components/OsSemMudanca";
 import { Notificacoes } from "@/components/Notificacoes";
 import { Mecanicos } from "@/components/Mecanicos";
 import { Equipe } from "@/components/Equipe";
@@ -409,7 +408,6 @@ function Painel({ email }: { email: string }) {
         {show("os") && <Secao relatorio={relatorio} titulo="Projeção + Ordens de Serviço abertas"><OsAbertas linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} deptName={deptName} semServicos={semServicos} /></Secao>}
         {show("painel") && (
           <Secao relatorio={relatorio} titulo="Resumo executivo">
-            {!relatorio && <OsSemMudanca cons={cons} deptName={deptName} abrir={() => setTab("controle-os")} />}
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-lg font-semibold">Relatório de {mes}</h2>
               <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap print:hidden">
