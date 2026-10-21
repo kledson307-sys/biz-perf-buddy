@@ -148,6 +148,27 @@
       "when": 1792242539129,
       "tag": "0020_os_encerrado",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792540884315,
+      "tag": "0021_acesso_e_chefe_oficina",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792540906010,
+      "tag": "0022_papel_chefe_oficina",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792540925167,
+      "tag": "0023_data_owner_chefe",
+      "breakpoints": true
     }
   ]
 }

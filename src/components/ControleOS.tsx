@@ -3,7 +3,7 @@ import { AlertTriangle, Bell, ChevronDown, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { brl, Box, Pizza, Tabela } from "@/components/painel-ui";
-import { analisar, normalizar, comJudicial, ehJudicial, JUDICIAL_KEY, ENCERRADO_KEY, ehEncerrado, PODE_ENCERRAR, fmt, hoje, retornoDevido, lerRelatorio, STATUS, type Analise, type OsImport, type OsItem, type Status } from "@/lib/os-controle";
+import { analisar, normalizar, comJudicial, ehJudicial, JUDICIAL_KEY, ENCERRADO_KEY, ehEncerrado, PODE_ENCERRAR, fmt, hoje, diasEntre, retornoDevido, lerRelatorio, STATUS, type Analise, type OsImport, type OsItem, type Status } from "@/lib/os-controle";
 import { registrarUpdate } from "@/lib/update-log";
 import { NOTIFICATIONS_EVENT } from "@/components/Notificacoes";
 
@@ -47,7 +47,7 @@ export function ControleOS() {
   const atual = imps[sel];
   const anterior = imps[sel + 1];
   const ref = atual ? (sel === 0 ? hoje() : atual.at.slice(0, 10)) : hoje();
-  const lista = useMemo<Analise[]>(() => (atual?.itens ?? []).map(i => analisar(ehEncerrado(acomp[i.n]?.acoes) ? { ...i, st: "encerrado" } : comJudicial(i, ehJudicial(acomp[i.n]?.acoes)), anterior, ref, acomp[i.n]?.prev_manual)), [atual, anterior, ref, acomp]);
+  const lista = useMemo<Analise[]>(() => (atual?.itens ?? []).map(i0 => ({ ...i0, dias: i0.dias + Math.max(0, diasEntre(atual!.at.slice(0, 10), ref)) })).map(i => analisar(ehEncerrado(acomp[i.n]?.acoes) ? { ...i, st: "encerrado" } : comJudicial(i, ehJudicial(acomp[i.n]?.acoes)), anterior, ref, acomp[i.n]?.prev_manual)), [atual, anterior, ref, acomp]);
   const lembretes = lista.filter(a => (a.item.st === "diag" && a.diasStatus >= 7) || a.contatoHoje || (a.semMudanca && a.item.st === "pronto") || (a.item.st === "pecas" && a.diasStatus > 30));
   const novos = rets.filter(r => !r.visto);
   const atrasados = sel === 0 ? lista.map(a => ({ a, due: retornoDevido(a.item, ref) })).filter(x => x.due && !rets.some(r => r.os_n === x.a.item.n && r.data_ref >= x.due!)) : [];
@@ -214,7 +214,7 @@ function FragmentRow({ a, aba, aberto, toggle, ac, salvar, hist, podeEncerrar }:
       <td className="px-3 py-2 font-semibold">{a.item.n}{a.semMudanca && <div className="text-xs font-normal text-warning">sem mudança</div>}</td>
       <td className="px-3 py-2">{a.item.cli}<div className="text-xs text-muted-foreground">{a.item.mod} {a.item.placa}</div></td>
       <td className="whitespace-nowrap px-3 py-2">{brl(a.item.valor)}</td>
-      <td className="px-3 py-2">{a.item.dias} d</td>
+      <td className={`px-3 py-2 font-semibold ${a.item.dias > 30 ? "text-destructive" : a.item.dias > 20 ? "text-warning" : "text-success"}`}>{a.item.dias} d</td>
       <td className="px-3 py-2">{a.diasStatus} d</td>
       <td className="max-w-xs px-3 py-2 text-xs">{aba === "pecas" ? <>
         <label className="block text-muted-foreground">Previsão de chegada

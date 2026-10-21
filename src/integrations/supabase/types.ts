@@ -626,6 +626,7 @@ export type Database = {
         Returns: undefined
       }
       sou_editor_de: { Args: { p_owner: string }; Returns: boolean }
+      tecnicos_carro: { Args: { p_mes: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
