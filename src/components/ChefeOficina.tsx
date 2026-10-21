@@ -57,7 +57,7 @@ export function ChefeOficina() {
             {lista.map((t, i) => (
               <div key={t.nome} className="rounded-lg border border-border bg-card p-3">
                 <div className="mb-2 flex items-center justify-between gap-2">
-                  <span className="font-semibold"><Posicao n={i + 1} /> {t.nome}</span>
+                  <span className="font-semibold"><Posicao i={i} /> {t.nome}</span>
                   <b className={tone(t.perf)}>{pct(t.perf)}</b>
                 </div>
                 <div className="grid gap-2 text-xs sm:grid-cols-3">
