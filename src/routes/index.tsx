@@ -15,6 +15,7 @@ import { Notificacoes } from "@/components/Notificacoes";
 import { Mecanicos } from "@/components/Mecanicos";
 import { Equipe } from "@/components/Equipe";
 import { MinhaPerformance } from "@/components/MinhaPerformance";
+import { ChefeOficina } from "@/components/ChefeOficina";
 import { MeuDesempenhoTecnico } from "@/components/MeuDesempenhoTecnico";
 import { RankingMobile } from "@/components/RankingMobile";
 import { RankingAgregados, RankingTecnicos } from "@/components/RankingExtra";
@@ -72,11 +73,16 @@ function Index() {
   useEffect(() => {
     if (!session) { setPapel(undefined); return; }
     supabase.from("team_members").select("papel").ilike("email", email).maybeSingle().then(({ data }) => setPapel(data?.papel ?? null));
-    void supabase.rpc("registrar_acesso");
+    const reg = () => { if (document.visibilityState === "visible") void supabase.rpc("registrar_acesso"); };
+    reg();
+    document.addEventListener("visibilitychange", reg);
+    const t = window.setInterval(reg, 20 * 60e3);
+    return () => { document.removeEventListener("visibilitychange", reg); window.clearInterval(t); };
   }, [session, email]);
   if (!ready || (session && papel === undefined)) return <div className="p-10 text-center text-muted-foreground">Carregando…</div>;
   if (!session) return <Login />;
   if (papel === "tecnico") return <MeuDesempenhoTecnico />;
+  if (papel === "chefe_oficina") return <ChefeOficina />;
   return papel === "vendedor" ? <MinhaPerformance /> : <Painel email={email} />;
 }
 
