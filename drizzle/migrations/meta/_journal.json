@@ -162,6 +162,13 @@
       "when": 1792540906010,
       "tag": "0022_papel_chefe_oficina",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792540925167,
+      "tag": "0023_data_owner_chefe",
+      "breakpoints": true
     }
   ]
 }
