@@ -148,6 +148,13 @@
       "when": 1792242539129,
       "tag": "0020_os_encerrado",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792540884315,
+      "tag": "0021_acesso_e_chefe_oficina",
+      "breakpoints": true
     }
   ]
 }
