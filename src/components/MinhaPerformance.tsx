@@ -23,6 +23,7 @@ const semAcento = (s: string) => s.toUpperCase().normalize("NFD").replace(/[\u03
 export function MinhaPerformance() {
   const [mes, setMes] = useState(() => new Date().toISOString().slice(0, 7));
   const [d, setD] = useState<Dados | null>(null);
+  const [aberto, setAberto] = useState<string | null>(null);
   const [erro, setErro] = useState("");
   useEffect(() => {
     setErro("");
