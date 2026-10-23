@@ -47,6 +47,34 @@ describe("calcPerformance", () => {
     expect(r.marg).toBeCloseTo(0.3);
     expect(r.perfP).toBeCloseTo(0.5);
   });
+  it("mantém a necessidade zerada no fim do mês mesmo com meta pendente", () => {
+    const r = calcPerformance(40_000, 20_000, 60_000, 40_000, 20, 20);
+    expect(r.perf).toBe(0.6);
+    expect(r.necS).toBe(0);
+    expect(r.necP).toBe(0);
+    expect(r.nec).toBe(0);
+  });
+
+  it("preserva estornos nos valores realizados e na projeção", () => {
+    const r = calcPerformance(-500, 10_000, 20_000, 40_000, 5, 20, -100);
+    expect(r.real).toBe(9_500);
+    expect(r.projS).toBe(-2_000);
+    expect(r.projP).toBe(40_000);
+    expect(r.marg).toBe(-0.01);
+  });
+
+  it("recalcula os totais sem tirar a média dos percentuais individuais", () => {
+    const a = calcPerformance(40_000, 20_000, 60_000, 40_000, 10, 20, 6_000);
+    const b = calcPerformance(10_000, 30_000, 20_000, 80_000, 10, 20, 9_000);
+    const r = calcPerformance(a.servicos + b.servicos, a.pecas + b.pecas, a.mS + b.mS, a.mP + b.mP, 10, 20, a.margem + b.margem);
+    expect(r.real).toBe(100_000);
+    expect(r.meta).toBe(200_000);
+    expect(r.proj).toBe(200_000);
+    expect(r.perfS).toBe(0.625);
+    expect(r.marg).toBe(0.3);
+    expect(r.necS).toBe(3_000);
+    expect(r.necP).toBe(7_000);
+  });
 });
 
 
