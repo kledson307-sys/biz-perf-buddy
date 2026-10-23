@@ -25,9 +25,10 @@ adotada: o compartilhamento atual continua usando `data_owner()` / `can_edit()`.
 
 ## Conferências
 
-- [ ] Testes de performance e regressões existentes aprovados.
-- [ ] Prévia sem erros de compilação ou de execução.
-- [ ] Números do Painel e ranking conferidos antes/depois com dados reais.
+- [x] Testes de performance e regressões existentes aprovados: 24 testes.
+- [x] Prévia sem erros de compilação ou de execução.
+- [x] Indicadores do Painel idênticos antes/depois com os dados reais da conta do
+  gestor; ranking carregado e conferido visualmente.
 - [ ] Conferência de um mês fechado com a planilha oficial do gestor.
 - [ ] Login e limites de acesso dos diferentes perfis conferidos antes de
   alterações futuras em permissões.
