@@ -1,4 +1,6 @@
 # Tasks
+- [ ] Integrar os cálculos e testes de performance da Fase 1 sem alterar as telas ou regras existentes.
+- [ ] Incorporar os guias e checklist da Fase 1 e validar a integração.
 - [x] Mostrar na aba Painel O.S. com status igual entre atualizações semanais, com número e departamento.
 - [x] Adicionar sino no topo do gestor e vendedor com contador de retornos pendentes/realizados e acesso aos avisos existentes.
 - [x] Corrigir a prévia de importação apagada pelas atualizações de avisos do Painel; conferir Dados_Faturamento_M.O_PÇ_vendedores.xls e preservar a prévia ao retornar à janela, sem salvar vendas.
