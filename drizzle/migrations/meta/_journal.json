@@ -169,6 +169,13 @@
       "when": 1792540925167,
       "tag": "0023_data_owner_chefe",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792717811132,
+      "tag": "0024_minha_performance_codigos",
+      "breakpoints": true
     }
   ]
 }

@@ -8,7 +8,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 
-type Agg = { item: string; qtd: number; valor: number; meta_qtd: number };
+type Agg = { item: string; qtd: number; valor: number; meta_qtd: number; codigos?: { codigo: string; qtd: number; valor: number }[] };
 type Dados = {
   nome: string; departamento: string | null; servicos: number; pecas: number; margem: number;
   meta_servicos: number; meta_pecas: number; posicao: number | null; participantes: number; perf_lider: number | null;
@@ -23,6 +23,7 @@ const semAcento = (s: string) => s.toUpperCase().normalize("NFD").replace(/[\u03
 export function MinhaPerformance() {
   const [mes, setMes] = useState(() => new Date().toISOString().slice(0, 7));
   const [d, setD] = useState<Dados | null>(null);
+  const [aberto, setAberto] = useState<string | null>(null);
   const [erro, setErro] = useState("");
   useEffect(() => {
     setErro("");
@@ -77,9 +78,19 @@ export function MinhaPerformance() {
                     const nome = ITENS.find((i) => i.k === a.item)?.nome ?? a.item;
                     const pf = div(+a.qtd, +a.meta_qtd);
                     return (
-                      <div key={a.item} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3">
-                        <span className="font-medium">{nome}</span>
-                        <span>{uni(+a.qtd)} / meta {uni(+a.meta_qtd)} · <b className={tone(pf)}>{pct(pf)}</b> · {brl(+a.valor)} · aproveitamento {pct(div(+a.qtd, +d.passagens))}</span>
+                      <div key={a.item} className="px-5 py-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <button type="button" onClick={() => setAberto(aberto === a.item ? null : a.item)} className="font-medium underline decoration-dotted underline-offset-2" aria-expanded={aberto === a.item}>{nome} {aberto === a.item ? "▴" : "▾"}</button>
+                          <span>{uni(+a.qtd)} / meta {uni(+a.meta_qtd)} · <b className={tone(pf)}>{pct(pf)}</b> · {brl(+a.valor)} · aproveitamento {pct(div(+a.qtd, +d.passagens))}</span>
+                        </div>
+                        {aberto === a.item && (
+                          <ul className="mt-2 space-y-1 rounded-md bg-muted/50 p-3 text-xs">
+                            {(a.codigos ?? []).length === 0 && <li className="text-muted-foreground">Nenhuma venda neste mês.</li>}
+                            {(a.codigos ?? []).map((k) => (
+                              <li key={k.codigo} className="flex justify-between gap-2"><span className="font-mono">{k.codigo}</span><span>{uni(+k.qtd)} un. · {brl(+k.valor)}</span></li>
+                            ))}
+                          </ul>
+                        )}
                       </div>
                     );
                   })}
