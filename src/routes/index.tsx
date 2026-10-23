@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Download, LogOut, Printer } from "lucide-react";
 import bmwLogo from "@/assets/bmw-logo.asset.json";
 import { localDay, sourceLabels, sourceStatus, tabUpdateStatus, UPDATE_EVENT, type UpdateRecord, type UpdateSource } from "@/lib/update-status";
+import { calcPerformance } from "@/lib/performance";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -203,20 +204,8 @@ function Painel({ email }: { email: string }) {
   const tot = params.base === "uteis" ? params.du_totais : params.dc_totais;
   const dec = params.base === "uteis" ? params.du_decorridos : params.dc_decorridos;
 
-  const calc = (servicos: number, pecas: number, mS: number, mP: number, margem = 0) => {
-    const real = servicos + pecas, meta = mS + mP;
-    const projS = div(servicos, dec) * tot, projP = div(pecas, dec) * tot, proj = projS + projP;
-    const rest = Math.max(tot - dec, 0);
-    return {
-      servicos, pecas, real, mS, mP, meta, projS, projP, proj, margem, marg: div(margem, pecas),
-      perfS: div(servicos, mS), perfP: div(pecas, mP), perf: div(real, meta),
-      projPctS: div(projS, mS), projPctP: div(projP, mP), projPct: div(proj, meta),
-      mediaDia: div(real, dec),
-      necS: rest ? Math.max(mS - servicos, 0) / rest : 0,
-      necP: rest ? Math.max(mP - pecas, 0) / rest : 0,
-      nec: rest ? Math.max(meta - real, 0) / rest : 0,
-    };
-  };
+  const calc = (servicos: number, pecas: number, mS: number, mP: number, margem = 0) =>
+    calcPerformance(servicos, pecas, mS, mP, dec, tot, margem);
   type Calc = ReturnType<typeof calc>;
   const margemTxt = (x: { margem: number; pecas: number }) => (x.margem && x.pecas ? pct(x.margem / x.pecas) : "—");
 
