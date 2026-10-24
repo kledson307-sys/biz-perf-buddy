@@ -1,4 +1,5 @@
 # Tasks
+- [ ] Corrigir registro de uso ao carregar os dados do consultor, com confirmação, nova tentativa e atualização do histórico; verificar gravação real.
 - [x] Integrar os cálculos e testes de performance da Fase 1 sem alterar as telas ou regras existentes.
 - [x] Incorporar os guias e checklist da Fase 1 e validar a integração.
 - [x] Mostrar na aba Painel O.S. com status igual entre atualizações semanais, com número e departamento.
