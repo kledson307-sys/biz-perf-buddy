@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Box } from "@/components/painel-ui";
+import { ACCESS_UPDATED } from "@/hooks/use-access-presence";
 
 type Row = { email: string; dia: string; ultimo_at: string; vezes: number };
 const DIAS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
@@ -10,12 +11,35 @@ const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart
 export function AcessosUsuarios() {
   const [rows, setRows] = useState<Row[]>([]);
   const [membros, setMembros] = useState<{ email: string; papel: string }[]>([]);
+  const [erro, setErro] = useState(false);
   useEffect(() => {
-    const desde = new Date(); desde.setDate(desde.getDate() - 30);
-    void Promise.all([
-      supabase.from("access_log").select("email,dia,ultimo_at,vezes").gte("dia", iso(desde)),
-      supabase.from("team_members").select("email,papel"),
-    ]).then(([a, m]) => { setRows(a.data ?? []); setMembros(m.data ?? []); });
+    let active = true;
+    const refresh = async () => {
+      if (document.visibilityState !== "visible") return;
+      const desde = new Date(); desde.setDate(desde.getDate() - 30);
+      try {
+        const [a, m] = await Promise.all([
+          supabase.from("access_log").select("email,dia,ultimo_at,vezes").gte("dia", iso(desde)),
+          supabase.from("team_members").select("email,papel"),
+        ]);
+        if (!active) return;
+        if (a.error || m.error) { setErro(true); return; }
+        setErro(false); setRows(a.data ?? []); setMembros(m.data ?? []);
+      } catch { if (active) setErro(true); }
+    };
+    const update = () => { void refresh(); };
+    update();
+    window.addEventListener("focus", update);
+    window.addEventListener(ACCESS_UPDATED, update);
+    document.addEventListener("visibilitychange", update);
+    const timer = window.setInterval(update, 60_000);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", update);
+      window.removeEventListener(ACCESS_UPDATED, update);
+      document.removeEventListener("visibilitychange", update);
+      window.clearInterval(timer);
+    };
   }, []);
 
   const hoje = new Date();
@@ -34,6 +58,7 @@ export function AcessosUsuarios() {
   return (
     <Box title="Frequência de acesso dos usuários">
       <div className="space-y-3 p-4 text-sm">
+        {erro && <p role="alert" className="text-destructive">Não foi possível atualizar a frequência. Tentaremos novamente.</p>}
         {lista[0] && lista[0].dias.length > 0 && <p>Quem mais acessa nesta semana: <b>{nome(lista[0].e)}</b> ({lista[0].dias.length} dia(s): {lista[0].dias.map((d) => DIAS[new Date(d + "T12:00").getDay()]).join(", ")}).</p>}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
