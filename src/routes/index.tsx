@@ -27,6 +27,7 @@ import { Download, LogOut, Printer } from "lucide-react";
 import bmwLogo from "@/assets/bmw-logo.asset.json";
 import { localDay, sourceLabels, sourceStatus, tabUpdateStatus, UPDATE_EVENT, type UpdateRecord, type UpdateSource } from "@/lib/update-status";
 import { calcPerformance } from "@/lib/performance";
+import { useAccessPresence } from "@/hooks/use-access-presence";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -71,14 +72,10 @@ function Index() {
   }, []);
   const [papel, setPapel] = useState<string | null | undefined>(undefined);
   const email = session?.user.email ?? "";
+  useAccessPresence(Boolean(session) && papel !== undefined && papel !== "vendedor");
   useEffect(() => {
     if (!session) { setPapel(undefined); return; }
     supabase.from("team_members").select("papel").ilike("email", email).maybeSingle().then(({ data }) => setPapel(data?.papel ?? null));
-    const reg = () => { if (document.visibilityState === "visible") void supabase.rpc("registrar_acesso"); };
-    reg();
-    document.addEventListener("visibilitychange", reg);
-    const t = window.setInterval(reg, 20 * 60e3);
-    return () => { document.removeEventListener("visibilitychange", reg); window.clearInterval(t); };
   }, [session, email]);
   if (!ready || (session && papel === undefined)) return <div className="p-10 text-center text-muted-foreground">Carregando…</div>;
   if (!session) return <Login />;

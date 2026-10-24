@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useAccessPresence } from "@/hooks/use-access-presence";
 import { RetornosVendedor } from "@/components/RetornosVendedor";
 import { Notificacoes } from "@/components/Notificacoes";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,13 +26,22 @@ export function MinhaPerformance() {
   const [d, setD] = useState<Dados | null>(null);
   const [aberto, setAberto] = useState<string | null>(null);
   const [erro, setErro] = useState("");
-  useEffect(() => {
+  const latestMonth = useRef(mes);
+  latestMonth.current = mes;
+  const load = useCallback(async () => {
+    const month = latestMonth.current;
     setErro("");
-    supabase.rpc("minha_performance", { p_mes: mes }).then(({ data, error }) => {
+    try {
+      const { data, error } = await supabase.rpc("minha_performance", { p_mes: month });
+      if (month !== latestMonth.current) return;
       if (error) setErro("Não foi possível carregar seus dados.");
       else setD(data as unknown as Dados);
-    });
-  }, [mes]);
+    } catch {
+      setErro("Não foi possível carregar seus dados.");
+    }
+  }, []);
+  const { status: presenceStatus, confirmedAt, register } = useAccessPresence(true, load);
+  useEffect(() => { void register(); }, [mes, register]);
 
   const p = d?.params;
   const uteis = (p?.base ?? "uteis") === "uteis";
@@ -59,6 +69,11 @@ export function MinhaPerformance() {
             <Button size="sm" variant="outline" onClick={() => supabase.auth.signOut()}><LogOut className="size-4" /> Sair</Button>
           </div>
         </header>
+        <div role="status" aria-live="polite" className="flex flex-wrap items-center gap-2 text-xs">
+          {presenceStatus === "confirmed" && confirmedAt ? <span className="text-success">✅ Presença confirmada · {confirmedAt.toLocaleString("pt-BR")}</span> : null}
+          {presenceStatus === "pending" && <span className="text-muted-foreground">Confirmando presença…</span>}
+          {presenceStatus === "error" && <><span className="text-destructive">Presença não confirmada. Tentaremos novamente.</span><Button size="sm" variant="outline" onClick={() => { void register(); }}>Tentar novamente</Button></>}
+        </div>
         <RetornosVendedor />
         {erro && <p className="text-sm text-destructive">{erro}</p>}
         {d && (
