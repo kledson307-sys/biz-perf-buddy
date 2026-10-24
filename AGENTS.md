@@ -35,5 +35,5 @@
 - Seller logins: team_members papel 'vendedor' + consultant_id; data_owner() is NULL for them and they read only via SECURITY DEFINER minha_performance; accounts created by criarAcessoVendedor.
 - Technician logins use team_members papel 'tecnico' + tecnico_nome; data_owner() is NULL for them and they read only via SECURITY DEFINER meu_desempenho_tecnico RPC.
 - Judicial O.S. flag lives in `os_acompanhamento.acoes.__judicial` (os-controle helpers); excluded from Painel warning, bell and `minhas_os`.
-- Access frequency: `registrar_acesso` RPC writes one `access_log` row per user/day (owner-scoped).
+- Access: shared `useAccessPresence` confirms RPC writes before seller reads; retry errors, refresh on open/focus/visible/online/timer. History refreshes; keep one owner-scoped row/day.
 - Open-order import keeps only `TIPOS_OK` types and applies seller aliases.
