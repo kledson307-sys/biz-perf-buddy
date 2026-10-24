@@ -1,0 +1,1 @@
+ALTER TABLE public.mech_month ADD COLUMN IF NOT EXISTS composicao jsonb NOT NULL DEFAULT '{}'::jsonb;

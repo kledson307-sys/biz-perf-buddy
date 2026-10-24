@@ -176,6 +176,13 @@
       "when": 1792717811132,
       "tag": "0024_minha_performance_codigos",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792802500149,
+      "tag": "0025_mech_composicao",
+      "breakpoints": true
     }
   ]
 }
