@@ -10,7 +10,38 @@ export type Mec = {
   id?: string; nome: string; grupo: Grupo;
   servicos: number; pecas: number; passagens: number;
   meta_servicos: number; meta_pecas: number;
+  composicao?: Composicao;
 };
+
+/** O.S. distintas por categoria de passagem (BSI, Revisão C7, C7 pagos, C4 garantia). */
+export type Composicao = { bs?: string[]; rev?: string[]; pagos?: string[]; c4?: string[] };
+export const CATEGORIAS = [
+  { k: "bs", nome: "BSI", desc: "O.S. do tipo BS" },
+  { k: "rev", nome: "REVISÃO C7", desc: "O.S. C7/M7 com código 0000105 / 00001050" },
+  { k: "pagos", nome: "C7 - PAGOS", desc: "O.S. C7 que não são Revisão C7" },
+  { k: "c4", nome: "C4 - GARANTIA", desc: "O.S. do tipo C4" },
+] as const;
+export type CatKey = (typeof CATEGORIAS)[number]["k"];
+const COD_REV = new Set(["0000105", "00001050"]);
+
+/** Classifica as linhas (O.S., tipo, código) em O.S. distintas por categoria; cada O.S. conta uma vez. */
+export function classificar(linhas: { os: string; tipo: string; cod: string }[]): Required<Composicao> {
+  const tipo = new Map<string, string>(); const rev = new Set<string>();
+  for (const l of linhas) {
+    const t = l.tipo.trim().toUpperCase(); if (t && !tipo.has(l.os)) tipo.set(l.os, t);
+    const c = l.cod.replace(/[.\s]/g, "");
+    if ((t === "C7" || t === "M7") && COD_REV.has(c)) rev.add(l.os);
+  }
+  const de = (t: string) => [...tipo].filter(([, v]) => v === t).map(([k]) => k);
+  return { bs: de("BS"), rev: [...rev], pagos: de("C7").filter(o => !rev.has(o)), c4: de("C4") };
+}
+
+export function somarComposicao(lst: (Composicao | undefined)[]): Required<Composicao> {
+  const o = { bs: [] as string[], rev: [] as string[], pagos: [] as string[], c4: [] as string[] };
+  for (const c of lst) for (const k of ["bs", "rev", "pagos", "c4"] as const) o[k].push(...(c?.[k] ?? []));
+  for (const k of ["bs", "rev", "pagos", "c4"] as const) o[k] = [...new Set(o[k])];
+  return o;
+}
 
 export const CAMPOS = ["servicos", "pecas", "passagens", "meta_servicos", "meta_pecas"] as const;
 export type MecCampo = (typeof CAMPOS)[number];
@@ -123,7 +154,7 @@ export function lerMecanicos(raw: unknown[][]): MecReport {
   return { rows, periodo };
 }
 
-export type PassReport = { mecanicos: { nome: string; passagens: number }[]; consultores: { nome: string; passagens: number }[] };
+export type PassReport = { temTipo?: boolean; mecanicos: { nome: string; passagens: number; composicao?: Composicao }[]; consultores: { nome: string; passagens: number }[] };
 
 /** True quando o cabeçalho é o relatório "Passagem tecnico+consultor" (ID O.S. | Consultor | Produtivo). */
 export function ehRelatorioPassagens(raw: unknown[][]): boolean {
@@ -135,14 +166,15 @@ export function ehRelatorioPassagens(raw: unknown[][]): boolean {
 
 /** Conta passagens = O.S. distintas por pessoa (a O.S. se repete a cada serviço codificado nela). */
 export function lerPassagens(raw: unknown[][]): PassReport {
-  let cols: { os: number; cons: number; prod: number } | null = null;
+  let cols: { os: number; cons: number; prod: number; tipo: number; cod: number } | null = null;
+  const linhas = new Map<string, { os: string; tipo: string; cod: string }[]>();
   const seenM = new Map<string, Set<string>>(); // produtivo -> conjunto de O.S.
   const seenC = new Map<string, Set<string>>(); // consultor -> conjunto de O.S.
   const nomes = new Map<string, string>();
   for (const row of raw) {
     const h = row.map(x => norm(String(x ?? "").trim()).replace(/\s+/g, " "));
     const os = h.findIndex(x => /^id ?o\.?s\.?$/.test(x));
-    if (os >= 0) { cols = { os, cons: h.findIndex(x => x === "consultor"), prod: h.findIndex(x => x === "produtivo") }; continue; }
+    if (os >= 0) { cols = { os, cons: h.findIndex(x => x === "consultor"), prod: h.findIndex(x => x === "produtivo"), tipo: h.findIndex(x => /^tipo( ?(de )?o\.?s\.?)?$/.test(x)), cod: h.findIndex(x => /^(cod|codigo|cod\.? ?(do )?serv\w*|codigo (do )?servico|servico|operacao)$/.test(x)) }; continue; }
     if (!cols) continue;
     const id = String(row[cols.os] ?? "").trim();
     if (!id || !/\d/.test(id)) continue;
@@ -152,10 +184,12 @@ export function lerPassagens(raw: unknown[][]): PassReport {
       const k = norm(nome).replace(/\s+/g, " ");
       nomes.set(k, nome.toUpperCase());
       (map.get(k) ?? map.set(k, new Set()).get(k)!).add(id);
+      if (ci === cols.prod && cols.tipo >= 0) (linhas.get(k) ?? linhas.set(k, []).get(k)!).push({ os: id, tipo: String(row[cols.tipo] ?? ""), cod: cols.cod >= 0 ? String(row[cols.cod] ?? "") : "" });
     }
   }
   const out = (m: Map<string, Set<string>>) => [...m.entries()].map(([k, s]) => ({ nome: nomes.get(k)!, passagens: s.size })).sort((a, b) => a.nome.localeCompare(b.nome));
-  const r = { mecanicos: out(seenM), consultores: out(seenC) };
+  const temTipo = cols?.tipo !== undefined && cols.tipo >= 0;
+  const r = { temTipo, mecanicos: out(seenM).map(m => temTipo ? { ...m, composicao: classificar(linhas.get(norm(m.nome).replace(/\s+/g, " ")) ?? []) } : m), consultores: out(seenC) };
   if (!r.mecanicos.length && !r.consultores.length) throw new Error("Não encontrei passagens. O cabeçalho deve ter ID O.S., Consultor e Produtivo.");
   return r;
 }
