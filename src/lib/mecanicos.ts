@@ -13,16 +13,22 @@ export type Mec = {
   composicao?: Composicao;
 };
 
-/** O.S. distintas por categoria de passagem (BSI, Revisão C7, C7 pagos, C4 garantia). */
-export type Composicao = { bs?: string[]; rev?: string[]; pagos?: string[]; c4?: string[] };
+/** O.S. distintas por categoria de passagem. */
+export type Composicao = { bs?: string[]; rev?: string[]; pagos?: string[]; c4?: string[]; funilaria?: string[] };
 export const CATEGORIAS = [
   { k: "bs", nome: "BSI", desc: "O.S. do tipo BS" },
-  { k: "rev", nome: "REVISÃO C7", desc: "O.S. C7/M7 com código 0000105 / 00001050" },
+  { k: "rev", nome: "REVISÃO C7", desc: "O.S. C7/M7 com código 0000105" },
   { k: "pagos", nome: "C7 - PAGOS", desc: "O.S. C7 que não são Revisão C7" },
-  { k: "c4", nome: "C4 - GARANTIA", desc: "O.S. do tipo C4" },
+  { k: "c4", nome: "C4 - GARANTIA", desc: "O.S. dos tipos C4 e MG" },
+  { k: "funilaria", nome: "FUNILARIA", desc: "O.S. dos tipos CF, C5, MF e MS" },
 ] as const;
 export type CatKey = (typeof CATEGORIAS)[number]["k"];
+const CAT_KEYS: CatKey[] = CATEGORIAS.map(c => c.k);
+/** Tipos de O.S. internas: não contam passagem para ninguém. */
+export const TIPOS_INTERNOS = new Set(["IO", "IP", "IU", "IN", "NN"]);
 const COD_REV = new Set(["0000105", "00001050"]);
+const C4_T = new Set(["C4", "MG"]);
+const FUN_T = new Set(["CF", "C5", "MF", "MS"]);
 
 /** Classifica as linhas (O.S., tipo, código) em O.S. distintas por categoria; cada O.S. conta uma vez. */
 export function classificar(linhas: { os: string; tipo: string; cod: string }[]): Required<Composicao> {
@@ -32,14 +38,17 @@ export function classificar(linhas: { os: string; tipo: string; cod: string }[])
     const c = l.cod.replace(/[.\s]/g, "");
     if ((t === "C7" || t === "M7") && COD_REV.has(c)) rev.add(l.os);
   }
-  const de = (t: string) => [...tipo].filter(([, v]) => v === t).map(([k]) => k);
-  return { bs: de("BS"), rev: [...rev], pagos: de("C7").filter(o => !rev.has(o)), c4: de("C4") };
+  const de = (f: (t: string) => boolean) => [...tipo].filter(([, v]) => f(v)).map(([k]) => k);
+  return {
+    bs: de(t => t === "BS"), rev: [...rev], pagos: de(t => t === "C7").filter(o => !rev.has(o)),
+    c4: de(t => C4_T.has(t)), funilaria: de(t => FUN_T.has(t)),
+  };
 }
 
 export function somarComposicao(lst: (Composicao | undefined)[]): Required<Composicao> {
-  const o = { bs: [] as string[], rev: [] as string[], pagos: [] as string[], c4: [] as string[] };
-  for (const c of lst) for (const k of ["bs", "rev", "pagos", "c4"] as const) o[k].push(...(c?.[k] ?? []));
-  for (const k of ["bs", "rev", "pagos", "c4"] as const) o[k] = [...new Set(o[k])];
+  const o = { bs: [] as string[], rev: [] as string[], pagos: [] as string[], c4: [] as string[], funilaria: [] as string[] };
+  for (const c of lst) for (const k of CAT_KEYS) o[k].push(...(c?.[k] ?? []));
+  for (const k of CAT_KEYS) o[k] = [...new Set(o[k])];
   return o;
 }
 
@@ -178,6 +187,7 @@ export function lerPassagens(raw: unknown[][]): PassReport {
     if (!cols) continue;
     const id = String(row[cols.os] ?? "").trim();
     if (!id || !/\d/.test(id)) continue;
+    if (cols.tipo >= 0 && TIPOS_INTERNOS.has(String(row[cols.tipo] ?? "").trim().toUpperCase())) continue;
     for (const [ci, map] of [[cols.cons, seenC], [cols.prod, seenM]] as const) {
       const nome = String(row[ci] ?? "").trim();
       if (!nome) continue;
