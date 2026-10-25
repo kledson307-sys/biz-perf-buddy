@@ -3,7 +3,7 @@ import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Barra, Box, Kpi, Tabela, brl, div, norm, num, parseNum, pct, tone, uni } from "@/components/painel-ui";
-import { GRUPO_NOME, blocoMec, ehRelatorioPassagens, grupoDe, lerPassagens, ocultoDaLista, type Grupo, type Mec, type MecBloco, type PassReport, lerMecanicos } from "@/lib/mecanicos";
+import { CATEGORIAS, GRUPO_NOME, blocoMec, ehRelatorioPassagens, grupoDe, lerPassagens, ocultoDaLista, somarComposicao, type CatKey, type Composicao, type Grupo, type Mec, type MecBloco, type PassReport, lerMecanicos } from "@/lib/mecanicos";
 import { registrarUpdate } from "@/lib/update-log";
 import { MecanicosIA } from "@/components/MecanicosIA";
 
@@ -37,9 +37,9 @@ export function Mecanicos({ mes, tot, dec, modo = "ver" }: { mes: string; tot: n
   };
 
   const load = async () => {
-    const { data, error } = await supabase.from("mech_month").select("id,nome,grupo,servicos,pecas,passagens,meta_servicos,meta_pecas").eq("mes", mes).order("nome");
+    const { data, error } = await supabase.from("mech_month").select("id,nome,grupo,servicos,pecas,passagens,meta_servicos,meta_pecas,composicao").eq("mes", mes).order("nome");
     if (error) { setMsg(error.message); return; }
-    let lst: Mec[] = (data ?? []).map(r => ({ ...r, grupo: asGrupo(r.grupo) }));
+    let lst: Mec[] = (data ?? []).map(r => ({ ...r, grupo: asGrupo(r.grupo), composicao: (r.composicao ?? {}) as Composicao }));
     // quem ainda está sem grupo herda o grupo do mês mais recente em que apareceu
     const sem = lst.filter(r => r.grupo === "outros").map(r => r.nome);
     if (sem.length) {
@@ -109,7 +109,7 @@ export function Mecanicos({ mes, tot, dec, modo = "ver" }: { mes: string; tot: n
 
   const importarPassagens = async (r: PassReport) => {
     setBusy(true);
-    const mecs = r.mecanicos.map(x => ({ ...base(x.nome), passagens: x.passagens }));
+    const mecs = r.mecanicos.map(x => ({ ...base(x.nome), passagens: x.passagens, composicao: x.composicao ?? {} }));
     const { error: eM } = await supabase.from("mech_month").upsert(mecs.map(({ id: _i, ...m }) => ({ ...m, mes, updated_at: new Date().toISOString() })), { onConflict: "user_id,mes,nome" });
     if (eM) { setBusy(false); setMsg("Erro ao salvar passagens dos técnicos: " + eM.message); return; }
     const { data: cons } = await supabase.from("consultants").select("id,nome");
@@ -228,8 +228,23 @@ function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onGrupo, onRem, vazio, di
   const suf = rotulo ? ` ${rotulo}` : "";
   const visiveis = b.calcs.filter(c => !ocultoDaLista(c.r.nome));
   const ocultos = b.n - visiveis.length;
+  const [aberto, setAberto] = useState<string | null>(null);
+  const temComp = b.calcs.some(c => CATEGORIAS.some(k => (c.r.composicao?.[k.k]?.length ?? 0) > 0));
+  const alvo = aberto === "__total" ? { nome: `Total${suf}`, comp: somarComposicao(b.calcs.map(c => c.r.composicao)) }
+    : aberto ? { nome: aberto, comp: somarComposicao([b.calcs.find(c => c.r.nome === aberto)?.r.composicao]) } : null;
   return (
     <div className="space-y-4">
+      {temComp && <Box title={`Passagens por tipo${suf}`} right={<span className="text-xs">toque no nome para ver o detalhe</span>}>
+        <div className="flex flex-wrap gap-2 p-3">
+          {[...visiveis.map(c => c.r.nome), "__total"].map(n => (
+            <button key={n} onClick={() => setAberto(aberto === n ? null : n)}
+              className={`rounded-full border px-3 py-1 text-xs ${aberto === n ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card"}`}>
+              {n === "__total" ? "TOTAL" : n}
+            </button>
+          ))}
+        </div>
+        {alvo && <ComposicaoDet nome={alvo.nome} comp={alvo.comp} />}
+      </Box>}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Kpi label={`Faturado Serviços${suf}`} value={brl(b.S.real)} sub={`meta ${brl(b.S.meta)} · ${pct(b.S.perf)}`} cls={tone(b.S.perf)} />
         <Kpi label={`Faturado Peças${suf}`} value={brl(b.P.real)} sub={`meta ${brl(b.P.meta)} · ${pct(b.P.perf)}`} cls={tone(b.P.perf)} />
@@ -364,3 +379,27 @@ function Oficina({ rotulo, b, visiveis, dec, tot }: { rotulo: string; b: MecBloc
   );
 }
 
+
+function ComposicaoDet({ nome, comp }: { nome: string; comp: Required<Composicao> }) {
+  const [cat, setCat] = useState<CatKey | "todas">("todas");
+  const total = CATEGORIAS.reduce((a, c) => a + comp[c.k].length, 0);
+  const lista = cat === "todas" ? [] : comp[cat];
+  return (
+    <div className="space-y-3 border-t border-border p-3">
+      <div className="text-sm font-semibold">{nome} · {uni(total)} O.S. únicas</div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        {CATEGORIAS.map(c => (
+          <button key={c.k} onClick={() => setCat(cat === c.k ? "todas" : c.k)} title={c.desc}
+            className={`rounded-lg border p-2 text-left ${cat === c.k ? "border-primary bg-primary/10" : "border-border bg-card"}`}>
+            <div className="text-[11px] text-muted-foreground">{c.nome}</div>
+            <div className="text-lg font-bold">{uni(comp[c.k].length)}</div>
+          </button>
+        ))}
+      </div>
+      {cat !== "todas" && <div className="text-xs">
+        <div className="mb-1 text-muted-foreground">{CATEGORIAS.find(c => c.k === cat)?.desc} — O.S.:</div>
+        <div className="flex flex-wrap gap-1">{lista.length ? lista.map(o => <span key={o} className="rounded bg-muted px-1.5 py-0.5">{o}</span>) : <span className="text-muted-foreground">nenhuma</span>}</div>
+      </div>}
+    </div>
+  );
+}
