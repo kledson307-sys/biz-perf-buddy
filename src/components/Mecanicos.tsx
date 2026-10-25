@@ -379,3 +379,27 @@ function Oficina({ rotulo, b, visiveis, dec, tot }: { rotulo: string; b: MecBloc
   );
 }
 
+
+function ComposicaoDet({ nome, comp }: { nome: string; comp: Required<Composicao> }) {
+  const [cat, setCat] = useState<CatKey | "todas">("todas");
+  const total = CATEGORIAS.reduce((a, c) => a + comp[c.k].length, 0);
+  const lista = cat === "todas" ? [] : comp[cat];
+  return (
+    <div className="space-y-3 border-t border-border p-3">
+      <div className="text-sm font-semibold">{nome} · {uni(total)} O.S. únicas</div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        {CATEGORIAS.map(c => (
+          <button key={c.k} onClick={() => setCat(cat === c.k ? "todas" : c.k)} title={c.desc}
+            className={`rounded-lg border p-2 text-left ${cat === c.k ? "border-primary bg-primary/10" : "border-border bg-card"}`}>
+            <div className="text-[11px] text-muted-foreground">{c.nome}</div>
+            <div className="text-lg font-bold">{uni(comp[c.k].length)}</div>
+          </button>
+        ))}
+      </div>
+      {cat !== "todas" && <div className="text-xs">
+        <div className="mb-1 text-muted-foreground">{CATEGORIAS.find(c => c.k === cat)?.desc} — O.S.:</div>
+        <div className="flex flex-wrap gap-1">{lista.length ? lista.map(o => <span key={o} className="rounded bg-muted px-1.5 py-0.5">{o}</span>) : <span className="text-muted-foreground">nenhuma</span>}</div>
+      </div>}
+    </div>
+  );
+}
