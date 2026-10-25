@@ -183,7 +183,7 @@ export function lerPassagens(raw: unknown[][]): PassReport {
   for (const row of raw) {
     const h = row.map(x => norm(String(x ?? "").trim()).replace(/\s+/g, " "));
     const os = h.findIndex(x => /^id ?o\.?s\.?$/.test(x));
-    if (os >= 0) { cols = { os, cons: h.findIndex(x => x === "consultor"), prod: h.findIndex(x => x === "produtivo"), tipo: h.findIndex(x => /^tipo( ?(de )?o\.?s\.?)?$/.test(x)), cod: h.findIndex(x => /^(cod|codigo|cod\.? ?(do )?serv\w*|codigo (do )?servico|servico|operacao)$/.test(x)) }; continue; }
+    if (os >= 0) { cols = { os, cons: h.findIndex(x => x === "consultor"), prod: h.findIndex(x => x === "produtivo"), tipo: h.findIndex(x => /^tipo( ?(de )?o\.?s\.?)?$/.test(x)), cod: h.findIndex(x => /^(cod|codigo|cod\.? ?(do )?serv\w*|codigo (do )?servico|servico|operacao|tmo ?ref\.?)$/.test(x)) }; continue; }
     if (!cols) continue;
     const id = String(row[cols.os] ?? "").trim();
     if (!id || !/\d/.test(id)) continue;
