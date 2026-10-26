@@ -117,7 +117,7 @@ export function ControleOS() {
 
         <div className="flex flex-wrap items-center gap-2 print:hidden" role="group" aria-label="Filtro de dias na oficina">
           <span className="text-sm text-muted-foreground">Dias na oficina:</span>
-          {([[0, "Todas", "border-primary bg-primary text-primary-foreground"], [20, "> 20 dias", "border-warning bg-warning text-warning-foreground"], [30, "> 30 dias", "border-destructive bg-destructive text-destructive-foreground"]] as const).map(([d, n, on]) => (
+          {([[0, "Todas", "border-primary bg-primary text-primary-foreground"], [20, "> 20 dias", "border-warning bg-warning/20 text-warning"], [30, "> 30 dias", "border-destructive bg-destructive/20 text-destructive"]] as const).map(([d, n, on]) => (
             <button key={d} type="button" aria-pressed={filtroDias === d} onClick={() => setFiltroDias(d)}
               className={`rounded-full border px-3 py-1 text-sm font-medium ${filtroDias === d ? on : "border-border bg-card text-muted-foreground"}`}>
               {n} ({lista.filter(a => a.item.st !== "encerrado" && a.item.dias > d).length})
