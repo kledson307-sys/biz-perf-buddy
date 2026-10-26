@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { brl, norm, Tabela } from "@/components/painel-ui";
 import { readSalesReport, type SalesReport } from "@/lib/sales-report";
 import { registrarUpdate } from "@/lib/update-log";
+import { mesTravado, msgTravado } from "@/lib/month-lock";
 
 type Cons = { id: string; nome: string; department_id: string | null };
 type Dept = { id: string; nome: string };
@@ -54,6 +55,7 @@ export function SalesImport({ cons, depts, onDone, onPeriod }: {
     if (!report || busy || !period.ini || !period.fim) return;
     setBusy(true); setMsg("");
     try {
+      if (await mesTravado(period.fim.slice(0, 7))) throw new Error(msgTravado(period.fim.slice(0, 7)));
       const departments = new Map(depts.map(d => [key(d.nome), d.id]));
       const consultants = new Map(cons.map(c => [key(c.nome), c.id]));
       const rows: { consultant_id: string; servicos: number; pecas: number; margem_pecas: number }[] = [];

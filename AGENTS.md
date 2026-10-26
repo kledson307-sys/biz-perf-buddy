@@ -18,11 +18,7 @@
 - Manage the dashboard theme through the shared ThemeProvider, persist the browser choice, and apply it on root HTML with shared CSS tokens so every tab and native input stays consistent.
 - Reuse `src/components/painel-ui.tsx` for dashboard formatters/UI and `src/lib/performance.ts` for main consultant, department, total and report calculations to keep tested math shared.
 - Agregados data lives in its own tables (`agg_sales`, `agg_goals`, `agg_visits`) and its own component; never mix it into `daily_sales`/`goals` totals — the user tracks it separately.
-- Agregados catalogue (`ITENS`) and parser live in `src/lib/agregados.ts`; add items there. User codes in `agg_codes` override defaults.
-- Agregados import replaces only the item group in the report, from month start for cumulative ranking reports (total on last day) or per sale day for item lists, so re-imports never double-count.
-- System codes are matched ignoring spaces and case (`normCod`); code lists are split only on comma/semicolon/newline because some codes contain spaces.
 - AI calls go through Lovable AI Gateway from server-only helpers in `src/lib/ai/*.server.ts`, invoked by auth-protected `createServerFn`s in `src/lib/*.functions.ts`; the browser sends computed stats, never the key.
-- Main sales Excel/paste parsing lives in `src/lib/sales-report.ts` and the import UI in `SalesImport`; match seller login before full name to preserve existing consultant identities.
 - All daily imports (sales, open O.S., technicians, agregados) render only in the Importações tab via each component's `modo="importar"`; result tabs stay read-only and Controle O.S. keeps its own weekly import.
 - Derive tab freshness from month-scoped update_log records using shared update-status helpers (sourceStatus also flags updates made today, shown as ✅/❌ per Importações block); sales views share their source, Projeção + OS requires both sales and open orders, and Controle O.S. uses its weekly cadence.
 - Cumulative main-sales reports use the authenticated SECURITY INVOKER `import_sales_period` RPC to replace included consultants' period atomically and store totals on the final day; period totals cannot reconstruct daily sales.
@@ -30,10 +26,12 @@
 - Team WhatsApp updates open wa.me links per consultant (manager sends manually) with AI tips from `whatsapp-ia.functions.ts`; no automated bulk sending.
 - Team sharing: all data tables default `user_id` to `data_owner()` (owner resolved via `team_members` by JWT email) and RLS uses `data_owner()`/`can_edit()`; never filter by `auth.uid()` directly so viewers/editors see the owner's data.
 - Controle de O.S. weekly imports are stored as full JSON snapshots in `os_imports`; status, "sem mudança" and days-in-status are derived by comparing with the previous snapshot (`src/lib/os-controle.ts`).
-- Seller aliases live in `nomeVendedor` (`src/lib/sales-report.ts`); parts margin stored in R$, % always derived as margem ÷ peças.
 - Installable "app version" is manifest-only (`public/manifest.webmanifest` + PNG icons in `public/icons/`, head tags in `__root.tsx`); never add a service worker or `vite-plugin-pwa` so Lovable previews stay safe.
 - Seller logins: team_members papel 'vendedor' + consultant_id; data_owner() is NULL for them and they read only via SECURITY DEFINER minha_performance; accounts created by criarAcessoVendedor.
 - Technician logins use team_members papel 'tecnico' + tecnico_nome; data_owner() is NULL for them and they read only via SECURITY DEFINER meu_desempenho_tecnico RPC.
 - Judicial O.S. flag lives in `os_acompanhamento.acoes.__judicial` (os-controle helpers); excluded from Painel warning, bell and `minhas_os`.
 - Access: shared `useAccessPresence` confirms RPC writes before seller reads; retry errors, refresh on open/focus/visible/online/timer. History refreshes; keep one owner-scoped row/day.
-- Open-order import keeps only `TIPOS_OK` types and applies seller aliases.
+- Month closing lock lives in `month_locks` (helpers in `src/lib/month-lock.ts`); only the master email may insert/delete via RLS, and sales/agregados imports must check `mesTravado` before writing so closed months stay frozen.
+- Serviços/Peças/Serviços & Peças are sub-tabs of one "Projeções" tab (`projSub`); keep `setTab("proj-*")` deep links working through the wrapper.
+
+- Subdirectories may have their own `AGENTS.md` (e.g. `src/lib/AGENTS.md`); read it before changing files there.

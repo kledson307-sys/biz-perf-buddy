@@ -22,6 +22,8 @@ import { RankingAgregados, RankingTecnicos } from "@/components/RankingExtra";
 import { MetasAno } from "@/components/MetasAno";
 import { Cockpit } from "@/components/Cockpit";
 import { NpsPainel } from "@/components/NpsPainel";
+import { PecasEstoque } from "@/components/PecasEstoque";
+import { CadeadoMes } from "@/components/CadeadoMes";
 import { AnaliseFechamento, Reconhecimento } from "@/components/RelatorioAnalise";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -132,17 +134,20 @@ function Painel({ email }: { email: string }) {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [params, setParams] = useState<Params>(defParams);
-  const [tab, setTab] = useState("cockpit");
+  const [tab, setTabRaw] = useState("cockpit");
+  const [projSub, setProjSub] = useState<"proj-serv" | "proj-pec" | "proj-total">("proj-serv");
+  const setTab = (k: string) => { if (k.startsWith("proj-")) { setProjSub(k as typeof projSub); setTabRaw("proj"); } else setTabRaw(k); };
   const [rankSub, setRankSub] = useState<"geral" | "agregados" | "tecnicos">("geral");
   const [relatorio, setRelatorio] = useState(false);
-  const show = (k: string) => tab === k || relatorio;
+  const show = (k: string) => tab === k || (tab === "proj" && k === projSub) || relatorio;
   useEffect(() => { const f = () => setRelatorio(false); window.addEventListener("afterprint", f); return () => window.removeEventListener("afterprint", f); }, []);
   const gerarRelatorio = () => { setRelatorio(true); setTimeout(() => window.print(), 1200); };
   const [filtroDept, setFiltroDept] = useState("todos");
   const [updates, setUpdates] = useState<UpdateRecord[]>([]);
   const [clock, setClock] = useState(() => new Date());
   const lastUp = updates[0] ?? null;
-  const status = tabUpdateStatus(tab, mes, updates, clock);
+  const tabKey = (k: string) => (k === "proj" ? projSub : k === "pecas" ? "painel" : k);
+  const status = tabUpdateStatus(tabKey(tab), mes, updates, clock);
   const [abrirWhats, setAbrirWhats] = useState(false);
 
   const loadUpdates = useCallback(async () => {
@@ -276,7 +281,7 @@ function Painel({ email }: { email: string }) {
     a.download = `relatorio-${mes}.csv`; a.click();
   };
 
-  const tabs = [["cockpit", "Dashboard"], ["painel", "Painel"], ["ranking", "Ranking"], ["proj-serv", "Serviços"], ["proj-pec", "Peças"], ["proj-total", "Serviços & Peças"], ["os", "Projeção + OS"], ["agregados", "Agregados"], ["mecanicos", "Técnicos"], ["controle-os", "Controle O.S."], ["metas", "Metas"], ["nps", "NPS"], ["importacoes", "Importações"], ["config", "Configurar"]];
+  const tabs = [["cockpit", "Dashboard"], ["painel", "Central de Gestão"], ["ranking", "Consultores"], ["metas", "Metas"], ["proj", "Projeções"], ["os", "Projeção + OS"], ["agregados", "Agregados"], ["mecanicos", "Técnicos"], ["controle-os", "Controle O.S."], ["pecas", "Peças"], ["nps", "NPS"], ["importacoes", "Importações"], ["config", "Configurar"]];
 
   const [anoMes, mesNum] = mes.split("-").map(Number);
   const mesExt = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(anoMes!, mesNum! - 1, 1));
@@ -313,8 +318,8 @@ function Painel({ email }: { email: string }) {
             <nav aria-label="Abas do painel" className="col-span-2 -mx-3 flex min-w-0 gap-1 overflow-x-auto px-3 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 lg:ml-auto">
               {tabs.map(([k, l]) => {
                 if (!k) return null;
-                const sep = k === "proj-serv" || k === "importacoes";
-                const stale = k === "importacoes" ? status.pending.some((x) => x !== "controle-os") : tabUpdateStatus(k, mes, updates, clock).stale;
+                const sep = k === "proj" || k === "importacoes";
+                const stale = k === "importacoes" ? status.pending.some((x) => x !== "controle-os") : tabUpdateStatus(tabKey(k), mes, updates, clock).stale;
                 return <Fragment key={k}>{sep && <span aria-hidden className="mx-1 hidden w-px self-stretch bg-border sm:block" />}<Button onClick={() => setTab(k)} variant={tab === k ? "default" : "ghost"}
                   data-update-status={stale ? "pending" : "current"}
                   title={stale ? `${l}: atualização pendente` : l}
@@ -366,7 +371,7 @@ function Painel({ email }: { email: string }) {
             agregados: ["Agregados medem o aproveitamento de cada passagem.", "Combine com cada consultor 1 agregado por atendimento e acompanhe o aproveitamento."],
             config: [semMeta ? `${semMeta} consultor(es) sem meta neste mês.` : "Metas e dias configurados.", semMeta ? "Cadastre as metas faltantes para a projeção ficar correta." : "Confira feriados nos dias úteis."],
           };
-          const [analise, acao] = o[tab] ?? o["painel"]!;
+          const [analise, acao] = o[tabKey(tab)] ?? o["painel"]!;
           return (
             <div className="rounded-lg border-l-4 border-primary bg-primary/5 px-4 py-3 text-sm print:hidden">
               <p className="text-xs font-semibold uppercase tracking-wide text-primary">Orientação ao gestor</p>
@@ -502,6 +507,13 @@ function Painel({ email }: { email: string }) {
           </Secao>
         )}
 
+        {tab === "proj" && !relatorio && (
+          <div className="flex flex-wrap gap-2 print:hidden" role="tablist" aria-label="Tipo de projeção">
+            {([["proj-serv", "Serviços"], ["proj-pec", "Peças"], ["proj-total", "Serviços & Peças"]] as const).map(([k, n]) => (
+              <button key={k} role="tab" aria-selected={projSub === k} onClick={() => setProjSub(k)} className={`rounded-full border px-4 py-1.5 text-sm font-medium ${projSub === k ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground"}`}>{n}</button>
+            ))}
+          </div>
+        )}
         {show("proj-serv") && (
           <Secao relatorio={relatorio} titulo="Projeção de Serviços">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -684,7 +696,8 @@ function Painel({ email }: { email: string }) {
         </div>}
         {tab === "cockpit" && !relatorio && <Cockpit linhas={linhas} porDept={porDept} mes={mes} tot={tot} dec={dec} soPecas={soPecas} setTab={setTab} />}
         {tab === "nps" && !relatorio && <NpsPainel />}
-        {tab === "metas" && !relatorio && <Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} />}
+        {tab === "pecas" && !relatorio && <PecasEstoque linhas={linhas} porDept={porDept} margemIdeal={margemIdeal} deptName={deptName} />}
+        {tab === "metas" && !relatorio && <><CadeadoMes mes={mes} /><Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></>}
         {tab === "config" && <div className="space-y-6"><Equipe /><Config parte="config" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div>}
       </main>
     </div>

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Box, brl, norm, uni } from "./painel-ui";
-import { GRUPO_NOME, ITENS, distribuir, lerRanking, splitCods, type Relatorio } from "@/lib/agregados";
+import { GRUPO_NOME, ITENS, distribuir, lerRanking, normCod, splitCods, type Relatorio } from "@/lib/agregados";
 import { registrarUpdate } from "@/lib/update-log";
+import { mesTravado, msgTravado } from "@/lib/month-lock";
 import { AgregadosPassagens } from "./AgregadosPassagens";
 
 type Cons = { id: string; nome: string; department_id: string | null };
@@ -20,6 +21,16 @@ export function AgregadosImport({ allCons, codigos, ini, end, onDone }: {
   const [salvando, setSalvando] = useState(false);
 
   const res = useMemo(() => (rel ? distribuir(rel, codigos) : null), [rel, codigos]);
+  // Detector de códigos novos: descrição parece um agregado, mas o código não está cadastrado.
+  const novosCods = useMemo(() => {
+    if (!rel) return [];
+    const cad = new Set(Object.values(codigos).flat().map(normCod));
+    return rel.servicos.flatMap((s) => {
+      if (cad.has(normCod(s.codigo))) return [];
+      const it = ITENS.find((i) => i.re.test(norm(s.desc)));
+      return it ? [{ codigo: s.codigo, desc: s.desc, qtd: s.qtd, item: it.nome }] : [];
+    });
+  }, [rel, codigos]);
   // Só substitui o grupo (serviços ou peças) que aparece no relatório, para que importar um não apague o outro.
   const grupos = new Set((res?.usados ?? []).map((u) => ITENS.find((i) => i.k === u.item)?.g));
   const itensAtivos = ITENS.filter((i) => (codigos[i.k] ?? []).length > 0 && grupos.has(i.g));
@@ -56,6 +67,7 @@ export function AgregadosImport({ allCons, codigos, ini, end, onDone }: {
     if (!res) return;
     setSalvando(true); setMsg("Salvando…");
     try {
+      if (await mesTravado(periodo.fim.slice(0, 7))) throw new Error(msgTravado(periodo.fim.slice(0, 7)));
       const cmap = new Map(allCons.map((c) => [norm(c.nome), c.id]));
       for (const l of res.linhas) {
         if (cmap.has(norm(l.nome))) continue;
@@ -159,6 +171,13 @@ export function AgregadosImport({ allCons, codigos, ini, end, onDone }: {
                 </tbody>
               </table>
             </details>
+            {novosCods.length > 0 && (
+              <div className="rounded-md border border-warning/50 bg-warning/10 p-3 text-xs">
+                <p className="font-semibold text-warning">⚠️ Códigos novos que parecem agregados e ainda não estão cadastrados ({novosCods.length}):</p>
+                <ul className="mt-1 space-y-0.5">{novosCods.map((n) => <li key={n.codigo}><span className="font-mono">{n.codigo}</span> — {n.desc} · provável <b>{n.item}</b> · {uni(n.qtd)} un</li>)}</ul>
+                <p className="mt-1 text-muted-foreground">Se forem desse item, adicione o código na lista de códigos abaixo e importe de novo.</p>
+              </div>
+            )}
             {avisos.length > 0 && (
               <p className="text-destructive">Atenção: a soma por consultor não bate com o total em {avisos.map((a) => `${a.codigo} (${a.soma} de ${a.qtd})`).join(", ")}.</p>
             )}
