@@ -37,3 +37,5 @@
 - Judicial O.S. flag lives in `os_acompanhamento.acoes.__judicial` (os-controle helpers); excluded from Painel warning, bell and `minhas_os`.
 - Access: shared `useAccessPresence` confirms RPC writes before seller reads; retry errors, refresh on open/focus/visible/online/timer. History refreshes; keep one owner-scoped row/day.
 - Open-order import keeps only `TIPOS_OK` types and applies seller aliases.
+- Month closing lock lives in `month_locks` (helpers in `src/lib/month-lock.ts`); only the master email may insert/delete via RLS, and sales/agregados imports must check `mesTravado` before writing so closed months stay frozen.
+- Serviços/Peças/Serviços & Peças are sub-tabs of one "Projeções" tab (`projSub`); keep `setTab("proj-*")` deep links working through the wrapper.
