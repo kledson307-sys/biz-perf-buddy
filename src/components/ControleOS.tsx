@@ -16,6 +16,7 @@ export function ControleOS() {
   const [imps, setImps] = useState<OsImport[]>([]);
   const [sel, setSel] = useState(0);
   const [aba, setAba] = useState<Status>("pronto");
+  const [filtroDias, setFiltroDias] = useState<0 | 20 | 30>(0);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [aberto, setAberto] = useState<string | null>(null);
@@ -77,7 +78,7 @@ export function ControleOS() {
     if (error) setMsg(error.message); else { setSel(0); await load(); }
   };
 
-  const doStatus = lista.filter(a => a.item.st === aba);
+  const doStatus = lista.filter(a => a.item.st === aba && a.item.dias > filtroDias);
   const porCons = [...new Set(doStatus.map(a => a.item.cons))].sort().map(c => ({ c, l: doStatus.filter(a => a.item.cons === c).sort((x, y) => y.diasStatus - x.diasStatus) }));
   const ranking = useMemo(() => STATUS.map(s => {
     const l = lista.filter(a => a.item.st === s.k);
@@ -112,6 +113,16 @@ export function ControleOS() {
               {al > 0 && <div className="mt-1 text-xs font-semibold text-destructive">⚠ {al} alerta{al > 1 ? "s" : ""}</div>}
             </button>;
           })}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 print:hidden" role="group" aria-label="Filtro de dias na oficina">
+          <span className="text-sm text-muted-foreground">Dias na oficina:</span>
+          {([[0, "Todas", "border-primary bg-primary text-primary-foreground"], [20, "> 20 dias", "border-warning bg-warning text-warning-foreground"], [30, "> 30 dias", "border-destructive bg-destructive text-destructive-foreground"]] as const).map(([d, n, on]) => (
+            <button key={d} type="button" aria-pressed={filtroDias === d} onClick={() => setFiltroDias(d)}
+              className={`rounded-full border px-3 py-1 text-sm font-medium ${filtroDias === d ? on : "border-border bg-card text-muted-foreground"}`}>
+              {n} ({lista.filter(a => a.item.st !== "encerrado" && a.item.dias > d).length})
+            </button>
+          ))}
         </div>
 
         <Box title="Ranking por status — gráficos de pizza">

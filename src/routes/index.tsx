@@ -318,8 +318,8 @@ function Painel({ email }: { email: string }) {
             <nav aria-label="Abas do painel" className="col-span-2 -mx-3 flex min-w-0 gap-1 overflow-x-auto px-3 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 lg:ml-auto">
               {tabs.map(([k, l]) => {
                 if (!k) return null;
-                const sep = k === "proj-serv" || k === "importacoes";
-                const stale = k === "importacoes" ? status.pending.some((x) => x !== "controle-os") : tabUpdateStatus(k, mes, updates, clock).stale;
+                const sep = k === "proj" || k === "importacoes";
+                const stale = k === "importacoes" ? status.pending.some((x) => x !== "controle-os") : tabUpdateStatus(tabKey(k), mes, updates, clock).stale;
                 return <Fragment key={k}>{sep && <span aria-hidden className="mx-1 hidden w-px self-stretch bg-border sm:block" />}<Button onClick={() => setTab(k)} variant={tab === k ? "default" : "ghost"}
                   data-update-status={stale ? "pending" : "current"}
                   title={stale ? `${l}: atualização pendente` : l}
@@ -371,7 +371,7 @@ function Painel({ email }: { email: string }) {
             agregados: ["Agregados medem o aproveitamento de cada passagem.", "Combine com cada consultor 1 agregado por atendimento e acompanhe o aproveitamento."],
             config: [semMeta ? `${semMeta} consultor(es) sem meta neste mês.` : "Metas e dias configurados.", semMeta ? "Cadastre as metas faltantes para a projeção ficar correta." : "Confira feriados nos dias úteis."],
           };
-          const [analise, acao] = o[tab] ?? o["painel"]!;
+          const [analise, acao] = o[tabKey(tab)] ?? o["painel"]!;
           return (
             <div className="rounded-lg border-l-4 border-primary bg-primary/5 px-4 py-3 text-sm print:hidden">
               <p className="text-xs font-semibold uppercase tracking-wide text-primary">Orientação ao gestor</p>
