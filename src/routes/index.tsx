@@ -282,24 +282,38 @@ function Painel({ email }: { email: string }) {
     a.download = `relatorio-${mes}.csv`; a.click();
   };
 
-  const tabs: [string, string, typeof Gauge][] = [["cockpit", "Dashboard", Gauge], ["painel", "Central de Gestão", LayoutDashboard], ["ranking", "Consultores", Users], ["metas", "Metas", Target], ["proj", "Projeções", TrendingUp], ["os", "Projeção + OS", ClipboardList], ["agregados", "Agregados", Gem], ["mecanicos", "Técnicos", Wrench], ["controle-os", "Controle O.S.", Car], ["pecas", "Peças", Package], ["nps", "NPS", Star], ["importacoes", "Importações", Upload], ["config", "Configurar", Settings]];
-  const tabLabel = tabs.find(([k]) => k === tab)?.[1] ?? "";
+  // 10 abas oficiais; algumas agrupam sub-abas (mantém deep links setTab antigos).
+  const tabs: [string, string, typeof Gauge, string[]][] = [
+    ["cockpit", "Dashboard", Gauge, []],
+    ["painel", "Central de Gestão", LayoutDashboard, ["proj", "os"]],
+    ["ranking", "Consultores", Users, []],
+    ["metas", "Metas & Planejamento", Target, []],
+    ["agregados", "Agregados", Gem, []],
+    ["mecanicos", "Oficina & Técnicos", Wrench, []],
+    ["controle-os", "Ordens de Serviço", Car, []],
+    ["pecas", "Peças & Estoque", Package, []],
+    ["nps", "NPS & Satisfação", Star, []],
+    ["importacoes", "Importações & Config.", Upload, ["config"]],
+  ];
+  const subLabels: Record<string, [string, typeof Gauge]> = { painel: ["Visão geral", LayoutDashboard], proj: ["Projeções", TrendingUp], os: ["Projeção + O.S.", ClipboardList], importacoes: ["Importações", Upload], config: ["Configurações", Settings] };
+  const grupo = tabs.find(([k, , , subs]) => k === tab || subs.includes(tab));
+  const tabLabel = tab === "proj" || tab === "os" || tab === "config" ? subLabels[tab]![0] : (grupo?.[1] ?? "");
 
   const [anoMes, mesNum] = mes.split("-").map(Number);
   const mesExt = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(anoMes!, mesNum! - 1, 1));
   const mesExtenso = mesExt.charAt(0).toUpperCase() + mesExt.slice(1);
   const navList = (
     <nav aria-label="Abas do painel" className="flex flex-col gap-0.5">
-      {tabs.map(([k, l, Icon]) => {
-        const sep = k === "proj" || k === "importacoes";
-        const stale = k === "importacoes" ? status.pending.some((x) => x !== "controle-os") : tabUpdateStatus(tabKey(k), mes, updates, clock).stale;
-        const ativo = tab === k;
-        return <Fragment key={k}>{sep && <span aria-hidden className="my-2 h-px bg-border" />}
+      {tabs.map(([k, l, Icon, subs], i) => {
+        const keys = [k, ...subs];
+        const stale = k === "importacoes" ? status.pending.some((x) => x !== "controle-os") : keys.some((x) => tabUpdateStatus(tabKey(x), mes, updates, clock).stale);
+        const ativo = keys.includes(tab);
+        return <Fragment key={k}>{i === 9 && <span aria-hidden className="my-2 h-px bg-border" />}
           <button type="button" onClick={() => { setTab(k); setMenu(false); }}
             data-update-status={stale ? "pending" : "current"} title={stale ? `${l}: atualização pendente` : l}
             aria-current={ativo ? "page" : undefined}
-            className={`flex items-center gap-3 rounded-lg border-l-2 px-3 py-2 text-left text-sm transition-colors ${ativo ? "border-primary bg-primary/15 font-semibold text-foreground" : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
-            <Icon className={`size-4 shrink-0 ${ativo ? "text-primary" : ""}`} />
+            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${ativo ? "bg-gradient-to-r from-primary/30 to-primary/5 font-semibold text-foreground shadow-[inset_3px_0_0_var(--color-primary)]" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+            <Icon strokeWidth={1.5} className={`size-4 shrink-0 ${ativo ? "text-primary" : ""}`} />
             <span className="flex-1">{l}</span>
             {stale && <span className="update-alert size-2 rounded-full bg-destructive" aria-label="atualização pendente" />}
           </button></Fragment>;
@@ -308,11 +322,28 @@ function Painel({ email }: { email: string }) {
   );
   const marca = (
     <div className="flex items-center gap-3">
-      <img src={bmwLogo.url} alt="BMW" className="size-9 shrink-0" />
+      <img src={bmwLogo.url} alt="BMW" className="size-10 shrink-0" />
       <div className="min-w-0 leading-tight">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Haus Motors</p>
-        <p className="text-sm font-bold">PAINEL <span className="text-primary">KLEDSON</span></p>
+        <p className="text-sm font-bold tracking-wide">BMW PÓS-VENDA</p>
+        <p className="text-[10px] text-muted-foreground">Mais que serviço, é experiência</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">Haus Motors · Kledson</p>
       </div>
+    </div>
+  );
+  const rodapeMenu = (
+    <div className="border-t border-border p-3">
+      <img src={carroSilhueta} alt="" aria-hidden loading="lazy" width={1152} height={576} className="mx-auto w-full opacity-80" />
+      <div className="m-stripe mx-auto mt-2 w-16 rounded-full" />
+      <p className="mt-2 text-center text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Juntos pela melhor experiência.</p>
+      <p className="mt-1 break-all text-center text-[10px] text-muted-foreground">{email}</p>
+    </div>
+  );
+  const subs = grupo?.[3] ?? [];
+  const subBar = subs.length > 0 && !relatorio && (
+    <div role="tablist" className="flex flex-wrap gap-2 print:hidden">
+      {[grupo![0], ...subs].map((k) => { const [n, I] = subLabels[k]!; const on = tab === k; return (
+        <button key={k} role="tab" aria-selected={on} type="button" onClick={() => setTab(k)} className={`flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}><I className="size-4" />{n}</button>
+      ); })}
     </div>
   );
   return (
