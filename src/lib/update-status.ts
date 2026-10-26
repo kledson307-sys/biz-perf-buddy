@@ -13,7 +13,7 @@ export function updateSources(origem: string): UpdateSource[] {
 }
 
 export function sourcesForTab(tab: string): UpdateSource[] {
-  if (tab === "config") return [];
+  if (tab === "config" || tab === "metas" || tab === "nps") return [];
   if (tab === "os") return ["faturamento", "os"];
   if (tab === "controle-os" || tab === "mecanicos" || tab === "agregados") return [tab];
   return ["faturamento"];
