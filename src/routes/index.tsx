@@ -29,6 +29,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Car, ChevronDown, ClipboardList, Download, Gauge, Gem, LayoutDashboard, Lightbulb, LogOut, Menu, Package, Printer, Settings, Star, Target, TrendingUp, Upload, Users, Wrench, X } from "lucide-react";
 import bmwLogo from "@/assets/bmw-logo.asset.json";
+import carroSilhueta from "@/assets/carro-silhueta.jpg";
 import { localDay, sourceLabels, sourceStatus, tabUpdateStatus, UPDATE_EVENT, type UpdateRecord, type UpdateSource } from "@/lib/update-status";
 import { calcPerformance } from "@/lib/performance";
 import { useAccessPresence } from "@/hooks/use-access-presence";
@@ -348,21 +349,21 @@ function Painel({ email }: { email: string }) {
   );
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border bg-card print:hidden lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-border bg-card print:hidden lg:flex">
         <div className="border-b border-border p-4">{marca}</div>
         <div className="flex-1 overflow-y-auto p-3">{navList}</div>
-        <div className="border-t border-border p-3 text-[11px] text-muted-foreground"><p className="break-all">{email}</p></div>
+        {rodapeMenu}
       </aside>
       {menu && <div className="fixed inset-0 z-40 lg:hidden print:hidden">
         <button aria-label="Fechar menu" className="absolute inset-0 bg-background/70 backdrop-blur-sm" onClick={() => setMenu(false)} />
         <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-border bg-card shadow-xl">
           <div className="flex items-center justify-between border-b border-border p-4">{marca}<Button variant="ghost" size="icon" aria-label="Fechar menu" onClick={() => setMenu(false)}><X /></Button></div>
           <div className="flex-1 overflow-y-auto p-3">{navList}</div>
-          <div className="border-t border-border p-3 text-[11px] text-muted-foreground"><p className="break-all">{email}</p></div>
+          {rodapeMenu}
         </div>
       </div>}
 
-      <div className="lg:pl-60">
+      <div className="lg:pl-64">
       <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur print:hidden">
         <div className="mx-auto flex max-w-7xl items-center gap-2 px-3 py-2.5 sm:px-6">
           <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Abrir menu" onClick={() => setMenu(true)}><Menu /></Button>
@@ -411,6 +412,7 @@ function Painel({ email }: { email: string }) {
       </details>}
 
       <main className={`mx-auto min-w-0 max-w-7xl space-y-4 px-3 py-4 sm:space-y-6 sm:px-6 sm:py-6 ${tab === "painel" ? "painel-phone" : ""}`}>
+        {subBar}
         {!relatorio && (() => {
           const rest = Math.max(tot - dec, 0);
           type L = (typeof linhas)[number];
@@ -760,7 +762,7 @@ function Painel({ email }: { email: string }) {
             <StatusFonte source="agregados" mes={mes} updates={updates} clock={clock} />
             <Agregados modo="importar" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section>
         </div>}
-        {tab === "cockpit" && !relatorio && <Cockpit linhas={linhas} porDept={porDept} mes={mes} tot={tot} dec={dec} soPecas={soPecas} setTab={setTab} />}
+        {tab === "cockpit" && !relatorio && <Cockpit linhas={linhas} porDept={porDept} mes={mes} tot={tot} dec={dec} soPecas={soPecas} setTab={setTab} sales={sales} nome={email.split("@")[0] ?? ""} deptName={deptName} />}
         {tab === "nps" && !relatorio && <NpsPainel />}
         {tab === "pecas" && !relatorio && <PecasEstoque linhas={linhas} porDept={porDept} margemIdeal={margemIdeal} deptName={deptName} />}
         {tab === "metas" && !relatorio && <><CadeadoMes mes={mes} /><Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></>}
