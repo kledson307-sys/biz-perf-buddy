@@ -20,6 +20,8 @@ import { MeuDesempenhoTecnico } from "@/components/MeuDesempenhoTecnico";
 import { RankingMobile } from "@/components/RankingMobile";
 import { RankingAgregados, RankingTecnicos } from "@/components/RankingExtra";
 import { MetasAno } from "@/components/MetasAno";
+import { Cockpit } from "@/components/Cockpit";
+import { NpsPainel } from "@/components/NpsPainel";
 import { AnaliseFechamento, Reconhecimento } from "@/components/RelatorioAnalise";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -130,7 +132,7 @@ function Painel({ email }: { email: string }) {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [params, setParams] = useState<Params>(defParams);
-  const [tab, setTab] = useState("painel");
+  const [tab, setTab] = useState("cockpit");
   const [rankSub, setRankSub] = useState<"geral" | "agregados" | "tecnicos">("geral");
   const [relatorio, setRelatorio] = useState(false);
   const show = (k: string) => tab === k || relatorio;
@@ -274,7 +276,7 @@ function Painel({ email }: { email: string }) {
     a.download = `relatorio-${mes}.csv`; a.click();
   };
 
-  const tabs = [["painel", "Painel"], ["ranking", "Ranking"], ["proj-serv", "Serviços"], ["proj-pec", "Peças"], ["proj-total", "Serviços & Peças"], ["os", "Projeção + OS"], ["agregados", "Agregados"], ["mecanicos", "Técnicos"], ["controle-os", "Controle O.S."], ["importacoes", "Importações"], ["config", "Configurar"]];
+  const tabs = [["cockpit", "Dashboard"], ["painel", "Painel"], ["ranking", "Ranking"], ["proj-serv", "Serviços"], ["proj-pec", "Peças"], ["proj-total", "Serviços & Peças"], ["os", "Projeção + OS"], ["agregados", "Agregados"], ["mecanicos", "Técnicos"], ["controle-os", "Controle O.S."], ["metas", "Metas"], ["nps", "NPS"], ["importacoes", "Importações"], ["config", "Configurar"]];
 
   const [anoMes, mesNum] = mes.split("-").map(Number);
   const mesExt = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(anoMes!, mesNum! - 1, 1));
@@ -680,7 +682,10 @@ function Painel({ email }: { email: string }) {
             <StatusFonte source="agregados" mes={mes} updates={updates} clock={clock} />
             <Agregados modo="importar" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section>
         </div>}
-        {tab === "config" && <div className="space-y-6"><Equipe /><Config params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div>}
+        {tab === "cockpit" && !relatorio && <Cockpit linhas={linhas} porDept={porDept} mes={mes} tot={tot} dec={dec} soPecas={soPecas} setTab={setTab} />}
+        {tab === "nps" && !relatorio && <NpsPainel />}
+        {tab === "metas" && !relatorio && <Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} />}
+        {tab === "config" && <div className="space-y-6"><Equipe /><Config parte="config" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div>}
       </main>
     </div>
   );
@@ -694,8 +699,8 @@ function StatusFonte({ source, mes, updates, clock }: { source: UpdateSource; me
     : <>❌ Nenhuma atualização registrada neste mês.</>}</p>;
 }
 
-function Config({ params, salvarParams, depts, cons, goals, mes, reload, deptName, irPara }: {
-  params: Params; salvarParams: (p: Params) => void; depts: Dept[]; cons: Cons[]; goals: Goal[]; mes: string; reload: () => void; deptName: (id: string | null) => string; irPara: (mes: string) => void;
+function Config({ parte, params, salvarParams, depts, cons, goals, mes, reload, deptName, irPara }: {
+  parte: "config" | "metas"; params: Params; salvarParams: (p: Params) => void; depts: Dept[]; cons: Cons[]; goals: Goal[]; mes: string; reload: () => void; deptName: (id: string | null) => string; irPara: (mes: string) => void;
 }) {
   const [novoDept, setNovoDept] = useState("");
   const [novoCons, setNovoCons] = useState("");
@@ -710,9 +715,19 @@ function Config({ params, salvarParams, depts, cons, goals, mes, reload, deptNam
   const grupos = useMemo(() => [...new Set(cons.map((c) => c.department_id))], [cons]);
   return (
     <div className="space-y-6">
-      <MetasAno cons={cons} irPara={irPara} onSaved={reload} />
+      {parte === "metas" && (() => {
+        const ms = goals.reduce((a, g) => a + g.servicos, 0), mp = goals.reduce((a, g) => a + g.pecas, 0);
+        const sem = cons.filter((c) => !goals.some((g) => g.consultant_id === c.id && g.servicos + g.pecas > 0));
+        return <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Kpi label="Meta Serviços loja" value={brl(ms)} />
+          <Kpi label="Meta Peças loja" value={brl(mp)} />
+          <Kpi label="Meta Total loja" value={brl(ms + mp)} />
+          <Kpi label="Cobertura de metas" value={`${cons.length - sem.length}/${cons.length}`} sub={sem.length ? `Sem meta: ${sem.map((c) => c.nome).join(", ")}` : "✅ Todos com meta"} cls={sem.length ? "text-warning" : "text-success"} />
+        </div>;
+      })()}
+      {parte === "metas" && <MetasAno cons={cons} irPara={irPara} onSaved={reload} />}
       <div className="grid gap-6 lg:grid-cols-3">
-      <section className="space-y-4 rounded-xl border border-border bg-card p-6">
+      <section className={`space-y-4 rounded-xl border border-border bg-card p-6 ${parte === "metas" ? "hidden" : ""}`}>
         <h2 className="text-lg font-semibold">Dias do mês {mes}</h2>
         <Num label="Dias úteis totais" v={params.du_totais} on={(v) => salvarParams({ ...params, du_totais: v })} />
         <Num label="Dias úteis decorridos" v={params.du_decorridos} on={(v) => salvarParams({ ...params, du_decorridos: v })} />
@@ -735,7 +750,7 @@ function Config({ params, salvarParams, depts, cons, goals, mes, reload, deptNam
           </div>
         ))}
       </section>
-      <section className="space-y-3 rounded-xl border border-border bg-card p-6 lg:col-span-2">
+      <section className={`space-y-3 rounded-xl border border-border bg-card p-6 ${parte === "metas" ? "lg:col-span-3" : "lg:col-span-2"}`}>
         <h2 className="text-lg font-semibold">Consultores e metas de {mes}</h2>
         <div className="flex flex-wrap gap-2">
           <input value={novoCons} onChange={(e) => setNovoCons(e.target.value)} placeholder="Nome do consultor" className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm" />
@@ -775,7 +790,7 @@ function Config({ params, salvarParams, depts, cons, goals, mes, reload, deptNam
         <p className="text-xs text-muted-foreground">As metas são salvas ao sair do campo e valem para o mês selecionado no topo.</p>
       </section>
       </div>
-      <TecnicosMetas mes={mes} />
+      {parte === "metas" && <TecnicosMetas mes={mes} />}
     </div>
   );
 }
