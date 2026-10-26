@@ -214,9 +214,9 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
             <svg viewBox={`0 0 ${W} ${H + 18}`} className="w-full" role="img" aria-label="Faturamento acumulado do mês contra a meta">
               {[0.25, 0.5, 0.75, 1].map((f) => <line key={f} x1="0" x2={W} y1={py(maxY * f)} y2={py(maxY * f)} className="stroke-border" strokeWidth="1" />)}
               <line x1="0" y1={H} x2={W} y2={py(metaT)} className="stroke-muted-foreground" strokeWidth="1.5" strokeDasharray="5 5" />
-              <path d={`${caminho} L${px(evol.at(-1)!.d)},${H} L${px(evol[0]!.d)},${H} Z`} className="fill-primary/15" />
-              <path d={caminho} fill="none" className="stroke-neon" strokeWidth="2.5" />
-              <circle cx={px(evol.at(-1)!.d)} cy={py(evol.at(-1)!.v)} r="4" className="fill-neon" />
+              <path d={`${caminho} L${px(evol.at(-1)!.d)},${H} L${px(evol[0]!.d)},${H} Z`} fill="var(--neon)" fillOpacity="0.12" />
+              <path d={caminho} fill="none" stroke="var(--neon)" strokeWidth="2.5" />
+              <circle cx={px(evol.at(-1)!.d)} cy={py(evol.at(-1)!.v)} r="4" fill="var(--neon)" />
               {[1, 10, 20, diasMes].map((d) => <text key={d} x={Math.min(px(d), W - 12)} y={H + 14} className="fill-muted-foreground text-[10px]">{d}</text>)}
             </svg>
           )}
