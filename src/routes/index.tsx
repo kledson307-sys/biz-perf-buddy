@@ -4,7 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } f
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { Barra, Box, Cmp, Kpi, Num, Posicao, Secao, Tabela, bg, brl, dataHora, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
+import { Barra, Box, Cmp, Kpi, Num, Posicao, Secao, Tabela, bg, brl, dataHora, div, norm, parseNum, pct, tone, uni } from "@/components/painel-ui";
 import { Agregados } from "@/components/Agregados";
 import { SalesImport } from "@/components/SalesImport";
 import { EnvioWhatsapp } from "@/components/EnvioWhatsapp";
@@ -33,6 +33,9 @@ import carroSilhueta from "@/assets/carro-silhueta.jpg";
 import { localDay, sourceLabels, sourceStatus, tabUpdateStatus, UPDATE_EVENT, type UpdateRecord, type UpdateSource } from "@/lib/update-status";
 import { calcPerformance } from "@/lib/performance";
 import { useAccessPresence } from "@/hooks/use-access-presence";
+import { useResumoMes } from "@/hooks/use-resumo-mes";
+import { AbaTopo, type TopoKpi } from "@/components/AbaTopo";
+import { ITENS } from "@/lib/agregados";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -151,6 +154,7 @@ function Painel({ email }: { email: string }) {
   const tabKey = (k: string) => (k === "proj" ? projSub : k === "pecas" ? "painel" : k);
   const status = tabUpdateStatus(tabKey(tab), mes, updates, clock);
   const [abrirWhats, setAbrirWhats] = useState(false);
+  const resumo = useResumoMes(mes);
 
   const loadUpdates = useCallback(async () => {
     const { data, error } = await supabase.from("update_log").select("at,nome,origem,mes")
@@ -347,6 +351,68 @@ function Painel({ email }: { email: string }) {
       ); })}
     </div>
   );
+  const pctMeta = (r: number, m: number): TopoKpi["cls"] => tone(div(r, m));
+  const rest = Math.max(tot - dec, 0);
+  const topo = (() => {
+    if (relatorio) return null;
+    const t = total; const meta = t.mS + t.mP; const real = t.servicos + t.pecas;
+    const ranking = [...linhas].filter((l) => l.meta > 0).sort((a, b) => b.perf - a.perf);
+    switch (tab) {
+      case "painel": case "proj": case "os": return <AbaTopo titulo="Central de Gestão" sub={`Visão consolidada da loja por departamento · ${mesExtenso}`} icon={LayoutDashboard} kpis={[
+        { label: "Faturamento total", value: brl(real), sub: `${pct(div(real, meta))} de ${brl(meta)}`, p: div(real, meta), barra: "bg-primary", cls: pctMeta(real, meta) },
+        { label: "Mão de obra", value: brl(t.servicos), sub: `${pct(t.perfS)} de ${brl(t.mS)}`, p: t.perfS, barra: "bg-neon" },
+        { label: "Peças", value: brl(t.pecas), sub: `${pct(t.perfP)} de ${brl(t.mP)}`, p: t.perfP, barra: "bg-coral" },
+        { label: "Falta para a meta", value: brl(Math.max(meta - real, 0)), sub: rest ? `${brl(Math.max(meta - real, 0) / rest)}/dia em ${rest} dia(s)` : "Mês encerrado", cls: "text-warning" },
+      ]}>
+        {real > 0 && <div className="lux-card p-4"><p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Composição da receita</p>
+          <div className="flex h-3 overflow-hidden rounded-full"><div className="bg-neon" style={{ width: `${div(t.servicos, real) * 100}%` }} /><div className="bg-coral flex-1" /></div>
+          <p className="mt-2 flex justify-between text-xs"><span><span className="mr-1 inline-block size-2 rounded-full bg-neon" />Serviços {pct(div(t.servicos, real))}</span><span>Peças {pct(div(t.pecas, real))}<span className="ml-1 inline-block size-2 rounded-full bg-coral" /></span></p></div>}
+      </AbaTopo>;
+      case "ranking": return <AbaTopo titulo="Consultores" sub="Ranking, desempenho individual e comparação com o líder" icon={Users} kpis={[
+        { label: "Faturado pelo time", value: brl(real), sub: `Serviços ${brl(t.servicos)} · Peças ${brl(t.pecas)}` },
+        { label: "Meta coletiva", value: brl(meta) },
+        { label: "Atingimento", value: pct(div(real, meta)), p: div(real, meta), cls: pctMeta(real, meta), sub: `Projeção ${pct(t.projPct)}` },
+      ]}>
+        {ranking.length >= 3 && <div className="grid grid-cols-3 items-end gap-2">{[1, 0, 2].map((i) => { const l = ranking[i]!; return (
+          <div key={l.c.id} className={`lux-card flex flex-col items-center p-3 text-center ${i === 0 ? "pb-6 pt-5" : ""}`}>
+            <span className={`mb-1 flex size-9 items-center justify-center rounded-full text-sm font-bold ${i === 0 ? "bg-warning text-background" : i === 1 ? "bg-muted-foreground text-background" : "bg-coral text-background"}`}>{i + 1}º</span>
+            <p className="w-full truncate text-sm font-semibold">{l.c.nome}</p>
+            <p className="text-[10px] text-muted-foreground">{deptName(l.c.department_id)}</p>
+            <p className={`text-lg font-bold ${tone(l.perf)}`}>{pct(l.perf)}</p>
+          </div>); })}</div>}
+      </AbaTopo>;
+      case "metas": return <AbaTopo titulo="Metas & Planejamento" sub="Planejamento e acompanhamento das metas do mês" icon={Target} kpis={[
+        { label: "Meta de serviços", value: brl(t.mS), sub: `Realizado ${pct(t.perfS)} · projeção ${pct(t.projPctS)}`, p: t.projPctS, barra: "bg-neon" },
+        { label: "Meta de peças", value: brl(t.mP), sub: `Realizado ${pct(t.perfP)} · projeção ${pct(t.projPctP)}`, p: t.projPctP, barra: "bg-coral" },
+        { label: "Meta total", value: brl(meta), sub: `Projeção ${brl(t.proj)} (${pct(t.projPct)})`, p: t.projPct, cls: pctMeta(t.proj, meta) },
+        { label: "Ritmo diário necessário", value: brl(t.nec), sub: `${rest} dia(s) restantes · ${linhas.filter((l) => l.meta === 0).length} sem meta` },
+      ]} />;
+      case "agregados": return <AbaTopo titulo="Agregados" sub="Módulo independente · não soma nos totais da loja" icon={Gem} kpis={ITENS.map((it) => {
+        const a = resumo.agg[it.k] ?? { q: 0, v: 0, mq: 0 }; const ritmo = dec ? div(div(a.q, dec) * tot, a.mq) : 0;
+        return { label: it.nome, value: `${uni(a.q)} un`, sub: `${a.mq ? `Meta ${uni(a.mq)} · ritmo ${pct(ritmo)} · ` : ""}${brl(a.v)}${resumo.pass ? ` · ${pct(div(a.q, resumo.pass))} das passagens` : ""}`, p: a.mq ? ritmo : undefined, cls: a.mq ? tone(ritmo) : "" };
+      })} />;
+      case "mecanicos": { const m = resumo.mec; return <AbaTopo titulo="Oficina & Técnicos" sub="Produtividade da oficina, passagens por tipo e metas dos técnicos" icon={Wrench} kpis={[
+        { label: "Passagens", value: uni(m.pass), sub: "O.S. internas não contam" },
+        { label: "Serviços (M.O.)", value: brl(m.s), sub: `${pct(div(m.s, m.ms))} de ${brl(m.ms)}`, p: div(m.s, m.ms), barra: "bg-neon" },
+        { label: "Peças", value: brl(m.p), sub: `${pct(div(m.p, m.mp))} de ${brl(m.mp)}`, p: div(m.p, m.mp), barra: "bg-coral" },
+        { label: "Eficiência da oficina", value: pct(div(m.s + m.p, m.ms + m.mp)), sub: `Ticket M.O. ${brl(div(m.s, m.pass))}`, cls: pctMeta(m.s + m.p, m.ms + m.mp) },
+      ]} />; }
+      case "controle-os": return <AbaTopo titulo="Ordens de Serviço" sub="Status das O.S. em aberto e tempo na oficina" icon={Car} kpis={[
+        { label: "O.S. em aberto", value: uni(resumo.abertas), sub: `Tempo médio ${uni(resumo.mediaDias)} dias` },
+        { label: "Até 20 dias", value: uni(resumo.abertas - resumo.amarelos - resumo.parados), cls: "text-success" },
+        { label: "21 a 30 dias", value: uni(resumo.amarelos), cls: "text-warning" },
+        { label: "Mais de 30 dias", value: uni(resumo.parados), cls: "text-destructive" },
+      ]}>
+        {resumo.fluxo.length > 0 && <div className="flex flex-wrap gap-2">{resumo.fluxo.map((f) => <span key={f.st} className="rounded-full border border-border bg-card px-3 py-1 text-xs">{f.st} <b>{f.n}</b></span>)}</div>}
+      </AbaTopo>;
+      case "pecas": return <AbaTopo titulo="Peças & Estoque" sub="Faturamento de peças por canal, margem e ranking" icon={Package} kpis={[]} />;
+      case "nps": return <AbaTopo titulo="NPS & Satisfação" sub="Qualidade e pesquisa da montadora · aguardando planilha de pesquisas" icon={Star} kpis={[]} />;
+      case "importacoes": case "config": return <AbaTopo titulo="Importações & Configurações" sub="Atualização diária das fontes e ajustes do painel" icon={Upload} kpis={status.latest.map(({ source, record, fresh }) => ({
+        label: sourceLabels[source], value: fresh ? "✅ Hoje" : "❌ Pendente", cls: fresh ? "text-success" : "text-destructive", sub: record ? `${dataHora(record.at)} · ${record.nome}` : "Nenhuma atualização no mês",
+      }))} />;
+      default: return null;
+    }
+  })();
   return (
     <div className="min-h-screen bg-background text-foreground">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-border bg-card print:hidden lg:flex">
@@ -412,6 +478,7 @@ function Painel({ email }: { email: string }) {
       </details>}
 
       <main className={`mx-auto min-w-0 max-w-7xl space-y-4 px-3 py-4 sm:space-y-6 sm:px-6 sm:py-6 ${tab === "painel" ? "painel-phone" : ""}`}>
+        {topo}
         {subBar}
         {!relatorio && (() => {
           const rest = Math.max(tot - dec, 0);
@@ -764,7 +831,7 @@ function Painel({ email }: { email: string }) {
         </div>}
         {tab === "cockpit" && !relatorio && <Cockpit linhas={linhas} porDept={porDept} mes={mes} tot={tot} dec={dec} soPecas={soPecas} setTab={setTab} sales={sales} nome={email.split("@")[0] ?? ""} deptName={deptName} />}
         {tab === "nps" && !relatorio && <NpsPainel />}
-        {tab === "pecas" && !relatorio && <PecasEstoque linhas={linhas} porDept={porDept} margemIdeal={margemIdeal} deptName={deptName} />}
+        {tab === "pecas" && !relatorio && <PecasEstoque linhas={linhas} porDept={porDept} margemIdeal={margemIdeal} deptName={deptName} passagens={resumo.pass} />}
         {tab === "metas" && !relatorio && <><CadeadoMes mes={mes} /><Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></>}
         {tab === "config" && <div className="space-y-6"><Equipe /><Config parte="config" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div>}
       </main>

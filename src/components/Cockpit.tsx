@@ -1,9 +1,7 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
+import { useResumoMes } from "@/hooks/use-resumo-mes";
 import { AlertTriangle, ArrowRight, CalendarDays, Car, ClipboardList, Gem, MapPin, Package, Star, Target, TrendingUp, Trophy, Wrench } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { loadOpenOrders, type OpenOrders } from "@/lib/open-orders.functions";
 import { ITENS } from "@/lib/agregados";
-import { STATUS, type OsImport } from "@/lib/os-controle";
 import { bg, brl, div, pct, tone, uni } from "@/components/painel-ui";
 import heroFarois from "@/assets/hero-farois.jpg";
 import carroSilhueta from "@/assets/carro-silhueta.jpg";
@@ -48,42 +46,7 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
   sales?: S[]; nome?: string; deptName?: (id: string | null) => string;
 }) {
   const [comOs, setComOs] = useState(true);
-  const [os, setOs] = useState<OpenOrders>({});
-  const [pass, setPass] = useState(0);
-  const [agg, setAgg] = useState<Record<string, { q: number; v: number; mq: number }>>({});
-  const [mec, setMec] = useState({ s: 0, p: 0, ms: 0, mp: 0, pass: 0 });
-  const [fluxo, setFluxo] = useState<{ st: string; n: number }[]>([]);
-  const [parados, setParados] = useState(0);
-  const [amarelos, setAmarelos] = useState(0);
-
-  useEffect(() => {
-    let off = false;
-    const [y, m] = mes.split("-").map(Number);
-    const fim = `${mes}-${new Date(y!, m!, 0).getDate()}`;
-    void (async () => {
-      const [o, v, s, g, mm, oi] = await Promise.all([
-        loadOpenOrders({ data: { mes } }).catch(() => null),
-        supabase.from("agg_visits").select("passagens").gte("dia", `${mes}-01`).lte("dia", fim),
-        supabase.from("agg_sales").select("item,qtd,valor").gte("dia", `${mes}-01`).lte("dia", fim),
-        supabase.from("agg_goals").select("item,meta_qtd").eq("mes", mes),
-        supabase.from("mech_month").select("servicos,pecas,meta_servicos,meta_pecas,passagens").eq("mes", mes),
-        supabase.from("os_imports").select("id,at,nome,arquivo,itens").order("at", { ascending: false }).limit(1),
-      ]);
-      if (off) return;
-      setOs(o?.valores ?? {});
-      setPass((v.data ?? []).reduce((a, x) => a + +x.passagens, 0));
-      const a: Record<string, { q: number; v: number; mq: number }> = {};
-      for (const x of s.data ?? []) { const r = (a[x.item] ??= { q: 0, v: 0, mq: 0 }); r.q += +x.qtd; r.v += +x.valor; }
-      for (const x of g.data ?? []) { const r = (a[x.item] ??= { q: 0, v: 0, mq: 0 }); r.mq += +x.meta_qtd; }
-      setAgg(a);
-      setMec((mm.data ?? []).reduce((t, x) => ({ s: t.s + +x.servicos, p: t.p + +x.pecas, ms: t.ms + +x.meta_servicos, mp: t.mp + +x.meta_pecas, pass: t.pass + +x.passagens }), { s: 0, p: 0, ms: 0, mp: 0, pass: 0 }));
-      const itens = ((oi.data?.[0] as unknown as OsImport | undefined)?.itens ?? []);
-      setFluxo(STATUS.filter((x) => x.k !== "encerrado").map((x) => ({ st: x.nome, n: itens.filter((i) => i.st === x.k).length })).filter((x) => x.n));
-      setParados(itens.filter((i) => i.dias > 30 && i.st !== "encerrado").length);
-      setAmarelos(itens.filter((i) => i.dias > 20 && i.dias <= 30 && i.st !== "encerrado").length);
-    })();
-    return () => { off = true; };
-  }, [mes]);
+  const { os, pass, agg, mec, fluxo, parados, amarelos } = useResumoMes(mes);
 
   const rest = Math.max(tot - dec, 0);
   const t = linhas.reduce((a, l) => {
