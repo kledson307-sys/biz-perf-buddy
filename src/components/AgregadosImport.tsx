@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Box, brl, norm, uni } from "./painel-ui";
-import { GRUPO_NOME, ITENS, distribuir, lerRanking, splitCods, type Relatorio } from "@/lib/agregados";
+import { GRUPO_NOME, ITENS, distribuir, lerRanking, normCod, splitCods, type Relatorio } from "@/lib/agregados";
 import { registrarUpdate } from "@/lib/update-log";
+import { mesTravado, msgTravado } from "@/lib/month-lock";
 import { AgregadosPassagens } from "./AgregadosPassagens";
 
 type Cons = { id: string; nome: string; department_id: string | null };
