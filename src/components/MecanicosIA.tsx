@@ -108,7 +108,7 @@ export function MecanicosIA({ mes, tot, dec, blocos }: { mes: string; tot: numbe
         ))}
       </div>
 
-      <section className="space-y-4 rounded-xl border border-border bg-card p-6 print:hidden">
+      <section className="space-y-4 lux-card p-6 print:hidden">
         <div>
           <h3 className="font-semibold">Análise completa com IA</h3>
           <p className="text-sm text-muted-foreground">

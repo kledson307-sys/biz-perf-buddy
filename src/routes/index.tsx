@@ -29,6 +29,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Car, ChevronDown, ClipboardList, Download, Gauge, Gem, LayoutDashboard, Lightbulb, LogOut, Menu, Package, Printer, Settings, Star, Target, TrendingUp, Upload, Users, Wrench, X } from "lucide-react";
 import bmwLogo from "@/assets/bmw-logo.asset.json";
+import carroSilhueta from "@/assets/carro-silhueta.jpg";
 import { localDay, sourceLabels, sourceStatus, tabUpdateStatus, UPDATE_EVENT, type UpdateRecord, type UpdateSource } from "@/lib/update-status";
 import { calcPerformance } from "@/lib/performance";
 import { useAccessPresence } from "@/hooks/use-access-presence";
@@ -282,24 +283,38 @@ function Painel({ email }: { email: string }) {
     a.download = `relatorio-${mes}.csv`; a.click();
   };
 
-  const tabs: [string, string, typeof Gauge][] = [["cockpit", "Dashboard", Gauge], ["painel", "Central de Gestão", LayoutDashboard], ["ranking", "Consultores", Users], ["metas", "Metas", Target], ["proj", "Projeções", TrendingUp], ["os", "Projeção + OS", ClipboardList], ["agregados", "Agregados", Gem], ["mecanicos", "Técnicos", Wrench], ["controle-os", "Controle O.S.", Car], ["pecas", "Peças", Package], ["nps", "NPS", Star], ["importacoes", "Importações", Upload], ["config", "Configurar", Settings]];
-  const tabLabel = tabs.find(([k]) => k === tab)?.[1] ?? "";
+  // 10 abas oficiais; algumas agrupam sub-abas (mantém deep links setTab antigos).
+  const tabs: [string, string, typeof Gauge, string[]][] = [
+    ["cockpit", "Dashboard", Gauge, []],
+    ["painel", "Central de Gestão", LayoutDashboard, ["proj", "os"]],
+    ["ranking", "Consultores", Users, []],
+    ["metas", "Metas & Planejamento", Target, []],
+    ["agregados", "Agregados", Gem, []],
+    ["mecanicos", "Oficina & Técnicos", Wrench, []],
+    ["controle-os", "Ordens de Serviço", Car, []],
+    ["pecas", "Peças & Estoque", Package, []],
+    ["nps", "NPS & Satisfação", Star, []],
+    ["importacoes", "Importações & Config.", Upload, ["config"]],
+  ];
+  const subLabels: Record<string, [string, typeof Gauge]> = { painel: ["Visão geral", LayoutDashboard], proj: ["Projeções", TrendingUp], os: ["Projeção + O.S.", ClipboardList], importacoes: ["Importações", Upload], config: ["Configurações", Settings] };
+  const grupo = tabs.find(([k, , , subs]) => k === tab || subs.includes(tab));
+  const tabLabel = tab === "proj" || tab === "os" || tab === "config" ? subLabels[tab]![0] : (grupo?.[1] ?? "");
 
   const [anoMes, mesNum] = mes.split("-").map(Number);
   const mesExt = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(anoMes!, mesNum! - 1, 1));
   const mesExtenso = mesExt.charAt(0).toUpperCase() + mesExt.slice(1);
   const navList = (
     <nav aria-label="Abas do painel" className="flex flex-col gap-0.5">
-      {tabs.map(([k, l, Icon]) => {
-        const sep = k === "proj" || k === "importacoes";
-        const stale = k === "importacoes" ? status.pending.some((x) => x !== "controle-os") : tabUpdateStatus(tabKey(k), mes, updates, clock).stale;
-        const ativo = tab === k;
-        return <Fragment key={k}>{sep && <span aria-hidden className="my-2 h-px bg-border" />}
+      {tabs.map(([k, l, Icon, subs], i) => {
+        const keys = [k, ...subs];
+        const stale = k === "importacoes" ? status.pending.some((x) => x !== "controle-os") : keys.some((x) => tabUpdateStatus(tabKey(x), mes, updates, clock).stale);
+        const ativo = keys.includes(tab);
+        return <Fragment key={k}>{i === 9 && <span aria-hidden className="my-2 h-px bg-border" />}
           <button type="button" onClick={() => { setTab(k); setMenu(false); }}
             data-update-status={stale ? "pending" : "current"} title={stale ? `${l}: atualização pendente` : l}
             aria-current={ativo ? "page" : undefined}
-            className={`flex items-center gap-3 rounded-lg border-l-2 px-3 py-2 text-left text-sm transition-colors ${ativo ? "border-primary bg-primary/15 font-semibold text-foreground" : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
-            <Icon className={`size-4 shrink-0 ${ativo ? "text-primary" : ""}`} />
+            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${ativo ? "bg-gradient-to-r from-primary/30 to-primary/5 font-semibold text-foreground shadow-[inset_3px_0_0_var(--color-primary)]" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+            <Icon strokeWidth={1.5} className={`size-4 shrink-0 ${ativo ? "text-primary" : ""}`} />
             <span className="flex-1">{l}</span>
             {stale && <span className="update-alert size-2 rounded-full bg-destructive" aria-label="atualização pendente" />}
           </button></Fragment>;
@@ -308,30 +323,47 @@ function Painel({ email }: { email: string }) {
   );
   const marca = (
     <div className="flex items-center gap-3">
-      <img src={bmwLogo.url} alt="BMW" className="size-9 shrink-0" />
+      <img src={bmwLogo.url} alt="BMW" className="size-10 shrink-0" />
       <div className="min-w-0 leading-tight">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Haus Motors</p>
-        <p className="text-sm font-bold">PAINEL <span className="text-primary">KLEDSON</span></p>
+        <p className="text-sm font-bold tracking-wide">BMW PÓS-VENDA</p>
+        <p className="text-[10px] text-muted-foreground">Mais que serviço, é experiência</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">Haus Motors · Kledson</p>
       </div>
+    </div>
+  );
+  const rodapeMenu = (
+    <div className="border-t border-border p-3">
+      <img src={carroSilhueta} alt="" aria-hidden loading="lazy" width={1152} height={576} className="mx-auto w-full opacity-80 mix-blend-screen" />
+      <div className="m-stripe mx-auto mt-2 w-16 rounded-full" />
+      <p className="mt-2 text-center text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Juntos pela melhor experiência.</p>
+      <p className="mt-1 break-all text-center text-[10px] text-muted-foreground">{email}</p>
+    </div>
+  );
+  const subs = grupo?.[3] ?? [];
+  const subBar = subs.length > 0 && !relatorio && (
+    <div role="tablist" className="flex flex-wrap gap-2 print:hidden">
+      {[grupo![0], ...subs].map((k) => { const [n, I] = subLabels[k]!; const on = tab === k; return (
+        <button key={k} role="tab" aria-selected={on} type="button" onClick={() => setTab(k)} className={`flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}><I className="size-4" />{n}</button>
+      ); })}
     </div>
   );
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border bg-card print:hidden lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-border bg-card print:hidden lg:flex">
         <div className="border-b border-border p-4">{marca}</div>
         <div className="flex-1 overflow-y-auto p-3">{navList}</div>
-        <div className="border-t border-border p-3 text-[11px] text-muted-foreground"><p className="break-all">{email}</p></div>
+        {rodapeMenu}
       </aside>
       {menu && <div className="fixed inset-0 z-40 lg:hidden print:hidden">
         <button aria-label="Fechar menu" className="absolute inset-0 bg-background/70 backdrop-blur-sm" onClick={() => setMenu(false)} />
         <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-border bg-card shadow-xl">
           <div className="flex items-center justify-between border-b border-border p-4">{marca}<Button variant="ghost" size="icon" aria-label="Fechar menu" onClick={() => setMenu(false)}><X /></Button></div>
           <div className="flex-1 overflow-y-auto p-3">{navList}</div>
-          <div className="border-t border-border p-3 text-[11px] text-muted-foreground"><p className="break-all">{email}</p></div>
+          {rodapeMenu}
         </div>
       </div>}
 
-      <div className="lg:pl-60">
+      <div className="lg:pl-64">
       <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur print:hidden">
         <div className="mx-auto flex max-w-7xl items-center gap-2 px-3 py-2.5 sm:px-6">
           <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Abrir menu" onClick={() => setMenu(true)}><Menu /></Button>
@@ -380,6 +412,7 @@ function Painel({ email }: { email: string }) {
       </details>}
 
       <main className={`mx-auto min-w-0 max-w-7xl space-y-4 px-3 py-4 sm:space-y-6 sm:px-6 sm:py-6 ${tab === "painel" ? "painel-phone" : ""}`}>
+        {subBar}
         {!relatorio && (() => {
           const rest = Math.max(tot - dec, 0);
           type L = (typeof linhas)[number];
@@ -729,7 +762,7 @@ function Painel({ email }: { email: string }) {
             <StatusFonte source="agregados" mes={mes} updates={updates} clock={clock} />
             <Agregados modo="importar" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section>
         </div>}
-        {tab === "cockpit" && !relatorio && <Cockpit linhas={linhas} porDept={porDept} mes={mes} tot={tot} dec={dec} soPecas={soPecas} setTab={setTab} />}
+        {tab === "cockpit" && !relatorio && <Cockpit linhas={linhas} porDept={porDept} mes={mes} tot={tot} dec={dec} soPecas={soPecas} setTab={setTab} sales={sales} nome={email.split("@")[0] ?? ""} deptName={deptName} />}
         {tab === "nps" && !relatorio && <NpsPainel />}
         {tab === "pecas" && !relatorio && <PecasEstoque linhas={linhas} porDept={porDept} margemIdeal={margemIdeal} deptName={deptName} />}
         {tab === "metas" && !relatorio && <><CadeadoMes mes={mes} /><Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></>}

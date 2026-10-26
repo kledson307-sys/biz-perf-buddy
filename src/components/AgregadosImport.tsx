@@ -100,7 +100,7 @@ export function AgregadosImport({ allCons, codigos, ini, end, onDone }: {
 
   return (
     <div className="space-y-6">
-      <section className="space-y-4 rounded-xl border border-border bg-card p-6">
+      <section className="space-y-4 lux-card p-6">
         <div>
           <h3 className="font-semibold">Importar relatório do sistema (serviços ou peças)</h3>
           <p className="text-sm text-muted-foreground">
