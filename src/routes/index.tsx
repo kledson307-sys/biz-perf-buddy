@@ -27,7 +27,7 @@ import { CadeadoMes } from "@/components/CadeadoMes";
 import { AnaliseFechamento, Reconhecimento } from "@/components/RelatorioAnalise";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { Download, LogOut, Printer } from "lucide-react";
+import { AlertTriangle, Car, ChevronDown, ClipboardList, Download, Gauge, Gem, LayoutDashboard, Lightbulb, LogOut, Menu, Package, Printer, Settings, Star, Target, TrendingUp, Upload, Users, Wrench, X } from "lucide-react";
 import bmwLogo from "@/assets/bmw-logo.asset.json";
 import { localDay, sourceLabels, sourceStatus, tabUpdateStatus, UPDATE_EVENT, type UpdateRecord, type UpdateSource } from "@/lib/update-status";
 import { calcPerformance } from "@/lib/performance";
@@ -135,6 +135,7 @@ function Painel({ email }: { email: string }) {
   const [sales, setSales] = useState<Sale[]>([]);
   const [params, setParams] = useState<Params>(defParams);
   const [tab, setTabRaw] = useState("cockpit");
+  const [menu, setMenu] = useState(false);
   const [projSub, setProjSub] = useState<"proj-serv" | "proj-pec" | "proj-total">("proj-serv");
   const setTab = (k: string) => { if (k.startsWith("proj-")) { setProjSub(k as typeof projSub); setTabRaw("proj"); } else setTabRaw(k); };
   const [rankSub, setRankSub] = useState<"geral" | "agregados" | "tecnicos">("geral");
@@ -281,72 +282,104 @@ function Painel({ email }: { email: string }) {
     a.download = `relatorio-${mes}.csv`; a.click();
   };
 
-  const tabs = [["cockpit", "Dashboard"], ["painel", "Central de Gestão"], ["ranking", "Consultores"], ["metas", "Metas"], ["proj", "Projeções"], ["os", "Projeção + OS"], ["agregados", "Agregados"], ["mecanicos", "Técnicos"], ["controle-os", "Controle O.S."], ["pecas", "Peças"], ["nps", "NPS"], ["importacoes", "Importações"], ["config", "Configurar"]];
+  const tabs: [string, string, typeof Gauge][] = [["cockpit", "Dashboard", Gauge], ["painel", "Central de Gestão", LayoutDashboard], ["ranking", "Consultores", Users], ["metas", "Metas", Target], ["proj", "Projeções", TrendingUp], ["os", "Projeção + OS", ClipboardList], ["agregados", "Agregados", Gem], ["mecanicos", "Técnicos", Wrench], ["controle-os", "Controle O.S.", Car], ["pecas", "Peças", Package], ["nps", "NPS", Star], ["importacoes", "Importações", Upload], ["config", "Configurar", Settings]];
+  const tabLabel = tabs.find(([k]) => k === tab)?.[1] ?? "";
 
   const [anoMes, mesNum] = mes.split("-").map(Number);
   const mesExt = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(anoMes!, mesNum! - 1, 1));
   const mesExtenso = mesExt.charAt(0).toUpperCase() + mesExt.slice(1);
+  const navList = (
+    <nav aria-label="Abas do painel" className="flex flex-col gap-0.5">
+      {tabs.map(([k, l, Icon]) => {
+        const sep = k === "proj" || k === "importacoes";
+        const stale = k === "importacoes" ? status.pending.some((x) => x !== "controle-os") : tabUpdateStatus(tabKey(k), mes, updates, clock).stale;
+        const ativo = tab === k;
+        return <Fragment key={k}>{sep && <span aria-hidden className="my-2 h-px bg-border" />}
+          <button type="button" onClick={() => { setTab(k); setMenu(false); }}
+            data-update-status={stale ? "pending" : "current"} title={stale ? `${l}: atualização pendente` : l}
+            aria-current={ativo ? "page" : undefined}
+            className={`flex items-center gap-3 rounded-lg border-l-2 px-3 py-2 text-left text-sm transition-colors ${ativo ? "border-primary bg-primary/15 font-semibold text-foreground" : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+            <Icon className={`size-4 shrink-0 ${ativo ? "text-primary" : ""}`} />
+            <span className="flex-1">{l}</span>
+            {stale && <span className="update-alert size-2 rounded-full bg-destructive" aria-label="atualização pendente" />}
+          </button></Fragment>;
+      })}
+    </nav>
+  );
+  const marca = (
+    <div className="flex items-center gap-3">
+      <img src={bmwLogo.url} alt="BMW" className="size-9 shrink-0" />
+      <div className="min-w-0 leading-tight">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Haus Motors</p>
+        <p className="text-sm font-bold">PAINEL <span className="text-primary">KLEDSON</span></p>
+      </div>
+    </div>
+  );
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="border-t-4 border-primary border-b border-border bg-card print:hidden">
-        <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-4 sm:flex sm:flex-wrap sm:justify-between sm:px-6 sm:py-6">
-          <div className="flex min-w-0 items-center gap-2 sm:gap-4">
-            <img src={bmwLogo.url} alt="BMW" className="size-9 shrink-0 sm:size-14" />
-            <div className="min-w-0">
-              <h1 className="text-sm font-bold sm:text-xl">PAINEL ESTRATÉGICO <span className="inline-block font-medium text-primary">KLEDSON</span></h1>
-              <p className="mt-1 text-xs font-medium text-muted-foreground">PAINEL DE METAS · {params.base === "uteis" ? "Dias úteis" : "Dias corridos"}: {dec} de {tot}</p>
-              <div className="mt-1.5 flex items-center gap-2" title="Tempo decorrido do mês = ritmo esperado da meta">
-                <div className="h-1.5 w-28 overflow-hidden rounded-full bg-muted sm:w-48"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(div(dec, tot) * 100, 100)}%` }} /></div>
-                <span className="text-[11px] text-muted-foreground">Ritmo esperado {pct(div(dec, tot))}</span>
-              </div>
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border bg-card print:hidden lg:flex">
+        <div className="border-b border-border p-4">{marca}</div>
+        <div className="flex-1 overflow-y-auto p-3">{navList}</div>
+        <div className="border-t border-border p-3 text-[11px] text-muted-foreground"><p className="break-all">{email}</p></div>
+      </aside>
+      {menu && <div className="fixed inset-0 z-40 lg:hidden print:hidden">
+        <button aria-label="Fechar menu" className="absolute inset-0 bg-background/70 backdrop-blur-sm" onClick={() => setMenu(false)} />
+        <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-border bg-card shadow-xl">
+          <div className="flex items-center justify-between border-b border-border p-4">{marca}<Button variant="ghost" size="icon" aria-label="Fechar menu" onClick={() => setMenu(false)}><X /></Button></div>
+          <div className="flex-1 overflow-y-auto p-3">{navList}</div>
+          <div className="border-t border-border p-3 text-[11px] text-muted-foreground"><p className="break-all">{email}</p></div>
+        </div>
+      </div>}
+
+      <div className="lg:pl-60">
+      <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur print:hidden">
+        <div className="mx-auto flex max-w-7xl items-center gap-2 px-3 py-2.5 sm:px-6">
+          <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Abrir menu" onClick={() => setMenu(true)}><Menu /></Button>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-base font-bold sm:text-lg">{tabLabel}</h1>
+            <div className="flex items-center gap-2" title="Tempo decorrido do mês = ritmo esperado da meta">
+              <span className="text-[11px] text-muted-foreground">{params.base === "uteis" ? "Úteis" : "Corridos"} {dec}/{tot}</span>
+              <div className="h-1 w-16 overflow-hidden rounded-full bg-muted sm:w-32"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(div(dec, tot) * 100, 100)}%` }} /></div>
+              <span className="text-[11px] text-muted-foreground">{pct(div(dec, tot))}</span>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-1 sm:gap-3">
-            <p className="hidden break-all text-xs text-muted-foreground sm:block">{email}</p>
+          <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
+            {status.pending.length > 0 && <Button type="button" size="sm" variant="destructive" className="update-alert h-8 gap-1 px-2 text-xs" title={`Pendente: ${status.pending.map((x) => sourceLabels[x]).join(", ")}`} onClick={() => openUpdate(status.pending[0]!)}><AlertTriangle className="size-4" />{status.pending.length}</Button>}
             <ThemeToggle />
             <Notificacoes abrir={() => setTab("controle-os")} />
             <Button variant="ghost" size="icon" title="Sair" aria-label="Sair" onClick={() => void supabase.auth.signOut()}><LogOut /></Button>
           </div>
         </div>
-        <div className="border-t border-border bg-muted/40">
-          <div className="mx-auto grid max-w-7xl grid-cols-2 items-center gap-2 px-3 py-3 sm:flex sm:flex-wrap sm:gap-3 sm:px-6">
-            <input aria-label="Mês do relatório" type="month" value={mes} onChange={(e) => setMes(e.target.value)} className="min-w-0 w-full rounded-md border border-input bg-card px-2 py-2 text-sm sm:w-auto" />
-            <select aria-label="Departamento" value={filtroDept} onChange={(e) => setFiltroDept(e.target.value)} className="min-w-0 w-full rounded-md border border-input bg-card px-2 py-2 text-sm sm:w-auto">
-              <option value="todos">Todos departamentos</option>
-              {depts.map((d) => <option key={d.id} value={d.id}>{d.nome}</option>)}
-            </select>
-            <nav aria-label="Abas do painel" className="col-span-2 -mx-3 flex min-w-0 gap-1 overflow-x-auto px-3 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 lg:ml-auto">
-              {tabs.map(([k, l]) => {
-                if (!k) return null;
-                const sep = k === "proj" || k === "importacoes";
-                const stale = k === "importacoes" ? status.pending.some((x) => x !== "controle-os") : tabUpdateStatus(tabKey(k), mes, updates, clock).stale;
-                return <Fragment key={k}>{sep && <span aria-hidden className="mx-1 hidden w-px self-stretch bg-border sm:block" />}<Button onClick={() => setTab(k)} variant={tab === k ? "default" : "ghost"}
-                  data-update-status={stale ? "pending" : "current"}
-                  title={stale ? `${l}: atualização pendente` : l}
-                  className={`h-9 shrink-0 whitespace-nowrap rounded-full px-3 text-xs sm:px-4 sm:text-sm ${stale ? "update-alert bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:text-destructive-foreground" : tab === k ? "" : "text-muted-foreground"}`}
-                  aria-current={tab === k ? "page" : undefined}>{l}</Button></Fragment>;
-              })}
-            </nav>
-          </div>
+        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-2 px-3 pb-2.5 sm:flex sm:px-6">
+          <input aria-label="Mês do relatório" type="month" value={mes} onChange={(e) => setMes(e.target.value)} className="min-w-0 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm sm:w-auto" />
+          <select aria-label="Departamento" value={filtroDept} onChange={(e) => setFiltroDept(e.target.value)} className="min-w-0 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm sm:w-auto">
+            <option value="todos">Todos departamentos</option>
+            {depts.map((d) => <option key={d.id} value={d.id}>{d.nome}</option>)}
+          </select>
+          {mes !== localDay(clock).slice(0, 7) && <span className="self-center text-xs text-muted-foreground">Mês arquivado</span>}
         </div>
       </header>
 
-      {status.latest.length > 0 && <div data-testid="update-banner" className={`border-b print:hidden ${status.stale ? "update-alert border-destructive bg-destructive text-destructive-foreground" : "border-border bg-primary/5 text-muted-foreground"}`}>
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-2 text-xs sm:px-6">
+      {status.latest.length > 0 && <details data-testid="update-banner" className={`group border-b print:hidden ${status.stale ? "border-destructive/40 bg-destructive/10" : "border-border bg-primary/5 text-muted-foreground"}`}>
+        <summary className="mx-auto flex max-w-7xl cursor-pointer list-none items-center gap-2 px-4 py-1.5 text-xs sm:px-6">
+          {status.pending.length > 0
+            ? <span className="font-semibold text-destructive">⚠️ {status.pending.length} fonte(s) pendente(s): {status.pending.map((x) => sourceLabels[x]).join(", ")}</span>
+            : <span>✅ Dados atualizados</span>}
+          <ChevronDown className="ml-auto size-4 transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 pb-2 text-xs sm:px-6">
           <div className="min-w-0 flex-1 space-y-1">
-            {status.pending.length > 0 && <p className="text-sm font-semibold">⚠️ {status.pending.length} fonte(s) pendente(s) de atualização: {status.pending.map((x) => sourceLabels[x]).join(", ")}.</p>}
             {status.latest.map(({ source, record, stale, fresh }) => <p key={source} className="break-words">
               {sourceLabels[source]}: {record ? <>{fresh ? "✅" : stale ? "❌" : ""} última atualização {dataHora(record.at)} por <span className="font-medium">{record.nome}</span> · {record.origem}</> : "❌ nenhuma atualização registrada."}
             </p>)}
           </div>
-          {status.pending.map((source) => <Button key={source} type="button" variant="outline" size="sm" onClick={() => openUpdate(source)} className="h-auto whitespace-normal bg-background font-semibold text-destructive">
+          {status.pending.map((source) => <Button key={source} type="button" variant="outline" size="sm" onClick={() => openUpdate(source)} className="h-auto whitespace-normal font-semibold text-destructive">
             ⚠️ Atualizar {sourceLabels[source]}{source === "controle-os" ? " da semana" : " de hoje"}
           </Button>)}
-          {mes !== localDay(clock).slice(0, 7) && <span>Mês arquivado</span>}
         </div>
-      </div>}
+      </details>}
 
-      <main className={`mx-auto min-w-0 max-w-7xl space-y-4 px-3 py-4 sm:space-y-6 sm:px-6 sm:py-8 ${tab === "painel" ? "painel-phone" : ""}`}>
+      <main className={`mx-auto min-w-0 max-w-7xl space-y-4 px-3 py-4 sm:space-y-6 sm:px-6 sm:py-6 ${tab === "painel" ? "painel-phone" : ""}`}>
         {!relatorio && (() => {
           const rest = Math.max(tot - dec, 0);
           type L = (typeof linhas)[number];
@@ -373,11 +406,13 @@ function Painel({ email }: { email: string }) {
           };
           const [analise, acao] = o[tabKey(tab)] ?? o["painel"]!;
           return (
-            <div className="rounded-lg border-l-4 border-primary bg-primary/5 px-4 py-3 text-sm print:hidden">
-              <p className="text-xs font-semibold uppercase tracking-wide text-primary">Orientação ao gestor</p>
-              <p className="mt-1"><span className="font-medium">Análise:</span> {analise}</p>
+            <details className="group rounded-lg border-l-4 border-primary bg-primary/5 px-4 py-2 text-sm print:hidden">
+              <summary className="flex cursor-pointer list-none items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
+                <Lightbulb className="size-4" />Orientação ao gestor<ChevronDown className="ml-auto size-4 transition-transform group-open:rotate-180" />
+              </summary>
+              <p className="mt-2"><span className="font-medium">Análise:</span> {analise}</p>
               <p><span className="font-medium">Ação:</span> {acao}</p>
-            </div>
+            </details>
           );
         })()}
         {relatorio && (
@@ -700,6 +735,7 @@ function Painel({ email }: { email: string }) {
         {tab === "metas" && !relatorio && <><CadeadoMes mes={mes} /><Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></>}
         {tab === "config" && <div className="space-y-6"><Equipe /><Config parte="config" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div>}
       </main>
+      </div>
     </div>
   );
 }
