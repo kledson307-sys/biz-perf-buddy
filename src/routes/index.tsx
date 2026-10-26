@@ -333,7 +333,7 @@ function Painel({ email }: { email: string }) {
   );
   const rodapeMenu = (
     <div className="border-t border-border p-3">
-      <img src={carroSilhueta} alt="" aria-hidden loading="lazy" width={1152} height={576} className="mx-auto w-full opacity-80" />
+      <img src={carroSilhueta} alt="" aria-hidden loading="lazy" width={1152} height={576} className="mx-auto w-full opacity-80 mix-blend-screen" />
       <div className="m-stripe mx-auto mt-2 w-16 rounded-full" />
       <p className="mt-2 text-center text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Juntos pela melhor experiência.</p>
       <p className="mt-1 break-all text-center text-[10px] text-muted-foreground">{email}</p>

@@ -108,7 +108,8 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
     const porDia = new Map<string, number>();
     for (const s of sales) if (ids.has(s.consultant_id)) porDia.set(s.dia, (porDia.get(s.dia) ?? 0) + +s.servicos + +s.pecas);
     let acc = 0;
-    return [...porDia.keys()].sort().map((d) => ({ d: Number(d.slice(8, 10)), v: (acc += porDia.get(d)!) }));
+    const pts = [...porDia.keys()].sort().map((d) => ({ d: Number(d.slice(8, 10)), v: (acc += porDia.get(d)!) }));
+    return pts.length ? [{ d: 0, v: 0 }, ...pts] : pts;
   }, [sales, linhas]);
   const [yy, mo] = mes.split("-").map(Number);
   const diasMes = new Date(yy!, mo!, 0).getDate();
@@ -162,7 +163,7 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
           <p className="text-sm">Peças <b>{brl(div(t.p, pass))}</b></p>
           <p className="text-sm">Passagens <b>{uni(pass)}</b></p>
         </button>
-        <button type="button" onClick={() => setTab("nps")} className="lux-card border-dashed p-4 text-left">
+        <button type="button" onClick={() => setTab("nps")} className="lux-card col-span-2 border-dashed p-4 text-left lg:col-span-1">
           <div className="flex items-center justify-between"><p className="text-xs text-muted-foreground">NPS / CSI</p><Star strokeWidth={1.5} className="size-5 text-primary" /></div>
           <p className="mt-1 text-xl font-bold text-muted-foreground">—</p>
           <p className="text-xs text-muted-foreground">Em estruturação</p>
@@ -215,6 +216,7 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
               <line x1="0" y1={H} x2={W} y2={py(metaT)} className="stroke-muted-foreground" strokeWidth="1.5" strokeDasharray="5 5" />
               <path d={`${caminho} L${px(evol.at(-1)!.d)},${H} L${px(evol[0]!.d)},${H} Z`} className="fill-primary/15" />
               <path d={caminho} fill="none" className="stroke-neon" strokeWidth="2.5" />
+              <circle cx={px(evol.at(-1)!.d)} cy={py(evol.at(-1)!.v)} r="4" className="fill-neon" />
               {[1, 10, 20, diasMes].map((d) => <text key={d} x={Math.min(px(d), W - 12)} y={H + 14} className="fill-muted-foreground text-[10px]">{d}</text>)}
             </svg>
           )}
