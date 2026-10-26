@@ -350,6 +350,30 @@ export type Database = {
         }
         Relationships: []
       }
+      month_locks: {
+        Row: {
+          id: string
+          locked_at: string
+          locked_by: string | null
+          mes: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          locked_at?: string
+          locked_by?: string | null
+          mes: string
+          user_id?: string
+        }
+        Update: {
+          id?: string
+          locked_at?: string
+          locked_by?: string | null
+          mes?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       month_params: {
         Row: {
           base: string
