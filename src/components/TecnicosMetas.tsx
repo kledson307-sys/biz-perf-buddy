@@ -68,7 +68,7 @@ export function TecnicosMetas({ mes }: { mes: string }) {
 
   const inp = "w-full rounded border border-input bg-background px-2 py-1";
   return (
-    <section className="space-y-4 rounded-xl border border-border bg-card p-6">
+    <section className="space-y-4 lux-card p-6">
       <h2 className="text-lg font-semibold">Técnicos e metas de {mes}</h2>
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <span className="text-muted-foreground">Metas em lote:</span>

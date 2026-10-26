@@ -10,7 +10,7 @@ type D = { nome: string; servicos: number; pecas: number; meta: number; projPct:
 
 function Bloco({ titulo, ir, children, right }: { titulo: string; ir?: () => void; children: ReactNode; right?: ReactNode }) {
   return (
-    <section className="rounded-xl border border-border bg-card p-4">
+    <section className="lux-card p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{titulo}</h2>
         <div className="flex items-center gap-2">{right}{ir && <button type="button" onClick={ir} className="text-xs font-medium text-primary hover:underline">Abrir ›</button>}</div>
@@ -75,13 +75,13 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab }: {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         {[["Serviços", t.s, t.ms], ["Peças", t.p, t.mp], ["Total", t.s + t.p, t.ms + t.mp]].map(([n, r, m]) => (
-          <button key={n as string} type="button" onClick={() => setTab("painel")} className="rounded-xl border border-border bg-card p-4 text-left">
+          <button key={n as string} type="button" onClick={() => setTab("painel")} className="lux-card p-4 text-left">
             <p className="text-xs text-muted-foreground">Realizado {n}</p>
             <p className="text-lg font-bold">{brl(r as number)}</p>
             <p className={`text-xs font-semibold ${tone(div(r as number, m as number))}`}>{pct(div(r as number, m as number))} de {brl(m as number)}</p>
           </button>
         ))}
-        <button type="button" onClick={() => setTab("agregados")} className="rounded-xl border border-border bg-card p-4 text-left">
+        <button type="button" onClick={() => setTab("agregados")} className="lux-card p-4 text-left">
           <p className="text-xs text-muted-foreground">Ticket médio</p>
           <p className="text-sm">Serviços <b>{brl(div(t.s, pass))}</b></p>
           <p className="text-sm">Peças <b>{brl(div(t.p, pass))}</b></p>

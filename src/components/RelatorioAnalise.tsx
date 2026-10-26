@@ -221,7 +221,7 @@ export function Reconhecimento({ linhas, sales, dec, tot, mes }: { linhas: Linha
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-3">
         {melhores.slice(0, 3).map((l, i) => (
-          <div key={l.c.id} className="rounded-xl border border-border bg-card p-5 text-center shadow-sm">
+          <div key={l.c.id} className="lux-card p-5 text-center shadow-sm">
             <p className="text-4xl">{MEDALHAS[i]}</p>
             <p className="mt-2 text-lg font-bold">{l.c.nome}</p>
             <p className={`text-sm font-semibold ${tone(l.perf)}`}>{pct(l.perf)} da meta</p>

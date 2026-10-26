@@ -21,7 +21,7 @@ export function parseNum(v: string) {
 
 export function Box({ title, children, right }: { title: string; children: React.ReactNode; right?: React.ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+    <section className="overflow-hidden lux-card">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-table-band px-5 py-4 text-table-band-foreground">
         <h3 className="font-semibold">{title}</h3>
         {right}

@@ -68,7 +68,7 @@ export function AgregadosIA({ mes, cons, tot, dec, stat, deptName }: {
         <p className="px-4 py-3 text-xs text-muted-foreground">Resultados e passagens vêm da aba "Importações"; as metas, de "Metas". Atualize lá antes de gerar as recomendações.</p>
       </Box>
 
-      <section className="space-y-4 rounded-xl border border-border bg-card p-6 print:hidden">
+      <section className="space-y-4 lux-card p-6 print:hidden">
         <div>
           <h3 className="font-semibold">Recomendações com IA</h3>
           <p className="text-sm text-muted-foreground">A IA analisa resultados, passagens, metas e projeção de cada consultor e sugere ações para melhorar o aproveitamento e bater as metas.</p>

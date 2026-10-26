@@ -44,7 +44,7 @@ export function AgregadosPassagens({ allCons, ini, end, onDone }: { allCons: Con
   };
 
   return (
-    <section className="space-y-4 rounded-xl border border-border bg-card p-6">
+    <section className="space-y-4 lux-card p-6">
       <div>
         <h3 className="font-semibold">Importar passagens por vendedor</h3>
         <p className="text-sm text-muted-foreground">Use o mesmo relatório "Passagem tecnico+consultor" da aba Técnicos. Cada O.S. conta uma única vez por consultor, mesmo que apareça em várias linhas. Substitui as passagens do mês dos consultores do relatório.</p>

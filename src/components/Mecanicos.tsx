@@ -256,7 +256,7 @@ function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onGrupo, onRem, vazio, di
       <Box title={titulo} right={<span className="text-xs">{visiveis.length} {visiveis.length === 1 ? "técnico" : "técnicos"}{ocultos ? ` + ${ocultos} técnico${ocultos > 1 ? "s" : ""} de diagnóstico (somado nos totais)` : ""} · {dec} de {tot} dias{dica ? ` · ${dica}` : ""}</span>}>
         <div className="space-y-3 p-3 md:hidden print:hidden">
           {visiveis.map(({ r, s, p, t }, i) => (
-            <div key={r.nome} className="rounded-xl border border-border bg-card p-3">
+            <div key={r.nome} className="lux-card p-3">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="font-semibold leading-tight">{i + 1}. {r.nome}</div>
