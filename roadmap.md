@@ -48,3 +48,6 @@
 - [x] Encerrar lead no Controle O.S. (só Kledson e vhdorosario)
 - [x] Etapa 2: filtro >20/>30 dias no Controle O.S., aba Peças, cadeado de mês, detector de códigos novos, abas de projeção unificadas
 - [ ] NPS: importação real e alertas (aguardando planilha de pesquisas do usuário)
+
+- [x] Dashboard executivo BMW (faróis, resultado, projeção, onde atuar, evolução, ranking, departamentos) + menu de 10 abas
+- [ ] Aproximar das fotos: Central de Gestão, Consultores, Metas (foto 9), Agregados, Oficina, Ordens de Serviço, Peças (foto 8), NPS, Importações
