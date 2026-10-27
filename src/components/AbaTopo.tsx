@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { bg } from "@/components/painel-ui";
 
-export type TopoKpi = { label: string; value: string; sub?: string; p?: number; cls?: string; barra?: string };
+export type TopoKpi = { label: string; value: string; sub?: string | undefined; p?: number | undefined; cls?: string | undefined; barra?: string | undefined };
 
 /** Cabeçalho executivo padrão das abas (título, subtítulo e cartões de resumo), no visual BMW. */
 export function AbaTopo({ titulo, sub, icon: Icon, kpis, children }: { titulo: string; sub: string; icon: LucideIcon; kpis: TopoKpi[]; children?: ReactNode }) {
