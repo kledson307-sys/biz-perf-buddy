@@ -407,7 +407,7 @@ function Painel({ email }: { email: string }) {
       </AbaTopo>;
       case "pecas": return <AbaTopo titulo="Peças & Estoque" sub="Faturamento de peças por canal, margem e ranking" icon={Package} kpis={[]} />;
       case "nps": return <AbaTopo titulo="NPS & Satisfação" sub="Qualidade e pesquisa da montadora · aguardando planilha de pesquisas" icon={Star} kpis={[]} />;
-      case "importacoes": case "config": return <AbaTopo titulo="Importações & Configurações" sub="Atualização diária das fontes e ajustes do painel" icon={Upload} kpis={status.latest.map(({ source, record, fresh }) => ({
+      case "importacoes": case "config": return <AbaTopo titulo="Importações & Configurações" sub="Atualização diária das fontes e ajustes do painel" icon={Upload} kpis={(Object.keys(sourceLabels) as UpdateSource[]).map((source) => ({ source, ...sourceStatus(source, mes, updates, clock) })).map(({ source, record, fresh }) => ({
         label: sourceLabels[source], value: fresh ? "✅ Hoje" : "❌ Pendente", cls: fresh ? "text-success" : "text-destructive", sub: record ? `${dataHora(record.at)} · ${record.nome}` : "Nenhuma atualização no mês",
       }))} />;
       default: return null;

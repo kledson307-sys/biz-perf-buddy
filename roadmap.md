@@ -50,4 +50,4 @@
 - [ ] NPS: importação real e alertas (aguardando planilha de pesquisas do usuário)
 
 - [x] Dashboard executivo BMW (faróis, resultado, projeção, onde atuar, evolução, ranking, departamentos) + menu de 10 abas
-- [ ] Aproximar das fotos: Central de Gestão, Consultores, Metas (foto 9), Agregados, Oficina, Ordens de Serviço, Peças (foto 8), NPS, Importações
+- [x] Aproximar das fotos: Central de Gestão, Consultores, Metas (foto 9), Agregados, Oficina, Ordens de Serviço, Peças (foto 8), NPS, Importações
