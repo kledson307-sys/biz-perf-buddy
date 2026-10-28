@@ -32,6 +32,6 @@
 - Judicial O.S. flag lives in `os_acompanhamento.acoes.__judicial` (os-controle helpers); excluded from Painel warning, bell and `minhas_os`.
 - Access: shared `useAccessPresence` confirms RPC writes before seller reads; retry errors, refresh on open/focus/visible/online/timer. History refreshes; keep one owner-scoped row/day.
 - Month closing lock lives in `month_locks` (helpers in `src/lib/month-lock.ts`); only the master email may insert/delete via RLS, and sales/agregados imports must check `mesTravado` before writing so closed months stay frozen.
-- Navigation has 10 official sidebar tabs; Central de Gestão groups painel/proj/os and Importações & Config groups importacoes/config as sub-tabs, so legacy `setTab(...)` deep links (incl. `proj-*`) keep working.
+- Navigation has 10 official sidebar tabs (order: cockpit, painel, ranking, agregados, mecanicos, pecas, controle-os, nps, metas, importacoes); Central de Gestão groups painel/proj/os and Importações & Config groups importacoes/config as sub-tabs, so legacy `setTab(...)` deep links (incl. `proj-*`) keep working.
 
 - Subdirectories may have their own `AGENTS.md` (e.g. `src/lib/AGENTS.md`); read it before changing files there.

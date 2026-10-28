@@ -292,12 +292,12 @@ function Painel({ email }: { email: string }) {
     ["cockpit", "Dashboard", Gauge, []],
     ["painel", "Central de Gestão", LayoutDashboard, ["proj", "os"]],
     ["ranking", "Consultores", Users, []],
-    ["metas", "Metas & Planejamento", Target, []],
     ["agregados", "Agregados", Gem, []],
     ["mecanicos", "Oficina & Técnicos", Wrench, []],
-    ["controle-os", "Ordens de Serviço", Car, []],
     ["pecas", "Peças & Estoque", Package, []],
+    ["controle-os", "Ordens de Serviço", Car, []],
     ["nps", "NPS & Satisfação", Star, []],
+    ["metas", "Metas & Planejamento", Target, []],
     ["importacoes", "Importações & Config.", Upload, ["config"]],
   ];
   const subLabels: Record<string, [string, typeof Gauge]> = { painel: ["Visão geral", LayoutDashboard], proj: ["Projeções", TrendingUp], os: ["Projeção + O.S.", ClipboardList], importacoes: ["Importações", Upload], config: ["Configurações", Settings] };
