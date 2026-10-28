@@ -407,6 +407,33 @@ export type Database = {
         }
         Relationships: []
       }
+      nps_imports: {
+        Row: {
+          arquivo: string
+          at: string
+          id: string
+          itens: Json
+          nome: string
+          user_id: string
+        }
+        Insert: {
+          arquivo?: string
+          at?: string
+          id?: string
+          itens?: Json
+          nome?: string
+          user_id?: string
+        }
+        Update: {
+          arquivo?: string
+          at?: string
+          id?: string
+          itens?: Json
+          nome?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       open_order_snapshots: {
         Row: {
           id: string
@@ -645,6 +672,7 @@ export type Database = {
         Returns: number
       }
       meu_desempenho_tecnico: { Args: { p_mes: string }; Returns: Json }
+      meu_nps: { Args: never; Returns: Json }
       minha_performance: { Args: { p_mes: string }; Returns: Json }
       minhas_os: { Args: never; Returns: Json }
       registrar_acesso: { Args: never; Returns: undefined }
