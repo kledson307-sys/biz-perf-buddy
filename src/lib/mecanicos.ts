@@ -25,7 +25,7 @@ export const CATEGORIAS = [
 export type CatKey = (typeof CATEGORIAS)[number]["k"];
 const CAT_KEYS: CatKey[] = CATEGORIAS.map(c => c.k);
 /** Tipos de O.S. internas: não contam passagem para ninguém. */
-export const TIPOS_INTERNOS = new Set(["IO", "IP", "IU", "IN", "NN"]);
+export const TIPOS_INTERNOS = new Set(["IO", "IP", "IU", "IN", "NN", "ID"]);
 const COD_REV = new Set(["0000105", "00001050"]);
 const C4_T = new Set(["C4", "MG"]);
 const FUN_T = new Set(["CF", "C5", "MF", "MS"]);

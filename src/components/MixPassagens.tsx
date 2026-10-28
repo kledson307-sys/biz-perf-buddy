@@ -5,9 +5,9 @@ const ROTULO: Record<string, string> = { bs: "BSI", rev: "Revisão C7", c4: "C4 
 const ORDEM = ["bs", "rev", "c4", "pagos", "funilaria"] as const;
 
 /** Tabela de mix de passagens por técnico (O.S. distintas, cada uma conta uma vez). */
-export function MixPassagens({ titulo, linhas }: { titulo: string; linhas: { nome: string; composicao?: Composicao }[] }) {
+export function MixPassagens({ titulo, linhas, todos }: { titulo: string; linhas: { nome: string; composicao?: Composicao }[]; todos?: { composicao?: Composicao }[] }) {
   const rows = linhas.map((l) => ({ nome: l.nome, c: somarComposicao([l.composicao]) }));
-  const tot = somarComposicao(linhas.map((l) => l.composicao));
+  const tot = somarComposicao((todos ?? linhas).map((l) => l.composicao));
   const soma = (c: ReturnType<typeof somarComposicao>) => ORDEM.reduce((a, k) => a + c[k].length, 0);
   if (!soma(tot)) return null;
   const cols = ORDEM.filter((k) => CATEGORIAS.some((c) => c.k === k));

@@ -4,8 +4,10 @@ import { Kpi, Posicao, brl, div, pct, tone, uni } from "@/components/painel-ui";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
+import { MixPassagens } from "@/components/MixPassagens";
+import type { Composicao } from "@/lib/mecanicos";
 
-type T = { nome: string; servicos: number; pecas: number; passagens: number; meta_servicos: number; meta_pecas: number };
+type T = { nome: string; servicos: number; pecas: number; passagens: number; meta_servicos: number; meta_pecas: number; composicao?: Composicao };
 type Dados = { tecnicos: T[]; params: { du_totais: number; du_decorridos: number; dc_totais: number; dc_decorridos: number; base: string } | null };
 const OCULTOS = ["VINICIUS", "DELMIR", "LUIS SANDRO"];
 
@@ -53,6 +55,7 @@ export function ChefeOficina() {
             <Kpi label="Peças (equipe)" value={brl(pc)} sub={linha(pc, mp)} />
             <Kpi label="Passagens" value={uni(soma("passagens"))} sub={<span>Total {brl(sv + pc)}</span>} />
           </div>
+          <MixPassagens titulo="Mix de passagens · Carro" linhas={lista} todos={todos} />
           <div className="space-y-2">
             {lista.map((t, i) => (
               <div key={t.nome} className="rounded-lg border border-border bg-card p-3">
