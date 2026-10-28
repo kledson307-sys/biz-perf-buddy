@@ -23,3 +23,8 @@ describe("passagens por categoria", () => {
     expect(r.consultores[0]!.passagens).toBe(1);
   });
 });
+
+import { TIPOS_INTERNOS as TI } from "@/lib/mecanicos";
+describe("O.S. internas", () => {
+  it("ID também é O.S. interna", () => { expect(TI.has("ID")).toBe(true); });
+});

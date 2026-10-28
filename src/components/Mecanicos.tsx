@@ -1,3 +1,4 @@
+import { MixPassagens } from "@/components/MixPassagens";
 import { useEffect, useRef, useState } from "react";
 import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -234,6 +235,7 @@ function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onGrupo, onRem, vazio, di
     : aberto ? { nome: aberto, comp: somarComposicao([b.calcs.find(c => c.r.nome === aberto)?.r.composicao]) } : null;
   return (
     <div className="space-y-4">
+      <MixPassagens titulo={`Mix de passagens${suf}`} linhas={visiveis.map(c => ({ nome: c.r.nome, composicao: c.r.composicao }))} todos={b.calcs.map(c => ({ composicao: c.r.composicao }))} />
       {temComp && <Box title={`Passagens por tipo${suf}`} right={<span className="text-xs">toque no nome para ver o detalhe</span>}>
         <div className="flex flex-wrap gap-2 p-3">
           {[...visiveis.map(c => c.r.nome), "__total"].map(n => (

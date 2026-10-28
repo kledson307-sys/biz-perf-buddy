@@ -1,53 +1,10 @@
-# Tasks
-- [x] Corrigir registro de uso ao carregar os dados do consultor, com confirmação, nova tentativa e atualização do histórico; verificar gravação real.
-- [x] Integrar os cálculos e testes de performance da Fase 1 sem alterar as telas ou regras existentes.
-- [x] Incorporar os guias e checklist da Fase 1 e validar a integração.
-- [x] Mostrar na aba Painel O.S. com status igual entre atualizações semanais, com número e departamento.
-- [x] Adicionar sino no topo do gestor e vendedor com contador de retornos pendentes/realizados e acesso aos avisos existentes.
-- [x] Corrigir a prévia de importação apagada pelas atualizações de avisos do Painel; conferir Dados_Faturamento_M.O_PÇ_vendedores.xls e preservar a prévia ao retornar à janela, sem salvar vendas.
-- [x] Ajustar Painel e Ranking à largura do celular e verificar com os dados reais, sem rolagem lateral (320, 390, 768 e 1280 px).
-- [x] Separar alertas vermelhos por fonte/aba e verificar que uma atualização não limpa as demais.
-- [x] Sugerir indicadores adicionais de gestão sem alterar o painel ou a planilha.
-- [x] Persist Projeção + OS in the shared account until replacement and verify reload/replacement.
-- [x] Add Excel sales import from fonte.xls with seller preview and safe cumulative handling.
-- [x] Verify import with the supplied report and the signed-in dashboard.
-- [x] Present blue BMW / HAUS MOTORS SALVADOR (KLEDSON) design options and implement the selected option.
-- [x] Verify in the browser that the out-of-date alert blinks until today's data is imported and clears afterwards.
-- [x] In the combined projection table, stack the parts block under the services block per consultant and verify in the browser.
-- [x] In the Agregados "Quantidade vendida" card, list sold quantity and meta for each item and verify in the browser.
-- [x] Aba Controle de O.S.: importação semanal, status, ações por consultor, O.S. sem mudança, histórico
-- [x] Aba Mecânicos: importar/colar serviços, peças, passagens; metas; projeção e necessidade diária
-- [x] Controle de O.S.: ranking por status só em gráficos de pizza (tabela removida) e verificar no navegador
-- [x] Aba Mecânicos: separar mecânicos de carro e de moto em 2 grupos (coluna grupo salva no banco)
-- [x] Aba Mecânicos: análise de performance dos dois grupos (comparativo carro x moto, líder, gaps, necessidade diária) com IA e análise automática sem créditos
-- [x] Importar relatório "Passagem tecnico+consultor" na aba Mecânicos, contando cada O.S. uma única vez por mecânico e por consultor
-- [x] Aba Mecânicos: ocultar VINICIUS, DELMIR e LUIS SANDRO (técnicos de diagnóstico, sem meta) mantendo o faturamento nos totais
-- [x] Configurar: grade "Metas do ano" para estabelecer as metas dos 12 meses de forma antecipada (a partir do próximo ano)
-- [x] Painel: ocultar a área de envio por WhatsApp da tela, atrás de um botão para abrir quando precisar
-- [x] Relatório de fechamento (PDF): análise do fechamento, gráficos, dicas, plano dos próximos dias e reconhecimento de quem faz acontecer
-- [x] Análise do fechamento e Reconhecimento: aparecer apenas no PDF de fechamento, não na tela do painel
-- [x] Topo de cada aba: orientação curta ao gestor (1 análise + 1 ação sugerida)
-- [x] Painel: ocultar o bloco "Comparação com o líder e recomendações" da tela, mantendo-o no relatório de fechamento (PDF)
-- [x] Projeções: exibir quantidades (itens, passagens, metas em unidades) sempre inteiras; percentuais seguem com 1 casa
-- [x] Painel: remover a linha de serviços dos cartões dos departamentos ACESSÓRIOS, ESTÉTICA e BALCÃO (só peças)
-- [x] Painel: renomear a aba "Projeção" para "Projeção por vendedor"
-- [x] Painel: renomear a aba "Projeção por vendedor" para "Serviços & Peças"
-- [x] Projeção + OS: cartões por departamento iguais aos do Painel (faturado + OS abertas)
-- [x] Painel: novo arquivo "Vendas de Peças e Serviços por Vendedor" (valor líquido), margem % de peças nos relatórios, NAILTON.R + THIERRY.S = NAILTON/THIERRY
-- [x] Aba Importações: ✅ ao lado da última atualização feita hoje e ❌ quando está desatualizada, em cada fonte
-
-## Para depois (guardado, ainda não aprovado)
-- [ ] Conversão de orçamentos: enviados x aprovados e motivos de recusa.
-- [ ] Retrabalho e retorno: carros que voltam pelo mesmo problema, por técnico, com custo da correção.
-- [ ] Lucro das peças em R$ ao lado da margem %.
-- [ ] Produtividade dos técnicos: horas disponíveis x horas vendidas, carro e moto separados.
-- [ ] Prazo prometido x prazo entregue: atrasos por consultor e motivo.
-- Acesso de técnicos: concluído\n- Relatório de acessos em Configurar: concluído
-- [x] Associar VENDE.ML a NAILTON/THIERRY
-- [x] Ranking com sub-abas Geral, Agregados e Técnicos
-- [x] Encerrar lead no Controle O.S. (só Kledson e vhdorosario)
-- [x] Etapa 2: filtro >20/>30 dias no Controle O.S., aba Peças, cadeado de mês, detector de códigos novos, abas de projeção unificadas
-- [ ] NPS: importação real e alertas (aguardando planilha de pesquisas do usuário)
-
-- [x] Dashboard executivo BMW (faróis, resultado, projeção, onde atuar, evolução, ranking, departamentos) + menu de 10 abas
-- [x] Aproximar das fotos: Central de Gestão, Consultores, Metas (foto 9), Agregados, Oficina, Ordens de Serviço, Peças (foto 8), NPS, Importações
+# Roadmap
+- [x] Nova ordem das 10 abas
+- [x] Delmir Xavier como chefe de oficina (acesso trocado)
+- [x] Mix de passagens (BSI/Revisão C7/Garantia/Reparo) em Técnicos e Chefe de Oficina
+- [x] O.S. tipo ID tratada como interna
+- [ ] Layouts 16:9 sem rolagem: Cockpit, Central, Consultores, Agregados, Oficina, Peças, O.S., NPS, Metas, Importações
+- [ ] Mix de passagens por consultor (Carro e Moto Pedro/Gilberto) no rodapé de Consultores
+- [ ] NPS: importação da planilha, metas 85%/88%, exclusão CNPJ só no NPS, régua D-2, ações de reversão
+- [ ] NPS da oficina na tela do chefe de oficina e NPS pessoal na tela do consultor
+- [ ] Importador unificado + ajuste manual de devoluções
