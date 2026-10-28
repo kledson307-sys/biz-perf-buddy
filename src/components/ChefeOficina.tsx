@@ -30,7 +30,7 @@ export function ChefeOficina() {
   const rest = Math.max(1, tot - dec);
   const proj = (v: number) => (v / dec) * tot;
   const todos = d?.tecnicos ?? [];
-  const soma = (k: keyof T) => todos.reduce((n, t) => n + +t[k], 0);
+  const soma = (k: "servicos" | "pecas" | "passagens" | "meta_servicos" | "meta_pecas") => todos.reduce((n, t) => n + +t[k], 0);
   const sv = soma("servicos"), pc = soma("pecas"), ms = soma("meta_servicos"), mp = soma("meta_pecas");
   const lista = todos.filter(t => !OCULTOS.includes(t.nome.toUpperCase()))
     .map(t => ({ ...t, perf: div(+t.servicos + +t.pecas, +t.meta_servicos + +t.meta_pecas) }))
