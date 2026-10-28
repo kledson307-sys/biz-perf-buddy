@@ -7,7 +7,7 @@ import { LogOut } from "lucide-react";
 import { MixPassagens } from "@/components/MixPassagens";
 import type { Composicao } from "@/lib/mecanicos";
 
-type T = { nome: string; servicos: number; pecas: number; passagens: number; meta_servicos: number; meta_pecas: number; composicao?: Composicao };
+type T = { nome: string; servicos: number; pecas: number; passagens: number; meta_servicos: number; meta_pecas: number; composicao?: Composicao | undefined };
 type Dados = { tecnicos: T[]; params: { du_totais: number; du_decorridos: number; dc_totais: number; dc_decorridos: number; base: string } | null };
 const OCULTOS = ["VINICIUS", "DELMIR", "LUIS SANDRO"];
 
