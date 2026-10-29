@@ -442,6 +442,14 @@ function Painel({ email }: { email: string }) {
               <span className="text-[11px] text-muted-foreground">{pct(div(dec, tot))}</span>
             </div>
           </div>
+          <div className="hidden items-center gap-2 lg:flex">
+          <input aria-label="Mês do relatório (topo)" type="month" value={mes} onChange={(e) => setMes(e.target.value)} className="min-w-0 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm sm:w-auto" />
+          <select aria-label="Departamento (topo)" value={filtroDept} onChange={(e) => setFiltroDept(e.target.value)} className="min-w-0 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm sm:w-auto">
+            <option value="todos">Todos departamentos</option>
+            {depts.map((d) => <option key={d.id} value={d.id}>{d.nome}</option>)}
+          </select>
+          {mes !== localDay(clock).slice(0, 7) && <span className="self-center text-xs text-muted-foreground">Mês arquivado</span>}
+        </div>
           <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
             {status.pending.length > 0 && <Button type="button" size="sm" variant="destructive" className="update-alert h-8 gap-1 px-2 text-xs" title={`Pendente: ${status.pending.map((x) => sourceLabels[x]).join(", ")}`} onClick={() => openUpdate(status.pending[0]!)}><AlertTriangle className="size-4" />{status.pending.length}</Button>}
             <ThemeToggle />
@@ -449,7 +457,7 @@ function Painel({ email }: { email: string }) {
             <Button variant="ghost" size="icon" title="Sair" aria-label="Sair" onClick={() => void supabase.auth.signOut()}><LogOut /></Button>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 px-3 pb-1.5 sm:flex sm:px-5 lg:-mt-9 lg:ml-[40%] lg:pb-1.5 lg:pr-48">
+        <div className="grid grid-cols-2 gap-2 px-3 pb-1.5 sm:flex sm:px-5 lg:hidden">
           <input aria-label="Mês do relatório" type="month" value={mes} onChange={(e) => setMes(e.target.value)} className="min-w-0 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm sm:w-auto" />
           <select aria-label="Departamento" value={filtroDept} onChange={(e) => setFiltroDept(e.target.value)} className="min-w-0 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm sm:w-auto">
             <option value="todos">Todos departamentos</option>
