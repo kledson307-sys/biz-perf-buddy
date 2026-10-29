@@ -2,10 +2,9 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { daLoja, resumir, type NpsItem } from "@/lib/nps";
 import { useResumoMes } from "@/hooks/use-resumo-mes";
-import { AlertTriangle, ArrowRight, CalendarDays, Car, ClipboardList, Gem, MapPin, Package, Star, Target, TrendingUp, Trophy, Wrench } from "lucide-react";
+import { AlertTriangle, ArrowRight, CalendarDays, ClipboardList, MapPin, Package, Star, Target, TrendingUp, Trophy, Wrench } from "lucide-react";
 import { ITENS } from "@/lib/agregados";
 import { bg, brl, div, pct, tone, uni } from "@/components/painel-ui";
-import carro from "@/assets/carro-silhueta.jpg";
 import farois from "@/assets/hero-farois.jpg";
 
 type L = { c: { id: string; nome: string; department_id: string | null }; servicos: number; pecas: number; mS: number; mP: number; perf: number; projPct: number };
@@ -16,8 +15,8 @@ function Bloco({ titulo, icon, ir, children, right, className = "" }: { titulo: 
   return (
     <section className={`lux-card flex min-h-0 flex-col p-3 ${className}`}>
       <div className="mb-1.5 flex shrink-0 items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">{icon}{titulo}</h2>
-        <div className="flex items-center gap-2">{right}{ir && <button type="button" onClick={ir} className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">Ver detalhes <ArrowRight className="size-3" /></button>}</div>
+        <h2 className="flex min-w-0 items-center gap-2 truncate whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">{icon}{titulo}</h2>
+        <div className="flex items-center gap-2">{right}{ir && <button type="button" onClick={ir} className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[11px] font-medium text-primary hover:underline">Ver <ArrowRight className="size-3" /></button>}</div>
       </div>
       <div className="min-h-0 flex-1 overflow-auto">{children}</div>
     </section>
@@ -97,135 +96,146 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
     ["Serviços", t.s, t.ms, Wrench, "bg-neon"], ["Peças", t.p, t.mp, Package, "bg-coral"], ["Faturamento total", t.s + t.p, metaT, TrendingUp, "bg-primary"],
   ];
 
+  const pTot = div(pT, metaT);
+  const aggRitmo = (() => { let q = 0, m = 0; for (const it of ITENS) { const a = agg[it.k]; if (a?.mq) { q += a.q; m += a.mq; } } return m && dec ? div(div(q, dec) * tot, m) : null; })();
+  const st = (p: number | null) => p === null ? { r: "Sem dados", c: "bg-muted", t: "text-muted-foreground" } : p >= 1 ? { r: "Dentro da meta", c: "bg-success", t: "text-success" } : p >= 0.85 ? { r: "Atenção", c: "bg-warning", t: "text-warning" } : { r: "Crítico", c: "bg-destructive", t: "text-destructive" };
+  const status: [string, number | null, string][] = [
+    ["Serviços", div(pS, t.ms), "painel"], ["Peças", div(pP, t.mp), "pecas"], ["Oficina (serviços)", mec.ms ? div(mec.s, mec.ms) : null, "mecanicos"],
+    ["NPS promotores", nps ? div(nps.pctProm, 0.85) : null, "nps"], ["Agregados (ritmo)", aggRitmo, "agregados"], ["Projeção mensal", pTot, "os"],
+  ];
+  const diario = useMemo(() => {
+    const ids = new Set(linhas.map((l) => l.c.id)); const m = new Map<number, number>();
+    for (const s of sales) if (ids.has(s.consultant_id)) { const d = Number(s.dia.slice(8, 10)); m.set(d, (m.get(d) ?? 0) + +s.servicos + +s.pecas); }
+    return [...m.entries()].sort((a, b) => a[0] - b[0]);
+  }, [sales, linhas]);
+  const maxDia = Math.max(1, ...diario.map(([, v]) => v));
+  const dptMax = Math.max(1, ...porDept.map((d) => Math.max(d.meta, d.servicos + d.pecas)));
+  const resp: Record<string, string> = { ranking: "Consultores", "controle-os": "Oficina", painel: "Gestão", pecas: "Consultores", nps: "Consultores" };
+  const lider = ranking[0];
+  const res3: [string, number, number, typeof Wrench][] = [["Serviços", t.s, t.ms, Wrench], ["Peças", t.p, t.mp, Package], ["Total", t.s + t.p, metaT, TrendingUp]];
+  const destaques: [string, string][] = [
+    ["Ticket médio serviço", brl(div(t.s, pass))], ["Ticket médio peças", brl(div(t.p, pass))], ["Passagens no mês", uni(pass)],
+    ["Peças por R$ 1 de serviço", ratio.toFixed(2).replace(".", ",")], ["Oficina (serviços)", mec.ms ? pct(div(mec.s, mec.ms)) : "—"],
+  ];
+
   return (
-    <div className="space-y-2 lg:grid lg:h-[calc(100dvh-7rem)] lg:min-h-[620px] lg:grid-rows-[auto_auto_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.85fr)] lg:gap-2 lg:space-y-0">
-      {/* Cabeçalho executivo compacto */}
-      <section className="relative flex flex-wrap items-center justify-between gap-2 overflow-hidden rounded-xl border border-border px-4 py-1.5">
-        <img src={farois} alt="" aria-hidden className="pointer-events-none absolute inset-y-0 right-0 h-full w-1/2 object-cover opacity-20 [mask-image:linear-gradient(to_left,black,transparent)]" />
-        <h2 className="relative text-base font-bold">Olá, {primeiro}! <span className="text-sm font-normal text-muted-foreground">Resumo do pós-venda hoje</span></h2>
-        <div className="relative flex flex-wrap gap-2 text-xs">
-          <span className="flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-2.5 py-0.5"><CalendarDays className="size-3.5 text-primary" />{mesNome} · dia {dec} de {tot}</span>
-          <span className="flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-2.5 py-0.5"><MapPin className="size-3.5 text-primary" />Salvador</span>
-          <span className={`flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-2.5 py-0.5 font-semibold ${tone(div(pT, metaT))}`}><Target className="size-3.5" />Projeção {pct(div(pT, metaT))}</span>
+    <div className="space-y-2 lg:grid lg:h-[calc(100dvh-7rem)] lg:min-h-[640px] lg:grid-cols-12 lg:grid-rows-[auto_minmax(0,1.05fr)_minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,0.8fr)] lg:gap-2 lg:space-y-0">
+      {/* Cabeçalho com faróis BMW */}
+      <section className="relative flex flex-wrap items-center justify-between gap-2 overflow-hidden rounded-xl border border-border px-4 py-2 lg:col-span-12">
+        <img src={farois} alt="" aria-hidden className="pointer-events-none absolute inset-y-0 right-0 h-full w-3/5 object-cover opacity-40 [mask-image:linear-gradient(to_left,black_40%,transparent)]" />
+        <div className="relative"><h2 className="text-lg font-bold leading-tight">Olá, {primeiro}!</h2><p className="text-xs text-muted-foreground">Aqui está o resumo da performance do seu pós-venda.</p></div>
+        <div className="relative flex flex-wrap gap-4 text-xs">
+          <span className="flex items-center gap-2"><CalendarDays className="size-5 text-primary" /><span><b className="block capitalize">{mesNome}</b><span className="text-muted-foreground">dia útil {dec} de {tot}</span></span></span>
+          <span className="flex items-center gap-2"><MapPin className="size-5 text-primary" /><span><b className="block">Haus Salvador</b><span className="text-muted-foreground">Concessionária BMW</span></span></span>
         </div>
       </section>
 
-      {/* Resultado do mês */}
-      <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
-        {resultado.map(([n, r, m, I, cor]) => (
-          <button key={n} type="button" onClick={() => setTab("painel")} className="lux-card col-span-1 px-3 py-2 text-left">
-            <div className="flex items-center justify-between"><p className="text-xs text-muted-foreground">{n}</p><I strokeWidth={1.5} className="size-5 text-primary" /></div>
-            <p className="text-lg font-bold">{brl(r)}</p>
-            <div className="my-1"><Linha p={div(r, m)} cor={cor} /></div>
-            <p className={`text-xs font-semibold ${tone(div(r, m))}`}>{pct(div(r, m))} <span className="font-normal text-muted-foreground">de {brl(m)}</span></p>
-          </button>
-        ))}
-        <button type="button" onClick={() => setTab("agregados")} className="lux-card px-3 py-2 text-left">
-          <p className="text-xs text-muted-foreground">Ticket médio</p>
-          <p className="text-sm">Serviços <b>{brl(div(t.s, pass))}</b></p>
-          <p className="text-sm">Peças <b>{brl(div(t.p, pass))}</b></p>
-          <p className="text-sm">Passagens <b>{uni(pass)}</b></p>
+      {/* Linha 1 */}
+      <Bloco titulo="Resultado do mês" icon={<Target className="size-4 text-primary" />} ir={() => setTab("painel")} className="lg:col-span-6">
+        <div className="grid h-full gap-2 sm:grid-cols-3">{res3.map(([n, r, m, I]) => (
+          <div key={n} className="flex flex-col justify-between rounded-lg border border-border bg-background/40 p-2">
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase"><span className="flex size-6 items-center justify-center rounded-full bg-primary/20"><I className="size-3.5 text-primary" /></span>{n}</p>
+            <div className="text-[11px] text-muted-foreground"><span>Realizado<b className="block text-base text-foreground">{brl(r)}</b></span><span>Meta <b className="font-normal text-foreground/80">{brl(m)}</b></span></div>
+            <div className="flex items-center gap-2"><Linha p={div(r, m)} /><b className={`text-xs ${tone(div(r, m))}`}>{pct(div(r, m))}</b></div>
+          </div>))}</div>
+      </Bloco>
+      <Bloco titulo="Projeção do mês" icon={<TrendingUp className="size-4 text-primary" />} className="relative overflow-hidden lg:col-span-3" right={
+        <div className="flex rounded-full border border-border p-0.5 text-[10px]">
+          <button type="button" onClick={() => setComOs(true)} className={`rounded-full px-2 py-0.5 ${comOs ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Com O.S.</button>
+          <button type="button" onClick={() => setComOs(false)} className={`rounded-full px-2 py-0.5 ${!comOs ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Só faturado</button>
+        </div>}>
+        <img src={farois} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-25 [mask-image:linear-gradient(to_left,black,transparent)]" />
+        <button type="button" onClick={() => setTab("os")} className="relative w-full text-left">
+          <p className={`text-2xl font-bold ${tone(pTot)}`}>{brl(pT)}</p>
+          <p className="text-sm"><b>{pct(pTot)}</b> <span className="text-xs text-muted-foreground">da meta {brl(metaT)}</span></p>
+          <div className="mt-1.5 max-w-[70%]"><Linha p={pTot} cor="bg-primary" /></div>
+          <p className="mt-1.5 text-[11px] text-muted-foreground">Serviços <b className={tone(div(pS, t.ms))}>{pct(div(pS, t.ms))}</b> · Peças <b className={tone(div(pP, t.mp))}>{pct(div(pP, t.mp))}</b></p>
+          <p className="text-[11px] text-muted-foreground">{comOs ? "Só faturado" : "Com O.S."}: {brl(altS + altP)}</p>
         </button>
-        <button type="button" onClick={() => setTab("nps")} className="lux-card col-span-2 border-dashed px-3 py-2 text-left lg:col-span-1">
-          <div className="flex items-center justify-between"><p className="text-xs text-muted-foreground">NPS / CSI</p><Star strokeWidth={1.5} className="size-5 text-primary" /></div>
-          <p className={`text-lg font-bold ${nps ? (nps.nps >= 0.8 ? "text-success" : nps.nps >= 0.7 ? "text-warning" : "text-destructive") : "text-muted-foreground"}`}>{nps ? `${nps.nps > 0 ? "+" : ""}${(nps.nps * 100).toFixed(1).replace(".", ",")}` : "—"}</p>
-          <p className="text-xs text-muted-foreground">{nps ? `${pct(nps.pctProm)} promotores · ${uni(nps.avaliados)} avaliados` : "Aguardando planilha NPS"}</p>
-        </button>
-      </div>
-
-      <div className="grid min-h-0 gap-2 lg:grid-cols-3">
-        {/* Projeção do mês */}
-        <Bloco titulo="Projeção do mês" icon={<TrendingUp className="size-4 text-primary" />} ir={() => setTab("os")} className="relative overflow-hidden lg:col-span-2" right={
-          <div className="flex rounded-full border border-border p-0.5 text-[11px]">
-            <button type="button" onClick={() => setComOs(true)} className={`rounded-full px-2.5 py-1 ${comOs ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Com O.S. abertas</button>
-            <button type="button" onClick={() => setComOs(false)} className={`rounded-full px-2.5 py-1 ${!comOs ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Só faturado</button>
-          </div>}>
-          <img src={carro} alt="" aria-hidden className="pointer-events-none absolute bottom-0 right-0 hidden h-2/3 max-w-[45%] object-contain opacity-15 mix-blend-screen lg:block" />
-          <div className="relative">
-            <p className={`text-2xl font-bold ${tone(div(pT, metaT))}`}>{brl(pT)}</p>
-            <p className="text-xs text-muted-foreground">{pct(div(pT, metaT))} da meta {brl(metaT)} · {comOs ? "com O.S. abertas" : "somente faturado"}</p>
-            <div className="mt-2 max-w-md"><Linha p={div(pT, metaT)} cor="bg-neon" /></div>
-            <div className="mt-2 grid gap-2 sm:grid-cols-2">
-              {[["Serviços", pS, t.ms, altS, t.s + (comOs ? t.os : 0)], ["Peças", pP, t.mp, altP, t.p + (comOs ? t.op : 0)]].map(([n, p, m, alt, base]) => (
-                <div key={n as string} className="rounded-lg border border-border bg-background/60 p-2">
-                  <p className="text-xs text-muted-foreground">Projeção {n}</p>
-                  <p className={`text-lg font-bold ${tone(div(p as number, m as number))}`}>{brl(p as number)} <span className="text-sm">{pct(div(p as number, m as number))}</span></p>
-                  <p className="text-xs text-muted-foreground">Meta {brl(m as number)} · precisa {brl(rest ? Math.max((m as number) - (base as number), 0) / rest : 0)}/dia</p>
-                  <p className="text-xs text-muted-foreground">{comOs ? "Só faturado" : "Com O.S."}: {brl(alt as number)} ({pct(div(alt as number, m as number))})</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Bloco>
-
-        {/* Onde devo atuar hoje */}
-        <Bloco titulo="Onde devo atuar hoje?" icon={<AlertTriangle className="size-4 text-destructive" />} className="border-destructive/50">
-          {acoes.length === 0 ? <p className="text-sm text-success">✅ Nenhum ponto crítico agora. Mantenha o ritmo.</p> :
-            <ul className="space-y-1">{acoes.map((a, i) => (
-              <li key={i}><button type="button" onClick={() => setTab(a.ir)} className="flex w-full items-start gap-2 rounded-lg bg-background/40 px-2 py-1 text-left text-xs hover:bg-muted">
-                <span className={`mt-1.5 size-2 shrink-0 rounded-full ${a.cor}`} /><span className="flex-1">{a.txt}</span><ArrowRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-              </button></li>
-            ))}</ul>}
-          {abaixo.length > 1 && <p className="mt-1 text-[11px] text-muted-foreground">Abaixo de 85%: {abaixo.map((l) => l.c.nome).join(", ")}</p>}
-        </Bloco>
-      </div>
-
-      <div className="grid min-h-0 gap-2 lg:grid-cols-3">
-        {/* Evolução do mês */}
-        <Bloco titulo="Evolução do mês" icon={<TrendingUp className="size-4 text-primary" />} ir={() => setTab("painel")} className="lg:col-span-2">
-          {evol.length === 0 ? <p className="text-sm text-muted-foreground">Sem vendas importadas neste mês.</p> : (
-            <svg viewBox={`0 0 ${W} ${H + 18}`} preserveAspectRatio="none" className="h-[calc(100%-1.25rem)] min-h-24 w-full" role="img" aria-label="Faturamento acumulado do mês contra a meta">
-              {[0.25, 0.5, 0.75, 1].map((f) => <line key={f} x1="0" x2={W} y1={py(maxY * f)} y2={py(maxY * f)} className="stroke-border" strokeWidth="1" />)}
-              <line x1="0" y1={H} x2={W} y2={py(metaT)} className="stroke-muted-foreground" strokeWidth="1.5" strokeDasharray="5 5" />
-              <path d={`${caminho} L${px(evol.at(-1)!.d)},${H} L${px(evol[0]!.d)},${H} Z`} fill="var(--neon)" fillOpacity="0.12" />
-              <path d={caminho} fill="none" stroke="var(--neon)" strokeWidth="2.5" />
-              <circle cx={px(evol.at(-1)!.d)} cy={py(evol.at(-1)!.v)} r="4" fill="var(--neon)" />
-              {[1, 10, 20, diasMes].map((d) => <text key={d} x={Math.min(px(d), W - 12)} y={H + 14} className="fill-muted-foreground text-[10px]">{d}</text>)}
-            </svg>
-          )}
-          <p className="mt-1 flex flex-wrap gap-4 text-[11px] text-muted-foreground"><span><span className="mr-1 inline-block h-0.5 w-4 bg-neon align-middle" />Realizado acumulado</span><span>- - - Ritmo da meta</span></p>
-        </Bloco>
-
-        {/* Ranking */}
-        <Bloco titulo="Top 5 consultores" icon={<Trophy className="size-4 text-warning" />} ir={() => setTab("ranking")}>
-          <ol className="space-y-1.5">{ranking.slice(0, 5).map((l, i) => (
-            <li key={l.c.id} className="flex items-center gap-2 text-sm">
-              <span className={`flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${i === 0 ? "bg-warning text-background" : i < 3 ? "bg-primary/30" : "bg-muted"}`}>{i + 1}</span>
-              <div className="min-w-0 flex-1"><p className="truncate">{l.c.nome}{deptName ? <span className="ml-1 text-[10px] text-muted-foreground">{deptName(l.c.department_id)}</span> : null}</p><Linha p={l.perf} /></div>
-              <span className={`w-14 text-right font-semibold ${tone(l.perf)}`}>{pct(l.perf)}</span>
-            </li>
-          ))}</ol>
-        </Bloco>
-      </div>
-
-      <div className="grid min-h-0 gap-2 md:grid-cols-2 lg:grid-cols-4">
-        {/* Departamentos */}
-        <Bloco titulo="Desempenho por departamento" icon={<Target className="size-4 text-primary" />} ir={() => setTab("painel")}>
-        <div className="grid grid-cols-5 gap-1 lg:grid-cols-3 xl:grid-cols-5">{porDept.map((d) => <Anel key={d.nome} p={d.projPct} rot={d.nome} />)}</div>
+      </Bloco>
+      <Bloco titulo="Status da operação" icon={<ClipboardList className="size-4 text-primary" />} className="lg:col-span-3">
+        <ul className="space-y-0.5 text-xs">{status.map(([n, p, ir]) => { const s = st(p); return (
+          <li key={n}><button type="button" onClick={() => setTab(ir)} className="flex w-full items-center gap-2 rounded px-1 py-0.5 hover:bg-muted">
+            <span className={`size-2.5 shrink-0 rounded-full ${s.c}`} /><span className="flex-1 text-left">{n}</span><span className={`text-[11px] ${s.t}`}>{s.r}</span><b className="w-11 text-right">{p === null ? "—" : pct(p)}</b>
+          </button></li>); })}</ul>
       </Bloco>
 
+      {/* Linha 2 */}
+      <Bloco titulo="Onde devo atuar hoje?" icon={<AlertTriangle className="size-4 text-destructive" />} className="border-destructive/50 lg:col-span-3">
+        {deptFraco && deptFraco.projPct < 1 ? (
+          <div className="rounded-lg border-l-4 border-destructive bg-destructive/10 p-2 text-xs">
+            <div className="flex items-center justify-between"><b className="uppercase">{deptFraco.nome}</b><span className="rounded bg-destructive px-1.5 py-0.5 text-[10px] font-bold text-destructive-foreground">{deptFraco.projPct < 0.85 ? "CRÍTICO" : "ATENÇÃO"}</span></div>
+            <div className="mt-1 grid grid-cols-2 gap-1"><span className="text-muted-foreground">Gap atual<b className="block text-sm text-destructive">{brl(Math.max(deptFraco.meta - deptFraco.servicos - deptFraco.pecas, 0))}</b></span>
+              <span className="text-muted-foreground">Necessário por dia<b className="block text-sm text-foreground">{brl(rest ? Math.max(deptFraco.meta - deptFraco.servicos - deptFraco.pecas, 0) / rest : 0)}</b></span></div>
+          </div>) : <p className="text-sm text-success">✅ Todos os departamentos no ritmo.</p>}
+        <ul className="mt-1.5 space-y-1">{acoes.slice(0, 3).map((a, i) => (
+          <li key={i}><button type="button" onClick={() => setTab(a.ir)} className="flex w-full items-start gap-2 rounded bg-background/40 px-2 py-1 text-left text-[11px] hover:bg-muted">
+            <span className={`mt-1 size-2 shrink-0 rounded-full ${a.cor}`} /><span className="flex-1">{a.txt}</span><ArrowRight className="size-3.5 shrink-0 text-primary" />
+          </button></li>))}</ul>
+      </Bloco>
+      <Bloco titulo="Evolução do mês" icon={<TrendingUp className="size-4 text-primary" />} ir={() => setTab("painel")} className="lg:col-span-3">
+        {evol.length === 0 ? <p className="text-sm text-muted-foreground">Sem vendas importadas neste mês.</p> : (
+          <svg viewBox={`0 0 ${W} ${H + 18}`} preserveAspectRatio="none" className="h-[calc(100%-1.25rem)] min-h-24 w-full" role="img" aria-label="Faturamento acumulado do mês contra a meta">
+            {[0.25, 0.5, 0.75, 1].map((f) => <line key={f} x1="0" x2={W} y1={py(maxY * f)} y2={py(maxY * f)} className="stroke-border" strokeWidth="1" />)}
+            <line x1="0" y1={H} x2={W} y2={py(metaT)} className="stroke-muted-foreground" strokeWidth="1.5" strokeDasharray="5 5" />
+            <path d={`${caminho} L${px(evol.at(-1)!.d)},${H} L${px(evol[0]!.d)},${H} Z`} fill="var(--primary)" fillOpacity="0.15" />
+            <path d={caminho} fill="none" stroke="var(--primary)" strokeWidth="2.5" />
+            <circle cx={px(evol.at(-1)!.d)} cy={py(evol.at(-1)!.v)} r="4" fill="var(--primary)" />
+            {[1, 10, 20, diasMes].map((d) => <text key={d} x={Math.min(px(d), W - 12)} y={H + 14} className="fill-muted-foreground text-[10px]">{d}</text>)}
+          </svg>)}
+        <p className="flex gap-4 text-[11px] text-muted-foreground"><span><span className="mr-1 inline-block h-0.5 w-4 bg-primary align-middle" />Realizado</span><span>- - - Meta</span></p>
+      </Bloco>
+      <Bloco titulo="Ranking dos consultores" icon={<Trophy className="size-4 text-warning" />} ir={() => setTab("ranking")} className="lg:col-span-3">
+        <ol className="space-y-1">{ranking.slice(0, 5).map((l, i) => (
+          <li key={l.c.id} className="flex items-center gap-2 text-xs">
+            <span className={`flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${i === 0 ? "bg-warning text-background" : i === 1 ? "bg-muted-foreground text-background" : i === 2 ? "bg-coral text-background" : "bg-muted"}`}>{i + 1}</span>
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">{l.c.nome.slice(0, 2)}</span>
+            <div className="min-w-0 flex-1"><p className="truncate font-semibold">{l.c.nome}</p><Linha p={l.perf} /></div>
+            <span className="text-right"><b className={tone(l.perf)}>{pct(l.perf)}</b><span className="block text-[10px] text-muted-foreground">{brl(l.servicos + l.pecas)}</span></span>
+          </li>))}</ol>
+      </Bloco>
+      <Bloco titulo="Desempenho por departamento" icon={<Target className="size-4 text-primary" />} ir={() => setTab("painel")} className="lg:col-span-3">
+        <div className="flex flex-wrap justify-around gap-1">{porDept.slice(0, 5).map((d) => <Anel key={d.nome} p={d.projPct} rot={d.nome} />)}</div>
+        <p className="mt-1 text-[11px] text-muted-foreground">Faturamento total <b className="ml-1 text-sm text-foreground">{brl(t.s + t.p)}</b></p>
+        {diario.length > 1 && <div className="mt-1 flex h-10 items-end gap-0.5" aria-label="Faturamento por dia">{diario.map(([d, v]) => <div key={d} title={`Dia ${d}: ${brl(v)}`} className="flex-1 rounded-t bg-primary" style={{ height: `${Math.max(div(v, maxDia) * 100, 4)}%` }} />)}</div>}
+      </Bloco>
 
-        <Bloco titulo="Ordens de serviço" icon={<ClipboardList className="size-4 text-primary" />} ir={() => setTab("controle-os")}>
-          {fluxo.length === 0 ? <p className="text-sm text-muted-foreground">Sem importação semanal.</p> :
-            <div className="grid grid-cols-2 gap-2">{fluxo.map((f) => <div key={f.st} className="rounded-lg bg-background/40 px-2 py-1"><p className="text-base font-bold">{f.n}</p><p className="text-[11px] text-muted-foreground">{f.st}</p></div>)}</div>}
-          {(parados > 0 || amarelos > 0) && <p className="mt-2 text-xs"><span className="text-warning">{amarelos} &gt;20 dias</span> · <span className="text-destructive">{parados} &gt;30 dias</span></p>}
-        </Bloco>
-        <Bloco titulo="Oficina & técnicos" icon={<Car className="size-4 text-primary" />} ir={() => setTab("mecanicos")}>
-          <div className="space-y-1 text-xs">
-            <div><p className="flex justify-between"><span>Serviços</span><span className={tone(div(mec.s, mec.ms))}>{brl(mec.s)} · {pct(div(mec.s, mec.ms))}</span></p><Linha p={div(mec.s, mec.ms)} cor="bg-neon" /></div>
-            <div><p className="flex justify-between"><span>Peças</span><span className={tone(div(mec.p, mec.mp))}>{brl(mec.p)} · {pct(div(mec.p, mec.mp))}</span></p><Linha p={div(mec.p, mec.mp)} cor="bg-coral" /></div>
-            <p className="flex justify-between"><span>Passagens</span><b>{uni(mec.pass)}</b></p>
-          </div>
-        </Bloco>
-        <Bloco titulo="Agregados" icon={<Gem className="size-4 text-primary" />} ir={() => setTab("agregados")}>
-          <ul className="space-y-1 text-xs">{ITENS.map((it) => {
-            const a = agg[it.k] ?? { q: 0, v: 0, mq: 0 };
-            const ritmo = dec ? div(div(a.q, dec) * tot, a.mq) : 0;
-            return <li key={it.k} className="flex justify-between gap-2"><span className="truncate">{it.nome}</span><span className="shrink-0">{uni(a.q)} un{a.mq ? ` / ${uni(a.mq)}` : ""} · {brl(a.v)}{a.mq ? <b className={`ml-1 ${tone(ritmo)}`}>{pct(ritmo)}</b> : null}</span></li>;
-          })}</ul>
-        </Bloco>
-      </div>
+      {/* Linha 3 */}
+      <Bloco titulo="Departamentos · meta x realizado" icon={<ClipboardList className="size-4 text-primary" />} ir={() => setTab("painel")} className="lg:col-span-4">
+        <div className="flex h-full items-end gap-2">{porDept.map((d) => (
+          <div key={d.nome} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-0.5">
+            <div className="flex h-full w-full items-end justify-center gap-0.5">
+              <div className="w-1/3 rounded-t bg-muted-foreground/40" style={{ height: `${div(d.meta, dptMax) * 100}%` }} title={`Meta ${brl(d.meta)}`} />
+              <div className="w-1/3 rounded-t bg-primary" style={{ height: `${div(d.servicos + d.pecas, dptMax) * 100}%` }} title={`Realizado ${brl(d.servicos + d.pecas)}`} />
+            </div>
+            <span className="w-full truncate text-center text-[10px] text-muted-foreground">{d.nome}</span>
+          </div>))}</div>
+      </Bloco>
+      <Bloco titulo="Destaques do mês" icon={<Star className="size-4 text-primary" />} className="lg:col-span-4">
+        <ul className="space-y-0.5 text-xs">{destaques.map(([n, v]) => <li key={n} className="flex justify-between border-b border-border/50 py-0.5"><span className="text-muted-foreground">{n}</span><b>{v}</b></li>)}
+          {lider && <li className="flex justify-between py-0.5"><span className="text-muted-foreground">Líder do ranking</span><b className="text-warning">{lider.c.nome}</b></li>}</ul>
+      </Bloco>
+      <Bloco titulo="Próximas ações" icon={<ClipboardList className="size-4 text-primary" />} className="lg:col-span-4">
+        {acoes.length === 0 ? <p className="text-sm text-success">Nenhuma ação pendente.</p> :
+          <table className="w-full text-[11px]"><thead className="text-left text-muted-foreground"><tr><th className="font-normal">Ação</th><th className="font-normal">Responsável</th><th className="font-normal">Prazo</th><th className="font-normal">Status</th></tr></thead>
+            <tbody>{acoes.map((a, i) => <tr key={i} className="cursor-pointer hover:bg-muted" onClick={() => setTab(a.ir)}><td className="max-w-[12rem] truncate py-0.5"><span className={`mr-1 inline-block size-2 rounded-full ${a.cor}`} />{a.txt}</td><td>{resp[a.ir] ?? "Gestão"}</td><td>Hoje</td><td className="text-destructive">Pendente</td></tr>)}</tbody></table>}
+      </Bloco>
 
+      {/* Linha 4 */}
+      <Bloco titulo="Ordens de serviço" icon={<ClipboardList className="size-4 text-primary" />} ir={() => setTab("controle-os")} className="lg:col-span-5">
+        {fluxo.length === 0 ? <p className="text-sm text-muted-foreground">Sem importação semanal.</p> :
+          <div className="flex gap-1.5">{fluxo.slice(0, 6).map((f) => <div key={f.st} className="min-w-0 flex-1 rounded-lg border border-border bg-background/40 px-1.5 py-1"><p className="truncate text-[10px] text-muted-foreground">{f.st}</p><p className="text-base font-bold">{f.n}</p></div>)}
+            <div className="rounded-lg border border-border bg-background/40 px-2 py-1 text-[10px]"><p className="text-muted-foreground">Na oficina</p><p className="text-warning">{amarelos} &gt;20d</p><p className="text-destructive">{parados} &gt;30d</p></div></div>}
+      </Bloco>
+      <Bloco titulo="NPS / qualidade" icon={<Star className="size-4 text-primary" />} ir={() => setTab("nps")} className="lg:col-span-3">
+        {!nps ? <p className="text-sm text-muted-foreground">Aguardando planilha NPS.</p> :
+          <div className="grid grid-cols-4 gap-1 text-center">{([["NPS", `${(nps.nps * 100).toFixed(1).replace(".", ",")}`, nps.nps >= 0.7], ["Promot.", pct(nps.pctProm), nps.pctProm >= 0.85], ["Detrat.", uni(nps.det), nps.det === 0], ["RAC", uni(nps.racs), nps.racs === 0]] as [string, string, boolean][]).map(([n, v, ok]) => (
+            <div key={n} className="rounded-lg border border-border bg-background/40 py-1"><p className="text-[10px] text-muted-foreground">{n}</p><p className={`text-sm font-bold ${ok ? "text-success" : "text-warning"}`}>{v}</p></div>))}</div>}
+      </Bloco>
+      <Bloco titulo="Metas" icon={<Target className="size-4 text-primary" />} ir={() => setTab("metas")} className="lg:col-span-4">
+        <table className="w-full text-[10px] [&_td]:px-0.5"><thead className="text-muted-foreground"><tr><th className="text-left font-normal">Mensal</th><th className="text-right font-normal">Meta</th><th className="text-right font-normal">Realizado</th><th className="text-right font-normal">Ating.</th><th className="text-right font-normal">Gap</th></tr></thead>
+          <tbody>{res3.map(([n, r, m]) => <tr key={n}><td>{n}</td><td className="text-right">{brl(m)}</td><td className="text-right">{brl(r)}</td><td className={`text-right font-semibold ${tone(div(r, m))}`}>{pct(div(r, m))}</td><td className="text-right text-destructive">{brl(Math.min(r - m, 0))}</td></tr>)}</tbody></table>
+      </Bloco>
     </div>
   );
 }
