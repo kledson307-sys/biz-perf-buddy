@@ -37,6 +37,7 @@ import { calcPerformance } from "@/lib/performance";
 import { useAccessPresence } from "@/hooks/use-access-presence";
 import { useResumoMes } from "@/hooks/use-resumo-mes";
 import { AbaTopo, type TopoKpi } from "@/components/AbaTopo";
+import { ImportadorUnificado } from "@/components/ImportadorUnificado";
 import { ITENS } from "@/lib/agregados";
 
 export const Route = createFileRoute("/")({
@@ -803,6 +804,7 @@ function Painel({ email }: { email: string }) {
             <h2 className="text-lg font-semibold">Central de importações · {mes}</h2>
             <p className="text-sm text-muted-foreground">Todas as planilhas do dia em um só lugar. Cada bloco tem seu botão, prévia e confirmação. O Controle O.S. semanal continua na própria aba.</p>
           </div>
+          <ImportadorUnificado mes={mes} onDone={load} />
           <section className="space-y-3"><h3 className="font-semibold">1. Faturamento geral de vendas <span className="text-xs font-normal text-muted-foreground">— alimenta Painel, Ranking, Serviços, Peças</span></h3>
             <StatusFonte source="faturamento" mes={mes} updates={updates} clock={clock} />
             <SalesImport cons={cons} depts={depts} onDone={load} onPeriod={setMes} /></section>
@@ -820,7 +822,7 @@ function Painel({ email }: { email: string }) {
         </div>}
         {tab === "cockpit" && !relatorio && <Cockpit linhas={linhas} porDept={porDept} mes={mes} tot={tot} dec={dec} soPecas={soPecas} setTab={setTab} sales={sales} nome={email.split("@")[0] ?? ""} deptName={deptName} />}
         {tab === "nps" && !relatorio && <NpsPainel />}
-        {tab === "pecas" && !relatorio && <PecasEstoque linhas={linhas} porDept={porDept} margemIdeal={margemIdeal} deptName={deptName} passagens={resumo.pass} />}
+        {tab === "pecas" && !relatorio && <PecasEstoque linhas={linhas} porDept={porDept} margemIdeal={margemIdeal} deptName={deptName} passagens={resumo.pass} mes={mes} />}
         {tab === "metas" && !relatorio && <><CadeadoMes mes={mes} /><Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} />
           <section className="mt-6 space-y-3"><h3 className="font-semibold">Metas de agregados</h3><Agregados modo="metas" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section></>}
         {tab === "config" && <div className="space-y-6"><Equipe /><Config parte="config" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div>}
