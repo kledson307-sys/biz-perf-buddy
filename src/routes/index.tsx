@@ -397,12 +397,7 @@ function Painel({ email }: { email: string }) {
         const a = resumo.agg[it.k] ?? { q: 0, v: 0, mq: 0 }; const ritmo = dec ? div(div(a.q, dec) * tot, a.mq) : 0;
         return { label: it.nome, value: `${uni(a.q)} un`, sub: `${a.mq ? `Meta ${uni(a.mq)} · ritmo ${pct(ritmo)} · ` : ""}${brl(a.v)}${resumo.pass ? ` · ${pct(div(a.q, resumo.pass))} das passagens` : ""}`, p: a.mq ? ritmo : undefined, cls: a.mq ? tone(ritmo) : "" };
       })} />;
-      case "mecanicos": { const m = resumo.mec; return <AbaTopo titulo="Oficina & Técnicos" sub="Produtividade da oficina, passagens por tipo e metas dos técnicos" icon={Wrench} kpis={[
-        { label: "Passagens", value: uni(m.pass), sub: "O.S. internas não contam" },
-        { label: "Serviços (M.O.)", value: brl(m.s), sub: `${pct(div(m.s, m.ms))} de ${brl(m.ms)}`, p: div(m.s, m.ms), barra: "bg-neon" },
-        { label: "Peças", value: brl(m.p), sub: `${pct(div(m.p, m.mp))} de ${brl(m.mp)}`, p: div(m.p, m.mp), barra: "bg-coral" },
-        { label: "Eficiência da oficina", value: pct(div(m.s + m.p, m.ms + m.mp)), sub: `Ticket M.O. ${brl(div(m.s, m.pass))}`, cls: pctMeta(m.s + m.p, m.ms + m.mp) },
-      ]} />; }
+      case "mecanicos": return <AbaTopo titulo="Oficina & Técnicos" sub="Produtividade da oficina, passagens por tipo e metas dos técnicos" icon={Wrench} kpis={[]} />;
       case "controle-os": return <AbaTopo titulo="Ordens de Serviço" sub="Status das O.S. em aberto e tempo na oficina" icon={Car} kpis={[
         { label: "O.S. em aberto", value: uni(resumo.abertas), sub: `Tempo médio ${uni(resumo.mediaDias)} dias` },
         { label: "Até 20 dias", value: uni(resumo.abertas - resumo.amarelos - resumo.parados), cls: "text-success" },
@@ -437,7 +432,7 @@ function Painel({ email }: { email: string }) {
 
       <div className="lg:pl-64">
       <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur print:hidden">
-        <div className="mx-auto flex max-w-7xl items-center gap-2 px-3 py-2.5 sm:px-6">
+        <div className="flex items-center gap-2 px-3 py-1.5 sm:px-5">
           <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Abrir menu" onClick={() => setMenu(true)}><Menu /></Button>
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-base font-bold sm:text-lg">{tabLabel}</h1>
@@ -454,7 +449,7 @@ function Painel({ email }: { email: string }) {
             <Button variant="ghost" size="icon" title="Sair" aria-label="Sair" onClick={() => void supabase.auth.signOut()}><LogOut /></Button>
           </div>
         </div>
-        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-2 px-3 pb-2.5 sm:flex sm:px-6">
+        <div className="grid grid-cols-2 gap-2 px-3 pb-1.5 sm:flex sm:px-5 lg:-mt-9 lg:ml-[40%] lg:pb-1.5 lg:pr-48">
           <input aria-label="Mês do relatório" type="month" value={mes} onChange={(e) => setMes(e.target.value)} className="min-w-0 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm sm:w-auto" />
           <select aria-label="Departamento" value={filtroDept} onChange={(e) => setFiltroDept(e.target.value)} className="min-w-0 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm sm:w-auto">
             <option value="todos">Todos departamentos</option>
@@ -465,13 +460,13 @@ function Painel({ email }: { email: string }) {
       </header>
 
       {status.latest.length > 0 && <details data-testid="update-banner" className={`group border-b print:hidden ${status.stale ? "border-destructive/40 bg-destructive/10" : "border-border bg-primary/5 text-muted-foreground"}`}>
-        <summary className="mx-auto flex max-w-7xl cursor-pointer list-none items-center gap-2 px-4 py-1.5 text-xs sm:px-6">
+        <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-1 text-[11px] sm:px-5">
           {status.pending.length > 0
             ? <span className="font-semibold text-destructive">⚠️ {status.pending.length} fonte(s) pendente(s): {status.pending.map((x) => sourceLabels[x]).join(", ")}</span>
             : <span>✅ Dados atualizados</span>}
           <ChevronDown className="ml-auto size-4 transition-transform group-open:rotate-180" />
         </summary>
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 pb-2 text-xs sm:px-6">
+        <div className="flex flex-wrap items-center gap-3 px-4 pb-2 text-xs sm:px-5">
           <div className="min-w-0 flex-1 space-y-1">
             {status.latest.map(({ source, record, stale, fresh }) => <p key={source} className="break-words">
               {sourceLabels[source]}: {record ? <>{fresh ? "✅" : stale ? "❌" : ""} última atualização {dataHora(record.at)} por <span className="font-medium">{record.nome}</span> · {record.origem}</> : "❌ nenhuma atualização registrada."}
@@ -483,10 +478,10 @@ function Painel({ email }: { email: string }) {
         </div>
       </details>}
 
-      <main className={`mx-auto min-w-0 max-w-7xl space-y-4 px-3 py-4 sm:space-y-6 sm:px-6 sm:py-6 ${tab === "painel" ? "painel-phone" : ""}`}>
+      <main className={`mx-auto min-w-0 max-w-[1920px] space-y-3 px-3 py-3 sm:px-5 ${tab === "painel" ? "painel-phone" : ""}`}>
         {topo}
         {subBar}
-        {!relatorio && (() => {
+        {!relatorio && tab !== "cockpit" && (() => {
           const rest = Math.max(tot - dec, 0);
           type L = (typeof linhas)[number];
           const abaixo = (arr: L[], f: (l: L) => number, m: (l: L) => number) => arr.filter((l) => m(l) > 0 && f(l) < 0.85).sort((a, b) => f(a) - f(b));
@@ -512,7 +507,7 @@ function Painel({ email }: { email: string }) {
           };
           const [analise, acao] = o[tabKey(tab)] ?? o["painel"]!;
           return (
-            <details className="group rounded-lg border-l-4 border-primary bg-primary/5 px-4 py-2 text-sm print:hidden">
+            <details className="group rounded-lg border-l-4 border-primary bg-primary/5 px-3 py-1 text-sm print:hidden">
               <summary className="flex cursor-pointer list-none items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
                 <Lightbulb className="size-4" />Orientação ao gestor<ChevronDown className="ml-auto size-4 transition-transform group-open:rotate-180" />
               </summary>
@@ -758,12 +753,6 @@ function Painel({ email }: { email: string }) {
         )}
 
         {tab === "ranking" && (<>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Kpi label="Consultores ativos" value={String(linhas.length)} sub={lider ? `Líder: ${lider.c.nome}` : ""} />
-            <Kpi label="Meta da equipe" value={brl(total.meta)} />
-            <Kpi label="Realizado" value={brl(total.real)} sub={`Projeção ${brl(total.proj)}`} />
-            <Kpi label="% Atingimento" value={pct(total.perf)} cls={tone(total.perf)} sub={`Projeção ${pct(total.projPct)}`} />
-          </div>
           <Box title={`Ranking dos consultores · ${mesExtenso}`}>
             <RankingMobile linhas={linhas} total={total} deptName={deptName} soPecas={soPecas} />
             <div className="hidden md:block">
