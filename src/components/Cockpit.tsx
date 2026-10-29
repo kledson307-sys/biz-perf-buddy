@@ -15,8 +15,8 @@ function Bloco({ titulo, icon, ir, children, right, className = "" }: { titulo: 
   return (
     <section className={`lux-card flex min-h-0 flex-col p-3 ${className}`}>
       <div className="mb-1.5 flex shrink-0 items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">{icon}{titulo}</h2>
-        <div className="flex items-center gap-2">{right}{ir && <button type="button" onClick={ir} className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">Ver detalhes <ArrowRight className="size-3" /></button>}</div>
+        <h2 className="flex min-w-0 items-center gap-2 truncate whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">{icon}{titulo}</h2>
+        <div className="flex items-center gap-2">{right}{ir && <button type="button" onClick={ir} className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[11px] font-medium text-primary hover:underline">Ver <ArrowRight className="size-3" /></button>}</div>
       </div>
       <div className="min-h-0 flex-1 overflow-auto">{children}</div>
     </section>
@@ -112,7 +112,7 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
   const dptMax = Math.max(1, ...porDept.map((d) => Math.max(d.meta, d.servicos + d.pecas)));
   const resp: Record<string, string> = { ranking: "Consultores", "controle-os": "Oficina", painel: "Gestão", pecas: "Consultores", nps: "Consultores" };
   const lider = ranking[0];
-  const res3: [string, number, number, typeof Wrench][] = [["Serviços", t.s, t.ms, Wrench], ["Peças", t.p, t.mp, Package], ["Total pós-venda", t.s + t.p, metaT, TrendingUp]];
+  const res3: [string, number, number, typeof Wrench][] = [["Serviços", t.s, t.ms, Wrench], ["Peças", t.p, t.mp, Package], ["Total", t.s + t.p, metaT, TrendingUp]];
   const destaques: [string, string][] = [
     ["Ticket médio serviço", brl(div(t.s, pass))], ["Ticket médio peças", brl(div(t.p, pass))], ["Passagens no mês", uni(pass)],
     ["Peças por R$ 1 de serviço", ratio.toFixed(2).replace(".", ",")], ["Oficina (serviços)", mec.ms ? pct(div(mec.s, mec.ms)) : "—"],
@@ -135,7 +135,7 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
         <div className="grid h-full gap-2 sm:grid-cols-3">{res3.map(([n, r, m, I]) => (
           <div key={n} className="flex flex-col justify-between rounded-lg border border-border bg-background/40 p-2">
             <p className="flex items-center gap-2 text-xs font-semibold uppercase"><span className="flex size-6 items-center justify-center rounded-full bg-primary/20"><I className="size-3.5 text-primary" /></span>{n}</p>
-            <div className="grid grid-cols-2 gap-1 text-[11px] text-muted-foreground"><span>Realizado<b className="block text-sm text-foreground">{brl(r)}</b></span><span>Meta<b className="block text-sm font-normal text-foreground/80">{brl(m)}</b></span></div>
+            <div className="text-[11px] text-muted-foreground"><span>Realizado<b className="block text-base text-foreground">{brl(r)}</b></span><span>Meta <b className="font-normal text-foreground/80">{brl(m)}</b></span></div>
             <div className="flex items-center gap-2"><Linha p={div(r, m)} /><b className={`text-xs ${tone(div(r, m))}`}>{pct(div(r, m))}</b></div>
           </div>))}</div>
       </Bloco>
@@ -233,7 +233,7 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
             <div key={n} className="rounded-lg border border-border bg-background/40 py-1"><p className="text-[10px] text-muted-foreground">{n}</p><p className={`text-sm font-bold ${ok ? "text-success" : "text-warning"}`}>{v}</p></div>))}</div>}
       </Bloco>
       <Bloco titulo="Metas" icon={<Target className="size-4 text-primary" />} ir={() => setTab("metas")} className="lg:col-span-4">
-        <table className="w-full text-[11px]"><thead className="text-muted-foreground"><tr><th className="text-left font-normal">Mensal</th><th className="text-right font-normal">Meta</th><th className="text-right font-normal">Realizado</th><th className="text-right font-normal">Ating.</th><th className="text-right font-normal">Gap</th></tr></thead>
+        <table className="w-full text-[10px] [&_td]:px-0.5"><thead className="text-muted-foreground"><tr><th className="text-left font-normal">Mensal</th><th className="text-right font-normal">Meta</th><th className="text-right font-normal">Realizado</th><th className="text-right font-normal">Ating.</th><th className="text-right font-normal">Gap</th></tr></thead>
           <tbody>{res3.map(([n, r, m]) => <tr key={n}><td>{n}</td><td className="text-right">{brl(m)}</td><td className="text-right">{brl(r)}</td><td className={`text-right font-semibold ${tone(div(r, m))}`}>{pct(div(r, m))}</td><td className="text-right text-destructive">{brl(Math.min(r - m, 0))}</td></tr>)}</tbody></table>
       </Bloco>
     </div>
