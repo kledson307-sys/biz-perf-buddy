@@ -753,11 +753,17 @@ function Painel({ email }: { email: string }) {
         )}
 
         {tab === "ranking" && (<>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <Kpi label="Consultores ativos" value={String(linhas.length)} sub={lider ? `Líder: ${lider.c.nome}` : ""} />
+            <Kpi label="Meta da equipe" value={brl(total.meta)} />
+            <Kpi label="Realizado" value={brl(total.real)} sub={`Projeção ${brl(total.proj)}`} />
+            <Kpi label="% Atingimento" value={pct(total.perf)} cls={tone(total.perf)} sub={`Projeção ${pct(total.projPct)}`} />
+          </div>
           <Box title={`Ranking dos consultores · ${mesExtenso}`}>
             <RankingMobile linhas={linhas} total={total} deptName={deptName} soPecas={soPecas} />
             <div className="hidden md:block">
-              <Tabela head={["#", "Consultor", "Depto", "Serviços", "Peças", "Realizado", "Meta", "Perf.", "Projeção", "Nec./dia", "vs. Líder"]}>
-                {linhas.length === 0 && <tr><td colSpan={11} className="px-3 py-10 text-center text-muted-foreground">Sem dados no mês.</td></tr>}
+              <Tabela head={["#", "Consultor", "Depto", "Serviços", "Peças", "Realizado", "Meta", "Perf.", "Projeção", "Nec./dia", "Peças/R$1 M.O.", "vs. Líder"]}>
+                {linhas.length === 0 && <tr><td colSpan={12} className="px-3 py-10 text-center text-muted-foreground">Sem dados no mês.</td></tr>}
                 {linhas.map((l, i) => {
                   const semServ = soPecas(l.c.nome);
                   return (
@@ -772,6 +778,7 @@ function Painel({ email }: { email: string }) {
                       <td className={`px-3 py-1.5 font-semibold ${tone(l.perf)}`}>{pct(l.perf)}</td>
                       <td className={`px-3 py-1.5 ${tone(l.projPct)}`}>{brl(l.proj)}</td>
                       <td className="px-3 py-1.5">{l.nec ? brl(l.nec) : "—"}</td>
+                      <td className={`px-3 py-1.5 ${semServ || !l.servicos ? "" : l.pecas / l.servicos >= 2.5 ? "text-success" : l.pecas / l.servicos >= 1.5 ? "text-warning" : "text-destructive"}`} title="Ideal: R$ 2,50 a R$ 3,50 de peças por R$ 1 de serviço">{semServ || !l.servicos ? "—" : (l.pecas / l.servicos).toFixed(2).replace(".", ",")}</td>
                       <td className="whitespace-nowrap px-3 py-1.5">{!lider || l === lider ? <span className="font-semibold text-primary">Líder</span> : <span className="text-destructive">−{((lider.perf - l.perf) * 100).toFixed(1)} pts</span>}</td>
                     </tr>
                   );
