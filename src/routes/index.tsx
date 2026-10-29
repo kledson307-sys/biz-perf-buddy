@@ -399,14 +399,7 @@ function Painel({ email }: { email: string }) {
         return { label: it.nome, value: `${uni(a.q)} un`, sub: `${a.mq ? `Meta ${uni(a.mq)} · ritmo ${pct(ritmo)} · ` : ""}${brl(a.v)}${resumo.pass ? ` · ${pct(div(a.q, resumo.pass))} das passagens` : ""}`, p: a.mq ? ritmo : undefined, cls: a.mq ? tone(ritmo) : "" };
       })} />;
       case "mecanicos": return <AbaTopo titulo="Oficina & Técnicos" sub="Produtividade da oficina, passagens por tipo e metas dos técnicos" icon={Wrench} kpis={[]} />;
-      case "controle-os": return <AbaTopo titulo="Ordens de Serviço" sub="Status das O.S. em aberto e tempo na oficina" icon={Car} kpis={[
-        { label: "O.S. em aberto", value: uni(resumo.abertas), sub: `Tempo médio ${uni(resumo.mediaDias)} dias` },
-        { label: "Até 20 dias", value: uni(resumo.abertas - resumo.amarelos - resumo.parados), cls: "text-success" },
-        { label: "21 a 30 dias", value: uni(resumo.amarelos), cls: "text-warning" },
-        { label: "Mais de 30 dias", value: uni(resumo.parados), cls: "text-destructive" },
-      ]}>
-        {resumo.fluxo.length > 0 && <div className="flex flex-wrap gap-2">{resumo.fluxo.map((f) => <span key={f.st} className="rounded-full border border-border bg-card px-3 py-1 text-xs">{f.st} <b>{f.n}</b></span>)}</div>}
-      </AbaTopo>;
+      case "controle-os": return <AbaTopo titulo="Ordens de Serviço" sub={`Status das O.S. em aberto e tempo na oficina · ${uni(resumo.abertas)} abertas · ${uni(resumo.parados)} acima de 30 dias`} icon={Car} kpis={[]} />;
       case "pecas": return <AbaTopo titulo="Peças & Estoque" sub="Faturamento de peças por canal, margem e ranking" icon={Package} kpis={[]} />;
       case "nps": return <AbaTopo titulo="NPS & Satisfação" sub="Qualidade e pesquisa da montadora · aguardando planilha de pesquisas" icon={Star} kpis={[]} />;
       case "importacoes": case "config": return <AbaTopo titulo="Importações & Configurações" sub="Atualização diária das fontes e ajustes do painel" icon={Upload} kpis={(Object.keys(sourceLabels) as UpdateSource[]).map((source) => ({ source, ...sourceStatus(source, mes, updates, clock) })).map(({ source, record, fresh }) => ({
@@ -574,7 +567,7 @@ function Painel({ email }: { email: string }) {
             </div>
 
             <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <Box title="Resultados por departamento" fit="xl:max-h-[calc(100vh-560px)] xl:min-h-[220px]">
+            <Box title="Resultados por departamento" fit="xl:max-h-[calc(100vh-600px)] xl:min-h-[200px]">
               <div className="overflow-x-auto"><table className="w-full text-sm">
                 <thead className="sticky top-0 bg-card text-[11px] uppercase text-muted-foreground"><tr>
                   <th className="px-3 py-1.5 text-left">Departamento</th><th className="px-2 text-right">Serviços</th><th className="px-2 text-right">Proj. serv.</th><th className="px-2 text-right">Peças</th><th className="px-2 text-right">Proj. peças</th><th className="px-2 text-right">Margem</th><th className="px-2 text-right">Projeção total</th><th className="px-3 text-right">Precisa/dia</th>
@@ -594,7 +587,7 @@ function Painel({ email }: { email: string }) {
               </table></div>
               {!porDept.length && <p className="p-4 text-sm text-muted-foreground">Cadastre consultores e departamentos em "Configurar" para ver os resultados aqui.</p>}
             </Box>
-            <Box title="Prioridades & plano de ação" fit="xl:max-h-[calc(100vh-560px)] xl:min-h-[220px]">
+            <Box title="Prioridades & plano de ação" fit="xl:max-h-[calc(100vh-600px)] xl:min-h-[200px]">
               <ul className="divide-y divide-border text-sm">
                 {[...linhas].filter((l) => l.meta > 0).sort((a, b) => a.projPct - b.projPct).slice(0, 6).map((l, i) => (
                   <li key={l.c.id} className="flex items-start gap-2 px-3 py-1.5">
@@ -745,7 +738,7 @@ function Painel({ email }: { email: string }) {
         )}
 
         {tab === "ranking" && (<>
-          <Box title={`Ranking dos consultores · ${mesExtenso}`} fit="md:max-h-[calc(100vh-520px)] md:min-h-[200px]">
+          <Box title={`Ranking dos consultores · ${mesExtenso}`} fit="md:max-h-[calc(100vh-590px)] md:min-h-[200px]">
             <RankingMobile linhas={linhas} total={total} deptName={deptName} soPecas={soPecas} />
             <div className="hidden md:block">
               <Tabela head={["#", "Consultor", "Depto", "Serviços", "Peças", "Realizado", "Meta", "Perf.", "Projeção", "Nec./dia", "Peças/R$1 M.O.", "vs. Líder"]}>
@@ -772,13 +765,13 @@ function Painel({ email }: { email: string }) {
               </Tabela>
             </div>
           </Box>
-          <div className="grid gap-3 lg:grid-cols-2 [&>*]:xl:max-h-[300px] [&>*]:xl:overflow-y-auto">
+          <div className="grid gap-3 lg:grid-cols-2 [&>*]:xl:max-h-[260px] [&>*]:xl:overflow-y-auto">
             <EvolucaoTime sales={sales} ids={linhas.map((l) => l.c.id)} meta={total.meta} mes={mes} />
             <MixConsultores mes={mes} />
           </div>
         </>)}
-        {show("agregados") && <Secao relatorio={relatorio} titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} />{!relatorio && <Box title={`Ranking de agregados · ${mesExtenso}`} fit="xl:max-h-[50vh]"><RankingAgregados mes={mes} cons={visiveis} deptName={deptName} tot={tot} dec={dec} /></Box>}</Secao>}
-        {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} />{!relatorio && <><div className="grid items-start gap-3 xl:grid-cols-[2fr_1fr]"><details className="group lux-card"><summary className="flex cursor-pointer list-none items-center justify-between px-4 py-2 text-sm font-semibold">Ranking dos técnicos · Serviços, Peças e Total · {mesExtenso}<span className="text-xs text-primary">Abrir/fechar</span></summary><RankingTecnicos mes={mes} tot={tot} dec={dec} /></details><RetrabalhoOficina /></div></>}</Secao>}
+        {show("agregados") && <Secao relatorio={relatorio} titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} />{!relatorio && <details className="lux-card"><summary className="cursor-pointer px-4 py-2 text-sm font-semibold">Ranking geral de agregados · {mesExtenso} <span className="text-xs text-primary">abrir/fechar</span></summary><div className="max-h-[60vh] overflow-y-auto"><RankingAgregados mes={mes} cons={visiveis} deptName={deptName} tot={tot} dec={dec} /></div></details>}</Secao>}
+        {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} lado={relatorio ? undefined : <RetrabalhoOficina />} />{!relatorio && <><div className="grid items-start gap-3"><details className="group lux-card"><summary className="flex cursor-pointer list-none items-center justify-between px-4 py-2 text-sm font-semibold">Ranking dos técnicos · Serviços, Peças e Total · {mesExtenso}<span className="text-xs text-primary">Abrir/fechar</span></summary><RankingTecnicos mes={mes} tot={tot} dec={dec} /></details></div></>}</Secao>}
         {tab === "controle-os" && <ControleOS />}
         {tab === "importacoes" && !relatorio && <div className="space-y-3 print:hidden">
           <div>

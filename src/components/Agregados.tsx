@@ -194,7 +194,7 @@ function RankTable({ title, rows, deptName, sales, items }: { title: string; row
     return [...m.values()].sort((a, b) => b.qtd - a.qtd);
   };
   return (
-    <Box title={title} fit="xl:max-h-[calc(100vh-560px)] xl:min-h-[200px]">
+    <Box title={title} fit="xl:max-h-[calc(100vh-700px)] xl:min-h-[190px]">
       <Tabela head={["#", "Consultor", "Depto", "Qtd", "Meta", "Perf.", "Projeção", "Proj. %", "Valor", "Meta R$", "Perf. R$", "Aproveit.", "Nec./dia", "vs. Líder"]}>
         {rows.length === 0 && <tr><td colSpan={14} className="px-3 py-8 text-center text-muted-foreground">Nenhum consultor cadastrado.</td></tr>}
         {rows.map((l, i) => {
