@@ -92,6 +92,7 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
   if (deptFraco && deptFraco.projPct < 1) acoes.push({ cor: "bg-warning", txt: `Foco em ${deptFraco.nome} (${pct(deptFraco.projPct)} da meta).`, ir: "painel" });
   if (t.s && ratio < 0.8) acoes.push({ cor: "bg-warning", txt: `Peças abaixo do esperado: ${ratio.toFixed(2).replace(".", ",")} de peça por R$ 1 de serviço.`, ir: "pecas" });
 
+  if (nps && nps.pctProm < 0.85) acoes.push({ cor: "bg-warning", txt: `NPS: ${pct(nps.pctProm)} de promotores, abaixo da meta de 85%. Ver detratores e follow-up D-2.`, ir: "nps" });
   const resultado: [string, number, number, typeof Wrench, string][] = [
     ["Serviços", t.s, t.ms, Wrench, "bg-neon"], ["Peças", t.p, t.mp, Package, "bg-coral"], ["Faturamento total", t.s + t.p, metaT, TrendingUp, "bg-primary"],
   ];
