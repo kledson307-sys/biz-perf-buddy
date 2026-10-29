@@ -34,4 +34,4 @@
 - Month closing lock lives in `month_locks` (helpers in `src/lib/month-lock.ts`); only the master email may insert/delete via RLS, and sales/agregados imports must check `mesTravado` before writing so closed months stay frozen.
 - Navigation has 10 official sidebar tabs (order: cockpit, painel, ranking, agregados, mecanicos, pecas, controle-os, nps, metas, importacoes); Central de Gestão groups painel/proj/os and Importações & Config groups importacoes/config as sub-tabs, so legacy `setTab(...)` deep links (incl. `proj-*`) keep working.
 
-- Subdirectories may have their own `AGENTS.md` (e.g. `src/lib/AGENTS.md`); read it before changing files there.
+- Subdirectories may have their own `AGENTS.md` (e.g. `src/lib/AGENTS.md`); read it before changing files there.- Desktop tabs must fit one 16:9 screen (checked at 1440×900 and 1920×1080): put long lists in `Box fit="xl:max-h-[calc(100vh-…)]"` internal scroll or collapsed <details>, never extend the page height.

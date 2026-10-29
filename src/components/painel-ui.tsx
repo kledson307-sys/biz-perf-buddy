@@ -19,14 +19,15 @@ export function parseNum(v: string) {
   return isNaN(n) ? 0 : n;
 }
 
-export function Box({ title, children, right }: { title: string; children: React.ReactNode; right?: React.ReactNode }) {
+/** `fit` = classes do corpo (ex.: "xl:max-h-[40vh]") para rolagem interna e manter a tela 16:9 sem rolar a página. */
+export function Box({ title, children, right, fit, className = "" }: { title: string; children: React.ReactNode; right?: React.ReactNode; fit?: string; className?: string }) {
   return (
-    <section className="overflow-hidden lux-card">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-table-band px-4 py-2 text-table-band-foreground">
+    <section className={`overflow-hidden lux-card ${className}`}>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-table-band px-4 py-1.5 text-table-band-foreground">
         <h3 className="text-sm font-semibold">{title}</h3>
         {right}
       </div>
-      {children}
+      {fit ? <div className={`overflow-y-auto ${fit}`}>{children}</div> : children}
     </section>
   );
 }

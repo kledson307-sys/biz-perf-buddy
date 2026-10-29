@@ -16,7 +16,7 @@ export function MixConsultores({ mes }: { mes: string }) {
   const T = rows.reduce((a, r) => ({ bsi: a.bsi + n(r.m.bsi), rev: a.rev + n(r.m.rev), gar: a.gar + n(r.m.gar), rep: a.rep + n(r.m.rep) }), { bsi: 0, rev: 0, gar: 0, rep: 0 });
   return (
     <Box title="Qualidade & mix de passagens" right={<span className="text-xs">Moto (Pedro/Gilberto): sem BSI</span>}>
-      {!rows.length ? <p className="p-4 text-sm text-muted-foreground">Importe o relatório de passagens do mês para ver o mix.</p> :
+      {!rows.length ? <p className="p-4 text-sm text-muted-foreground">Mix por consultor ainda não gravado neste mês: arraste o Faturamento de Serviços (Passagens) na esteira única de Importações para preencher.</p> :
         <div className="overflow-x-auto"><table className="w-full text-sm">
           <thead><tr className="text-xs text-muted-foreground"><th className="px-3 py-2 text-left">Consultor</th><th className="px-2">BSI</th><th className="px-2">Revisões</th><th className="px-2">Garantia</th><th className="px-2">Reparo</th><th className="px-3">Total</th></tr></thead>
           <tbody>

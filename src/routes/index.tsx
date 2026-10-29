@@ -372,9 +372,10 @@ function Painel({ email }: { email: string }) {
         { label: "Peças", value: brl(t.pecas), sub: `${pct(t.perfP)} de ${brl(t.mP)}`, p: t.perfP, barra: "bg-coral" },
         { label: "Falta para a meta", value: brl(Math.max(meta - real, 0)), sub: rest ? `${brl(Math.max(meta - real, 0) / rest)}/dia em ${rest} dia(s)` : "Mês encerrado", cls: "text-warning" },
       ]}>
-        {real > 0 && <div className="lux-card p-4"><p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Composição da receita</p>
-          <div className="flex h-3 overflow-hidden rounded-full"><div className="bg-neon" style={{ width: `${div(t.servicos, real) * 100}%` }} /><div className="bg-coral flex-1" /></div>
-          <p className="mt-2 flex justify-between text-xs"><span><span className="mr-1 inline-block size-2 rounded-full bg-neon" />Serviços {pct(div(t.servicos, real))}</span><span>Peças {pct(div(t.pecas, real))}<span className="ml-1 inline-block size-2 rounded-full bg-coral" /></span></p></div>}
+        {real > 0 && <div className="lux-card flex items-center gap-3 px-3 py-1.5 text-xs"><span className="shrink-0 uppercase tracking-wide text-muted-foreground">Composição da receita</span>
+          <span className="shrink-0"><span className="mr-1 inline-block size-2 rounded-full bg-neon" />Serviços {pct(div(t.servicos, real))}</span>
+          <div className="flex h-2 flex-1 overflow-hidden rounded-full"><div className="bg-neon" style={{ width: `${div(t.servicos, real) * 100}%` }} /><div className="bg-coral flex-1" /></div>
+          <span className="shrink-0">Peças {pct(div(t.pecas, real))}<span className="ml-1 inline-block size-2 rounded-full bg-coral" /></span></div>}
       </AbaTopo>;
       case "ranking": return <AbaTopo titulo="Consultores" sub="Ranking, desempenho individual e comparação com o líder" icon={Users} kpis={[
         { label: "Faturado pelo time", value: brl(real), sub: `Serviços ${brl(t.servicos)} · Peças ${brl(t.pecas)}` },
@@ -398,14 +399,7 @@ function Painel({ email }: { email: string }) {
         return { label: it.nome, value: `${uni(a.q)} un`, sub: `${a.mq ? `Meta ${uni(a.mq)} · ritmo ${pct(ritmo)} · ` : ""}${brl(a.v)}${resumo.pass ? ` · ${pct(div(a.q, resumo.pass))} das passagens` : ""}`, p: a.mq ? ritmo : undefined, cls: a.mq ? tone(ritmo) : "" };
       })} />;
       case "mecanicos": return <AbaTopo titulo="Oficina & Técnicos" sub="Produtividade da oficina, passagens por tipo e metas dos técnicos" icon={Wrench} kpis={[]} />;
-      case "controle-os": return <AbaTopo titulo="Ordens de Serviço" sub="Status das O.S. em aberto e tempo na oficina" icon={Car} kpis={[
-        { label: "O.S. em aberto", value: uni(resumo.abertas), sub: `Tempo médio ${uni(resumo.mediaDias)} dias` },
-        { label: "Até 20 dias", value: uni(resumo.abertas - resumo.amarelos - resumo.parados), cls: "text-success" },
-        { label: "21 a 30 dias", value: uni(resumo.amarelos), cls: "text-warning" },
-        { label: "Mais de 30 dias", value: uni(resumo.parados), cls: "text-destructive" },
-      ]}>
-        {resumo.fluxo.length > 0 && <div className="flex flex-wrap gap-2">{resumo.fluxo.map((f) => <span key={f.st} className="rounded-full border border-border bg-card px-3 py-1 text-xs">{f.st} <b>{f.n}</b></span>)}</div>}
-      </AbaTopo>;
+      case "controle-os": return <AbaTopo titulo="Ordens de Serviço" sub={`Status das O.S. em aberto e tempo na oficina · ${uni(resumo.abertas)} abertas · ${uni(resumo.parados)} acima de 30 dias`} icon={Car} kpis={[]} />;
       case "pecas": return <AbaTopo titulo="Peças & Estoque" sub="Faturamento de peças por canal, margem e ranking" icon={Package} kpis={[]} />;
       case "nps": return <AbaTopo titulo="NPS & Satisfação" sub="Qualidade e pesquisa da montadora · aguardando planilha de pesquisas" icon={Star} kpis={[]} />;
       case "importacoes": case "config": return <AbaTopo titulo="Importações & Configurações" sub="Atualização diária das fontes e ajustes do painel" icon={Upload} kpis={(Object.keys(sourceLabels) as UpdateSource[]).map((source) => ({ source, ...sourceStatus(source, mes, updates, clock) })).map(({ source, record, fresh }) => ({
@@ -553,74 +547,57 @@ function Painel({ email }: { email: string }) {
         {show("painel") && (
           <Secao relatorio={relatorio} titulo="Resumo executivo">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-lg font-semibold">Relatório de {mes}</h2>
-              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap print:hidden">
-                <Button onClick={exportar}><Download />Exportar Excel (CSV)</Button>
-                <Button variant="outline" onClick={() => window.print()}><Printer />Imprimir / PDF</Button>
-                <Button className="col-span-2" onClick={gerarRelatorio}><Printer />Relatório de fechamento (PDF)</Button>
+              <h2 className="text-sm font-semibold">Relatório de {mes}</h2>
+              <div className="flex flex-wrap gap-1.5 print:hidden">
+                <Button size="sm" onClick={exportar}><Download />Exportar Excel (CSV)</Button>
+                <Button size="sm" variant="outline" onClick={() => window.print()}><Printer />Imprimir / PDF</Button>
+                <Button size="sm" onClick={gerarRelatorio}><Printer />Relatório de fechamento (PDF)</Button>
+                <Button size="sm" variant="outline" onClick={() => setAbrirWhats(!abrirWhats)}>{abrirWhats ? "Ocultar envio por WhatsApp" : "Mostrar envio por WhatsApp"}</Button>
               </div>
             </div>
+            {abrirWhats && <div className="print:hidden"><EnvioWhatsapp linhas={linhas} lider={lider} liderServ={liderServ} liderPec={liderPec} mes={mes} dec={dec} tot={tot} reload={load} /></div>}
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6 print:hidden" aria-label="Status da operação">
-              {porDept.map((d) => <div key={d.nome} className="lux-card flex items-center gap-2 px-3 py-2"><span className={`size-3 shrink-0 rounded-full ${d.projPct >= 1 ? "bg-success" : d.projPct >= 0.85 ? "bg-warning" : "bg-destructive"}`} /><div className="min-w-0"><p className="truncate text-[11px] uppercase text-muted-foreground">{d.nome}</p><p className={`text-sm font-bold ${tone(d.projPct)}`}>{pct(d.projPct)} <span className="text-[10px] font-normal text-muted-foreground">{d.projPct >= 1 ? "No ritmo" : d.projPct >= 0.85 ? "Atenção" : "Crítico"}</span></p></div></div>)}
+              {porDept.map((d) => <div key={d.nome} className="lux-card flex items-center gap-2 px-3 py-1.5"><span className={`size-3 shrink-0 rounded-full ${d.projPct >= 1 ? "bg-success" : d.projPct >= 0.85 ? "bg-warning" : "bg-destructive"}`} /><div className="min-w-0"><p className="truncate text-[11px] uppercase text-muted-foreground">{d.nome}</p><p className={`text-sm font-bold ${tone(d.projPct)}`}>{pct(d.projPct)} <span className="text-[10px] font-normal text-muted-foreground">{d.projPct >= 1 ? "No ritmo" : d.projPct >= 0.85 ? "Atenção" : "Crítico"}</span></p></div></div>)}
+              <div className="lux-card flex items-center gap-2 px-3 py-1.5"><span className={`size-3 shrink-0 rounded-full ${total.projPct >= 1 ? "bg-success" : total.projPct >= 0.85 ? "bg-warning" : "bg-destructive"}`} /><div className="min-w-0"><p className="truncate text-[11px] uppercase text-muted-foreground">Loja (projeção)</p><p className={`text-sm font-bold ${tone(total.projPct)}`}>{pct(total.projPct)}</p></div></div>
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-5 painel-kpis">
-              <Kpi label="Realizado Serviços Total" value={brl(total.servicos)} sub={`Meta ${brl(total.mS)} · ${pct(total.perfS)}`} cls={tone(total.perfS)} p={total.perfS} />
-              <Kpi label="Realizado Peças Total" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)} · margem ${margemTxt(total)}`} cls={tone(total.perfP)} p={total.perfP} />
-              <Kpi label="Projeção Serviços" value={brl(total.projS)} sub={`${pct(total.projPctS)} da meta ${brl(total.mS)}`} cls={tone(total.projPctS)} p={total.projPctS} />
-              <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta ${brl(total.mP)}`} cls={tone(total.projPctP)} p={total.projPctP} />
-              <Kpi label="Projeção Total" value={brl(total.proj)} sub={`${pct(total.projPct)} · precisa serviços ${brl(total.necS)}/dia · precisa peças ${brl(total.necP)}/dia`} cls={tone(total.projPct)} p={total.projPct} destaque />
+            <div className="grid grid-cols-2 gap-2 lg:grid-cols-3 painel-kpis">
+              <Kpi label="Projeção Serviços" value={brl(total.projS)} sub={`${pct(total.projPctS)} da meta ${brl(total.mS)} · precisa ${brl(total.necS)}/dia`} cls={tone(total.projPctS)} p={total.projPctS} />
+              <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta ${brl(total.mP)} · margem ${margemTxt(total)} · precisa ${brl(total.necP)}/dia`} cls={tone(total.projPctP)} p={total.projPctP} />
+              <Kpi label="Projeção Total" value={brl(total.proj)} sub={`${pct(total.projPct)} da meta · realizado ${brl(total.servicos + total.pecas)}`} cls={tone(total.projPct)} p={total.projPct} destaque />
             </div>
 
-            <Box title="Resultados por departamento">
-              <div className="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-3">
-                {porDept.map((d) => (
-                  <div key={d.nome} className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-                    <div className="space-y-2 p-4">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <p className="font-semibold">{d.nome}</p>
-                        <p className={`text-sm font-semibold ${tone(d.projPct)}`}>Proj. {pct(d.projPct)} · {d.projPct >= 1 ? "No ritmo" : d.projPct >= 0.85 ? "Atenção" : "Crítico"}</p>
-                      </div>
-                      <Barra p={d.projPct} />
-                    </div>
-                    <div className={`grid border-t border-border text-sm ${semServicos(d.nome) ? "" : "grid-cols-2 divide-x divide-border"}`}>
-                      {!semServicos(d.nome) && (
-                        <div className="min-w-0 space-y-1 p-3">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Serviços</p>
-                          <p className="break-words font-semibold">{brl(d.servicos)} <span className={`text-xs ${tone(d.perfS)}`}>{pct(d.perfS)}</span></p>
-                          <p className={`break-words text-xs ${tone(d.projPctS)}`}>Proj. {brl(d.projS)} ({pct(d.projPctS)})</p>
-                          <p className="break-words text-xs text-muted-foreground">Meta {brl(d.mS)}</p>
-                        </div>
-                      )}
-                      <div className="min-w-0 space-y-1 p-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Peças</p>
-                        <p className="break-words font-semibold">{brl(d.pecas)} <span className={`text-xs ${tone(d.perfP)}`}>{pct(d.perfP)}</span></p>
-                        <p className={`break-words text-xs ${tone(d.projPctP)}`}>Proj. {brl(d.projP)} ({pct(d.projPctP)})</p>
-                        <p className="break-words text-xs text-muted-foreground">Meta {brl(d.mP)}</p>
-                        <p className="text-xs">Margem <span className={`font-semibold ${margemTone(d.nome, d.margem, d.pecas)}`}>{margemTxt(d)}</span> <span className="text-muted-foreground">ideal {pct(margemIdeal(d.nome))}</span></p>
-                      </div>
-                    </div>
-                    <div className="space-y-1 border-t border-border bg-muted/40 px-4 py-3 text-sm">
-                      <div className="flex flex-wrap items-baseline justify-between gap-2">
-                        <span className="text-muted-foreground">Projeção total</span>
-                        <span className="font-semibold">{brl(d.proj)} <span className="text-xs font-normal text-muted-foreground">/ meta {brl(d.meta)}</span></span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">Realizado {brl(d.real)} ({pct(d.perf)}) · 👉 Precisa por dia: {semServicos(d.nome) ? `peças ${brl(d.necP)}` : `serviços ${brl(d.necS)} · peças ${brl(d.necP)}`}</p>
-                    </div>
-                  </div>
-                ))}
-                {!porDept.length && <p className="p-4 text-sm text-muted-foreground">Cadastre consultores e departamentos em "Configurar" para ver os resultados aqui.</p>}
-              </div>
+            <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_360px]">
+            <Box title="Resultados por departamento" fit="xl:max-h-[calc(100vh-600px)] xl:min-h-[200px]">
+              <div className="overflow-x-auto"><table className="w-full text-sm">
+                <thead className="sticky top-0 bg-card text-[11px] uppercase text-muted-foreground"><tr>
+                  <th className="px-3 py-1.5 text-left">Departamento</th><th className="px-2 text-right">Serviços</th><th className="px-2 text-right">Proj. serv.</th><th className="px-2 text-right">Peças</th><th className="px-2 text-right">Proj. peças</th><th className="px-2 text-right">Margem</th><th className="px-2 text-right">Projeção total</th><th className="px-3 text-right">Precisa/dia</th>
+                </tr></thead>
+                <tbody>{porDept.map((d) => (
+                  <tr key={d.nome} className="border-t border-border tabular-nums">
+                    <td className="px-3 py-1.5"><p className="font-semibold">{d.nome}</p><div className="mt-0.5 w-28"><Barra p={d.projPct} /></div></td>
+                    <td className="px-2 text-right">{semServicos(d.nome) ? "—" : <>{brl(d.servicos)}<br /><span className={`text-xs ${tone(d.perfS)}`}>{pct(d.perfS)} de {brl(d.mS)}</span></>}</td>
+                    <td className={`px-2 text-right text-xs ${tone(d.projPctS)}`}>{semServicos(d.nome) ? "—" : <>{brl(d.projS)}<br />{pct(d.projPctS)}</>}</td>
+                    <td className="px-2 text-right">{brl(d.pecas)}<br /><span className={`text-xs ${tone(d.perfP)}`}>{pct(d.perfP)} de {brl(d.mP)}</span></td>
+                    <td className={`px-2 text-right text-xs ${tone(d.projPctP)}`}>{brl(d.projP)}<br />{pct(d.projPctP)}</td>
+                    <td className="px-2 text-right text-xs"><span className={`font-semibold ${margemTone(d.nome, d.margem, d.pecas)}`}>{margemTxt(d)}</span><br /><span className="text-muted-foreground">ideal {pct(margemIdeal(d.nome))}</span></td>
+                    <td className="px-2 text-right"><span className={`font-semibold ${tone(d.projPct)}`}>{brl(d.proj)}</span><br /><span className="text-xs text-muted-foreground">{pct(d.projPct)} · meta {brl(d.meta)}</span></td>
+                    <td className="px-3 text-right text-xs">{semServicos(d.nome) ? `peças ${brl(d.necP)}` : <>serv. {brl(d.necS)}<br />peças {brl(d.necP)}</>}</td>
+                  </tr>))}
+                </tbody>
+              </table></div>
+              {!porDept.length && <p className="p-4 text-sm text-muted-foreground">Cadastre consultores e departamentos em "Configurar" para ver os resultados aqui.</p>}
             </Box>
-
-            <div className="print:hidden">
-              {abrirWhats ? (
-                <div className="space-y-3">
-                  <Button variant="outline" size="sm" onClick={() => setAbrirWhats(false)}>Ocultar envio por WhatsApp</Button>
-                  <EnvioWhatsapp linhas={linhas} lider={lider} liderServ={liderServ} liderPec={liderPec} mes={mes} dec={dec} tot={tot} reload={load} />
-                </div>
-              ) : (
-                <Button variant="outline" onClick={() => setAbrirWhats(true)}>Mostrar envio por WhatsApp</Button>
-              )}
+            <Box title="Prioridades & plano de ação" fit="xl:max-h-[calc(100vh-600px)] xl:min-h-[200px]">
+              <ul className="divide-y divide-border text-sm">
+                {[...linhas].filter((l) => l.meta > 0).sort((a, b) => a.projPct - b.projPct).slice(0, 6).map((l, i) => (
+                  <li key={l.c.id} className="flex items-start gap-2 px-3 py-1.5">
+                    <span className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${l.projPct >= 1 ? "bg-success/20 text-success" : l.projPct >= 0.85 ? "bg-warning/20 text-warning" : "bg-destructive/20 text-destructive"}`}>{i + 1}</span>
+                    <div className="min-w-0"><p className="truncate font-medium">{l.c.nome} <span className={`text-xs ${tone(l.projPct)}`}>proj. {pct(l.projPct)}</span></p>
+                      <p className="text-[11px] text-muted-foreground">{recomendar(l)[0] ?? `Precisa ${brl(l.nec)}/dia`}</p></div>
+                  </li>))}
+                {!linhas.length && <li className="p-3 text-xs text-muted-foreground">Sem consultores no mês.</li>}
+              </ul>
+            </Box>
             </div>
 
             <div className="hidden print:block"><ResumoPainel linhas={linhas.map((l) => ({ nome: l.c.nome, servicos: l.servicos, pecas: l.pecas, mS: l.mS, mP: l.mP, perfS: l.perfS, perfP: l.perfP, perf: l.perf, projPct: l.projPct, mediaDia: l.mediaDia, necS: l.necS, necP: l.necP, nec: l.nec }))} liderNome={lider?.c.nome ?? null} dec={dec} tot={tot} mes={mes} /></div>
@@ -761,7 +738,7 @@ function Painel({ email }: { email: string }) {
         )}
 
         {tab === "ranking" && (<>
-          <Box title={`Ranking dos consultores · ${mesExtenso}`}>
+          <Box title={`Ranking dos consultores · ${mesExtenso}`} fit="md:max-h-[calc(100vh-590px)] md:min-h-[200px]">
             <RankingMobile linhas={linhas} total={total} deptName={deptName} soPecas={soPecas} />
             <div className="hidden md:block">
               <Tabela head={["#", "Consultor", "Depto", "Serviços", "Peças", "Realizado", "Meta", "Perf.", "Projeção", "Nec./dia", "Peças/R$1 M.O.", "vs. Líder"]}>
@@ -788,40 +765,46 @@ function Painel({ email }: { email: string }) {
               </Tabela>
             </div>
           </Box>
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-3 lg:grid-cols-2 [&>*]:xl:max-h-[260px] [&>*]:xl:overflow-y-auto">
             <EvolucaoTime sales={sales} ids={linhas.map((l) => l.c.id)} meta={total.meta} mes={mes} />
             <MixConsultores mes={mes} />
           </div>
         </>)}
-        {show("agregados") && <Secao relatorio={relatorio} titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} />{!relatorio && <Box title={`Ranking de agregados · ${mesExtenso}`}><RankingAgregados mes={mes} cons={visiveis} deptName={deptName} tot={tot} dec={dec} /></Box>}</Secao>}
-        {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} />{!relatorio && <><div className="grid items-start gap-3 xl:grid-cols-[2fr_1fr]"><details className="group lux-card"><summary className="flex cursor-pointer list-none items-center justify-between px-4 py-2 text-sm font-semibold">Ranking dos técnicos · Serviços, Peças e Total · {mesExtenso}<span className="text-xs text-primary">Abrir/fechar</span></summary><RankingTecnicos mes={mes} tot={tot} dec={dec} /></details><RetrabalhoOficina /></div></>}</Secao>}
+        {show("agregados") && <Secao relatorio={relatorio} titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} />{!relatorio && <details className="lux-card"><summary className="cursor-pointer px-4 py-2 text-sm font-semibold">Ranking geral de agregados · {mesExtenso} <span className="text-xs text-primary">abrir/fechar</span></summary><div className="max-h-[60vh] overflow-y-auto"><RankingAgregados mes={mes} cons={visiveis} deptName={deptName} tot={tot} dec={dec} /></div></details>}</Secao>}
+        {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} lado={relatorio ? undefined : <RetrabalhoOficina />} />{!relatorio && <><div className="grid items-start gap-3"><details className="group lux-card"><summary className="flex cursor-pointer list-none items-center justify-between px-4 py-2 text-sm font-semibold">Ranking dos técnicos · Serviços, Peças e Total · {mesExtenso}<span className="text-xs text-primary">Abrir/fechar</span></summary><RankingTecnicos mes={mes} tot={tot} dec={dec} /></details></div></>}</Secao>}
         {tab === "controle-os" && <ControleOS />}
-        {tab === "importacoes" && !relatorio && <div className="space-y-6 print:hidden">
+        {tab === "importacoes" && !relatorio && <div className="space-y-3 print:hidden">
           <div>
-            <h2 className="text-lg font-semibold">Central de importações · {mes}</h2>
-            <p className="text-sm text-muted-foreground">Todas as planilhas do dia em um só lugar. Cada bloco tem seu botão, prévia e confirmação. O Controle O.S. semanal continua na própria aba.</p>
+            <h2 className="text-sm font-semibold">Central de importações · {mes}</h2>
+            <p className="text-xs text-muted-foreground">Todas as planilhas do dia em um só lugar. Cada bloco tem seu botão, prévia e confirmação. O Controle O.S. semanal continua na própria aba.</p>
           </div>
           <ImportadorUnificado mes={mes} onDone={load} />
-          <section className="space-y-3"><h3 className="font-semibold">1. Faturamento geral de vendas <span className="text-xs font-normal text-muted-foreground">— alimenta Painel, Ranking, Serviços, Peças</span></h3>
-            <StatusFonte source="faturamento" mes={mes} updates={updates} clock={clock} />
-            <SalesImport cons={cons} depts={depts} onDone={load} onPeriod={setMes} /></section>
-          <section className="space-y-3"><h3 className="font-semibold">2. O.S. abertas <span className="text-xs font-normal text-muted-foreground">— alimenta Projeção + OS</span></h3>
-            <StatusFonte source="os" mes={mes} updates={updates} clock={clock} />
-            <OsAbertas modo="importar" linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} deptName={deptName} semServicos={semServicos} /></section>
-          <section className="space-y-3"><h3 className="font-semibold">3. Técnicos — faturamento e passagens <span className="text-xs font-normal text-muted-foreground">— alimenta Técnicos</span></h3>
-            <StatusFonte source="mecanicos" mes={mes} updates={updates} clock={clock} />
-            <Mecanicos modo="importar" mes={mes} tot={tot} dec={dec} /></section>
-          <section className="space-y-3"><h3 className="font-semibold">4. Agregados — vendas de itens e passagens <span className="text-xs font-normal text-muted-foreground">— alimenta Agregados</span></h3>
-            <StatusFonte source="agregados" mes={mes} updates={updates} clock={clock} />
-            <Agregados modo="importar" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section>
-          <section className="space-y-3"><h3 className="font-semibold">5. Devoluções de peças (ajuste manual) <span className="text-xs font-normal text-muted-foreground">— bruto → líquido</span></h3>
-            <Devolucoes mes={mes} cons={cons} onChange={load} /></section>
+          <p className="text-xs text-muted-foreground">Importação individual por fonte (abra o bloco desejado):</p>
+          <div className="grid items-start gap-3 xl:grid-cols-2">
+          <section className="lux-card space-y-1 px-3 py-2"><details className="group"><summary className="cursor-pointer list-none text-sm font-semibold">1. Faturamento geral de vendas <span className="text-xs font-normal text-muted-foreground">— alimenta Painel, Ranking, Serviços, Peças</span> <span className="text-xs font-normal text-primary group-open:hidden">abrir</span></summary><div className="mt-2 space-y-2">
+            <SalesImport cons={cons} depts={depts} onDone={load} onPeriod={setMes} /></div></details><StatusFonte source="faturamento" mes={mes} updates={updates} clock={clock} /></section>
+          <section className="lux-card space-y-1 px-3 py-2"><details className="group"><summary className="cursor-pointer list-none text-sm font-semibold">2. O.S. abertas <span className="text-xs font-normal text-muted-foreground">— alimenta Projeção + OS</span> <span className="text-xs font-normal text-primary group-open:hidden">abrir</span></summary><div className="mt-2 space-y-2">
+            <OsAbertas modo="importar" linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} deptName={deptName} semServicos={semServicos} /></div></details><StatusFonte source="os" mes={mes} updates={updates} clock={clock} /></section>
+          <section className="lux-card space-y-1 px-3 py-2"><details className="group"><summary className="cursor-pointer list-none text-sm font-semibold">3. Técnicos — faturamento e passagens <span className="text-xs font-normal text-muted-foreground">— alimenta Técnicos</span> <span className="text-xs font-normal text-primary group-open:hidden">abrir</span></summary><div className="mt-2 space-y-2">
+            <Mecanicos modo="importar" mes={mes} tot={tot} dec={dec} /></div></details><StatusFonte source="mecanicos" mes={mes} updates={updates} clock={clock} /></section>
+          <section className="lux-card space-y-1 px-3 py-2"><details className="group"><summary className="cursor-pointer list-none text-sm font-semibold">4. Agregados — vendas de itens e passagens <span className="text-xs font-normal text-muted-foreground">— alimenta Agregados</span> <span className="text-xs font-normal text-primary group-open:hidden">abrir</span></summary><div className="mt-2 space-y-2">
+            <Agregados modo="importar" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></div></details><StatusFonte source="agregados" mes={mes} updates={updates} clock={clock} /></section>
+          <section className="lux-card space-y-1 px-3 py-2"><details className="group"><summary className="cursor-pointer list-none text-sm font-semibold">5. Devoluções de peças (ajuste manual) <span className="text-xs font-normal text-muted-foreground">— bruto → líquido</span> <span className="text-xs font-normal text-primary group-open:hidden">abrir</span></summary><div className="mt-2 space-y-2">
+            <Devolucoes mes={mes} cons={cons} onChange={load} /></div></details></section>
+          </div>
         </div>}
         {tab === "cockpit" && !relatorio && <Cockpit linhas={linhas} porDept={porDept} mes={mes} tot={tot} dec={dec} soPecas={soPecas} setTab={setTab} sales={sales} nome={email.split("@")[0] ?? ""} deptName={deptName} />}
         {tab === "nps" && !relatorio && <NpsPainel />}
         {tab === "pecas" && !relatorio && <PecasEstoque linhas={linhas} porDept={porDept} margemIdeal={margemIdeal} deptName={deptName} passagens={resumo.pass} mes={mes} />}
-        {tab === "metas" && !relatorio && <><CadeadoMes mes={mes} /><MetasExecutivo linhas={linhas} deptName={deptName} /><details className="lux-card mt-4 p-3"><summary className="cursor-pointer text-sm font-semibold text-primary">+ Ajustar metas (consultores, técnicos e plano anual)</summary><div className="mt-3"><Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div></details>
-          <section className="mt-6 space-y-3"><h3 className="font-semibold">Metas de agregados</h3><Agregados modo="metas" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section></>}
+        {tab === "metas" && !relatorio && <>
+          <details className="lux-card px-3 py-2"><summary className="cursor-pointer text-sm font-semibold text-primary">+ Ajustar metas (consultores, técnicos e plano anual)</summary><div className="mt-3"><Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div></details>
+          <div className="grid items-start gap-3 xl:grid-cols-2">
+            <MetasExecutivo linhas={linhas} deptName={deptName} />
+            <div className="space-y-3">
+              <CadeadoMes mes={mes} />
+              <section className="lux-card space-y-2 px-3 py-2 xl:max-h-[calc(100vh-420px)] xl:overflow-y-auto"><h3 className="text-sm font-semibold">Metas de agregados</h3><Agregados modo="metas" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section>
+            </div>
+          </div></>}
         {tab === "config" && <div className="space-y-6"><Equipe /><Config parte="config" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div>}
       </main>
       </div>

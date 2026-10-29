@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { bg } from "@/components/painel-ui";
+import farois from "@/assets/hero-farois.jpg";
 
 export type TopoKpi = { label: string; value: string; sub?: string | undefined; p?: number | undefined; cls?: string | undefined; barra?: string | undefined };
 
@@ -8,11 +9,12 @@ export type TopoKpi = { label: string; value: string; sub?: string | undefined; 
 export function AbaTopo({ titulo, sub, icon: Icon, kpis, children }: { titulo: string; sub: string; icon: LucideIcon; kpis: TopoKpi[]; children?: ReactNode }) {
   return (
     <section className="space-y-2 print:hidden">
-      <div className="flex items-center gap-2">
+      <div className="relative flex items-center gap-2 overflow-hidden rounded-lg">
+        <img src={farois} alt="" aria-hidden className="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-1/3 object-cover opacity-25 mix-blend-screen [mask-image:linear-gradient(to_left,black,transparent)] sm:block" />
         <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/15"><Icon strokeWidth={1.5} className="size-4 text-primary" /></span>
         <h2 className="text-base font-bold">{titulo}</h2>
         <p className="hidden truncate text-xs text-muted-foreground sm:block">· {sub}</p>
-        <div className="m-stripe ml-auto hidden h-0.5 w-24 sm:block" />
+        <div className="m-stripe relative ml-auto hidden h-0.5 w-24 sm:block" />
       </div>
       {kpis.length > 0 && <div className={`grid grid-cols-2 gap-2 ${kpis.length >= 5 ? "lg:grid-cols-5" : kpis.length === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
         {kpis.map((k) => (
