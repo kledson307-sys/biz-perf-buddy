@@ -122,7 +122,7 @@ export function historicoDetratores(l: NpsItem[]) {
     const k = x.chassi || x.cliente;
     const e = m.get(k) ?? { item: x, passagens: 0, detr: 0, textos: [] };
     e.passagens++;
-    if (x.nota !== null && classe(x.nota) === "detrator") { e.detr++; if (x.obs) e.textos.push(x.obs); e.item = x; }
+    if (x.nota !== null && classe(x.nota) === "detrator") { e.detr++; if (x.obs && !e.textos.includes(x.obs)) e.textos.push(x.obs); e.item = x; }
     m.set(k, e);
   }
   return [...m.values()].filter((e) => e.detr > 0).map((e) => ({ ...e, acao: acaoReversao(e.textos.join(" ") + " " + e.item.motivo) }))

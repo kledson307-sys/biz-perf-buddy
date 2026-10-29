@@ -176,6 +176,33 @@ export type Database = {
           },
         ]
       }
+      cons_mix: {
+        Row: {
+          composicao: Json
+          id: string
+          mes: string
+          nome: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          composicao?: Json
+          id?: string
+          mes: string
+          nome: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          composicao?: Json
+          id?: string
+          mes?: string
+          nome?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       consultants: {
         Row: {
           created_at: string

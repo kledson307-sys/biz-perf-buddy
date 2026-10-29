@@ -19,6 +19,7 @@ import { ChefeOficina } from "@/components/ChefeOficina";
 import { MeuDesempenhoTecnico } from "@/components/MeuDesempenhoTecnico";
 import { RankingMobile } from "@/components/RankingMobile";
 import { RankingAgregados, RankingTecnicos } from "@/components/RankingExtra";
+import { MixConsultores } from "@/components/MixConsultores";
 import { MetasAno } from "@/components/MetasAno";
 import { Cockpit } from "@/components/Cockpit";
 import { NpsPainel } from "@/components/NpsPainel";
@@ -142,7 +143,6 @@ function Painel({ email }: { email: string }) {
   const [menu, setMenu] = useState(false);
   const [projSub, setProjSub] = useState<"proj-serv" | "proj-pec" | "proj-total">("proj-serv");
   const setTab = (k: string) => { if (k.startsWith("proj-")) { setProjSub(k as typeof projSub); setTabRaw("proj"); } else setTabRaw(k); };
-  const [rankSub, setRankSub] = useState<"geral" | "agregados" | "tecnicos">("geral");
   const [relatorio, setRelatorio] = useState(false);
   const show = (k: string) => tab === k || (tab === "proj" && k === projSub) || relatorio;
   useEffect(() => { const f = () => setRelatorio(false); window.addEventListener("afterprint", f); return () => window.removeEventListener("afterprint", f); }, []);
@@ -748,68 +748,50 @@ function Painel({ email }: { email: string }) {
           </Secao>
         )}
 
-        {tab === "ranking" && (
-          <div className="flex flex-wrap gap-2 print:hidden" role="tablist" aria-label="Tipo de ranking">
-            {([["geral", "Geral"], ["agregados", "Agregados"], ["tecnicos", "Técnicos"]] as const).map(([k, n]) => (
-              <button key={k} role="tab" aria-selected={rankSub === k} onClick={() => setRankSub(k)} className={`rounded-full border px-4 py-1.5 text-sm font-medium ${rankSub === k ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground"}`}>{n}</button>
-            ))}
+        {tab === "ranking" && (<>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <Kpi label="Consultores" value={uni(linhas.length)} sub={lider ? `líder: ${lider.c.nome}` : ""} />
+            <Kpi label="Meta do time" value={brl(total.meta)} sub={`serviços ${brl(total.mS)} · peças ${brl(total.mP)}`} />
+            <Kpi label="Realizado" value={brl(total.real)} sub={`projeção ${brl(total.proj)}`} cls={tone(total.projPct)} />
+            <Kpi label="Atingimento" value={pct(total.perf)} sub={`${linhas.filter((l) => l.meta && l.perf < 0.85).length} em atenção (<85%)`} cls={tone(total.perf)} />
           </div>
-        )}
-        {tab === "ranking" && rankSub === "agregados" && <Box title={`Ranking de agregados · ${mesExtenso}`}><RankingAgregados mes={mes} cons={visiveis} deptName={deptName} tot={tot} dec={dec} /></Box>}
-        {tab === "ranking" && rankSub === "tecnicos" && <Box title={`Ranking dos técnicos · ${mesExtenso}`}><RankingTecnicos mes={mes} tot={tot} dec={dec} /></Box>}
-        {tab === "ranking" && rankSub === "geral" && (
-            <Box title={`Ranking geral das vendedoras · ${mesExtenso}`}>
+          <Box title={`Ranking dos consultores · ${mesExtenso}`}>
             <RankingMobile linhas={linhas} total={total} deptName={deptName} soPecas={soPecas} />
             <div className="hidden md:block">
-              <Tabela head={["#", "Consultor", "Depto", "Grupo", "Realizado", "Meta", "Performance", "Projeção", "Proj. %", "Necessário/dia", "vs. Líder"]}>
-                {linhas.length === 0 && <tr><td colSpan={11} className="px-3 py-10 text-center text-muted-foreground">Sem dados. Cadastre consultores em "Configurar" e cole os dados do dia.</td></tr>}
+              <Tabela head={["#", "Consultor", "Depto", "Serviços", "Peças", "Realizado", "Meta", "Perf.", "Projeção", "Nec./dia", "vs. Líder"]}>
+                {linhas.length === 0 && <tr><td colSpan={11} className="px-3 py-10 text-center text-muted-foreground">Sem dados no mês.</td></tr>}
                 {linhas.map((l, i) => {
                   const semServ = soPecas(l.c.nome);
-                  const vsLider = (a: number, b: number | undefined) => (b === undefined ? "—" : a >= b ? <span className="font-semibold text-primary">Líder</span> : <span className="text-destructive">−{((b - a) * 100).toFixed(1)} pts</span>);
                   return (
-                    <Fragment key={l.c.id}>
-                      <tr className="border-t border-border">
-                        <td className="px-3 py-2 align-top" rowSpan={3}><Posicao i={i} /></td>
-                        <td className="px-3 py-2 align-top font-medium" rowSpan={3}>{l.c.nome}</td>
-                        <td className="px-3 py-2 align-top text-muted-foreground" rowSpan={3}>{deptName(l.c.department_id)}</td>
-                        <td className="px-3 py-2 font-semibold text-primary">Serviços{semServ && <span className="ml-1 text-xs font-normal text-muted-foreground">(não vende)</span>}</td>
-                        <td className="px-3 py-2">{semServ ? "—" : brl(l.servicos)}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{semServ ? "—" : brl(l.mS)}</td>
-                        <td className={`px-3 py-2 font-semibold ${semServ ? "text-muted-foreground" : tone(l.perfS)}`}>{semServ ? "—" : pct(l.perfS)}</td>
-                        <td className={`px-3 py-2 ${semServ ? "text-muted-foreground" : tone(l.projPctS)}`}>{semServ ? "—" : brl(l.projS)}</td>
-                        <td className="px-3 py-2">{semServ ? "—" : <Barra p={l.projPctS} />}</td>
-                        <td className="px-3 py-2">{semServ ? "—" : l.necS ? brl(l.necS) : "—"}</td>
-                        <td className="whitespace-nowrap px-3 py-2">{semServ ? "—" : vsLider(l.perfS, liderServ?.perfS)}</td>
-                      </tr>
-                      <tr className="border-t border-border bg-muted/30">
-                        <td className="px-3 py-2 font-semibold text-primary">Peças</td>
-                        <td className="px-3 py-2">{brl(l.pecas)}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{brl(l.mP)}</td>
-                        <td className={`px-3 py-2 font-semibold ${tone(l.perfP)}`}>{pct(l.perfP)}</td>
-                        <td className={`px-3 py-2 ${tone(l.projPctP)}`}>{brl(l.projP)}</td>
-                        <td className="px-3 py-2"><Barra p={l.projPctP} /></td>
-                        <td className="px-3 py-2">{l.necP ? brl(l.necP) : "—"}</td>
-                        <td className="whitespace-nowrap px-3 py-2">{vsLider(l.perfP, liderPec?.perfP)}</td>
-                      </tr>
-                      <tr className="border-t border-border border-b-2 border-b-primary/30">
-                        <td className="px-3 py-2 font-semibold">Total</td>
-                        <td className="px-3 py-2 font-semibold">{brl(l.real)}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{brl(l.meta)}</td>
-                        <td className={`px-3 py-2 font-semibold ${tone(l.perf)}`}>{pct(l.perf)}</td>
-                        <td className={`px-3 py-2 font-semibold ${tone(l.projPct)}`}>{brl(l.proj)}</td>
-                        <td className="px-3 py-2"><Barra p={l.projPct} /></td>
-                        <td className="px-3 py-2">{l.nec ? brl(l.nec) : "—"}</td>
-                        <td className="whitespace-nowrap px-3 py-2">{vsLider(l.perf, lider?.perf)}</td>
-                      </tr>
-                    </Fragment>
+                    <tr key={l.c.id} className="border-t border-border">
+                      <td className="px-3 py-1.5"><Posicao i={i} /></td>
+                      <td className="px-3 py-1.5 font-medium">{l.c.nome}</td>
+                      <td className="px-3 py-1.5 text-xs text-muted-foreground">{deptName(l.c.department_id)}</td>
+                      <td className="px-3 py-1.5">{semServ ? "—" : <>{brl(l.servicos)} <span className={`text-xs ${tone(l.perfS)}`}>{pct(l.perfS)}</span></>}</td>
+                      <td className="px-3 py-1.5">{brl(l.pecas)} <span className={`text-xs ${tone(l.perfP)}`}>{pct(l.perfP)}</span></td>
+                      <td className="px-3 py-1.5 font-semibold">{brl(l.real)}</td>
+                      <td className="px-3 py-1.5 text-muted-foreground">{brl(l.meta)}</td>
+                      <td className={`px-3 py-1.5 font-semibold ${tone(l.perf)}`}>{pct(l.perf)}</td>
+                      <td className={`px-3 py-1.5 ${tone(l.projPct)}`}>{brl(l.proj)}</td>
+                      <td className="px-3 py-1.5">{l.nec ? brl(l.nec) : "—"}</td>
+                      <td className="whitespace-nowrap px-3 py-1.5">{!lider || l === lider ? <span className="font-semibold text-primary">Líder</span> : <span className="text-destructive">−{((lider.perf - l.perf) * 100).toFixed(1)} pts</span>}</td>
+                    </tr>
                   );
                 })}
               </Tabela>
             </div>
+          </Box>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Box title="Desempenho por departamento">
+              <div className="space-y-2 p-3">
+                {porDept.map((d) => <div key={d.nome} className="flex items-center justify-between gap-2 text-sm"><span>{d.nome}</span><span className="flex items-center gap-2">{brl(d.real)} <b className={tone(d.perf)}>{pct(d.perf)}</b><Barra p={d.perf} /></span></div>)}
+              </div>
             </Box>
-        )}
-        {show("agregados") && <Secao relatorio={relatorio} titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} /></Secao>}
-        {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} /></Secao>}
+            <MixConsultores mes={mes} />
+          </div>
+        </>)}
+        {show("agregados") && <Secao relatorio={relatorio} titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} />{!relatorio && <Box title={`Ranking de agregados · ${mesExtenso}`}><RankingAgregados mes={mes} cons={visiveis} deptName={deptName} tot={tot} dec={dec} /></Box>}</Secao>}
+        {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} />{!relatorio && <Box title={`Ranking dos técnicos · ${mesExtenso}`}><RankingTecnicos mes={mes} tot={tot} dec={dec} /></Box>}</Secao>}
         {tab === "controle-os" && <ControleOS />}
         {tab === "importacoes" && !relatorio && <div className="space-y-6 print:hidden">
           <div>
