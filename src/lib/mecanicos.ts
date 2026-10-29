@@ -177,6 +177,7 @@ export function ehRelatorioPassagens(raw: unknown[][]): boolean {
 export function lerPassagens(raw: unknown[][]): PassReport {
   let cols: { os: number; cons: number; prod: number; tipo: number; cod: number } | null = null;
   const linhas = new Map<string, { os: string; tipo: string; cod: string }[]>();
+  const linhasC = new Map<string, { os: string; tipo: string; cod: string }[]>();
   const seenM = new Map<string, Set<string>>(); // produtivo -> conjunto de O.S.
   const seenC = new Map<string, Set<string>>(); // consultor -> conjunto de O.S.
   const nomes = new Map<string, string>();
@@ -194,12 +195,30 @@ export function lerPassagens(raw: unknown[][]): PassReport {
       const k = norm(nome).replace(/\s+/g, " ");
       nomes.set(k, nome.toUpperCase());
       (map.get(k) ?? map.set(k, new Set()).get(k)!).add(id);
+      if (ci === cols.cons && cols.tipo >= 0) (linhasC.get(k) ?? linhasC.set(k, []).get(k)!).push({ os: id, tipo: String(row[cols.tipo] ?? ""), cod: cols.cod >= 0 ? String(row[cols.cod] ?? "") : "" });
       if (ci === cols.prod && cols.tipo >= 0) (linhas.get(k) ?? linhas.set(k, []).get(k)!).push({ os: id, tipo: String(row[cols.tipo] ?? ""), cod: cols.cod >= 0 ? String(row[cols.cod] ?? "") : "" });
     }
   }
   const out = (m: Map<string, Set<string>>) => [...m.entries()].map(([k, s]) => ({ nome: nomes.get(k)!, passagens: s.size })).sort((a, b) => a.nome.localeCompare(b.nome));
   const temTipo = cols?.tipo !== undefined && cols.tipo >= 0;
-  const r = { temTipo, mecanicos: out(seenM).map(m => temTipo ? { ...m, composicao: classificar(linhas.get(norm(m.nome).replace(/\s+/g, " ")) ?? []) } : m), consultores: out(seenC) };
+  const r = { temTipo, mecanicos: out(seenM).map(m => temTipo ? { ...m, composicao: classificar(linhas.get(norm(m.nome).replace(/\s+/g, " ")) ?? []) } : m), consultores: out(seenC).map(c => temTipo ? { ...c, mix: classificarConsultor(linhasC.get(norm(c.nome).replace(/\s+/g, " ")) ?? [], consultorMoto(c.nome)) } : c) };
   if (!r.mecanicos.length && !r.consultores.length) throw new Error("Não encontrei passagens. O cabeçalho deve ter ID O.S., Consultor e Produtivo.");
   return r;
+}
+
+/** Mix de passagens por consultor (O.S. distintas). */
+export type MixCons = { bsi: string[]; rev: string[]; gar: string[]; rep: string[] };
+/** Pedro e Gilberto atendem Moto (regras próprias, sem BSI). */
+export const consultorMoto = (nome: string) => /\b(PEDRO|GILBERTO)/.test(nome.toUpperCase());
+const REV_MOTO = new Set(["0000111", "0000119"]);
+export function classificarConsultor(linhas: { os: string; tipo: string; cod: string }[], moto: boolean): MixCons {
+  const tipo = new Map<string, string>(); const rev = new Set<string>();
+  for (const l of linhas) {
+    const t = l.tipo.trim().toUpperCase(); if (t && !tipo.has(l.os)) tipo.set(l.os, t);
+    const c = l.cod.replace(/[.\s]/g, "");
+    if (moto ? REV_MOTO.has(c) && /^N/.test(t) : (t === "C7" || t === "M7") && COD_REV.has(c)) rev.add(l.os);
+  }
+  const de = (f: (t: string) => boolean) => [...tipo].filter(([, v]) => f(v)).map(([k]) => k);
+  if (moto) return { bsi: [], rev: [...rev], gar: de(t => t === "NG"), rep: de(t => ["N7", "N5", "NF"].includes(t)).filter(o => !rev.has(o)) };
+  return { bsi: de(t => t === "BS"), rev: [...rev], gar: de(t => C4_T.has(t)), rep: de(t => t === "C7").filter(o => !rev.has(o)) };
 }
