@@ -197,7 +197,7 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
       <Bloco titulo="Desempenho por departamento" icon={<Target className="size-4 text-primary" />} ir={() => setTab("painel")} className="lg:col-span-3">
         <div className="flex flex-wrap justify-around gap-1">{porDept.slice(0, 5).map((d) => <Anel key={d.nome} p={d.projPct} rot={d.nome} />)}</div>
         <p className="mt-1 text-[11px] text-muted-foreground">Faturamento total <b className="ml-1 text-sm text-foreground">{brl(t.s + t.p)}</b></p>
-        <div className="mt-1 flex h-10 items-end gap-0.5" aria-label="Faturamento por dia">{diario.map(([d, v]) => <div key={d} title={`Dia ${d}: ${brl(v)}`} className="flex-1 rounded-t bg-primary" style={{ height: `${Math.max(div(v, maxDia) * 100, 4)}%` }} />)}</div>
+        {diario.length > 1 && <div className="mt-1 flex h-10 items-end gap-0.5" aria-label="Faturamento por dia">{diario.map(([d, v]) => <div key={d} title={`Dia ${d}: ${brl(v)}`} className="flex-1 rounded-t bg-primary" style={{ height: `${Math.max(div(v, maxDia) * 100, 4)}%` }} />)}</div>}
       </Bloco>
 
       {/* Linha 3 */}
