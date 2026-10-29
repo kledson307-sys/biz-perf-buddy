@@ -107,7 +107,7 @@ export function ControleOS() {
             const l = lista.filter(a => a.item.st === s.k);
             const al = l.filter(a => a.alertas.some(x => x.nivel === "alto")).length;
             return <button key={s.k} onClick={() => setAba(s.k)} className={`rounded-lg border px-3 py-1.5 text-left shadow-sm transition ${aba === s.k ? "border-primary bg-accent" : "border-border bg-card hover:bg-muted"}`}>
-              <div className="text-xs uppercase text-muted-foreground">{s.nome}</div>
+              <div className="truncate text-[10px] uppercase text-muted-foreground" title={s.nome}>{s.nome}</div>
               <div className="text-xl font-bold leading-tight">{l.length}</div>
               <div className="text-xs text-muted-foreground">{brl(l.reduce((n, a) => n + a.item.valor, 0))}</div>
               {al > 0 && <div className="mt-1 text-xs font-semibold text-destructive">⚠ {al} alerta{al > 1 ? "s" : ""}</div>}
@@ -123,8 +123,8 @@ export function ControleOS() {
           const dist = STATUS.map(s => ({ s, n: lista.filter(a => a.item.st === s.k).length })).filter(x => x.n > 0);
           const totD = dist.reduce((n, x) => n + x.n, 0) || 1;
           const CORES = ["var(--primary)", "var(--neon)", "var(--coral)", "var(--warning)", "var(--success)", "var(--destructive)", "var(--muted-foreground)", "var(--accent-foreground)"];
-          return <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
-            <div className="space-y-3 xl:max-h-[calc(100vh-305px)] xl:overflow-y-auto">
+          return <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,380px)_minmax(0,1fr)] xl:[&>*]:max-h-[calc(100vh-330px)]">
+            <div className="space-y-3 xl:overflow-y-auto">
               <div className="lux-card grid grid-cols-[auto_1fr] items-center gap-3 px-4 py-2">
                 <svg viewBox="0 0 42 42" className="size-20" role="img" aria-label="Distribuição por status">{(() => { let off = 25; return dist.map((x, i) => { const p = x.n / totD * 100; const el = <circle key={x.s.k} cx="21" cy="21" r="15.9" fill="transparent" stroke={CORES[i % CORES.length]} strokeWidth="6" strokeDasharray={`${p} ${100 - p}`} strokeDashoffset={off} />; off -= p; return el; }); })()}</svg>
                 <div>
@@ -183,7 +183,7 @@ export function ControleOS() {
           ))}
         </div>
 
-        <Box title={`${STATUS.find(s => s.k === aba)?.nome} — por consultor`} right={<span className="text-xs">clique na O.S. para tratativas</span>} fit="xl:max-h-[calc(100vh-345px)] xl:min-h-[300px]">
+        <Box title={`${STATUS.find(s => s.k === aba)?.nome} — por consultor`} right={<span className="text-xs">clique na O.S. para tratativas</span>} fit="xl:max-h-[calc(100vh-390px)] xl:min-h-[260px]">
           {porCons.length === 0 && <p className="p-5 text-sm text-muted-foreground">Nenhuma O.S. neste status.</p>}
           {porCons.map(({ c, l }) => <div key={c} className="border-t border-border first:border-t-0">
             <div className="flex flex-wrap justify-between gap-2 bg-muted px-5 py-2 text-sm font-semibold">
@@ -212,9 +212,9 @@ export function ControleOS() {
           </div>
         </details>
 
-        {saidas.length > 0 && <Box title={`Saíram desde a atualização anterior (${saidas.length})`}>
+        {saidas.length > 0 && <details className="lux-card"><summary className="cursor-pointer px-4 py-2 text-sm font-semibold">Saíram desde a atualização anterior ({saidas.length}) <span className="text-xs text-primary">abrir/fechar</span></summary>
           <p className="px-5 py-3 text-sm text-muted-foreground">{saidas.map(i => `${i.n} (${i.cons})`).join(" · ")}</p>
-        </Box>}
+        </details>}
       </>}
 
       <details className="lux-card"><summary className="cursor-pointer px-4 py-2 text-sm font-semibold">Histórico de atualizações <span className="text-xs text-primary">abrir/fechar</span></summary>
