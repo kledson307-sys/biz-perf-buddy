@@ -5,8 +5,6 @@ import { useResumoMes } from "@/hooks/use-resumo-mes";
 import { AlertTriangle, ArrowRight, CalendarDays, Car, ClipboardList, Gem, MapPin, Package, Star, Target, TrendingUp, Trophy, Wrench } from "lucide-react";
 import { ITENS } from "@/lib/agregados";
 import { bg, brl, div, pct, tone, uni } from "@/components/painel-ui";
-import heroFarois from "@/assets/hero-farois.jpg";
-import carroSilhueta from "@/assets/carro-silhueta.jpg";
 
 type L = { c: { id: string; nome: string; department_id: string | null }; servicos: number; pecas: number; mS: number; mP: number; perf: number; projPct: number };
 type D = { nome: string; servicos: number; pecas: number; meta: number; projPct: number };
@@ -101,8 +99,6 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
     <div className="space-y-3">
       {/* Cabeçalho executivo compacto */}
       <section className="relative flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-xl border border-border px-4 py-3">
-        <img src={heroFarois} alt="" aria-hidden width={1600} height={560} className="absolute inset-0 size-full object-cover object-right opacity-40" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/30" />
         <h2 className="relative text-lg font-bold">Olá, {primeiro}! <span className="text-sm font-normal text-muted-foreground">Resumo do pós-venda hoje</span></h2>
         <div className="relative flex flex-wrap gap-2 text-xs">
           <span className="flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-3 py-1"><CalendarDays className="size-3.5 text-primary" />{mesNome} · dia {dec} de {tot}</span>
@@ -141,7 +137,6 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
             <button type="button" onClick={() => setComOs(true)} className={`rounded-full px-2.5 py-1 ${comOs ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Com O.S. abertas</button>
             <button type="button" onClick={() => setComOs(false)} className={`rounded-full px-2.5 py-1 ${!comOs ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Só faturado</button>
           </div>}>
-          <img src={carroSilhueta} alt="" aria-hidden loading="lazy" width={1152} height={576} className="pointer-events-none absolute -bottom-6 right-0 w-1/2 opacity-30 mix-blend-screen" />
           <div className="relative">
             <p className={`text-3xl font-bold ${tone(div(pT, metaT))}`}>{brl(pT)}</p>
             <p className="text-xs text-muted-foreground">{pct(div(pT, metaT))} da meta {brl(metaT)} · {comOs ? "com O.S. abertas" : "somente faturado"}</p>
@@ -188,8 +183,8 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
         </Bloco>
 
         {/* Ranking */}
-        <Bloco titulo="Ranking consultores" icon={<Trophy className="size-4 text-warning" />} ir={() => setTab("ranking")}>
-          <ol className="space-y-2">{ranking.slice(0, 6).map((l, i) => (
+        <Bloco titulo="Top 5 consultores" icon={<Trophy className="size-4 text-warning" />} ir={() => setTab("ranking")}>
+          <ol className="space-y-2">{ranking.slice(0, 5).map((l, i) => (
             <li key={l.c.id} className="flex items-center gap-2 text-sm">
               <span className={`flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${i === 0 ? "bg-warning text-background" : i < 3 ? "bg-primary/30" : "bg-muted"}`}>{i + 1}</span>
               <div className="min-w-0 flex-1"><p className="truncate">{l.c.nome}{deptName ? <span className="ml-1 text-[10px] text-muted-foreground">{deptName(l.c.department_id)}</span> : null}</p><Linha p={l.perf} /></div>
