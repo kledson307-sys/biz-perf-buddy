@@ -120,6 +120,12 @@ export function Mecanicos({ mes, tot, dec, modo = "ver" }: { mes: string; tot: n
     const vRows = r.consultores.filter(x => byNome.has(norm(x.nome).replace(/\s+/g, " ")))
       .map(x => ({ consultant_id: byNome.get(norm(x.nome).replace(/\s+/g, " "))!, dia, passagens: x.passagens }));
     const ignorados = r.consultores.length - vRows.length;
+    const mixRows = r.consultores.filter(x => x.mix).map(x => ({ mes, nome: x.nome, composicao: x.mix as never, updated_at: new Date().toISOString() }));
+    if (mixRows.length) {
+      await supabase.from("cons_mix").delete().eq("mes", mes);
+      const { error: eX } = await supabase.from("cons_mix").insert(mixRows);
+      if (eX) { setBusy(false); setMsg("Erro ao salvar mix de passagens dos consultores: " + eX.message); return; }
+    }
     if (vRows.length) {
       const { error: eV } = await supabase.from("agg_visits").upsert(vRows, { onConflict: "consultant_id,dia" });
       if (eV) { setBusy(false); setMsg("Erro ao salvar passagens dos consultores: " + eV.message); return; }

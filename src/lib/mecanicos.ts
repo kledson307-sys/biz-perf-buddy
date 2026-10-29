@@ -163,7 +163,7 @@ export function lerMecanicos(raw: unknown[][]): MecReport {
   return { rows, periodo };
 }
 
-export type PassReport = { temTipo?: boolean; mecanicos: { nome: string; passagens: number; composicao?: Composicao }[]; consultores: { nome: string; passagens: number }[] };
+export type PassReport = { temTipo?: boolean; mecanicos: { nome: string; passagens: number; composicao?: Composicao }[]; consultores: { nome: string; passagens: number; mix?: MixCons }[] };
 
 /** True quando o cabeçalho é o relatório "Passagem tecnico+consultor" (ID O.S. | Consultor | Produtivo). */
 export function ehRelatorioPassagens(raw: unknown[][]): boolean {
