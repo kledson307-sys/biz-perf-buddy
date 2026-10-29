@@ -82,10 +82,10 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold">Agregados · {mes}</h2>
+          <h2 className="text-sm font-semibold">Agregados · {mes}</h2>
           <p className="text-xs text-muted-foreground">Acompanhamento separado — estes valores não entram nos totais das outras abas.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 print:hidden">
@@ -123,17 +123,17 @@ function GrupoView({ g, stat, ranking, ids, deptName, rest, sales }: {
   const [sel, setSel] = useState<string | null>(null);
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi label="Quantidade vendida" value={uni(T.qtd)} cls={tone(T.perfQ)} sub={<ItensDetalhe perItem={perItem} T={T} modo="qtd" />} />
         <Kpi label="Projeção (qtd)" value={uni(T.projQ)} cls={tone(T.projPctQ)} sub={<ItensDetalhe perItem={perItem} T={T} modo="proj" rest={rest} />} />
         <Kpi label="Valor vendido" value={brl(T.valor)} cls={tone(T.perfV)} sub={<ItensDetalhe perItem={perItem} T={T} modo="valor" />} />
         <Kpi label="Aproveitamento" value={pct(T.aprov)} sub={<ItensDetalhe perItem={perItem} T={T} modo="aprov" />} />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {perItem.map(({ it, s }) => {
           const lid = ranking([it.k])[0]; const on = sel === it.k;
-          return <button key={it.k} type="button" onClick={() => setSel(on ? null : it.k)} className={`lux-card p-3 text-left ${on ? "ring-2 ring-primary" : ""}`}>
+          return <button key={it.k} type="button" onClick={() => setSel(on ? null : it.k)} className={`lux-card px-3 py-2 text-left ${on ? "ring-2 ring-primary" : ""}`}>
             <p className="flex justify-between text-sm font-semibold"><span>{it.nome}</span><span className={tone(s.projPctQ)}>{pct(s.projPctQ)}</span></p>
             <p className="text-lg font-bold">{uni(s.qtd)} <span className="text-xs font-normal text-muted-foreground">de {uni(s.mq)} un · proj. {uni(s.projQ)}</span></p>
             <p className="text-xs text-muted-foreground">{brl(s.valor)} de {brl(s.mv)} · conversão {pct(s.aprov)}</p>
@@ -194,7 +194,7 @@ function RankTable({ title, rows, deptName, sales, items }: { title: string; row
     return [...m.values()].sort((a, b) => b.qtd - a.qtd);
   };
   return (
-    <Box title={title}>
+    <Box title={title} fit="xl:max-h-[calc(100vh-560px)] xl:min-h-[200px]">
       <Tabela head={["#", "Consultor", "Depto", "Qtd", "Meta", "Perf.", "Projeção", "Proj. %", "Valor", "Meta R$", "Perf. R$", "Aproveit.", "Nec./dia", "vs. Líder"]}>
         {rows.length === 0 && <tr><td colSpan={14} className="px-3 py-8 text-center text-muted-foreground">Nenhum consultor cadastrado.</td></tr>}
         {rows.map((l, i) => {
