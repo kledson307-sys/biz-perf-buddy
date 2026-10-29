@@ -1,3 +1,4 @@
+import { Devolucoes } from "@/components/Devolucoes";
 import { TecnicosMetas } from "@/components/TecnicosMetas";
 import { createFileRoute } from "@tanstack/react-router";
 import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
@@ -182,16 +183,19 @@ function Painel({ email }: { email: string }) {
   const load = useCallback(async () => {
     const [y, m] = mes.split("-").map(Number);
     const fim = new Date(y!, m!, 0).getDate();
-    const [d, c, g, s, p] = await Promise.all([
+    const [d, c, g, s, p, dv] = await Promise.all([
       supabase.from("departments").select("id,nome").order("nome"),
       supabase.from("consultants").select("id,nome,department_id,telefone").order("nome"),
       supabase.from("goals").select("consultant_id,servicos,pecas").eq("mes", mes),
       supabase.from("daily_sales").select("consultant_id,dia,servicos,pecas,margem_pecas").gte("dia", `${mes}-01`).lte("dia", `${mes}-${fim}`).order("dia"),
       supabase.from("month_params").select("*").eq("mes", mes).maybeSingle(),
+      supabase.from("parts_returns").select("consultant_id,valor").eq("mes", mes),
     ]);
     setDepts(d.data ?? []); setCons(c.data ?? []);
     setGoals((g.data ?? []).map((x) => ({ ...x, servicos: +x.servicos, pecas: +x.pecas })));
-    setSales((s.data ?? []).map((x) => ({ ...x, servicos: +x.servicos, pecas: +x.pecas, margem_pecas: +(x.margem_pecas ?? 0) })));
+    // Devoluções manuais entram como lançamento negativo de peças no último dia → faturamento líquido em todas as visões.
+    const devs = (dv.data ?? []).map((x) => ({ consultant_id: x.consultant_id, dia: `${mes}-${String(fim).padStart(2, "0")}`, servicos: 0, pecas: -Number(x.valor), margem_pecas: 0 }));
+    setSales([...(s.data ?? []).map((x) => ({ ...x, servicos: +x.servicos, pecas: +x.pecas, margem_pecas: +(x.margem_pecas ?? 0) })), ...devs]);
     let np: Params = p.data ? (p.data as Params) : { ...defParams, dc_totais: fim };
     const hoje = new Date();
     const mesHoje = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
@@ -804,11 +808,14 @@ function Painel({ email }: { email: string }) {
           <section className="space-y-3"><h3 className="font-semibold">4. Agregados — vendas de itens e passagens <span className="text-xs font-normal text-muted-foreground">— alimenta Agregados</span></h3>
             <StatusFonte source="agregados" mes={mes} updates={updates} clock={clock} />
             <Agregados modo="importar" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section>
+          <section className="space-y-3"><h3 className="font-semibold">5. Devoluções de peças (ajuste manual) <span className="text-xs font-normal text-muted-foreground">— bruto → líquido</span></h3>
+            <Devolucoes mes={mes} cons={cons} onChange={load} /></section>
         </div>}
         {tab === "cockpit" && !relatorio && <Cockpit linhas={linhas} porDept={porDept} mes={mes} tot={tot} dec={dec} soPecas={soPecas} setTab={setTab} sales={sales} nome={email.split("@")[0] ?? ""} deptName={deptName} />}
         {tab === "nps" && !relatorio && <NpsPainel />}
         {tab === "pecas" && !relatorio && <PecasEstoque linhas={linhas} porDept={porDept} margemIdeal={margemIdeal} deptName={deptName} passagens={resumo.pass} />}
-        {tab === "metas" && !relatorio && <><CadeadoMes mes={mes} /><Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></>}
+        {tab === "metas" && !relatorio && <><CadeadoMes mes={mes} /><Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} />
+          <section className="mt-6 space-y-3"><h3 className="font-semibold">Metas de agregados</h3><Agregados modo="metas" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section></>}
         {tab === "config" && <div className="space-y-6"><Equipe /><Config parte="config" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div>}
       </main>
       </div>

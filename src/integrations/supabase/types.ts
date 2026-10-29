@@ -575,6 +575,39 @@ export type Database = {
         }
         Relationships: []
       }
+      parts_returns: {
+        Row: {
+          consultant_id: string
+          created_at: string
+          id: string
+          mes: string
+          motivo: string | null
+          nf: string | null
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          consultant_id: string
+          created_at?: string
+          id?: string
+          mes: string
+          motivo?: string | null
+          nf?: string | null
+          user_id?: string
+          valor?: number
+        }
+        Update: {
+          consultant_id?: string
+          created_at?: string
+          id?: string
+          mes?: string
+          motivo?: string | null
+          nf?: string | null
+          user_id?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       supervisor_day: {
         Row: {
           consultant_id: string

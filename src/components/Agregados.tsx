@@ -16,7 +16,7 @@ type Props = {
   deptName: (id: string | null) => string; reloadCons: () => void; relatorio?: boolean;
 };
 
-export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, relatorio, modo = "ver" }: Props & { modo?: "ver" | "importar" }) {
+export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, relatorio, modo = "ver" }: Props & { modo?: "ver" | "importar" | "metas" }) {
   const [sub, setSub] = useState<"servicos" | "pecas" | "ia" | "importar" | "metas">("servicos");
   const [sales, setSales] = useState<ASale[]>([]);
   const [goals, setGoals] = useState<AGoal[]>([]);
@@ -74,8 +74,9 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
     a.download = `agregados-${mes}.csv`; a.click();
   };
 
-  const subs: [typeof sub, string][] = [["servicos", "Serviços agregados"], ["pecas", "Peças agregadas"], ["ia", "Recomendações IA"], ["metas", "Metas"]];
+  const subs: [typeof sub, string][] = [["servicos", "Serviços agregados"], ["pecas", "Peças agregadas"], ["ia", "Recomendações IA"]];
 
+  if (modo === "metas") return <Metas cons={consAgg} goals={goals} mes={mes} deptName={deptName} onSaved={load} />;
   if (modo === "importar") return (
     <AgregadosImport allCons={allCons} codigos={codigos} ini={ini} end={end} onDone={() => { load(); reloadCons(); }} />
   );
