@@ -1,21 +1,10 @@
 # Roadmap
-- [x] Nova ordem das 10 abas
-- [x] Delmir Xavier como chefe de oficina (acesso trocado)
-- [x] Mix de passagens em Técnicos, Chefe de Oficina e Consultores
-- [x] O.S. tipo ID tratada como interna
-- [x] NPS completo + NPS da oficina e pessoal
-- [x] NPS sem vendedores externos (MAYCON.S, IURI.R, RAFAEL.F)
-- [x] Envio da lista D-2 por consultor no WhatsApp
-- [x] Ajuste manual de devoluções
-- [x] Metas de agregados em Metas & Planejamento
-- [x] Dashboard compacto + NPS real + ação NPS em "Onde devo atuar"
-- [x] Central: Resumo rápido só no relatório impresso
-- [x] Consultores: 4 KPIs + coluna Peças por R$1 de serviço
-- [x] Agregados: cartões clicáveis por família filtrando a tabela por consultor
-- [x] Oficina: índice de retrabalho (RAC)
-- [x] Peças: Top 5, Curva ABC, giro, vendas por O.S. × balcão
-- [x] O.S.: tempo médio de permanência + O.S. mais antigas
-- [x] Importações: esteira única (NPS + Faturamento de Peças gravam direto; Passagens reconhecida)
+- [x] 10 abas, Delmir, mix de passagens, NPS completo, devoluções, metas de agregados
+- [x] Dashboard sem fotos grandes no topo, Top 5 consultores
+- [x] Central: barra de semáforos por departamento no topo
+- [x] Consultores: rodapé Evolução diária + Mix de passagens
+- [x] Oficina: produção por técnico em barras (serviços/peças)
+- [x] Peças: faturamento e participação por categoria (barras + donut)
+- [x] Metas: tabela executiva (meta, realizado, %, projeção, gaps) + edição recolhida
+- [x] Esteira única grava Passagens, Peças e NPS
 - [ ] Retrabalho por técnico individual — depende de chassi no relatório de passagens
-- [ ] Esteira única gravando Passagens/Vendas direto (hoje reconhece e indica o bloco)
-- [ ] Ajuste fino 16:9 sem rolagem em Oficina e Metas
