@@ -67,8 +67,8 @@ export function NpsPainel() {
   const motivos = Object.entries(baseNps(vis).filter((x) => x.rac).reduce<Record<string, number>>((a, x) => { const k = x.motivo || "SEM MOTIVO"; a[k] = (a[k] ?? 0) + 1; return a; }, {})).sort((a, b) => b[1] - a[1]).slice(0, 6);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-card p-3">
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-card px-3 py-2">
         <div><h2 className="font-semibold">NPS & Satisfação · {LOJA_PADRAO}</h2><p className="text-xs text-muted-foreground">{info || "Aguardando a primeira importação da planilha de pesquisa da montadora."} {pjs ? `· ${pjs} clientes CNPJ fora da base (não são pesquisados)` : ""}</p></div>
         <div className="flex flex-wrap items-center gap-2">
           {(["todos", "carro", "moto"] as const).map((s) => <Button key={s} size="sm" variant={seg === s ? "default" : "outline"} onClick={() => setSeg(s)}>{s === "todos" ? "Geral" : s === "carro" ? "Carro (meta 85%)" : "Moto (meta 88%)"}</Button>)}
@@ -86,8 +86,8 @@ export function NpsPainel() {
           <Card l="RACs abertas" v={uni(r.racs)} s={motivos[0] ? `principal: ${motivos[0][0].toLowerCase()}` : ""} />
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <section className="lux-card p-4">
+        <div className="grid gap-3 lg:grid-cols-2">
+          <section className="lux-card px-4 py-3">
             <h3 className="font-semibold">Follow-up D-2 · pesquisa chega em até 2 dias</h3>
             <p className="mb-2 text-xs text-muted-foreground">Ação de conferência e acolhimento: reforce que a nota avalia só o atendimento do consultor.</p>
             {fila.length > 0 && <div className="mb-2 flex flex-wrap gap-1">{[...new Set(fila.map((x) => x.consultor))].map((c) => {
@@ -95,7 +95,7 @@ export function NpsPainel() {
               const txt = `Bom dia ${c}! Follow-up antes da pesquisa BMW:\n` + l.map((x) => `• ${x.cliente} (${x.veiculo || "veículo"}${x.telefone ? ` · ${x.telefone}` : ""}) — pesquisa ${dataBR(x.recebimento)}`).join("\n") + "\nReforce que a nota avalia o seu atendimento.";
               return <a key={c} target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(txt)}`} className="rounded-full border border-primary px-2 py-0.5 text-[11px] text-primary">Enviar lista a {c} ({l.length})</a>;
             })}</div>}
-            <div className="max-h-80 space-y-2 overflow-y-auto">
+            <div className="max-h-80 space-y-2 overflow-y-auto xl:max-h-[calc(50vh-200px)]">
               {fila.map((x) => { const a = acaoFollowUp(x.obs); return (
                 <div key={x.chassi + x.recebimento} className="rounded-lg border border-border p-2 text-xs">
                   <div className="flex justify-between gap-2"><b>{x.cliente}</b><span className="text-muted-foreground">{x.consultor} · pesquisa {dataBR(x.recebimento)}</span></div>
@@ -105,10 +105,10 @@ export function NpsPainel() {
               {!fila.length && <p className="py-6 text-center text-sm text-muted-foreground">Nenhuma pesquisa chegando nos próximos 2 dias.</p>}
             </div>
           </section>
-          <section className="lux-card p-4">
+          <section className="lux-card px-4 py-3">
             <h3 className="font-semibold">Reversão & encantamento · detratores</h3>
             <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar cliente ou chassi" className="my-2 h-8 w-full rounded-md border border-input bg-background px-2 text-sm" />
-            <div className="max-h-72 space-y-2 overflow-y-auto">
+            <div className="max-h-72 space-y-2 overflow-y-auto xl:max-h-[calc(50vh-200px)]">
               {detr.map((d) => (
                 <div key={d.item.chassi + d.item.cliente} className="rounded-lg border border-border p-2 text-xs">
                   <div className="flex justify-between gap-2"><b>{d.item.cliente}</b><span className="text-destructive">{d.detr} de {d.passagens} passagens detratadas</span></div>
@@ -121,22 +121,22 @@ export function NpsPainel() {
           </section>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-3">
-          <section className="lux-card p-4 lg:col-span-1">
+        <div className="grid gap-3 lg:grid-cols-3">
+          <section className="lux-card px-4 py-3 lg:col-span-1 xl:max-h-[calc(50vh-140px)] xl:overflow-y-auto">
             <h3 className="mb-2 font-semibold">Ranking por consultor</h3>
             <table className="w-full text-xs"><thead className="text-muted-foreground"><tr><th className="text-left">Consultor</th><th>Aval.</th><th>NPS</th><th>% Prom.</th><th>RAC</th></tr></thead>
               <tbody>{consultores.map(({ c, s, meta }) => <tr key={c} className="border-t border-border"><td className="py-1">{c}</td><td className="text-center">{uni(s.avaliados)}</td><td className={`text-center font-semibold ${corNps(s.nps)}`}>{sNps(s.nps)}</td><td className={`text-center ${corProm(s.pctProm, meta)}`}>{pct(s.pctProm)}</td><td className="text-center">{uni(s.racs)}</td></tr>)}</tbody></table>
           </section>
-          <section className="lux-card p-4">
+          <section className="lux-card px-4 py-3">
             <div className="mb-2 flex flex-wrap items-center justify-between gap-1"><h3 className="font-semibold">Verbalizações</h3>
               <select value={filtro} onChange={(e) => setFiltro(e.target.value as typeof filtro)} className="h-7 rounded border border-input bg-background px-1 text-xs">
                 <option value="detrator">Detratores</option><option value="neutro">Neutros</option><option value="promotor">Promotores</option><option value="rac">Com RAC</option><option value="todos">Todos</option></select></div>
-            <div className="max-h-72 space-y-2 overflow-y-auto text-xs">
+            <div className="max-h-72 space-y-2 overflow-y-auto xl:max-h-[calc(50vh-200px)] text-xs">
               {mural.map((x, i) => <div key={i} className="rounded border border-border p-2"><b className={x.nota! >= 9 ? "text-success" : x.nota! >= 7 ? "text-warning" : "text-destructive"}>Nota {x.nota}</b> · {x.consultor} · {x.cliente}<p className="mt-1 text-muted-foreground">{x.obs}</p></div>)}
               {!mural.length && <p className="text-muted-foreground">Sem verbalizações neste filtro.</p>}
             </div>
           </section>
-          <section className="lux-card p-4">
+          <section className="lux-card px-4 py-3">
             <h3 className="mb-2 font-semibold">Benchmark Grupo Haus</h3>
             {lojas.map(({ l, s }) => <div key={l} className={`flex justify-between border-t border-border py-1 text-sm ${l === LOJA_PADRAO ? "font-bold" : ""}`}><span>{l}</span><span><span className={corNps(s.nps)}>{sNps(s.nps)}</span> · {pct(s.pctProm)} prom. · {uni(s.avaliados)}</span></div>)}
             <h4 className="mt-3 text-xs font-semibold text-muted-foreground">Motivos de RAC</h4>
@@ -149,7 +149,7 @@ export function NpsPainel() {
 }
 
 function Card({ l, v, s, cls = "" }: { l: string; v: string; s?: string; cls?: string }) {
-  return <div className="lux-card p-3"><p className="text-xs text-muted-foreground">{l}</p><p className={`text-2xl font-bold ${cls}`}>{v}</p>{s && <p className="text-[11px] text-muted-foreground">{s}</p>}</div>;
+  return <div className="lux-card px-3 py-2"><p className="text-xs text-muted-foreground">{l}</p><p className={`text-xl font-bold leading-tight ${cls}`}>{v}</p>{s && <p className="text-[11px] text-muted-foreground">{s}</p>}</div>;
 }
 
 /** Bloco compacto de NPS para consultor e chefe de oficina (via RPC restrita). */
