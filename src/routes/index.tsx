@@ -554,74 +554,57 @@ function Painel({ email }: { email: string }) {
         {show("painel") && (
           <Secao relatorio={relatorio} titulo="Resumo executivo">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-lg font-semibold">Relatório de {mes}</h2>
-              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap print:hidden">
-                <Button onClick={exportar}><Download />Exportar Excel (CSV)</Button>
-                <Button variant="outline" onClick={() => window.print()}><Printer />Imprimir / PDF</Button>
-                <Button className="col-span-2" onClick={gerarRelatorio}><Printer />Relatório de fechamento (PDF)</Button>
+              <h2 className="text-sm font-semibold">Relatório de {mes}</h2>
+              <div className="flex flex-wrap gap-1.5 print:hidden">
+                <Button size="sm" onClick={exportar}><Download />Exportar Excel (CSV)</Button>
+                <Button size="sm" variant="outline" onClick={() => window.print()}><Printer />Imprimir / PDF</Button>
+                <Button size="sm" onClick={gerarRelatorio}><Printer />Relatório de fechamento (PDF)</Button>
+                <Button size="sm" variant="outline" onClick={() => setAbrirWhats(!abrirWhats)}>{abrirWhats ? "Ocultar envio por WhatsApp" : "Mostrar envio por WhatsApp"}</Button>
               </div>
             </div>
+            {abrirWhats && <div className="print:hidden"><EnvioWhatsapp linhas={linhas} lider={lider} liderServ={liderServ} liderPec={liderPec} mes={mes} dec={dec} tot={tot} reload={load} /></div>}
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6 print:hidden" aria-label="Status da operação">
-              {porDept.map((d) => <div key={d.nome} className="lux-card flex items-center gap-2 px-3 py-2"><span className={`size-3 shrink-0 rounded-full ${d.projPct >= 1 ? "bg-success" : d.projPct >= 0.85 ? "bg-warning" : "bg-destructive"}`} /><div className="min-w-0"><p className="truncate text-[11px] uppercase text-muted-foreground">{d.nome}</p><p className={`text-sm font-bold ${tone(d.projPct)}`}>{pct(d.projPct)} <span className="text-[10px] font-normal text-muted-foreground">{d.projPct >= 1 ? "No ritmo" : d.projPct >= 0.85 ? "Atenção" : "Crítico"}</span></p></div></div>)}
+              {porDept.map((d) => <div key={d.nome} className="lux-card flex items-center gap-2 px-3 py-1.5"><span className={`size-3 shrink-0 rounded-full ${d.projPct >= 1 ? "bg-success" : d.projPct >= 0.85 ? "bg-warning" : "bg-destructive"}`} /><div className="min-w-0"><p className="truncate text-[11px] uppercase text-muted-foreground">{d.nome}</p><p className={`text-sm font-bold ${tone(d.projPct)}`}>{pct(d.projPct)} <span className="text-[10px] font-normal text-muted-foreground">{d.projPct >= 1 ? "No ritmo" : d.projPct >= 0.85 ? "Atenção" : "Crítico"}</span></p></div></div>)}
+              <div className="lux-card flex items-center gap-2 px-3 py-1.5"><span className={`size-3 shrink-0 rounded-full ${total.projPct >= 1 ? "bg-success" : total.projPct >= 0.85 ? "bg-warning" : "bg-destructive"}`} /><div className="min-w-0"><p className="truncate text-[11px] uppercase text-muted-foreground">Loja (projeção)</p><p className={`text-sm font-bold ${tone(total.projPct)}`}>{pct(total.projPct)}</p></div></div>
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-5 painel-kpis">
-              <Kpi label="Realizado Serviços Total" value={brl(total.servicos)} sub={`Meta ${brl(total.mS)} · ${pct(total.perfS)}`} cls={tone(total.perfS)} p={total.perfS} />
-              <Kpi label="Realizado Peças Total" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)} · margem ${margemTxt(total)}`} cls={tone(total.perfP)} p={total.perfP} />
-              <Kpi label="Projeção Serviços" value={brl(total.projS)} sub={`${pct(total.projPctS)} da meta ${brl(total.mS)}`} cls={tone(total.projPctS)} p={total.projPctS} />
-              <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta ${brl(total.mP)}`} cls={tone(total.projPctP)} p={total.projPctP} />
-              <Kpi label="Projeção Total" value={brl(total.proj)} sub={`${pct(total.projPct)} · precisa serviços ${brl(total.necS)}/dia · precisa peças ${brl(total.necP)}/dia`} cls={tone(total.projPct)} p={total.projPct} destaque />
+            <div className="grid grid-cols-2 gap-2 lg:grid-cols-3 painel-kpis">
+              <Kpi label="Projeção Serviços" value={brl(total.projS)} sub={`${pct(total.projPctS)} da meta ${brl(total.mS)} · precisa ${brl(total.necS)}/dia`} cls={tone(total.projPctS)} p={total.projPctS} />
+              <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta ${brl(total.mP)} · margem ${margemTxt(total)} · precisa ${brl(total.necP)}/dia`} cls={tone(total.projPctP)} p={total.projPctP} />
+              <Kpi label="Projeção Total" value={brl(total.proj)} sub={`${pct(total.projPct)} da meta · realizado ${brl(total.servicos + total.pecas)}`} cls={tone(total.projPct)} p={total.projPct} destaque />
             </div>
 
-            <Box title="Resultados por departamento">
-              <div className="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-3">
-                {porDept.map((d) => (
-                  <div key={d.nome} className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-                    <div className="space-y-2 p-4">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <p className="font-semibold">{d.nome}</p>
-                        <p className={`text-sm font-semibold ${tone(d.projPct)}`}>Proj. {pct(d.projPct)} · {d.projPct >= 1 ? "No ritmo" : d.projPct >= 0.85 ? "Atenção" : "Crítico"}</p>
-                      </div>
-                      <Barra p={d.projPct} />
-                    </div>
-                    <div className={`grid border-t border-border text-sm ${semServicos(d.nome) ? "" : "grid-cols-2 divide-x divide-border"}`}>
-                      {!semServicos(d.nome) && (
-                        <div className="min-w-0 space-y-1 p-3">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Serviços</p>
-                          <p className="break-words font-semibold">{brl(d.servicos)} <span className={`text-xs ${tone(d.perfS)}`}>{pct(d.perfS)}</span></p>
-                          <p className={`break-words text-xs ${tone(d.projPctS)}`}>Proj. {brl(d.projS)} ({pct(d.projPctS)})</p>
-                          <p className="break-words text-xs text-muted-foreground">Meta {brl(d.mS)}</p>
-                        </div>
-                      )}
-                      <div className="min-w-0 space-y-1 p-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Peças</p>
-                        <p className="break-words font-semibold">{brl(d.pecas)} <span className={`text-xs ${tone(d.perfP)}`}>{pct(d.perfP)}</span></p>
-                        <p className={`break-words text-xs ${tone(d.projPctP)}`}>Proj. {brl(d.projP)} ({pct(d.projPctP)})</p>
-                        <p className="break-words text-xs text-muted-foreground">Meta {brl(d.mP)}</p>
-                        <p className="text-xs">Margem <span className={`font-semibold ${margemTone(d.nome, d.margem, d.pecas)}`}>{margemTxt(d)}</span> <span className="text-muted-foreground">ideal {pct(margemIdeal(d.nome))}</span></p>
-                      </div>
-                    </div>
-                    <div className="space-y-1 border-t border-border bg-muted/40 px-4 py-3 text-sm">
-                      <div className="flex flex-wrap items-baseline justify-between gap-2">
-                        <span className="text-muted-foreground">Projeção total</span>
-                        <span className="font-semibold">{brl(d.proj)} <span className="text-xs font-normal text-muted-foreground">/ meta {brl(d.meta)}</span></span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">Realizado {brl(d.real)} ({pct(d.perf)}) · 👉 Precisa por dia: {semServicos(d.nome) ? `peças ${brl(d.necP)}` : `serviços ${brl(d.necS)} · peças ${brl(d.necP)}`}</p>
-                    </div>
-                  </div>
-                ))}
-                {!porDept.length && <p className="p-4 text-sm text-muted-foreground">Cadastre consultores e departamentos em "Configurar" para ver os resultados aqui.</p>}
-              </div>
+            <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_360px]">
+            <Box title="Resultados por departamento" fit="xl:max-h-[calc(100vh-560px)] xl:min-h-[220px]">
+              <div className="overflow-x-auto"><table className="w-full text-sm">
+                <thead className="sticky top-0 bg-card text-[11px] uppercase text-muted-foreground"><tr>
+                  <th className="px-3 py-1.5 text-left">Departamento</th><th className="px-2 text-right">Serviços</th><th className="px-2 text-right">Proj. serv.</th><th className="px-2 text-right">Peças</th><th className="px-2 text-right">Proj. peças</th><th className="px-2 text-right">Margem</th><th className="px-2 text-right">Projeção total</th><th className="px-3 text-right">Precisa/dia</th>
+                </tr></thead>
+                <tbody>{porDept.map((d) => (
+                  <tr key={d.nome} className="border-t border-border tabular-nums">
+                    <td className="px-3 py-1.5"><p className="font-semibold">{d.nome}</p><div className="mt-0.5 w-28"><Barra p={d.projPct} /></div></td>
+                    <td className="px-2 text-right">{semServicos(d.nome) ? "—" : <>{brl(d.servicos)}<br /><span className={`text-xs ${tone(d.perfS)}`}>{pct(d.perfS)} de {brl(d.mS)}</span></>}</td>
+                    <td className={`px-2 text-right text-xs ${tone(d.projPctS)}`}>{semServicos(d.nome) ? "—" : <>{brl(d.projS)}<br />{pct(d.projPctS)}</>}</td>
+                    <td className="px-2 text-right">{brl(d.pecas)}<br /><span className={`text-xs ${tone(d.perfP)}`}>{pct(d.perfP)} de {brl(d.mP)}</span></td>
+                    <td className={`px-2 text-right text-xs ${tone(d.projPctP)}`}>{brl(d.projP)}<br />{pct(d.projPctP)}</td>
+                    <td className="px-2 text-right text-xs"><span className={`font-semibold ${margemTone(d.nome, d.margem, d.pecas)}`}>{margemTxt(d)}</span><br /><span className="text-muted-foreground">ideal {pct(margemIdeal(d.nome))}</span></td>
+                    <td className="px-2 text-right"><span className={`font-semibold ${tone(d.projPct)}`}>{brl(d.proj)}</span><br /><span className="text-xs text-muted-foreground">{pct(d.projPct)} · meta {brl(d.meta)}</span></td>
+                    <td className="px-3 text-right text-xs">{semServicos(d.nome) ? `peças ${brl(d.necP)}` : <>serv. {brl(d.necS)}<br />peças {brl(d.necP)}</>}</td>
+                  </tr>))}
+                </tbody>
+              </table></div>
+              {!porDept.length && <p className="p-4 text-sm text-muted-foreground">Cadastre consultores e departamentos em "Configurar" para ver os resultados aqui.</p>}
             </Box>
-
-            <div className="print:hidden">
-              {abrirWhats ? (
-                <div className="space-y-3">
-                  <Button variant="outline" size="sm" onClick={() => setAbrirWhats(false)}>Ocultar envio por WhatsApp</Button>
-                  <EnvioWhatsapp linhas={linhas} lider={lider} liderServ={liderServ} liderPec={liderPec} mes={mes} dec={dec} tot={tot} reload={load} />
-                </div>
-              ) : (
-                <Button variant="outline" onClick={() => setAbrirWhats(true)}>Mostrar envio por WhatsApp</Button>
-              )}
+            <Box title="Prioridades & plano de ação" fit="xl:max-h-[calc(100vh-560px)] xl:min-h-[220px]">
+              <ul className="divide-y divide-border text-sm">
+                {[...linhas].filter((l) => l.meta > 0).sort((a, b) => a.projPct - b.projPct).slice(0, 6).map((l, i) => (
+                  <li key={l.c.id} className="flex items-start gap-2 px-3 py-1.5">
+                    <span className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${l.projPct >= 1 ? "bg-success/20 text-success" : l.projPct >= 0.85 ? "bg-warning/20 text-warning" : "bg-destructive/20 text-destructive"}`}>{i + 1}</span>
+                    <div className="min-w-0"><p className="truncate font-medium">{l.c.nome} <span className={`text-xs ${tone(l.projPct)}`}>proj. {pct(l.projPct)}</span></p>
+                      <p className="text-[11px] text-muted-foreground">{recomendar(l)[0] ?? `Precisa ${brl(l.nec)}/dia`}</p></div>
+                  </li>))}
+                {!linhas.length && <li className="p-3 text-xs text-muted-foreground">Sem consultores no mês.</li>}
+              </ul>
+            </Box>
             </div>
 
             <div className="hidden print:block"><ResumoPainel linhas={linhas.map((l) => ({ nome: l.c.nome, servicos: l.servicos, pecas: l.pecas, mS: l.mS, mP: l.mP, perfS: l.perfS, perfP: l.perfP, perf: l.perf, projPct: l.projPct, mediaDia: l.mediaDia, necS: l.necS, necP: l.necP, nec: l.nec }))} liderNome={lider?.c.nome ?? null} dec={dec} tot={tot} mes={mes} /></div>
