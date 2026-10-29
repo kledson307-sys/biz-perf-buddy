@@ -8,5 +8,6 @@
 - [x] NPS: importação, metas 85%/88%, CNPJ só no NPS, D-2, reversão, ranking, verbalizações, benchmark
 - [x] NPS da oficina (Delmir) e NPS pessoal (consultor)
 - [ ] Layouts 16:9 sem rolagem: Cockpit, Central, Agregados, Oficina, Peças, O.S., Metas, Importações
-- [ ] Importador unificado + ajuste manual de devoluções
-- [ ] Metas de agregados movidas para Metas & Planejamento
+- [x] Ajuste manual de devoluções
+- [ ] Importador unificado (drag-and-drop)
+- [x] Metas de agregados movidas para Metas & Planejamento

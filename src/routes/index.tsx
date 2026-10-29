@@ -1,3 +1,4 @@
+import { Devolucoes } from "@/components/Devolucoes";
 import { TecnicosMetas } from "@/components/TecnicosMetas";
 import { createFileRoute } from "@tanstack/react-router";
 import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
