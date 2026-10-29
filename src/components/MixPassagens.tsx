@@ -16,9 +16,9 @@ export function MixPassagens({ titulo, linhas, todos }: { titulo: string; linhas
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead><tr className="text-xs text-muted-foreground">
-            <th className="px-3 py-2 text-left">Técnico</th>
-            {cols.map((k) => <th key={k} className="px-2 py-2 text-center">{ROTULO[k]}</th>)}
-            <th className="px-3 py-2 text-center">Total</th>
+            <th className="px-3 py-1 text-left">Técnico</th>
+            {cols.map((k) => <th key={k} className="px-2 py-1 text-center">{ROTULO[k]}</th>)}
+            <th className="px-3 py-1 text-center">Total</th>
           </tr></thead>
           <tbody>
             {rows.map((r) => (
@@ -29,9 +29,9 @@ export function MixPassagens({ titulo, linhas, todos }: { titulo: string; linhas
               </tr>
             ))}
             <tr className="border-t-2 border-border font-bold">
-              <td className="px-3 py-2">TOTAL</td>
-              {cols.map((k) => <td key={k} className="px-2 py-2 text-center tabular-nums">{uni(tot[k].length)}</td>)}
-              <td className="px-3 py-2 text-center tabular-nums">{uni(soma(tot))}</td>
+              <td className="px-3 py-1">TOTAL</td>
+              {cols.map((k) => <td key={k} className="px-2 py-1 text-center tabular-nums">{uni(tot[k].length)}</td>)}
+              <td className="px-3 py-1 text-center tabular-nums">{uni(soma(tot))}</td>
             </tr>
           </tbody>
         </table>
