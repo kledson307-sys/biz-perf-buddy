@@ -5,6 +5,8 @@ import { useResumoMes } from "@/hooks/use-resumo-mes";
 import { AlertTriangle, ArrowRight, CalendarDays, Car, ClipboardList, Gem, MapPin, Package, Star, Target, TrendingUp, Trophy, Wrench } from "lucide-react";
 import { ITENS } from "@/lib/agregados";
 import { bg, brl, div, pct, tone, uni } from "@/components/painel-ui";
+import carro from "@/assets/carro-silhueta.jpg";
+import farois from "@/assets/hero-farois.jpg";
 
 type L = { c: { id: string; nome: string; department_id: string | null }; servicos: number; pecas: number; mS: number; mP: number; perf: number; projPct: number };
 type D = { nome: string; servicos: number; pecas: number; meta: number; projPct: number };
@@ -12,12 +14,12 @@ type S = { consultant_id: string; dia: string; servicos: number; pecas: number }
 
 function Bloco({ titulo, icon, ir, children, right, className = "" }: { titulo: string; icon?: ReactNode; ir?: () => void; children: ReactNode; right?: ReactNode; className?: string }) {
   return (
-    <section className={`lux-card p-3 ${className}`}>
-      <div className="mb-2 flex items-center justify-between gap-2">
+    <section className={`lux-card flex min-h-0 flex-col p-3 ${className}`}>
+      <div className="mb-1.5 flex shrink-0 items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">{icon}{titulo}</h2>
         <div className="flex items-center gap-2">{right}{ir && <button type="button" onClick={ir} className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">Ver detalhes <ArrowRight className="size-3" /></button>}</div>
       </div>
-      {children}
+      <div className="min-h-0 flex-1 overflow-auto">{children}</div>
     </section>
   );
 }
@@ -30,7 +32,7 @@ function Anel({ p, rot }: { p: number; rot: string }) {
   const r = 30, c = 2 * Math.PI * r;
   return (
     <div className="flex flex-col items-center gap-1 text-center">
-      <svg viewBox="0 0 80 80" className="size-14" role="img" aria-label={`${rot} ${pct(p)}`}>
+      <svg viewBox="0 0 80 80" className="size-12" role="img" aria-label={`${rot} ${pct(p)}`}>
         <circle cx="40" cy="40" r={r} fill="none" strokeWidth="7" className="stroke-muted" />
         <circle cx="40" cy="40" r={r} fill="none" strokeWidth="7" strokeLinecap="round" strokeDasharray={`${Math.min(p, 1) * c} ${c}`} transform="rotate(-90 40 40)"
           className={p >= 1 ? "stroke-success" : p >= 0.85 ? "stroke-warning" : "stroke-destructive"} />
@@ -96,54 +98,56 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
   ];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2 lg:grid lg:h-[calc(100dvh-7rem)] lg:min-h-[620px] lg:grid-rows-[auto_auto_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.85fr)] lg:gap-2 lg:space-y-0">
       {/* Cabeçalho executivo compacto */}
-      <section className="relative flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-xl border border-border px-4 py-3">
-        <h2 className="relative text-lg font-bold">Olá, {primeiro}! <span className="text-sm font-normal text-muted-foreground">Resumo do pós-venda hoje</span></h2>
+      <section className="relative flex flex-wrap items-center justify-between gap-2 overflow-hidden rounded-xl border border-border px-4 py-1.5">
+        <img src={farois} alt="" aria-hidden className="pointer-events-none absolute inset-y-0 right-0 h-full w-1/2 object-cover opacity-20 [mask-image:linear-gradient(to_left,black,transparent)]" />
+        <h2 className="relative text-base font-bold">Olá, {primeiro}! <span className="text-sm font-normal text-muted-foreground">Resumo do pós-venda hoje</span></h2>
         <div className="relative flex flex-wrap gap-2 text-xs">
-          <span className="flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-3 py-1"><CalendarDays className="size-3.5 text-primary" />{mesNome} · dia {dec} de {tot}</span>
-          <span className="flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-3 py-1"><MapPin className="size-3.5 text-primary" />Salvador</span>
-          <span className={`flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-3 py-1 font-semibold ${tone(div(pT, metaT))}`}><Target className="size-3.5" />Projeção {pct(div(pT, metaT))}</span>
+          <span className="flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-2.5 py-0.5"><CalendarDays className="size-3.5 text-primary" />{mesNome} · dia {dec} de {tot}</span>
+          <span className="flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-2.5 py-0.5"><MapPin className="size-3.5 text-primary" />Salvador</span>
+          <span className={`flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-2.5 py-0.5 font-semibold ${tone(div(pT, metaT))}`}><Target className="size-3.5" />Projeção {pct(div(pT, metaT))}</span>
         </div>
       </section>
 
       {/* Resultado do mês */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
         {resultado.map(([n, r, m, I, cor]) => (
-          <button key={n} type="button" onClick={() => setTab("painel")} className="lux-card col-span-1 p-4 text-left">
+          <button key={n} type="button" onClick={() => setTab("painel")} className="lux-card col-span-1 px-3 py-2 text-left">
             <div className="flex items-center justify-between"><p className="text-xs text-muted-foreground">{n}</p><I strokeWidth={1.5} className="size-5 text-primary" /></div>
-            <p className="mt-1 text-lg font-bold sm:text-xl">{brl(r)}</p>
-            <div className="my-2"><Linha p={div(r, m)} cor={cor} /></div>
+            <p className="text-lg font-bold">{brl(r)}</p>
+            <div className="my-1"><Linha p={div(r, m)} cor={cor} /></div>
             <p className={`text-xs font-semibold ${tone(div(r, m))}`}>{pct(div(r, m))} <span className="font-normal text-muted-foreground">de {brl(m)}</span></p>
           </button>
         ))}
-        <button type="button" onClick={() => setTab("agregados")} className="lux-card p-4 text-left">
+        <button type="button" onClick={() => setTab("agregados")} className="lux-card px-3 py-2 text-left">
           <p className="text-xs text-muted-foreground">Ticket médio</p>
-          <p className="mt-1 text-sm">Serviços <b>{brl(div(t.s, pass))}</b></p>
+          <p className="text-sm">Serviços <b>{brl(div(t.s, pass))}</b></p>
           <p className="text-sm">Peças <b>{brl(div(t.p, pass))}</b></p>
           <p className="text-sm">Passagens <b>{uni(pass)}</b></p>
         </button>
-        <button type="button" onClick={() => setTab("nps")} className="lux-card col-span-2 border-dashed p-4 text-left lg:col-span-1">
+        <button type="button" onClick={() => setTab("nps")} className="lux-card col-span-2 border-dashed px-3 py-2 text-left lg:col-span-1">
           <div className="flex items-center justify-between"><p className="text-xs text-muted-foreground">NPS / CSI</p><Star strokeWidth={1.5} className="size-5 text-primary" /></div>
-          <p className={`mt-1 text-xl font-bold ${nps ? (nps.nps >= 0.8 ? "text-success" : nps.nps >= 0.7 ? "text-warning" : "text-destructive") : "text-muted-foreground"}`}>{nps ? `${nps.nps > 0 ? "+" : ""}${(nps.nps * 100).toFixed(1).replace(".", ",")}` : "—"}</p>
+          <p className={`text-lg font-bold ${nps ? (nps.nps >= 0.8 ? "text-success" : nps.nps >= 0.7 ? "text-warning" : "text-destructive") : "text-muted-foreground"}`}>{nps ? `${nps.nps > 0 ? "+" : ""}${(nps.nps * 100).toFixed(1).replace(".", ",")}` : "—"}</p>
           <p className="text-xs text-muted-foreground">{nps ? `${pct(nps.pctProm)} promotores · ${uni(nps.avaliados)} avaliados` : "Aguardando planilha NPS"}</p>
         </button>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-3">
+      <div className="grid min-h-0 gap-2 lg:grid-cols-3">
         {/* Projeção do mês */}
         <Bloco titulo="Projeção do mês" icon={<TrendingUp className="size-4 text-primary" />} ir={() => setTab("os")} className="relative overflow-hidden lg:col-span-2" right={
           <div className="flex rounded-full border border-border p-0.5 text-[11px]">
             <button type="button" onClick={() => setComOs(true)} className={`rounded-full px-2.5 py-1 ${comOs ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Com O.S. abertas</button>
             <button type="button" onClick={() => setComOs(false)} className={`rounded-full px-2.5 py-1 ${!comOs ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Só faturado</button>
           </div>}>
+          <img src={carro} alt="" aria-hidden className="pointer-events-none absolute bottom-0 right-0 hidden h-2/3 max-w-[45%] object-contain opacity-15 mix-blend-screen lg:block" />
           <div className="relative">
-            <p className={`text-3xl font-bold ${tone(div(pT, metaT))}`}>{brl(pT)}</p>
+            <p className={`text-2xl font-bold ${tone(div(pT, metaT))}`}>{brl(pT)}</p>
             <p className="text-xs text-muted-foreground">{pct(div(pT, metaT))} da meta {brl(metaT)} · {comOs ? "com O.S. abertas" : "somente faturado"}</p>
             <div className="mt-2 max-w-md"><Linha p={div(pT, metaT)} cor="bg-neon" /></div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
               {[["Serviços", pS, t.ms, altS, t.s + (comOs ? t.os : 0)], ["Peças", pP, t.mp, altP, t.p + (comOs ? t.op : 0)]].map(([n, p, m, alt, base]) => (
-                <div key={n as string} className="rounded-lg border border-border bg-background/40 p-3">
+                <div key={n as string} className="rounded-lg border border-border bg-background/60 p-2">
                   <p className="text-xs text-muted-foreground">Projeção {n}</p>
                   <p className={`text-lg font-bold ${tone(div(p as number, m as number))}`}>{brl(p as number)} <span className="text-sm">{pct(div(p as number, m as number))}</span></p>
                   <p className="text-xs text-muted-foreground">Meta {brl(m as number)} · precisa {brl(rest ? Math.max((m as number) - (base as number), 0) / rest : 0)}/dia</p>
@@ -157,20 +161,20 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
         {/* Onde devo atuar hoje */}
         <Bloco titulo="Onde devo atuar hoje?" icon={<AlertTriangle className="size-4 text-destructive" />} className="border-destructive/50">
           {acoes.length === 0 ? <p className="text-sm text-success">✅ Nenhum ponto crítico agora. Mantenha o ritmo.</p> :
-            <ul className="space-y-2">{acoes.map((a, i) => (
-              <li key={i}><button type="button" onClick={() => setTab(a.ir)} className="flex w-full items-start gap-2 rounded-lg bg-background/40 p-2 text-left text-sm hover:bg-muted">
+            <ul className="space-y-1">{acoes.map((a, i) => (
+              <li key={i}><button type="button" onClick={() => setTab(a.ir)} className="flex w-full items-start gap-2 rounded-lg bg-background/40 px-2 py-1 text-left text-xs hover:bg-muted">
                 <span className={`mt-1.5 size-2 shrink-0 rounded-full ${a.cor}`} /><span className="flex-1">{a.txt}</span><ArrowRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
               </button></li>
             ))}</ul>}
-          {abaixo.length > 1 && <p className="mt-3 text-xs text-muted-foreground">Abaixo de 85%: {abaixo.map((l) => l.c.nome).join(", ")}</p>}
+          {abaixo.length > 1 && <p className="mt-1 text-[11px] text-muted-foreground">Abaixo de 85%: {abaixo.map((l) => l.c.nome).join(", ")}</p>}
         </Bloco>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-3">
+      <div className="grid min-h-0 gap-2 lg:grid-cols-3">
         {/* Evolução do mês */}
         <Bloco titulo="Evolução do mês" icon={<TrendingUp className="size-4 text-primary" />} ir={() => setTab("painel")} className="lg:col-span-2">
           {evol.length === 0 ? <p className="text-sm text-muted-foreground">Sem vendas importadas neste mês.</p> : (
-            <svg viewBox={`0 0 ${W} ${H + 18}`} className="w-full" role="img" aria-label="Faturamento acumulado do mês contra a meta">
+            <svg viewBox={`0 0 ${W} ${H + 18}`} preserveAspectRatio="none" className="h-[calc(100%-1.25rem)] min-h-24 w-full" role="img" aria-label="Faturamento acumulado do mês contra a meta">
               {[0.25, 0.5, 0.75, 1].map((f) => <line key={f} x1="0" x2={W} y1={py(maxY * f)} y2={py(maxY * f)} className="stroke-border" strokeWidth="1" />)}
               <line x1="0" y1={H} x2={W} y2={py(metaT)} className="stroke-muted-foreground" strokeWidth="1.5" strokeDasharray="5 5" />
               <path d={`${caminho} L${px(evol.at(-1)!.d)},${H} L${px(evol[0]!.d)},${H} Z`} fill="var(--neon)" fillOpacity="0.12" />
@@ -184,7 +188,7 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
 
         {/* Ranking */}
         <Bloco titulo="Top 5 consultores" icon={<Trophy className="size-4 text-warning" />} ir={() => setTab("ranking")}>
-          <ol className="space-y-2">{ranking.slice(0, 5).map((l, i) => (
+          <ol className="space-y-1.5">{ranking.slice(0, 5).map((l, i) => (
             <li key={l.c.id} className="flex items-center gap-2 text-sm">
               <span className={`flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${i === 0 ? "bg-warning text-background" : i < 3 ? "bg-primary/30" : "bg-muted"}`}>{i + 1}</span>
               <div className="min-w-0 flex-1"><p className="truncate">{l.c.nome}{deptName ? <span className="ml-1 text-[10px] text-muted-foreground">{deptName(l.c.department_id)}</span> : null}</p><Linha p={l.perf} /></div>
@@ -194,27 +198,27 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
         </Bloco>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid min-h-0 gap-2 md:grid-cols-2 lg:grid-cols-4">
         {/* Departamentos */}
         <Bloco titulo="Desempenho por departamento" icon={<Target className="size-4 text-primary" />} ir={() => setTab("painel")}>
-        <div className="grid grid-cols-3 gap-2">{porDept.map((d) => <Anel key={d.nome} p={d.projPct} rot={d.nome} />)}</div>
+        <div className="grid grid-cols-5 gap-1 lg:grid-cols-3 xl:grid-cols-5">{porDept.map((d) => <Anel key={d.nome} p={d.projPct} rot={d.nome} />)}</div>
       </Bloco>
 
 
         <Bloco titulo="Ordens de serviço" icon={<ClipboardList className="size-4 text-primary" />} ir={() => setTab("controle-os")}>
           {fluxo.length === 0 ? <p className="text-sm text-muted-foreground">Sem importação semanal.</p> :
-            <div className="grid grid-cols-2 gap-2">{fluxo.map((f) => <div key={f.st} className="rounded-lg bg-background/40 p-2"><p className="text-xl font-bold">{f.n}</p><p className="text-[11px] text-muted-foreground">{f.st}</p></div>)}</div>}
+            <div className="grid grid-cols-2 gap-2">{fluxo.map((f) => <div key={f.st} className="rounded-lg bg-background/40 px-2 py-1"><p className="text-base font-bold">{f.n}</p><p className="text-[11px] text-muted-foreground">{f.st}</p></div>)}</div>}
           {(parados > 0 || amarelos > 0) && <p className="mt-2 text-xs"><span className="text-warning">{amarelos} &gt;20 dias</span> · <span className="text-destructive">{parados} &gt;30 dias</span></p>}
         </Bloco>
         <Bloco titulo="Oficina & técnicos" icon={<Car className="size-4 text-primary" />} ir={() => setTab("mecanicos")}>
-          <div className="space-y-2 text-sm">
+          <div className="space-y-1 text-xs">
             <div><p className="flex justify-between"><span>Serviços</span><span className={tone(div(mec.s, mec.ms))}>{brl(mec.s)} · {pct(div(mec.s, mec.ms))}</span></p><Linha p={div(mec.s, mec.ms)} cor="bg-neon" /></div>
             <div><p className="flex justify-between"><span>Peças</span><span className={tone(div(mec.p, mec.mp))}>{brl(mec.p)} · {pct(div(mec.p, mec.mp))}</span></p><Linha p={div(mec.p, mec.mp)} cor="bg-coral" /></div>
             <p className="flex justify-between"><span>Passagens</span><b>{uni(mec.pass)}</b></p>
           </div>
         </Bloco>
         <Bloco titulo="Agregados" icon={<Gem className="size-4 text-primary" />} ir={() => setTab("agregados")}>
-          <ul className="space-y-1.5 text-sm">{ITENS.map((it) => {
+          <ul className="space-y-1 text-xs">{ITENS.map((it) => {
             const a = agg[it.k] ?? { q: 0, v: 0, mq: 0 };
             const ritmo = dec ? div(div(a.q, dec) * tot, a.mq) : 0;
             return <li key={it.k} className="flex justify-between gap-2"><span className="truncate">{it.nome}</span><span className="shrink-0">{uni(a.q)} un{a.mq ? ` / ${uni(a.mq)}` : ""} · {brl(a.v)}{a.mq ? <b className={`ml-1 ${tone(ritmo)}`}>{pct(ritmo)}</b> : null}</span></li>;
