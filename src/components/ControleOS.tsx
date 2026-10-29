@@ -123,7 +123,7 @@ export function ControleOS() {
           const dist = STATUS.map(s => ({ s, n: lista.filter(a => a.item.st === s.k).length })).filter(x => x.n > 0);
           const totD = dist.reduce((n, x) => n + x.n, 0) || 1;
           const CORES = ["var(--primary)", "var(--neon)", "var(--coral)", "var(--warning)", "var(--success)", "var(--destructive)", "var(--muted-foreground)", "var(--accent-foreground)"];
-          return <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,380px)_minmax(0,1fr)] xl:[&>*]:max-h-[calc(100vh-330px)]">
+          return <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,380px)_minmax(0,1fr)] xl:[&>*]:max-h-[calc(100vh-485px)]">
             <div className="space-y-3 xl:overflow-y-auto">
               <div className="lux-card grid grid-cols-[auto_1fr] items-center gap-3 px-4 py-2">
                 <svg viewBox="0 0 42 42" className="size-20" role="img" aria-label="Distribuição por status">{(() => { let off = 25; return dist.map((x, i) => { const p = x.n / totD * 100; const el = <circle key={x.s.k} cx="21" cy="21" r="15.9" fill="transparent" stroke={CORES[i % CORES.length]} strokeWidth="6" strokeDasharray={`${p} ${100 - p}`} strokeDashoffset={off} />; off -= p; return el; }); })()}</svg>
@@ -183,7 +183,7 @@ export function ControleOS() {
           ))}
         </div>
 
-        <Box title={`${STATUS.find(s => s.k === aba)?.nome} — por consultor`} right={<span className="text-xs">clique na O.S. para tratativas</span>} fit="xl:max-h-[calc(100vh-390px)] xl:min-h-[260px]">
+        <Box title={`${STATUS.find(s => s.k === aba)?.nome} — por consultor`} right={<span className="text-xs">clique na O.S. para tratativas</span>} fit="xl:max-h-[calc(100vh-545px)] xl:min-h-[240px]">
           {porCons.length === 0 && <p className="p-5 text-sm text-muted-foreground">Nenhuma O.S. neste status.</p>}
           {porCons.map(({ c, l }) => <div key={c} className="border-t border-border first:border-t-0">
             <div className="flex flex-wrap justify-between gap-2 bg-muted px-5 py-2 text-sm font-semibold">
