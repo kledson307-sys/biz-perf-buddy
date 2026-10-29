@@ -381,13 +381,11 @@ function Painel({ email }: { email: string }) {
         { label: "Meta coletiva", value: brl(meta) },
         { label: "Atingimento", value: pct(div(real, meta)), p: div(real, meta), cls: pctMeta(real, meta), sub: `Projeção ${pct(t.projPct)}` },
       ]}>
-        {ranking.length >= 3 && <div className="grid grid-cols-3 items-end gap-2">{[1, 0, 2].map((i) => { const l = ranking[i]!; return (
-          <div key={l.c.id} className={`lux-card flex flex-col items-center p-3 text-center ${i === 0 ? "pb-6 pt-5" : ""}`}>
-            <span className={`mb-1 flex size-9 items-center justify-center rounded-full text-sm font-bold ${i === 0 ? "bg-warning text-background" : i === 1 ? "bg-muted-foreground text-background" : "bg-coral text-background"}`}>{i + 1}º</span>
-            <p className="w-full truncate text-sm font-semibold">{l.c.nome}</p>
-            <p className="text-[10px] text-muted-foreground">{deptName(l.c.department_id)}</p>
-            <p className={`text-lg font-bold ${tone(l.perf)}`}>{pct(l.perf)}</p>
-          </div>); })}</div>}
+        {ranking.length >= 3 && <div className="flex flex-wrap gap-2 text-xs">{ranking.slice(0, 3).map((l, i) => (
+          <span key={l.c.id} className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1">
+            <span className={`flex size-5 items-center justify-center rounded-full text-[10px] font-bold ${i === 0 ? "bg-warning text-background" : i === 1 ? "bg-muted-foreground text-background" : "bg-coral text-background"}`}>{i + 1}º</span>
+            <b>{l.c.nome}</b><span className={`font-semibold ${tone(l.perf)}`}>{pct(l.perf)}</span>
+          </span>))}</div>}
       </AbaTopo>;
       case "metas": return <AbaTopo titulo="Metas & Planejamento" sub="Planejamento e acompanhamento das metas do mês" icon={Target} kpis={[
         { label: "Meta de serviços", value: brl(t.mS), sub: `Realizado ${pct(t.perfS)} · projeção ${pct(t.projPctS)}`, p: t.projPctS, barra: "bg-neon" },
