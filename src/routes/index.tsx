@@ -38,6 +38,7 @@ import { useAccessPresence } from "@/hooks/use-access-presence";
 import { useResumoMes } from "@/hooks/use-resumo-mes";
 import { AbaTopo, type TopoKpi } from "@/components/AbaTopo";
 import { ImportadorUnificado } from "@/components/ImportadorUnificado";
+import { RetrabalhoOficina } from "@/components/RetrabalhoOficina";
 import { ITENS } from "@/lib/agregados";
 
 export const Route = createFileRoute("/")({
@@ -797,7 +798,7 @@ function Painel({ email }: { email: string }) {
           </div>
         </>)}
         {show("agregados") && <Secao relatorio={relatorio} titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} />{!relatorio && <Box title={`Ranking de agregados · ${mesExtenso}`}><RankingAgregados mes={mes} cons={visiveis} deptName={deptName} tot={tot} dec={dec} /></Box>}</Secao>}
-        {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} />{!relatorio && <Box title={`Ranking dos técnicos · ${mesExtenso}`}><RankingTecnicos mes={mes} tot={tot} dec={dec} /></Box>}</Secao>}
+        {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} />{!relatorio && <><Box title={`Ranking dos técnicos · ${mesExtenso}`}><RankingTecnicos mes={mes} tot={tot} dec={dec} /></Box><RetrabalhoOficina /></>}</Secao>}
         {tab === "controle-os" && <ControleOS />}
         {tab === "importacoes" && !relatorio && <div className="space-y-6 print:hidden">
           <div>
