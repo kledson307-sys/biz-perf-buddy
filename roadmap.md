@@ -3,8 +3,10 @@
 - [x] Delmir Xavier como chefe de oficina (acesso trocado)
 - [x] Mix de passagens (BSI/Revisão C7/Garantia/Reparo) em Técnicos e Chefe de Oficina
 - [x] O.S. tipo ID tratada como interna
-- [ ] Layouts 16:9 sem rolagem: Cockpit, Central, Consultores, Agregados, Oficina, Peças, O.S., NPS, Metas, Importações
-- [ ] Mix de passagens por consultor (Carro e Moto Pedro/Gilberto) no rodapé de Consultores
-- [ ] NPS: importação da planilha, metas 85%/88%, exclusão CNPJ só no NPS, régua D-2, ações de reversão
-- [ ] NPS da oficina na tela do chefe de oficina e NPS pessoal na tela do consultor
+- [x] Consultores: ranking em linha única, sem sub-abas (agregados → Agregados, técnicos → Oficina), rodapé departamento + mix
+- [x] Mix de passagens por consultor (Carro e Moto Pedro/Gilberto) — preenche na próxima importação de passagens
+- [x] NPS: importação, metas 85%/88%, CNPJ só no NPS, D-2, reversão, ranking, verbalizações, benchmark
+- [x] NPS da oficina (Delmir) e NPS pessoal (consultor)
+- [ ] Layouts 16:9 sem rolagem: Cockpit, Central, Agregados, Oficina, Peças, O.S., Metas, Importações
 - [ ] Importador unificado + ajuste manual de devoluções
+- [ ] Metas de agregados movidas para Metas & Planejamento

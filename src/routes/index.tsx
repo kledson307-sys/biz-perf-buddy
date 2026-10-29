@@ -749,12 +749,6 @@ function Painel({ email }: { email: string }) {
         )}
 
         {tab === "ranking" && (<>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Kpi label="Consultores" value={uni(linhas.length)} sub={lider ? `líder: ${lider.c.nome}` : ""} />
-            <Kpi label="Meta do time" value={brl(total.meta)} sub={`serviços ${brl(total.mS)} · peças ${brl(total.mP)}`} />
-            <Kpi label="Realizado" value={brl(total.real)} sub={`projeção ${brl(total.proj)}`} cls={tone(total.projPct)} />
-            <Kpi label="Atingimento" value={pct(total.perf)} sub={`${linhas.filter((l) => l.meta && l.perf < 0.85).length} em atenção (<85%)`} cls={tone(total.perf)} />
-          </div>
           <Box title={`Ranking dos consultores · ${mesExtenso}`}>
             <RankingMobile linhas={linhas} total={total} deptName={deptName} soPecas={soPecas} />
             <div className="hidden md:block">
