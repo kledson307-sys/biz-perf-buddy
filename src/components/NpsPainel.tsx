@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { brl as _brl, pct, uni } from "@/components/painel-ui";
+import { pct, uni } from "@/components/painel-ui";
 import {
   LOJA_PADRAO, META_PROMOTOR, acaoFollowUp, baseNps, classe, filaFollowUp, historicoDetratores, lerAbaNps, resumir,
   type NpsItem, type Segmento,
 } from "@/lib/nps";
-void _brl;
 
 const hojeISO = () => new Date().toISOString().slice(0, 10);
 const dataBR = (s: string) => (s ? s.split("-").reverse().join("/") : "—");

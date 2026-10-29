@@ -5,6 +5,8 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { MixPassagens } from "@/components/MixPassagens";
+import { NpsResumoRestrito } from "@/components/NpsPainel";
+import { META_PROMOTOR } from "@/lib/nps";
 import type { Composicao } from "@/lib/mecanicos";
 
 type T = { nome: string; servicos: number; pecas: number; passagens: number; meta_servicos: number; meta_pecas: number; composicao?: Composicao | undefined };
@@ -41,7 +43,7 @@ export function ChefeOficina() {
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="mx-auto max-w-4xl space-y-4">
         <header className="flex flex-wrap items-center justify-between gap-2">
-          <div><h1 className="text-xl font-bold">Técnicos de Carro</h1><p className="text-sm text-muted-foreground">Chefe de Oficina</p></div>
+          <div><h1 className="text-xl font-bold">Técnicos de Carro</h1><p className="text-sm text-muted-foreground">Chefe de Oficina · Delmir Xavier</p></div>
           <div className="flex items-center gap-2">
             <input type="month" className="h-9 rounded-md border bg-background px-2 text-sm" value={mes} onChange={(e) => setMes(e.target.value)} />
             <ThemeToggle />
@@ -55,6 +57,7 @@ export function ChefeOficina() {
             <Kpi label="Peças (equipe)" value={brl(pc)} sub={linha(pc, mp)} />
             <Kpi label="Passagens" value={uni(soma("passagens"))} sub={<span>Total {brl(sv + pc)}</span>} />
           </div>
+          <NpsResumoRestrito titulo="NPS da oficina · Carro" meta={META_PROMOTOR.carro} />
           <MixPassagens titulo="Mix de passagens · Carro" linhas={lista} todos={todos} />
           <div className="space-y-2">
             {lista.map((t, i) => (
