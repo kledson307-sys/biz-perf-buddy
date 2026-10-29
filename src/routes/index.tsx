@@ -804,8 +804,15 @@ function Painel({ email }: { email: string }) {
         {tab === "cockpit" && !relatorio && <Cockpit linhas={linhas} porDept={porDept} mes={mes} tot={tot} dec={dec} soPecas={soPecas} setTab={setTab} sales={sales} nome={email.split("@")[0] ?? ""} deptName={deptName} />}
         {tab === "nps" && !relatorio && <NpsPainel />}
         {tab === "pecas" && !relatorio && <PecasEstoque linhas={linhas} porDept={porDept} margemIdeal={margemIdeal} deptName={deptName} passagens={resumo.pass} mes={mes} />}
-        {tab === "metas" && !relatorio && <><CadeadoMes mes={mes} /><MetasExecutivo linhas={linhas} deptName={deptName} /><details className="lux-card mt-4 p-3"><summary className="cursor-pointer text-sm font-semibold text-primary">+ Ajustar metas (consultores, técnicos e plano anual)</summary><div className="mt-3"><Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div></details>
-          <section className="mt-6 space-y-3"><h3 className="font-semibold">Metas de agregados</h3><Agregados modo="metas" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section></>}
+        {tab === "metas" && !relatorio && <>
+          <details className="lux-card px-3 py-2"><summary className="cursor-pointer text-sm font-semibold text-primary">+ Ajustar metas (consultores, técnicos e plano anual)</summary><div className="mt-3"><Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div></details>
+          <div className="grid items-start gap-3 xl:grid-cols-2">
+            <MetasExecutivo linhas={linhas} deptName={deptName} />
+            <div className="space-y-3">
+              <CadeadoMes mes={mes} />
+              <section className="lux-card space-y-2 px-3 py-2 xl:max-h-[calc(100vh-420px)] xl:overflow-y-auto"><h3 className="text-sm font-semibold">Metas de agregados</h3><Agregados modo="metas" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section>
+            </div>
+          </div></>}
         {tab === "config" && <div className="space-y-6"><Equipe /><Config parte="config" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div>}
       </main>
       </div>

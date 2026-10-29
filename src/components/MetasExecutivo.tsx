@@ -9,7 +9,7 @@ export function MetasExecutivo({ linhas, deptName }: { linhas: L[]; deptName: (i
   const T = rows.reduce((a, l) => ({ meta: a.meta + l.meta, real: a.real + l.real, proj: a.proj + l.proj }), { meta: 0, real: 0, proj: 0 });
   const dot = (p: number) => (p >= 1 ? "bg-success" : p >= 0.85 ? "bg-warning" : "bg-destructive");
   return (
-    <Box title="Metas do mês · acompanhamento">
+    <Box title="Metas do mês · acompanhamento" fit="xl:max-h-[calc(100vh-340px)]">
       <div className="overflow-x-auto"><table className="w-full text-sm">
         <thead><tr className="text-xs text-muted-foreground"><th className="px-3 py-2 text-left">Consultor</th><th className="px-2 text-right">Meta</th><th className="px-2 text-right">Realizado</th><th className="px-2 text-left">Atingimento</th><th className="px-2 text-right">Projeção</th><th className="px-2 text-right">Gap p/ meta</th><th className="px-3 text-right">Gap p/ líder</th></tr></thead>
         <tbody>

@@ -21,7 +21,7 @@ export function CadeadoMes({ mes }: { mes: string }) {
     if (error) setMsg("Erro: " + error.message); else { setTravado(!travado); setMsg(""); }
   };
   return (
-    <section className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4 ${travado ? "border-warning/60 bg-warning/10" : "border-border bg-card"}`}>
+    <section className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-2 ${travado ? "border-warning/60 bg-warning/10" : "border-border bg-card"}`}>
       <div className="flex items-center gap-3">
         {travado ? <Lock className="text-warning" /> : <LockOpen className="text-muted-foreground" />}
         <div>
