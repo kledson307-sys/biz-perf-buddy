@@ -21,6 +21,8 @@ import { MeuDesempenhoTecnico } from "@/components/MeuDesempenhoTecnico";
 import { RankingMobile } from "@/components/RankingMobile";
 import { RankingAgregados, RankingTecnicos } from "@/components/RankingExtra";
 import { MixConsultores } from "@/components/MixConsultores";
+import { EvolucaoTime } from "@/components/EvolucaoTime";
+import { MetasExecutivo } from "@/components/MetasExecutivo";
 import { MetasAno } from "@/components/MetasAno";
 import { Cockpit } from "@/components/Cockpit";
 import { NpsPainel } from "@/components/NpsPainel";
@@ -557,6 +559,9 @@ function Painel({ email }: { email: string }) {
                 <Button className="col-span-2" onClick={gerarRelatorio}><Printer />Relatório de fechamento (PDF)</Button>
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6 print:hidden" aria-label="Status da operação">
+              {porDept.map((d) => <div key={d.nome} className="lux-card flex items-center gap-2 px-3 py-2"><span className={`size-3 shrink-0 rounded-full ${d.projPct >= 1 ? "bg-success" : d.projPct >= 0.85 ? "bg-warning" : "bg-destructive"}`} /><div className="min-w-0"><p className="truncate text-[11px] uppercase text-muted-foreground">{d.nome}</p><p className={`text-sm font-bold ${tone(d.projPct)}`}>{pct(d.projPct)} <span className="text-[10px] font-normal text-muted-foreground">{d.projPct >= 1 ? "No ritmo" : d.projPct >= 0.85 ? "Atenção" : "Crítico"}</span></p></div></div>)}
+            </div>
             <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-5 painel-kpis">
               <Kpi label="Realizado Serviços Total" value={brl(total.servicos)} sub={`Meta ${brl(total.mS)} · ${pct(total.perfS)}`} cls={tone(total.perfS)} p={total.perfS} />
               <Kpi label="Realizado Peças Total" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)} · margem ${margemTxt(total)}`} cls={tone(total.perfP)} p={total.perfP} />
@@ -789,11 +794,7 @@ function Painel({ email }: { email: string }) {
             </div>
           </Box>
           <div className="grid gap-4 lg:grid-cols-2">
-            <Box title="Desempenho por departamento">
-              <div className="space-y-2 p-3">
-                {porDept.map((d) => <div key={d.nome} className="flex items-center justify-between gap-2 text-sm"><span>{d.nome}</span><span className="flex items-center gap-2">{brl(d.real)} <b className={tone(d.perf)}>{pct(d.perf)}</b><Barra p={d.perf} /></span></div>)}
-              </div>
-            </Box>
+            <EvolucaoTime sales={sales} ids={linhas.map((l) => l.c.id)} meta={total.meta} mes={mes} />
             <MixConsultores mes={mes} />
           </div>
         </>)}
@@ -824,7 +825,7 @@ function Painel({ email }: { email: string }) {
         {tab === "cockpit" && !relatorio && <Cockpit linhas={linhas} porDept={porDept} mes={mes} tot={tot} dec={dec} soPecas={soPecas} setTab={setTab} sales={sales} nome={email.split("@")[0] ?? ""} deptName={deptName} />}
         {tab === "nps" && !relatorio && <NpsPainel />}
         {tab === "pecas" && !relatorio && <PecasEstoque linhas={linhas} porDept={porDept} margemIdeal={margemIdeal} deptName={deptName} passagens={resumo.pass} mes={mes} />}
-        {tab === "metas" && !relatorio && <><CadeadoMes mes={mes} /><Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} />
+        {tab === "metas" && !relatorio && <><CadeadoMes mes={mes} /><MetasExecutivo linhas={linhas} deptName={deptName} /><details className="lux-card mt-4 p-3"><summary className="cursor-pointer text-sm font-semibold text-primary">+ Ajustar metas (consultores, técnicos e plano anual)</summary><div className="mt-3"><Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div></details>
           <section className="mt-6 space-y-3"><h3 className="font-semibold">Metas de agregados</h3><Agregados modo="metas" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section></>}
         {tab === "config" && <div className="space-y-6"><Equipe /><Config parte="config" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div>}
       </main>

@@ -7,6 +7,7 @@ import { Barra, Box, Kpi, Tabela, brl, div, norm, num, parseNum, pct, tone, uni 
 import { CATEGORIAS, GRUPO_NOME, blocoMec, ehRelatorioPassagens, grupoDe, lerPassagens, ocultoDaLista, somarComposicao, type CatKey, type Composicao, type Grupo, type Mec, type MecBloco, type PassReport, lerMecanicos } from "@/lib/mecanicos";
 import { registrarUpdate } from "@/lib/update-log";
 import { MecanicosIA } from "@/components/MecanicosIA";
+import { salvarPassagens } from "@/lib/passagens-save";
 
 const asGrupo = (v: string): Grupo => (v === "carro" || v === "moto" ? v : "outros");
 
@@ -110,30 +111,8 @@ export function Mecanicos({ mes, tot, dec, modo = "ver" }: { mes: string; tot: n
 
   const importarPassagens = async (r: PassReport) => {
     setBusy(true);
-    const mecs = r.mecanicos.map(x => ({ ...base(x.nome), passagens: x.passagens, composicao: x.composicao ?? {} }));
-    const { error: eM } = await supabase.from("mech_month").upsert(mecs.map(({ id: _i, ...m }) => ({ ...m, mes, updated_at: new Date().toISOString() })), { onConflict: "user_id,mes,nome" });
-    if (eM) { setBusy(false); setMsg("Erro ao salvar passagens dos técnicos: " + eM.message); return; }
-    const { data: cons } = await supabase.from("consultants").select("id,nome");
-    const byNome = new Map((cons ?? []).map(c => [norm(c.nome).replace(/\s+/g, " "), c.id]));
-    const [y, m] = mes.split("-").map(Number);
-    const dia = `${mes}-${String(new Date(y!, m!, 0).getDate()).padStart(2, "0")}`;
-    const vRows = r.consultores.filter(x => byNome.has(norm(x.nome).replace(/\s+/g, " ")))
-      .map(x => ({ consultant_id: byNome.get(norm(x.nome).replace(/\s+/g, " "))!, dia, passagens: x.passagens }));
-    const ignorados = r.consultores.length - vRows.length;
-    const mixRows = r.consultores.filter(x => x.mix).map(x => ({ mes, nome: x.nome, composicao: x.mix as never, updated_at: new Date().toISOString() }));
-    if (mixRows.length) {
-      await supabase.from("cons_mix").delete().eq("mes", mes);
-      const { error: eX } = await supabase.from("cons_mix").insert(mixRows);
-      if (eX) { setBusy(false); setMsg("Erro ao salvar mix de passagens dos consultores: " + eX.message); return; }
-    }
-    if (vRows.length) {
-      const { error: eV } = await supabase.from("agg_visits").upsert(vRows, { onConflict: "consultant_id,dia" });
-      if (eV) { setBusy(false); setMsg("Erro ao salvar passagens dos consultores: " + eV.message); return; }
-    }
-    setBusy(false);
-    await registrarUpdate("Passagens (importação)", mes);
-    await load();
-    setMsg(`Passagens importadas: ${r.mecanicos.length} técnicos e ${vRows.length} consultores (O.S. repetidas contadas uma única vez).${ignorados ? ` ${ignorados} consultores não cadastrados foram ignorados.` : ""} Totais do mês substituídos, sem somar.`);
+    try { setMsg(await salvarPassagens(r, mes)); await load(); }
+    catch (e) { setMsg((e as Error).message); } finally { setBusy(false); }
   };
 
   const mudarGrupo = (r: Mec, g: Grupo) => { if (r.grupo !== g) void gravar([{ ...r, grupo: g }], "Técnicos (grupo)"); };
@@ -171,6 +150,18 @@ export function Mecanicos({ mes, tot, dec, modo = "ver" }: { mes: string; tot: n
         <Kpi label="Projeção Serviços / Peças" value={brl(EQUIPE.S.proj)} sub={<>peças {brl(EQUIPE.P.proj)} · {pct(EQUIPE.S.projP)} / {pct(EQUIPE.P.projP)}</>} cls={tone(EQUIPE.S.projP)} />
         <Kpi label="Necessidade diária" value={brl(EQUIPE.T.nec) + "/dia"} sub={<>serviços {brl(EQUIPE.S.nec)}/dia · peças {brl(EQUIPE.P.nec)}/dia</>} />
       </div>}
+      {(() => {
+        const vis = rows.filter(r => !ocultoDaLista(r.nome) && ver(r.grupo)).map(r => ({ nome: r.nome, v: +r.servicos + +r.pecas, s: +r.servicos, p: +r.pecas, pass: r.passagens })).sort((a, b) => b.v - a.v);
+        const max = Math.max(...vis.map(v => v.v), 1);
+        if (!vis.length) return null;
+        return <Box title={`Produção por técnico · ${uni(vis.length)} técnicos · produtividade média ${brl(div(vis.reduce((n, v) => n + v.v, 0), vis.length))}`}>
+          <div className="grid gap-x-6 gap-y-1.5 p-4 text-sm md:grid-cols-2">{vis.map(v => (
+            <div key={v.nome}><div className="flex justify-between gap-2"><span className="truncate">{v.nome}</span><span className="tabular-nums">{brl(v.v)} · {uni(v.pass)} pass.</span></div>
+              <div className="flex h-2 overflow-hidden rounded-full bg-muted" title={`Serviços ${brl(v.s)} · Peças ${brl(v.p)}`}><div className="bg-neon" style={{ width: `${(v.s / max) * 100}%` }} /><div className="bg-coral" style={{ width: `${(v.p / max) * 100}%` }} /></div></div>
+          ))}</div>
+          <p className="px-4 pb-3 text-[11px] text-muted-foreground">Barra azul = serviços · coral = peças</p>
+        </Box>;
+      })()}
 
       {ver("carro") && <GrupoSec rotulo="Carro" titulo={GRUPO_NOME.carro} b={G.carro} dec={dec} tot={tot} busy={busy} onGrupo={mudarGrupo} onRem={remover}
         vazio="Nenhum técnico de carro neste mês." />}
