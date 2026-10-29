@@ -745,7 +745,7 @@ function Painel({ email }: { email: string }) {
         )}
 
         {tab === "ranking" && (<>
-          <Box title={`Ranking dos consultores · ${mesExtenso}`}>
+          <Box title={`Ranking dos consultores · ${mesExtenso}`} fit="md:max-h-[calc(100vh-520px)] md:min-h-[200px]">
             <RankingMobile linhas={linhas} total={total} deptName={deptName} soPecas={soPecas} />
             <div className="hidden md:block">
               <Tabela head={["#", "Consultor", "Depto", "Serviços", "Peças", "Realizado", "Meta", "Perf.", "Projeção", "Nec./dia", "Peças/R$1 M.O.", "vs. Líder"]}>
@@ -772,7 +772,7 @@ function Painel({ email }: { email: string }) {
               </Tabela>
             </div>
           </Box>
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-3 lg:grid-cols-2 [&>*]:xl:max-h-[300px] [&>*]:xl:overflow-y-auto">
             <EvolucaoTime sales={sales} ids={linhas.map((l) => l.c.id)} meta={total.meta} mes={mes} />
             <MixConsultores mes={mes} />
           </div>
