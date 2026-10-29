@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
-import { grupoDe, norm, type PassReport } from "@/lib/mecanicos";
+import { grupoDe, type PassReport } from "@/lib/mecanicos";
+import { norm } from "@/components/painel-ui";
 import { registrarUpdate } from "@/lib/update-log";
 
 /** Grava o relatório de Passagens do mês: técnicos (passagens + composição), mix e passagens dos consultores. Substitui o mês, nunca soma. */

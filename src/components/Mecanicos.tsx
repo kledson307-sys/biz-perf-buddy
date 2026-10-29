@@ -7,6 +7,7 @@ import { Barra, Box, Kpi, Tabela, brl, div, norm, num, parseNum, pct, tone, uni 
 import { CATEGORIAS, GRUPO_NOME, blocoMec, ehRelatorioPassagens, grupoDe, lerPassagens, ocultoDaLista, somarComposicao, type CatKey, type Composicao, type Grupo, type Mec, type MecBloco, type PassReport, lerMecanicos } from "@/lib/mecanicos";
 import { registrarUpdate } from "@/lib/update-log";
 import { MecanicosIA } from "@/components/MecanicosIA";
+import { salvarPassagens } from "@/lib/passagens-save";
 
 const asGrupo = (v: string): Grupo => (v === "carro" || v === "moto" ? v : "outros");
 
@@ -110,30 +111,8 @@ export function Mecanicos({ mes, tot, dec, modo = "ver" }: { mes: string; tot: n
 
   const importarPassagens = async (r: PassReport) => {
     setBusy(true);
-    const mecs = r.mecanicos.map(x => ({ ...base(x.nome), passagens: x.passagens, composicao: x.composicao ?? {} }));
-    const { error: eM } = await supabase.from("mech_month").upsert(mecs.map(({ id: _i, ...m }) => ({ ...m, mes, updated_at: new Date().toISOString() })), { onConflict: "user_id,mes,nome" });
-    if (eM) { setBusy(false); setMsg("Erro ao salvar passagens dos técnicos: " + eM.message); return; }
-    const { data: cons } = await supabase.from("consultants").select("id,nome");
-    const byNome = new Map((cons ?? []).map(c => [norm(c.nome).replace(/\s+/g, " "), c.id]));
-    const [y, m] = mes.split("-").map(Number);
-    const dia = `${mes}-${String(new Date(y!, m!, 0).getDate()).padStart(2, "0")}`;
-    const vRows = r.consultores.filter(x => byNome.has(norm(x.nome).replace(/\s+/g, " ")))
-      .map(x => ({ consultant_id: byNome.get(norm(x.nome).replace(/\s+/g, " "))!, dia, passagens: x.passagens }));
-    const ignorados = r.consultores.length - vRows.length;
-    const mixRows = r.consultores.filter(x => x.mix).map(x => ({ mes, nome: x.nome, composicao: x.mix as never, updated_at: new Date().toISOString() }));
-    if (mixRows.length) {
-      await supabase.from("cons_mix").delete().eq("mes", mes);
-      const { error: eX } = await supabase.from("cons_mix").insert(mixRows);
-      if (eX) { setBusy(false); setMsg("Erro ao salvar mix de passagens dos consultores: " + eX.message); return; }
-    }
-    if (vRows.length) {
-      const { error: eV } = await supabase.from("agg_visits").upsert(vRows, { onConflict: "consultant_id,dia" });
-      if (eV) { setBusy(false); setMsg("Erro ao salvar passagens dos consultores: " + eV.message); return; }
-    }
-    setBusy(false);
-    await registrarUpdate("Passagens (importação)", mes);
-    await load();
-    setMsg(`Passagens importadas: ${r.mecanicos.length} técnicos e ${vRows.length} consultores (O.S. repetidas contadas uma única vez).${ignorados ? ` ${ignorados} consultores não cadastrados foram ignorados.` : ""} Totais do mês substituídos, sem somar.`);
+    try { setMsg(await salvarPassagens(r, mes)); await load(); }
+    catch (e) { setMsg((e as Error).message); } finally { setBusy(false); }
   };
 
   const mudarGrupo = (r: Mec, g: Grupo) => { if (r.grupo !== g) void gravar([{ ...r, grupo: g }], "Técnicos (grupo)"); };
