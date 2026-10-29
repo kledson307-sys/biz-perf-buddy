@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAccessPresence } from "@/hooks/use-access-presence";
 import { RetornosVendedor } from "@/components/RetornosVendedor";
+import { NpsResumoRestrito } from "@/components/NpsPainel";
 import { Notificacoes } from "@/components/Notificacoes";
 import { supabase } from "@/integrations/supabase/client";
 import { Box, Kpi, brl, div, pct, tone, uni } from "@/components/painel-ui";
@@ -75,6 +76,7 @@ export function MinhaPerformance() {
           {presenceStatus === "error" && <><span className="text-destructive">Presença não confirmada. Tentaremos novamente.</span><Button size="sm" variant="outline" onClick={() => { void register(); }}>Tentar novamente</Button></>}
         </div>
         <RetornosVendedor />
+        <NpsResumoRestrito titulo="Meu NPS & clientes para encantar" />
         {erro && <p className="text-sm text-destructive">{erro}</p>}
         {d && (
           <>
