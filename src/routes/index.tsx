@@ -794,7 +794,7 @@ function Painel({ email }: { email: string }) {
           </div>
         </>)}
         {show("agregados") && <Secao relatorio={relatorio} titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} />{!relatorio && <Box title={`Ranking de agregados · ${mesExtenso}`}><RankingAgregados mes={mes} cons={visiveis} deptName={deptName} tot={tot} dec={dec} /></Box>}</Secao>}
-        {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} />{!relatorio && <><Box title={`Ranking dos técnicos · ${mesExtenso}`}><RankingTecnicos mes={mes} tot={tot} dec={dec} /></Box><RetrabalhoOficina /></>}</Secao>}
+        {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} />{!relatorio && <><div className="grid gap-3 xl:grid-cols-[2fr_1fr]"><Box title={`Ranking dos técnicos · ${mesExtenso}`}><RankingTecnicos mes={mes} tot={tot} dec={dec} /></Box><RetrabalhoOficina /></div></>}</Secao>}
         {tab === "controle-os" && <ControleOS />}
         {tab === "importacoes" && !relatorio && <div className="space-y-6 print:hidden">
           <div>
