@@ -14,8 +14,8 @@ type S = { consultant_id: string; dia: string; servicos: number; pecas: number }
 
 function Bloco({ titulo, icon, ir, children, right, className = "" }: { titulo: string; icon?: ReactNode; ir?: () => void; children: ReactNode; right?: ReactNode; className?: string }) {
   return (
-    <section className={`lux-card p-4 ${className}`}>
-      <div className="mb-3 flex items-center justify-between gap-2">
+    <section className={`lux-card p-3 ${className}`}>
+      <div className="mb-2 flex items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">{icon}{titulo}</h2>
         <div className="flex items-center gap-2">{right}{ir && <button type="button" onClick={ir} className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">Ver detalhes <ArrowRight className="size-3" /></button>}</div>
       </div>
@@ -32,7 +32,7 @@ function Anel({ p, rot }: { p: number; rot: string }) {
   const r = 30, c = 2 * Math.PI * r;
   return (
     <div className="flex flex-col items-center gap-1 text-center">
-      <svg viewBox="0 0 80 80" className="size-20" role="img" aria-label={`${rot} ${pct(p)}`}>
+      <svg viewBox="0 0 80 80" className="size-14" role="img" aria-label={`${rot} ${pct(p)}`}>
         <circle cx="40" cy="40" r={r} fill="none" strokeWidth="7" className="stroke-muted" />
         <circle cx="40" cy="40" r={r} fill="none" strokeWidth="7" strokeLinecap="round" strokeDasharray={`${Math.min(p, 1) * c} ${c}`} transform="rotate(-90 40 40)"
           className={p >= 1 ? "stroke-success" : p >= 0.85 ? "stroke-warning" : "stroke-destructive"} />
@@ -81,7 +81,7 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
   const [yy, mo] = mes.split("-").map(Number);
   const diasMes = new Date(yy!, mo!, 0).getDate();
   const maxY = Math.max(metaT, evol.at(-1)?.v ?? 0, 1);
-  const W = 600, H = 180;
+  const W = 600, H = 120;
   const px = (d: number) => (d / diasMes) * W, py = (v: number) => H - (v / maxY) * (H - 10);
   const caminho = evol.map((p, i) => `${i ? "L" : "M"}${px(p.d).toFixed(1)},${py(p.v).toFixed(1)}`).join(" ");
 
@@ -133,7 +133,7 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
         </button>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-3 lg:grid-cols-3">
         {/* Projeção do mês */}
         <Bloco titulo="Projeção do mês" icon={<TrendingUp className="size-4 text-primary" />} ir={() => setTab("os")} className="relative overflow-hidden lg:col-span-2" right={
           <div className="flex rounded-full border border-border p-0.5 text-[11px]">
@@ -170,7 +170,7 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
         </Bloco>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-3 lg:grid-cols-3">
         {/* Evolução do mês */}
         <Bloco titulo="Evolução do mês" icon={<TrendingUp className="size-4 text-primary" />} ir={() => setTab("painel")} className="lg:col-span-2">
           {evol.length === 0 ? <p className="text-sm text-muted-foreground">Sem vendas importadas neste mês.</p> : (
@@ -198,12 +198,13 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
         </Bloco>
       </div>
 
-      {/* Departamentos */}
-      <Bloco titulo="Desempenho por departamento" icon={<Target className="size-4 text-primary" />} ir={() => setTab("painel")}>
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">{porDept.map((d) => <Anel key={d.nome} p={d.projPct} rot={d.nome} />)}</div>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {/* Departamentos */}
+        <Bloco titulo="Desempenho por departamento" icon={<Target className="size-4 text-primary" />} ir={() => setTab("painel")}>
+        <div className="grid grid-cols-3 gap-2">{porDept.map((d) => <Anel key={d.nome} p={d.projPct} rot={d.nome} />)}</div>
       </Bloco>
 
-      <div className="grid gap-4 md:grid-cols-3">
+
         <Bloco titulo="Ordens de serviço" icon={<ClipboardList className="size-4 text-primary" />} ir={() => setTab("controle-os")}>
           {fluxo.length === 0 ? <p className="text-sm text-muted-foreground">Sem importação semanal.</p> :
             <div className="grid grid-cols-2 gap-2">{fluxo.map((f) => <div key={f.st} className="rounded-lg bg-background/40 p-2"><p className="text-xl font-bold">{f.n}</p><p className="text-[11px] text-muted-foreground">{f.st}</p></div>)}</div>}
