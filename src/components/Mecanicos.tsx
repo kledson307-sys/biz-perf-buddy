@@ -150,12 +150,13 @@ export function Mecanicos({ mes, tot, dec, modo = "ver" }: { mes: string; tot: n
         <Kpi label="Projeção Serviços / Peças" value={brl(EQUIPE.S.proj)} sub={<>peças {brl(EQUIPE.P.proj)} · {pct(EQUIPE.S.projP)} / {pct(EQUIPE.P.projP)}</>} cls={tone(EQUIPE.S.projP)} />
         <Kpi label="Necessidade diária" value={brl(EQUIPE.T.nec) + "/dia"} sub={<>serviços {brl(EQUIPE.S.nec)}/dia · peças {brl(EQUIPE.P.nec)}/dia</>} />
       </div>}
+      <div className="grid items-start gap-3 xl:grid-cols-2">
       {(() => {
         const vis = rows.filter(r => !ocultoDaLista(r.nome) && ver(r.grupo)).map(r => ({ nome: r.nome, v: +r.servicos + +r.pecas, s: +r.servicos, p: +r.pecas, pass: r.passagens })).sort((a, b) => b.v - a.v);
         const max = Math.max(...vis.map(v => v.v), 1);
         if (!vis.length) return null;
-        return <Box title={`Produção por técnico · ${uni(vis.length)} técnicos · produtividade média ${brl(div(vis.reduce((n, v) => n + v.v, 0), vis.length))}`}>
-          <div className="grid gap-x-6 gap-y-1 px-4 py-2 text-xs md:grid-cols-2 xl:grid-cols-3">{vis.map(v => (
+        return <Box title={`Produção por técnico · ${uni(vis.length)} técnicos · produtividade média ${brl(div(vis.reduce((n, v) => n + v.v, 0), vis.length))}`} fit="xl:max-h-[calc(100vh-430px)]">
+          <div className="grid gap-x-6 gap-y-1.5 px-4 py-2 text-xs md:grid-cols-2 xl:grid-cols-1">{vis.map(v => (
             <div key={v.nome}><div className="flex justify-between gap-2"><span className="truncate">{v.nome}</span><span className="tabular-nums">{brl(v.v)} · {uni(v.pass)} pass.</span></div>
               <div className="flex h-2 overflow-hidden rounded-full bg-muted" title={`Serviços ${brl(v.s)} · Peças ${brl(v.p)}`}><div className="bg-neon" style={{ width: `${(v.s / max) * 100}%` }} /><div className="bg-coral" style={{ width: `${(v.p / max) * 100}%` }} /></div></div>
           ))}</div>
@@ -163,7 +164,8 @@ export function Mecanicos({ mes, tot, dec, modo = "ver" }: { mes: string; tot: n
         </Box>;
       })()}
 
-      <MixPassagens titulo={`Mix de passagens · ${filtro === "todos" ? "toda a oficina" : filtro === "carro" ? "Carro" : "Moto"}`} linhas={rows.filter(r => !ocultoDaLista(r.nome) && ver(r.grupo)).map(r => ({ nome: r.nome, composicao: r.composicao }))} todos={rows.filter(r => ver(r.grupo)).map(r => ({ composicao: r.composicao }))} />
+      <div className="xl:max-h-[calc(100vh-430px)] xl:overflow-y-auto rounded-xl"><MixPassagens titulo={`Mix de passagens · ${filtro === "todos" ? "toda a oficina" : filtro === "carro" ? "Carro" : "Moto"}`} linhas={rows.filter(r => !ocultoDaLista(r.nome) && ver(r.grupo)).map(r => ({ nome: r.nome, composicao: r.composicao }))} todos={rows.filter(r => ver(r.grupo)).map(r => ({ composicao: r.composicao }))} /></div>
+      </div>
       <details className="group lux-card print:open">
         <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-2 text-sm font-semibold">Detalhe por técnico · Carro e Moto (metas, projeção e composição)<span className="text-xs text-primary group-open:hidden">Abrir</span><span className="hidden text-xs text-primary group-open:inline">Fechar</span></summary>
         <div className="space-y-4 p-3">
