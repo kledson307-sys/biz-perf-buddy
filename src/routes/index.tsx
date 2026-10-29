@@ -780,26 +780,25 @@ function Painel({ email }: { email: string }) {
         {show("agregados") && <Secao relatorio={relatorio} titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} />{!relatorio && <Box title={`Ranking de agregados · ${mesExtenso}`} fit="xl:max-h-[50vh]"><RankingAgregados mes={mes} cons={visiveis} deptName={deptName} tot={tot} dec={dec} /></Box>}</Secao>}
         {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} />{!relatorio && <><div className="grid items-start gap-3 xl:grid-cols-[2fr_1fr]"><details className="group lux-card"><summary className="flex cursor-pointer list-none items-center justify-between px-4 py-2 text-sm font-semibold">Ranking dos técnicos · Serviços, Peças e Total · {mesExtenso}<span className="text-xs text-primary">Abrir/fechar</span></summary><RankingTecnicos mes={mes} tot={tot} dec={dec} /></details><RetrabalhoOficina /></div></>}</Secao>}
         {tab === "controle-os" && <ControleOS />}
-        {tab === "importacoes" && !relatorio && <div className="space-y-6 print:hidden">
+        {tab === "importacoes" && !relatorio && <div className="space-y-3 print:hidden">
           <div>
-            <h2 className="text-lg font-semibold">Central de importações · {mes}</h2>
-            <p className="text-sm text-muted-foreground">Todas as planilhas do dia em um só lugar. Cada bloco tem seu botão, prévia e confirmação. O Controle O.S. semanal continua na própria aba.</p>
+            <h2 className="text-sm font-semibold">Central de importações · {mes}</h2>
+            <p className="text-xs text-muted-foreground">Todas as planilhas do dia em um só lugar. Cada bloco tem seu botão, prévia e confirmação. O Controle O.S. semanal continua na própria aba.</p>
           </div>
           <ImportadorUnificado mes={mes} onDone={load} />
-          <section className="space-y-3"><h3 className="font-semibold">1. Faturamento geral de vendas <span className="text-xs font-normal text-muted-foreground">— alimenta Painel, Ranking, Serviços, Peças</span></h3>
-            <StatusFonte source="faturamento" mes={mes} updates={updates} clock={clock} />
-            <SalesImport cons={cons} depts={depts} onDone={load} onPeriod={setMes} /></section>
-          <section className="space-y-3"><h3 className="font-semibold">2. O.S. abertas <span className="text-xs font-normal text-muted-foreground">— alimenta Projeção + OS</span></h3>
-            <StatusFonte source="os" mes={mes} updates={updates} clock={clock} />
-            <OsAbertas modo="importar" linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} deptName={deptName} semServicos={semServicos} /></section>
-          <section className="space-y-3"><h3 className="font-semibold">3. Técnicos — faturamento e passagens <span className="text-xs font-normal text-muted-foreground">— alimenta Técnicos</span></h3>
-            <StatusFonte source="mecanicos" mes={mes} updates={updates} clock={clock} />
-            <Mecanicos modo="importar" mes={mes} tot={tot} dec={dec} /></section>
-          <section className="space-y-3"><h3 className="font-semibold">4. Agregados — vendas de itens e passagens <span className="text-xs font-normal text-muted-foreground">— alimenta Agregados</span></h3>
-            <StatusFonte source="agregados" mes={mes} updates={updates} clock={clock} />
-            <Agregados modo="importar" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section>
-          <section className="space-y-3"><h3 className="font-semibold">5. Devoluções de peças (ajuste manual) <span className="text-xs font-normal text-muted-foreground">— bruto → líquido</span></h3>
-            <Devolucoes mes={mes} cons={cons} onChange={load} /></section>
+          <p className="text-xs text-muted-foreground">Importação individual por fonte (abra o bloco desejado):</p>
+          <div className="grid items-start gap-3 xl:grid-cols-2">
+          <section className="lux-card space-y-1 px-3 py-2"><details className="group"><summary className="cursor-pointer list-none text-sm font-semibold">1. Faturamento geral de vendas <span className="text-xs font-normal text-muted-foreground">— alimenta Painel, Ranking, Serviços, Peças</span> <span className="text-xs font-normal text-primary group-open:hidden">abrir</span></summary><div className="mt-2 space-y-2">
+            <SalesImport cons={cons} depts={depts} onDone={load} onPeriod={setMes} /></div></details><StatusFonte source="faturamento" mes={mes} updates={updates} clock={clock} /></section>
+          <section className="lux-card space-y-1 px-3 py-2"><details className="group"><summary className="cursor-pointer list-none text-sm font-semibold">2. O.S. abertas <span className="text-xs font-normal text-muted-foreground">— alimenta Projeção + OS</span> <span className="text-xs font-normal text-primary group-open:hidden">abrir</span></summary><div className="mt-2 space-y-2">
+            <OsAbertas modo="importar" linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} deptName={deptName} semServicos={semServicos} /></div></details><StatusFonte source="os" mes={mes} updates={updates} clock={clock} /></section>
+          <section className="lux-card space-y-1 px-3 py-2"><details className="group"><summary className="cursor-pointer list-none text-sm font-semibold">3. Técnicos — faturamento e passagens <span className="text-xs font-normal text-muted-foreground">— alimenta Técnicos</span> <span className="text-xs font-normal text-primary group-open:hidden">abrir</span></summary><div className="mt-2 space-y-2">
+            <Mecanicos modo="importar" mes={mes} tot={tot} dec={dec} /></div></details><StatusFonte source="mecanicos" mes={mes} updates={updates} clock={clock} /></section>
+          <section className="lux-card space-y-1 px-3 py-2"><details className="group"><summary className="cursor-pointer list-none text-sm font-semibold">4. Agregados — vendas de itens e passagens <span className="text-xs font-normal text-muted-foreground">— alimenta Agregados</span> <span className="text-xs font-normal text-primary group-open:hidden">abrir</span></summary><div className="mt-2 space-y-2">
+            <Agregados modo="importar" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></div></details><StatusFonte source="agregados" mes={mes} updates={updates} clock={clock} /></section>
+          <section className="lux-card space-y-1 px-3 py-2"><details className="group"><summary className="cursor-pointer list-none text-sm font-semibold">5. Devoluções de peças (ajuste manual) <span className="text-xs font-normal text-muted-foreground">— bruto → líquido</span> <span className="text-xs font-normal text-primary group-open:hidden">abrir</span></summary><div className="mt-2 space-y-2">
+            <Devolucoes mes={mes} cons={cons} onChange={load} /></div></details></section>
+          </div>
         </div>}
         {tab === "cockpit" && !relatorio && <Cockpit linhas={linhas} porDept={porDept} mes={mes} tot={tot} dec={dec} soPecas={soPecas} setTab={setTab} sales={sales} nome={email.split("@")[0] ?? ""} deptName={deptName} />}
         {tab === "nps" && !relatorio && <NpsPainel />}
