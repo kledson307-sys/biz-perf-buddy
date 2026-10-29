@@ -38,3 +38,11 @@ describe("mix de passagens por consultor", () => {
     expect([m.bsi.length, m.rev.length, m.gar.length, m.rep.length]).toEqual([0, 2, 1, 1]);
   });
 });
+
+import { daLoja } from "@/lib/nps";
+describe("NPS Salvador sem vendedores externos", () => {
+  it("MAYCON.S, IURI.R e RAFAEL.F não entram na loja padrão", () => {
+    const l = [it_(10, { consultor: "MAYCON.S" }), it_(10, { consultor: "IURI.R" }), it_(9, { consultor: "RAFAEL.F" }), it_(10, { consultor: "WESLEY.F" })];
+    expect(daLoja(l).map((x) => x.consultor)).toEqual(["WESLEY.F"]);
+  });
+});
