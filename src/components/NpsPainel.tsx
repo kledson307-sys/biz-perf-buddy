@@ -90,6 +90,11 @@ export function NpsPainel() {
           <section className="lux-card p-4">
             <h3 className="font-semibold">Follow-up D-2 · pesquisa chega em até 2 dias</h3>
             <p className="mb-2 text-xs text-muted-foreground">Ação de conferência e acolhimento: reforce que a nota avalia só o atendimento do consultor.</p>
+            {fila.length > 0 && <div className="mb-2 flex flex-wrap gap-1">{[...new Set(fila.map((x) => x.consultor))].map((c) => {
+              const l = fila.filter((x) => x.consultor === c);
+              const txt = `Bom dia ${c}! Follow-up antes da pesquisa BMW:\n` + l.map((x) => `• ${x.cliente} (${x.veiculo || "veículo"}${x.telefone ? ` · ${x.telefone}` : ""}) — pesquisa ${dataBR(x.recebimento)}`).join("\n") + "\nReforce que a nota avalia o seu atendimento.";
+              return <a key={c} target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(txt)}`} className="rounded-full border border-primary px-2 py-0.5 text-[11px] text-primary">Enviar lista a {c} ({l.length})</a>;
+            })}</div>}
             <div className="max-h-80 space-y-2 overflow-y-auto">
               {fila.map((x) => { const a = acaoFollowUp(x.obs); return (
                 <div key={x.chassi + x.recebimento} className="rounded-lg border border-border p-2 text-xs">
