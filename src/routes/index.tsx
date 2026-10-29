@@ -372,9 +372,10 @@ function Painel({ email }: { email: string }) {
         { label: "Peças", value: brl(t.pecas), sub: `${pct(t.perfP)} de ${brl(t.mP)}`, p: t.perfP, barra: "bg-coral" },
         { label: "Falta para a meta", value: brl(Math.max(meta - real, 0)), sub: rest ? `${brl(Math.max(meta - real, 0) / rest)}/dia em ${rest} dia(s)` : "Mês encerrado", cls: "text-warning" },
       ]}>
-        {real > 0 && <div className="lux-card p-4"><p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Composição da receita</p>
-          <div className="flex h-3 overflow-hidden rounded-full"><div className="bg-neon" style={{ width: `${div(t.servicos, real) * 100}%` }} /><div className="bg-coral flex-1" /></div>
-          <p className="mt-2 flex justify-between text-xs"><span><span className="mr-1 inline-block size-2 rounded-full bg-neon" />Serviços {pct(div(t.servicos, real))}</span><span>Peças {pct(div(t.pecas, real))}<span className="ml-1 inline-block size-2 rounded-full bg-coral" /></span></p></div>}
+        {real > 0 && <div className="lux-card flex items-center gap-3 px-3 py-1.5 text-xs"><span className="shrink-0 uppercase tracking-wide text-muted-foreground">Composição da receita</span>
+          <span className="shrink-0"><span className="mr-1 inline-block size-2 rounded-full bg-neon" />Serviços {pct(div(t.servicos, real))}</span>
+          <div className="flex h-2 flex-1 overflow-hidden rounded-full"><div className="bg-neon" style={{ width: `${div(t.servicos, real) * 100}%` }} /><div className="bg-coral flex-1" /></div>
+          <span className="shrink-0">Peças {pct(div(t.pecas, real))}<span className="ml-1 inline-block size-2 rounded-full bg-coral" /></span></div>}
       </AbaTopo>;
       case "ranking": return <AbaTopo titulo="Consultores" sub="Ranking, desempenho individual e comparação com o líder" icon={Users} kpis={[
         { label: "Faturado pelo time", value: brl(real), sub: `Serviços ${brl(t.servicos)} · Peças ${brl(t.pecas)}` },
