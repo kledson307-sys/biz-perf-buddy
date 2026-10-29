@@ -127,7 +127,7 @@ export function Mecanicos({ mes, tot, dec, modo = "ver" }: { mes: string; tot: n
   const ver = (g: Grupo) => filtro === "todos" || filtro === g;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2 print:hidden">
         {modo === "ver" && <div className="inline-flex rounded-lg border border-border p-1">
           {(["todos", "carro", "moto"] as const).map(f => (
@@ -143,7 +143,7 @@ export function Mecanicos({ mes, tot, dec, modo = "ver" }: { mes: string; tot: n
       </div>
 
       {modo === "ver" && <>
-      {filtro === "todos" && <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      {filtro === "todos" && <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
         <Kpi label="Faturado Serviços (equipe toda)" value={brl(EQUIPE.S.real)} sub={`meta ${brl(EQUIPE.S.meta)} · ${pct(EQUIPE.S.perf)}`} cls={tone(EQUIPE.S.perf)} />
         <Kpi label="Faturado Peças (equipe toda)" value={brl(EQUIPE.P.real)} sub={`meta ${brl(EQUIPE.P.meta)} · ${pct(EQUIPE.P.perf)}`} cls={tone(EQUIPE.P.perf)} />
         <Kpi label="Passagens (equipe toda)" value={uni(EQUIPE.pass)} sub={`ticket médio ${brl(div(EQUIPE.T.real, EQUIPE.pass))}`} />
@@ -155,14 +155,18 @@ export function Mecanicos({ mes, tot, dec, modo = "ver" }: { mes: string; tot: n
         const max = Math.max(...vis.map(v => v.v), 1);
         if (!vis.length) return null;
         return <Box title={`Produção por técnico · ${uni(vis.length)} técnicos · produtividade média ${brl(div(vis.reduce((n, v) => n + v.v, 0), vis.length))}`}>
-          <div className="grid gap-x-6 gap-y-1.5 p-4 text-sm md:grid-cols-2">{vis.map(v => (
+          <div className="grid gap-x-6 gap-y-1 px-4 py-2 text-xs md:grid-cols-2 xl:grid-cols-3">{vis.map(v => (
             <div key={v.nome}><div className="flex justify-between gap-2"><span className="truncate">{v.nome}</span><span className="tabular-nums">{brl(v.v)} · {uni(v.pass)} pass.</span></div>
               <div className="flex h-2 overflow-hidden rounded-full bg-muted" title={`Serviços ${brl(v.s)} · Peças ${brl(v.p)}`}><div className="bg-neon" style={{ width: `${(v.s / max) * 100}%` }} /><div className="bg-coral" style={{ width: `${(v.p / max) * 100}%` }} /></div></div>
           ))}</div>
-          <p className="px-4 pb-3 text-[11px] text-muted-foreground">Barra azul = serviços · coral = peças</p>
+          <p className="px-4 pb-2 text-[11px] text-muted-foreground">Barra azul = serviços · coral = peças</p>
         </Box>;
       })()}
 
+      <MixPassagens titulo={`Mix de passagens · ${filtro === "todos" ? "toda a oficina" : filtro === "carro" ? "Carro" : "Moto"}`} linhas={rows.filter(r => !ocultoDaLista(r.nome) && ver(r.grupo)).map(r => ({ nome: r.nome, composicao: r.composicao }))} todos={rows.filter(r => ver(r.grupo)).map(r => ({ composicao: r.composicao }))} />
+      <details className="group lux-card print:open">
+        <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-2 text-sm font-semibold">Detalhe por técnico · Carro e Moto (metas, projeção e composição)<span className="text-xs text-primary group-open:hidden">Abrir</span><span className="hidden text-xs text-primary group-open:inline">Fechar</span></summary>
+        <div className="space-y-4 p-3">
       {ver("carro") && <GrupoSec rotulo="Carro" titulo={GRUPO_NOME.carro} b={G.carro} dec={dec} tot={tot} busy={busy} onGrupo={mudarGrupo} onRem={remover}
         vazio="Nenhum técnico de carro neste mês." />}
       {ver("moto") && <GrupoSec rotulo="Moto" titulo={GRUPO_NOME.moto} b={G.moto} dec={dec} tot={tot} busy={busy} onGrupo={mudarGrupo} onRem={remover}
@@ -175,6 +179,8 @@ export function Mecanicos({ mes, tot, dec, modo = "ver" }: { mes: string; tot: n
         { k: "moto", nome: GRUPO_NOME.moto, b: G.moto },
         { k: "outros", nome: GRUPO_NOME.outros, b: G.outros },
       ]} />
+        </div>
+      </details>
       <p className="text-xs text-muted-foreground print:hidden">Faturamento e passagens são importados na aba <b>Importações</b>. As metas dos técnicos ficam em <b>Configurar → Técnicos e metas</b>.</p>
       </>}
 
@@ -232,7 +238,6 @@ function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onGrupo, onRem, vazio, di
     : aberto ? { nome: aberto, comp: somarComposicao([b.calcs.find(c => c.r.nome === aberto)?.r.composicao]) } : null;
   return (
     <div className="space-y-4">
-      <MixPassagens titulo={`Mix de passagens${suf}`} linhas={visiveis.map(c => ({ nome: c.r.nome, composicao: c.r.composicao }))} todos={b.calcs.map(c => ({ composicao: c.r.composicao }))} />
       {temComp && <Box title={`Passagens por tipo${suf}`} right={<span className="text-xs">toque no nome para ver o detalhe</span>}>
         <div className="flex flex-wrap gap-2 p-3">
           {[...visiveis.map(c => c.r.nome), "__total"].map(n => (

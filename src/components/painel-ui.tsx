@@ -22,8 +22,8 @@ export function parseNum(v: string) {
 export function Box({ title, children, right }: { title: string; children: React.ReactNode; right?: React.ReactNode }) {
   return (
     <section className="overflow-hidden lux-card">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-table-band px-5 py-4 text-table-band-foreground">
-        <h3 className="font-semibold">{title}</h3>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-table-band px-4 py-2 text-table-band-foreground">
+        <h3 className="text-sm font-semibold">{title}</h3>
         {right}
       </div>
       {children}
@@ -72,11 +72,11 @@ export function Posicao({ i }: { i: number }) {
 }
 export function Kpi({ label, value, sub, cls = "", p, destaque = false }: { label: string; value: string; sub?: React.ReactNode; cls?: string; p?: number; destaque?: boolean }) {
   return (
-    <div className={`relative min-w-0 overflow-hidden rounded-xl border p-4 shadow-sm sm:p-5 before:absolute before:left-0 before:top-0 before:h-full before:w-1 before:bg-primary ${destaque ? "border-primary/50 bg-primary/10" : "border-border bg-card"}`}>
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={`mt-2 break-words text-2xl font-bold ${cls}`}>{value}</p>
-      <div className="my-3 h-1.5 overflow-hidden rounded-full bg-muted">{p !== undefined && <div className={`h-full rounded-full ${bg(p)}`} style={{ width: `${Math.min(p * 100, 100)}%` }} />}</div>
-      {sub && <p className="mt-1 text-xs text-muted-foreground">{sub}</p>}
+    <div className={`relative min-w-0 overflow-hidden rounded-xl border px-3 py-2 shadow-sm sm:px-4 before:absolute before:left-0 before:top-0 before:h-full before:w-1 before:bg-primary ${destaque ? "border-primary/50 bg-primary/10" : "border-border bg-card"}`}>
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={`mt-0.5 break-words text-lg font-bold leading-tight ${cls}`}>{value}</p>
+      <div className="my-1.5 h-1 overflow-hidden rounded-full bg-muted">{p !== undefined && <div className={`h-full rounded-full ${bg(p)}`} style={{ width: `${Math.min(p * 100, 100)}%` }} />}</div>
+      {sub && <p className="text-[11px] text-muted-foreground">{sub}</p>}
     </div>
   );
 }
