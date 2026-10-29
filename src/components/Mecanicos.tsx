@@ -163,6 +163,7 @@ export function Mecanicos({ mes, tot, dec, modo = "ver" }: { mes: string; tot: n
         </Box>;
       })()}
 
+      <MixPassagens titulo={`Mix de passagens · ${filtro === "todos" ? "toda a oficina" : filtro === "carro" ? "Carro" : "Moto"}`} linhas={rows.filter(r => !ocultoDaLista(r.nome) && ver(r.grupo)).map(r => ({ nome: r.nome, composicao: r.composicao }))} todos={rows.filter(r => ver(r.grupo)).map(r => ({ composicao: r.composicao }))} />
       <details className="group lux-card print:open">
         <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-2 text-sm font-semibold">Detalhe por técnico · Carro e Moto (metas, projeção e composição)<span className="text-xs text-primary group-open:hidden">Abrir</span><span className="hidden text-xs text-primary group-open:inline">Fechar</span></summary>
         <div className="space-y-4 p-3">
@@ -237,7 +238,6 @@ function GrupoSec({ rotulo, titulo, b, dec, tot, busy, onGrupo, onRem, vazio, di
     : aberto ? { nome: aberto, comp: somarComposicao([b.calcs.find(c => c.r.nome === aberto)?.r.composicao]) } : null;
   return (
     <div className="space-y-4">
-      <MixPassagens titulo={`Mix de passagens${suf}`} linhas={visiveis.map(c => ({ nome: c.r.nome, composicao: c.r.composicao }))} todos={b.calcs.map(c => ({ composicao: c.r.composicao }))} />
       {temComp && <Box title={`Passagens por tipo${suf}`} right={<span className="text-xs">toque no nome para ver o detalhe</span>}>
         <div className="flex flex-wrap gap-2 p-3">
           {[...visiveis.map(c => c.r.nome), "__total"].map(n => (
