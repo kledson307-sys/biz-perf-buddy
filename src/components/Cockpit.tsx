@@ -1,4 +1,6 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { daLoja, resumir, type NpsItem } from "@/lib/nps";
 import { useResumoMes } from "@/hooks/use-resumo-mes";
 import { AlertTriangle, ArrowRight, CalendarDays, Car, ClipboardList, Gem, MapPin, Package, Star, Target, TrendingUp, Trophy, Wrench } from "lucide-react";
 import { ITENS } from "@/lib/agregados";
@@ -47,6 +49,8 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
 }) {
   const [comOs, setComOs] = useState(true);
   const { os, pass, agg, mec, fluxo, parados, amarelos } = useResumoMes(mes);
+  const [nps, setNps] = useState<ReturnType<typeof resumir> | null>(null);
+  useEffect(() => { void supabase.from("nps_imports").select("itens").order("at", { ascending: false }).limit(1).maybeSingle().then(({ data }) => { const l = daLoja((data?.itens as unknown as NpsItem[]) ?? []); setNps(l.length ? resumir(l) : null); }); }, []);
 
   const rest = Math.max(tot - dec, 0);
   const t = linhas.reduce((a, l) => {
@@ -93,20 +97,16 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
   ];
 
   return (
-    <div className="space-y-4">
-      {/* Cabeçalho executivo com faróis */}
-      <section className="relative overflow-hidden rounded-2xl border border-border">
-        <img src={heroFarois} alt="Dianteira BMW com faróis LED acesos" width={1600} height={560} className="absolute inset-0 size-full object-cover object-right" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/10" />
-        <div className="relative space-y-3 p-5 sm:p-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">BMW Pós-Venda · Haus Motors</p>
-          <h2 className="text-2xl font-bold sm:text-3xl">Olá, {primeiro}!</h2>
-          <p className="max-w-md text-sm text-muted-foreground">Aqui está o resumo do seu pós-venda hoje.</p>
-          <div className="flex flex-wrap gap-2 text-xs">
-            <span className="flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-3 py-1"><CalendarDays className="size-3.5 text-primary" />{mesNome} · dia {dec} de {tot}</span>
-            <span className="flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-3 py-1"><MapPin className="size-3.5 text-primary" />Salvador</span>
-            <span className={`flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-3 py-1 font-semibold ${tone(div(pT, metaT))}`}><Target className="size-3.5" />Projeção {pct(div(pT, metaT))}</span>
-          </div>
+    <div className="space-y-3">
+      {/* Cabeçalho executivo compacto */}
+      <section className="relative flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-xl border border-border px-4 py-3">
+        <img src={heroFarois} alt="" aria-hidden width={1600} height={560} className="absolute inset-0 size-full object-cover object-right opacity-40" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/30" />
+        <h2 className="relative text-lg font-bold">Olá, {primeiro}! <span className="text-sm font-normal text-muted-foreground">Resumo do pós-venda hoje</span></h2>
+        <div className="relative flex flex-wrap gap-2 text-xs">
+          <span className="flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-3 py-1"><CalendarDays className="size-3.5 text-primary" />{mesNome} · dia {dec} de {tot}</span>
+          <span className="flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-3 py-1"><MapPin className="size-3.5 text-primary" />Salvador</span>
+          <span className={`flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-3 py-1 font-semibold ${tone(div(pT, metaT))}`}><Target className="size-3.5" />Projeção {pct(div(pT, metaT))}</span>
         </div>
       </section>
 
@@ -128,8 +128,8 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
         </button>
         <button type="button" onClick={() => setTab("nps")} className="lux-card col-span-2 border-dashed p-4 text-left lg:col-span-1">
           <div className="flex items-center justify-between"><p className="text-xs text-muted-foreground">NPS / CSI</p><Star strokeWidth={1.5} className="size-5 text-primary" /></div>
-          <p className="mt-1 text-xl font-bold text-muted-foreground">—</p>
-          <p className="text-xs text-muted-foreground">Em estruturação</p>
+          <p className={`mt-1 text-xl font-bold ${nps ? (nps.nps >= 0.8 ? "text-success" : nps.nps >= 0.7 ? "text-warning" : "text-destructive") : "text-muted-foreground"}`}>{nps ? `${nps.nps > 0 ? "+" : ""}${(nps.nps * 100).toFixed(1).replace(".", ",")}` : "—"}</p>
+          <p className="text-xs text-muted-foreground">{nps ? `${pct(nps.pctProm)} promotores · ${uni(nps.avaliados)} avaliados` : "Aguardando planilha NPS"}</p>
         </button>
       </div>
 
@@ -225,10 +225,6 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
         </Bloco>
       </div>
 
-      <footer className="flex flex-col items-center gap-2 py-4">
-        <div className="m-stripe w-24 rounded-full" />
-        <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">Juntos pela melhor experiência.</p>
-      </footer>
     </div>
   );
 }
