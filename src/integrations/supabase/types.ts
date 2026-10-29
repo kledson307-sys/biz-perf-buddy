@@ -575,6 +575,33 @@ export type Database = {
         }
         Relationships: []
       }
+      parts_items: {
+        Row: {
+          at: string
+          id: string
+          itens: Json
+          mes: string
+          nome: string
+          user_id: string
+        }
+        Insert: {
+          at?: string
+          id?: string
+          itens?: Json
+          mes: string
+          nome?: string
+          user_id?: string
+        }
+        Update: {
+          at?: string
+          id?: string
+          itens?: Json
+          mes?: string
+          nome?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       parts_returns: {
         Row: {
           consultant_id: string
