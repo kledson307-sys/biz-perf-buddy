@@ -794,7 +794,7 @@ function Painel({ email }: { email: string }) {
           </div>
         </>)}
         {show("agregados") && <Secao relatorio={relatorio} titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} />{!relatorio && <Box title={`Ranking de agregados · ${mesExtenso}`}><RankingAgregados mes={mes} cons={visiveis} deptName={deptName} tot={tot} dec={dec} /></Box>}</Secao>}
-        {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} />{!relatorio && <><div className="grid gap-3 xl:grid-cols-[2fr_1fr]"><Box title={`Ranking dos técnicos · ${mesExtenso}`}><RankingTecnicos mes={mes} tot={tot} dec={dec} /></Box><RetrabalhoOficina /></div></>}</Secao>}
+        {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} />{!relatorio && <><div className="grid gap-3 xl:grid-cols-[2fr_1fr]"><details className="group lux-card"><summary className="flex cursor-pointer list-none items-center justify-between px-4 py-2 text-sm font-semibold">Ranking dos técnicos · Serviços, Peças e Total · {mesExtenso}<span className="text-xs text-primary">Abrir/fechar</span></summary><RankingTecnicos mes={mes} tot={tot} dec={dec} /></details><RetrabalhoOficina /></div></>}</Secao>}
         {tab === "controle-os" && <ControleOS />}
         {tab === "importacoes" && !relatorio && <div className="space-y-6 print:hidden">
           <div>
