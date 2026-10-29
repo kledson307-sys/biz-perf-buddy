@@ -115,6 +115,30 @@ export function ControleOS() {
           })}
         </div>
 
+        {(() => {
+          const ativas = lista.filter(a => a.item.st !== "encerrado" && !ehJudicial(acomp[a.item.n]?.acoes) && a.item.st !== ("judicial" as Status));
+          const media = ativas.length ? ativas.reduce((n, a) => n + a.item.dias, 0) / ativas.length : 0;
+          const semaf = (d: number) => d > 30 ? "text-destructive" : d > 20 ? "text-warning" : "text-success";
+          const antigas = [...ativas].sort((x, y) => y.item.dias - x.item.dias).slice(0, 8);
+          return <div className="grid gap-4 lg:grid-cols-3">
+            <div className="lux-card p-4">
+              <p className="text-xs uppercase text-muted-foreground">Tempo médio de permanência</p>
+              <p className={`text-3xl font-bold ${semaf(media)}`}>{Math.round(media)} dias</p>
+              <p className="text-xs text-muted-foreground">Meta ≤ 20 dias · {ativas.filter(a => a.item.dias <= 20).length} no verde · {ativas.filter(a => a.item.dias > 20 && a.item.dias <= 30).length} no amarelo · {ativas.filter(a => a.item.dias > 30).length} no vermelho</p>
+            </div>
+            <div className="lux-card p-4 lg:col-span-2">
+              <p className="mb-2 text-xs uppercase text-muted-foreground">O.S. mais antigas na oficina</p>
+              <table className="w-full text-xs"><tbody>{antigas.map(a => (
+                <tr key={a.item.n} className="cursor-pointer border-t border-border hover:bg-muted" onClick={() => { setAba(a.item.st); setAberto(a.item.n); }}>
+                  <td className="py-1 font-medium">{a.item.n}</td><td>{a.item.cons}</td><td className="truncate">{a.item.cli}</td>
+                  <td>{STATUS.find(s => s.k === a.item.st)?.nome}{ehJudicial(acomp[a.item.n]?.acoes) ? " · Judicial" : ""}</td>
+                  <td className={`text-right font-semibold ${semaf(a.item.dias)}`}>{a.item.dias} d</td>
+                </tr>))}</tbody></table>
+            </div>
+          </div>;
+        })()}
+
+
         <div className="flex flex-wrap items-center gap-2 print:hidden" role="group" aria-label="Filtro de dias na oficina">
           <span className="text-sm text-muted-foreground">Dias na oficina:</span>
           {([[0, "Todas", "border-primary bg-primary text-primary-foreground"], [20, "> 20 dias", "border-warning bg-warning/20 text-warning"], [30, "> 30 dias", "border-destructive bg-destructive/20 text-destructive"]] as const).map(([d, n, on]) => (

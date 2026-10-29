@@ -37,6 +37,8 @@ import { calcPerformance } from "@/lib/performance";
 import { useAccessPresence } from "@/hooks/use-access-presence";
 import { useResumoMes } from "@/hooks/use-resumo-mes";
 import { AbaTopo, type TopoKpi } from "@/components/AbaTopo";
+import { ImportadorUnificado } from "@/components/ImportadorUnificado";
+import { RetrabalhoOficina } from "@/components/RetrabalhoOficina";
 import { ITENS } from "@/lib/agregados";
 
 export const Route = createFileRoute("/")({
@@ -615,7 +617,7 @@ function Painel({ email }: { email: string }) {
               )}
             </div>
 
-            <ResumoPainel linhas={linhas.map((l) => ({ nome: l.c.nome, servicos: l.servicos, pecas: l.pecas, mS: l.mS, mP: l.mP, perfS: l.perfS, perfP: l.perfP, perf: l.perf, projPct: l.projPct, mediaDia: l.mediaDia, necS: l.necS, necP: l.necP, nec: l.nec }))} liderNome={lider?.c.nome ?? null} dec={dec} tot={tot} mes={mes} />
+            <div className="hidden print:block"><ResumoPainel linhas={linhas.map((l) => ({ nome: l.c.nome, servicos: l.servicos, pecas: l.pecas, mS: l.mS, mP: l.mP, perfS: l.perfS, perfP: l.perfP, perf: l.perf, projPct: l.projPct, mediaDia: l.mediaDia, necS: l.necS, necP: l.necP, nec: l.nec }))} liderNome={lider?.c.nome ?? null} dec={dec} tot={tot} mes={mes} /></div>
 
 
             {/* sai da tela; continua no relatório de fechamento (PDF) */}
@@ -753,11 +755,17 @@ function Painel({ email }: { email: string }) {
         )}
 
         {tab === "ranking" && (<>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <Kpi label="Consultores ativos" value={String(linhas.length)} sub={lider ? `Líder: ${lider.c.nome}` : ""} />
+            <Kpi label="Meta da equipe" value={brl(total.meta)} />
+            <Kpi label="Realizado" value={brl(total.real)} sub={`Projeção ${brl(total.proj)}`} />
+            <Kpi label="% Atingimento" value={pct(total.perf)} cls={tone(total.perf)} sub={`Projeção ${pct(total.projPct)}`} />
+          </div>
           <Box title={`Ranking dos consultores · ${mesExtenso}`}>
             <RankingMobile linhas={linhas} total={total} deptName={deptName} soPecas={soPecas} />
             <div className="hidden md:block">
-              <Tabela head={["#", "Consultor", "Depto", "Serviços", "Peças", "Realizado", "Meta", "Perf.", "Projeção", "Nec./dia", "vs. Líder"]}>
-                {linhas.length === 0 && <tr><td colSpan={11} className="px-3 py-10 text-center text-muted-foreground">Sem dados no mês.</td></tr>}
+              <Tabela head={["#", "Consultor", "Depto", "Serviços", "Peças", "Realizado", "Meta", "Perf.", "Projeção", "Nec./dia", "Peças/R$1 M.O.", "vs. Líder"]}>
+                {linhas.length === 0 && <tr><td colSpan={12} className="px-3 py-10 text-center text-muted-foreground">Sem dados no mês.</td></tr>}
                 {linhas.map((l, i) => {
                   const semServ = soPecas(l.c.nome);
                   return (
@@ -772,6 +780,7 @@ function Painel({ email }: { email: string }) {
                       <td className={`px-3 py-1.5 font-semibold ${tone(l.perf)}`}>{pct(l.perf)}</td>
                       <td className={`px-3 py-1.5 ${tone(l.projPct)}`}>{brl(l.proj)}</td>
                       <td className="px-3 py-1.5">{l.nec ? brl(l.nec) : "—"}</td>
+                      <td className={`px-3 py-1.5 ${semServ || !l.servicos ? "" : l.pecas / l.servicos >= 2.5 ? "text-success" : l.pecas / l.servicos >= 1.5 ? "text-warning" : "text-destructive"}`} title="Ideal: R$ 2,50 a R$ 3,50 de peças por R$ 1 de serviço">{semServ || !l.servicos ? "—" : (l.pecas / l.servicos).toFixed(2).replace(".", ",")}</td>
                       <td className="whitespace-nowrap px-3 py-1.5">{!lider || l === lider ? <span className="font-semibold text-primary">Líder</span> : <span className="text-destructive">−{((lider.perf - l.perf) * 100).toFixed(1)} pts</span>}</td>
                     </tr>
                   );
@@ -789,13 +798,14 @@ function Painel({ email }: { email: string }) {
           </div>
         </>)}
         {show("agregados") && <Secao relatorio={relatorio} titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} />{!relatorio && <Box title={`Ranking de agregados · ${mesExtenso}`}><RankingAgregados mes={mes} cons={visiveis} deptName={deptName} tot={tot} dec={dec} /></Box>}</Secao>}
-        {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} />{!relatorio && <Box title={`Ranking dos técnicos · ${mesExtenso}`}><RankingTecnicos mes={mes} tot={tot} dec={dec} /></Box>}</Secao>}
+        {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} />{!relatorio && <><Box title={`Ranking dos técnicos · ${mesExtenso}`}><RankingTecnicos mes={mes} tot={tot} dec={dec} /></Box><RetrabalhoOficina /></>}</Secao>}
         {tab === "controle-os" && <ControleOS />}
         {tab === "importacoes" && !relatorio && <div className="space-y-6 print:hidden">
           <div>
             <h2 className="text-lg font-semibold">Central de importações · {mes}</h2>
             <p className="text-sm text-muted-foreground">Todas as planilhas do dia em um só lugar. Cada bloco tem seu botão, prévia e confirmação. O Controle O.S. semanal continua na própria aba.</p>
           </div>
+          <ImportadorUnificado mes={mes} onDone={load} />
           <section className="space-y-3"><h3 className="font-semibold">1. Faturamento geral de vendas <span className="text-xs font-normal text-muted-foreground">— alimenta Painel, Ranking, Serviços, Peças</span></h3>
             <StatusFonte source="faturamento" mes={mes} updates={updates} clock={clock} />
             <SalesImport cons={cons} depts={depts} onDone={load} onPeriod={setMes} /></section>
@@ -813,7 +823,7 @@ function Painel({ email }: { email: string }) {
         </div>}
         {tab === "cockpit" && !relatorio && <Cockpit linhas={linhas} porDept={porDept} mes={mes} tot={tot} dec={dec} soPecas={soPecas} setTab={setTab} sales={sales} nome={email.split("@")[0] ?? ""} deptName={deptName} />}
         {tab === "nps" && !relatorio && <NpsPainel />}
-        {tab === "pecas" && !relatorio && <PecasEstoque linhas={linhas} porDept={porDept} margemIdeal={margemIdeal} deptName={deptName} passagens={resumo.pass} />}
+        {tab === "pecas" && !relatorio && <PecasEstoque linhas={linhas} porDept={porDept} margemIdeal={margemIdeal} deptName={deptName} passagens={resumo.pass} mes={mes} />}
         {tab === "metas" && !relatorio && <><CadeadoMes mes={mes} /><Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} />
           <section className="mt-6 space-y-3"><h3 className="font-semibold">Metas de agregados</h3><Agregados modo="metas" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section></>}
         {tab === "config" && <div className="space-y-6"><Equipe /><Config parte="config" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div>}

@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { pct, uni } from "@/components/painel-ui";
 import {
-  LOJA_PADRAO, META_PROMOTOR, acaoFollowUp, baseNps, classe, filaFollowUp, historicoDetratores, lerAbaNps, resumir,
+  LOJA_PADRAO, META_PROMOTOR, daLoja, acaoFollowUp, baseNps, classe, filaFollowUp, historicoDetratores, lerAbaNps, resumir,
   type NpsItem, type Segmento,
 } from "@/lib/nps";
 
@@ -43,12 +43,12 @@ export function NpsPainel() {
       const { error } = await supabase.from("nps_imports").insert({ itens: lst as never, arquivo: f.name, nome: u.user?.email?.split("@")[0] ?? "" });
       if (error) { setMsg("Não foi possível salvar: " + error.message); return; }
       await supabase.from("update_log").insert({ nome: u.user?.email?.split("@")[0] ?? "", origem: "nps", mes: hojeISO().slice(0, 7) });
-      setMsg(`${lst.length} pesquisas importadas (${lst.filter((x) => x.loja_padrao === "1").length} de Salvador). A importação anterior foi substituída.`);
+      setMsg(`${lst.length} pesquisas importadas (${daLoja(lst).length} de Salvador). A importação anterior foi substituída.`);
       await load();
     } finally { setBusy(false); }
   };
 
-  const loja = useMemo(() => (itens ?? []).filter((x) => x.loja_padrao === "1"), [itens]);
+  const loja = useMemo(() => daLoja(itens ?? []), [itens]);
   const vis = seg === "todos" ? loja : loja.filter((x) => x.segmento === seg);
   const r = resumir(vis);
   const metaSeg = seg === "moto" ? META_PROMOTOR.moto : META_PROMOTOR.carro;
@@ -90,6 +90,11 @@ export function NpsPainel() {
           <section className="lux-card p-4">
             <h3 className="font-semibold">Follow-up D-2 · pesquisa chega em até 2 dias</h3>
             <p className="mb-2 text-xs text-muted-foreground">Ação de conferência e acolhimento: reforce que a nota avalia só o atendimento do consultor.</p>
+            {fila.length > 0 && <div className="mb-2 flex flex-wrap gap-1">{[...new Set(fila.map((x) => x.consultor))].map((c) => {
+              const l = fila.filter((x) => x.consultor === c);
+              const txt = `Bom dia ${c}! Follow-up antes da pesquisa BMW:\n` + l.map((x) => `• ${x.cliente} (${x.veiculo || "veículo"}${x.telefone ? ` · ${x.telefone}` : ""}) — pesquisa ${dataBR(x.recebimento)}`).join("\n") + "\nReforce que a nota avalia o seu atendimento.";
+              return <a key={c} target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(txt)}`} className="rounded-full border border-primary px-2 py-0.5 text-[11px] text-primary">Enviar lista a {c} ({l.length})</a>;
+            })}</div>}
             <div className="max-h-80 space-y-2 overflow-y-auto">
               {fila.map((x) => { const a = acaoFollowUp(x.obs); return (
                 <div key={x.chassi + x.recebimento} className="rounded-lg border border-border p-2 text-xs">

@@ -1,4 +1,6 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { daLoja, resumir, type NpsItem } from "@/lib/nps";
 import { useResumoMes } from "@/hooks/use-resumo-mes";
 import { AlertTriangle, ArrowRight, CalendarDays, Car, ClipboardList, Gem, MapPin, Package, Star, Target, TrendingUp, Trophy, Wrench } from "lucide-react";
 import { ITENS } from "@/lib/agregados";
@@ -12,8 +14,8 @@ type S = { consultant_id: string; dia: string; servicos: number; pecas: number }
 
 function Bloco({ titulo, icon, ir, children, right, className = "" }: { titulo: string; icon?: ReactNode; ir?: () => void; children: ReactNode; right?: ReactNode; className?: string }) {
   return (
-    <section className={`lux-card p-4 ${className}`}>
-      <div className="mb-3 flex items-center justify-between gap-2">
+    <section className={`lux-card p-3 ${className}`}>
+      <div className="mb-2 flex items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">{icon}{titulo}</h2>
         <div className="flex items-center gap-2">{right}{ir && <button type="button" onClick={ir} className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">Ver detalhes <ArrowRight className="size-3" /></button>}</div>
       </div>
@@ -30,7 +32,7 @@ function Anel({ p, rot }: { p: number; rot: string }) {
   const r = 30, c = 2 * Math.PI * r;
   return (
     <div className="flex flex-col items-center gap-1 text-center">
-      <svg viewBox="0 0 80 80" className="size-20" role="img" aria-label={`${rot} ${pct(p)}`}>
+      <svg viewBox="0 0 80 80" className="size-14" role="img" aria-label={`${rot} ${pct(p)}`}>
         <circle cx="40" cy="40" r={r} fill="none" strokeWidth="7" className="stroke-muted" />
         <circle cx="40" cy="40" r={r} fill="none" strokeWidth="7" strokeLinecap="round" strokeDasharray={`${Math.min(p, 1) * c} ${c}`} transform="rotate(-90 40 40)"
           className={p >= 1 ? "stroke-success" : p >= 0.85 ? "stroke-warning" : "stroke-destructive"} />
@@ -47,6 +49,8 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
 }) {
   const [comOs, setComOs] = useState(true);
   const { os, pass, agg, mec, fluxo, parados, amarelos } = useResumoMes(mes);
+  const [nps, setNps] = useState<ReturnType<typeof resumir> | null>(null);
+  useEffect(() => { void supabase.from("nps_imports").select("itens").order("at", { ascending: false }).limit(1).maybeSingle().then(({ data }) => { const l = daLoja((data?.itens as unknown as NpsItem[]) ?? []); setNps(l.length ? resumir(l) : null); }); }, []);
 
   const rest = Math.max(tot - dec, 0);
   const t = linhas.reduce((a, l) => {
@@ -77,7 +81,7 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
   const [yy, mo] = mes.split("-").map(Number);
   const diasMes = new Date(yy!, mo!, 0).getDate();
   const maxY = Math.max(metaT, evol.at(-1)?.v ?? 0, 1);
-  const W = 600, H = 180;
+  const W = 600, H = 120;
   const px = (d: number) => (d / diasMes) * W, py = (v: number) => H - (v / maxY) * (H - 10);
   const caminho = evol.map((p, i) => `${i ? "L" : "M"}${px(p.d).toFixed(1)},${py(p.v).toFixed(1)}`).join(" ");
 
@@ -88,25 +92,22 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
   if (deptFraco && deptFraco.projPct < 1) acoes.push({ cor: "bg-warning", txt: `Foco em ${deptFraco.nome} (${pct(deptFraco.projPct)} da meta).`, ir: "painel" });
   if (t.s && ratio < 0.8) acoes.push({ cor: "bg-warning", txt: `Peças abaixo do esperado: ${ratio.toFixed(2).replace(".", ",")} de peça por R$ 1 de serviço.`, ir: "pecas" });
 
+  if (nps && nps.pctProm < 0.85) acoes.push({ cor: "bg-warning", txt: `NPS: ${pct(nps.pctProm)} de promotores, abaixo da meta de 85%. Ver detratores e follow-up D-2.`, ir: "nps" });
   const resultado: [string, number, number, typeof Wrench, string][] = [
     ["Serviços", t.s, t.ms, Wrench, "bg-neon"], ["Peças", t.p, t.mp, Package, "bg-coral"], ["Faturamento total", t.s + t.p, metaT, TrendingUp, "bg-primary"],
   ];
 
   return (
-    <div className="space-y-4">
-      {/* Cabeçalho executivo com faróis */}
-      <section className="relative overflow-hidden rounded-2xl border border-border">
-        <img src={heroFarois} alt="Dianteira BMW com faróis LED acesos" width={1600} height={560} className="absolute inset-0 size-full object-cover object-right" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/10" />
-        <div className="relative space-y-3 p-5 sm:p-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">BMW Pós-Venda · Haus Motors</p>
-          <h2 className="text-2xl font-bold sm:text-3xl">Olá, {primeiro}!</h2>
-          <p className="max-w-md text-sm text-muted-foreground">Aqui está o resumo do seu pós-venda hoje.</p>
-          <div className="flex flex-wrap gap-2 text-xs">
-            <span className="flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-3 py-1"><CalendarDays className="size-3.5 text-primary" />{mesNome} · dia {dec} de {tot}</span>
-            <span className="flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-3 py-1"><MapPin className="size-3.5 text-primary" />Salvador</span>
-            <span className={`flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-3 py-1 font-semibold ${tone(div(pT, metaT))}`}><Target className="size-3.5" />Projeção {pct(div(pT, metaT))}</span>
-          </div>
+    <div className="space-y-3">
+      {/* Cabeçalho executivo compacto */}
+      <section className="relative flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-xl border border-border px-4 py-3">
+        <img src={heroFarois} alt="" aria-hidden width={1600} height={560} className="absolute inset-0 size-full object-cover object-right opacity-40" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/30" />
+        <h2 className="relative text-lg font-bold">Olá, {primeiro}! <span className="text-sm font-normal text-muted-foreground">Resumo do pós-venda hoje</span></h2>
+        <div className="relative flex flex-wrap gap-2 text-xs">
+          <span className="flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-3 py-1"><CalendarDays className="size-3.5 text-primary" />{mesNome} · dia {dec} de {tot}</span>
+          <span className="flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-3 py-1"><MapPin className="size-3.5 text-primary" />Salvador</span>
+          <span className={`flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-3 py-1 font-semibold ${tone(div(pT, metaT))}`}><Target className="size-3.5" />Projeção {pct(div(pT, metaT))}</span>
         </div>
       </section>
 
@@ -128,12 +129,12 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
         </button>
         <button type="button" onClick={() => setTab("nps")} className="lux-card col-span-2 border-dashed p-4 text-left lg:col-span-1">
           <div className="flex items-center justify-between"><p className="text-xs text-muted-foreground">NPS / CSI</p><Star strokeWidth={1.5} className="size-5 text-primary" /></div>
-          <p className="mt-1 text-xl font-bold text-muted-foreground">—</p>
-          <p className="text-xs text-muted-foreground">Em estruturação</p>
+          <p className={`mt-1 text-xl font-bold ${nps ? (nps.nps >= 0.8 ? "text-success" : nps.nps >= 0.7 ? "text-warning" : "text-destructive") : "text-muted-foreground"}`}>{nps ? `${nps.nps > 0 ? "+" : ""}${(nps.nps * 100).toFixed(1).replace(".", ",")}` : "—"}</p>
+          <p className="text-xs text-muted-foreground">{nps ? `${pct(nps.pctProm)} promotores · ${uni(nps.avaliados)} avaliados` : "Aguardando planilha NPS"}</p>
         </button>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-3 lg:grid-cols-3">
         {/* Projeção do mês */}
         <Bloco titulo="Projeção do mês" icon={<TrendingUp className="size-4 text-primary" />} ir={() => setTab("os")} className="relative overflow-hidden lg:col-span-2" right={
           <div className="flex rounded-full border border-border p-0.5 text-[11px]">
@@ -170,7 +171,7 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
         </Bloco>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-3 lg:grid-cols-3">
         {/* Evolução do mês */}
         <Bloco titulo="Evolução do mês" icon={<TrendingUp className="size-4 text-primary" />} ir={() => setTab("painel")} className="lg:col-span-2">
           {evol.length === 0 ? <p className="text-sm text-muted-foreground">Sem vendas importadas neste mês.</p> : (
@@ -198,12 +199,13 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
         </Bloco>
       </div>
 
-      {/* Departamentos */}
-      <Bloco titulo="Desempenho por departamento" icon={<Target className="size-4 text-primary" />} ir={() => setTab("painel")}>
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">{porDept.map((d) => <Anel key={d.nome} p={d.projPct} rot={d.nome} />)}</div>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {/* Departamentos */}
+        <Bloco titulo="Desempenho por departamento" icon={<Target className="size-4 text-primary" />} ir={() => setTab("painel")}>
+        <div className="grid grid-cols-3 gap-2">{porDept.map((d) => <Anel key={d.nome} p={d.projPct} rot={d.nome} />)}</div>
       </Bloco>
 
-      <div className="grid gap-4 md:grid-cols-3">
+
         <Bloco titulo="Ordens de serviço" icon={<ClipboardList className="size-4 text-primary" />} ir={() => setTab("controle-os")}>
           {fluxo.length === 0 ? <p className="text-sm text-muted-foreground">Sem importação semanal.</p> :
             <div className="grid grid-cols-2 gap-2">{fluxo.map((f) => <div key={f.st} className="rounded-lg bg-background/40 p-2"><p className="text-xl font-bold">{f.n}</p><p className="text-[11px] text-muted-foreground">{f.st}</p></div>)}</div>}
@@ -225,10 +227,6 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
         </Bloco>
       </div>
 
-      <footer className="flex flex-col items-center gap-2 py-4">
-        <div className="m-stripe w-24 rounded-full" />
-        <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">Juntos pela melhor experiência.</p>
-      </footer>
     </div>
   );
 }

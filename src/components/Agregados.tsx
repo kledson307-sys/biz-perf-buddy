@@ -120,6 +120,7 @@ function GrupoView({ g, stat, ranking, ids, deptName, rest, sales }: {
   const keys = items.map((i) => i.k);
   const T = stat(ids, keys);
   const perItem = items.map((it) => ({ it, s: stat(ids, [it.k]) }));
+  const [sel, setSel] = useState<string | null>(null);
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -129,31 +130,20 @@ function GrupoView({ g, stat, ranking, ids, deptName, rest, sales }: {
         <Kpi label="Aproveitamento" value={pct(T.aprov)} sub={<ItensDetalhe perItem={perItem} T={T} modo="aprov" />} />
       </div>
 
-      <Box title={`Resumo por item — ${GRUPO_NOME[g]}`}>
-        <Tabela head={["Item", "Qtd", "Meta", "Perf.", "Projeção", "Proj. %", "Valor", "Meta R$", "Perf. R$", "Aproveit.", "Líder"]}>
-          {perItem.map(({ it, s }) => {
-            const lid = ranking([it.k])[0];
-            return (
-              <tr key={it.k} className="border-t border-border">
-                <td className="px-3 py-2 font-medium">{it.nome}</td>
-                <td className="px-3 py-2">{uni(s.qtd)}</td>
-                <td className="px-3 py-2 text-muted-foreground">{uni(s.mq)}</td>
-                <td className={`px-3 py-2 font-semibold ${tone(s.perfQ)}`}>{pct(s.perfQ)}</td>
-                <td className="px-3 py-2">{uni(s.projQ)}</td>
-                <td className="px-3 py-2"><Barra p={s.projPctQ} /></td>
-                <td className="px-3 py-2">{brl(s.valor)}</td>
-                <td className="px-3 py-2 text-muted-foreground">{brl(s.mv)}</td>
-                <td className={`px-3 py-2 ${tone(s.perfV)}`}>{pct(s.perfV)}</td>
-                <td className="px-3 py-2">{pct(s.aprov)}</td>
-                <td className="px-3 py-2 font-medium text-primary">{lid && lid.qtd > 0 ? lid.c.nome : "—"}</td>
-              </tr>
-            );
-          })}
-        </Tabela>
-      </Box>
-
-      <RankTable title={`Ranking geral — ${GRUPO_NOME[g]}`} rows={ranking(keys)} deptName={deptName} sales={sales} items={keys} />
-      {items.map((it) => <RankTable key={it.k} title={`Ranking — ${it.nome}`} rows={ranking([it.k])} deptName={deptName} sales={sales} items={[it.k]} />)}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {perItem.map(({ it, s }) => {
+          const lid = ranking([it.k])[0]; const on = sel === it.k;
+          return <button key={it.k} type="button" onClick={() => setSel(on ? null : it.k)} className={`lux-card p-3 text-left ${on ? "ring-2 ring-primary" : ""}`}>
+            <p className="flex justify-between text-sm font-semibold"><span>{it.nome}</span><span className={tone(s.projPctQ)}>{pct(s.projPctQ)}</span></p>
+            <p className="text-lg font-bold">{uni(s.qtd)} <span className="text-xs font-normal text-muted-foreground">de {uni(s.mq)} un · proj. {uni(s.projQ)}</span></p>
+            <p className="text-xs text-muted-foreground">{brl(s.valor)} de {brl(s.mv)} · conversão {pct(s.aprov)}</p>
+            <div className="my-1"><Barra p={s.projPctQ} /></div>
+            <p className="text-[11px] text-primary">{lid && lid.qtd > 0 ? `Líder: ${lid.c.nome}` : "—"} · {on ? "mostrando abaixo" : "clique para ver por consultor"}</p>
+          </button>;
+        })}
+      </div>
+      {sel ? <RankTable title={`Por consultor — ${items.find((i) => i.k === sel)?.nome}`} rows={ranking([sel])} deptName={deptName} sales={sales} items={[sel]} />
+        : <RankTable title={`Consolidado por consultor — ${GRUPO_NOME[g]}`} rows={ranking(keys)} deptName={deptName} sales={sales} items={keys} />}
     </>
   );
 }
