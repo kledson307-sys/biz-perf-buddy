@@ -16,6 +16,9 @@ export function PecasEstoque({ linhas, porDept, margemIdeal, deptName, passagens
   const curva = curvaAbc(itens ?? []);
   const giro = Object.entries(curva.reduce<Record<string, number>>((a, i) => { const k = i.giro || "—"; a[k] = (a[k] ?? 0) + i.valor; return a; }, {})).sort((a, b) => b[1] - a[1]);
   const totItens = curva.reduce((a, i) => a + i.valor, 0);
+  const cats = Object.entries(curva.reduce<Record<string, number>>((a, i) => { const k = i.grupo || "Outros"; a[k] = (a[k] ?? 0) + i.valor; return a; }, {})).sort((a, b) => b[1] - a[1]);
+  const catTop = cats.length > 5 ? [...cats.slice(0, 5), ["Outros", cats.slice(5).reduce((n, c) => n + c[1], 0)] as [string, number]] : cats;
+  const CORES = ["var(--primary)", "var(--neon)", "var(--coral)", "var(--warning)", "var(--success)", "var(--muted-foreground)"];
   const comOs = curva.filter((i) => i.os > 0).reduce((a, i) => a + i.valor, 0);
   const tp = porDept.reduce((a, d) => a + d.pecas, 0);
   const tm = porDept.reduce((a, d) => a + d.mP, 0);
@@ -47,6 +50,17 @@ export function PecasEstoque({ linhas, porDept, margemIdeal, deptName, passagens
           })}
         </div>
       </Box>
+      {catTop.length > 0 && <div className="grid gap-4 lg:grid-cols-2">
+        <Box title="Faturamento por categoria">
+          <div className="space-y-2 p-4 text-sm">{catTop.map(([g, v], i) => <div key={g}><div className="flex justify-between"><span className="flex items-center gap-2"><span className="size-2 rounded-full" style={{ background: CORES[i] }} />{g}</span><span>{brl(v)}</span></div><Barra p={div(v, catTop[0]![1])} /></div>)}</div>
+        </Box>
+        <Box title="Participação por categoria">
+          <div className="flex flex-wrap items-center gap-4 p-4">
+            <svg viewBox="0 0 42 42" className="size-36" role="img" aria-label="Participação por categoria">{(() => { let off = 25; return catTop.map(([g, v], i) => { const p = div(v, totItens) * 100; const el = <circle key={g} cx="21" cy="21" r="15.9" fill="none" stroke={CORES[i]} strokeWidth="6" strokeDasharray={`${p} ${100 - p}`} strokeDashoffset={off} />; off -= p; return el; }); })()}</svg>
+            <ul className="space-y-1 text-xs">{catTop.map(([g, v], i) => <li key={g} className="flex items-center gap-2"><span className="size-2 rounded-full" style={{ background: CORES[i] }} />{g} · <b>{pct(div(v, totItens))}</b></li>)}</ul>
+          </div>
+        </Box>
+      </div>}
       <div className="grid gap-4 lg:grid-cols-3">
         <Box title="Top 5 itens · faturamento" right={curva.length ? <button type="button" className="text-xs text-primary underline" onClick={() => setAbc(!abc)}>{abc ? "Fechar" : "Curva ABC completa"}</button> : undefined}>
           {!curva.length ? <p className="p-4 text-sm text-muted-foreground">Arraste o Faturamento de Peças na esteira única de Importações para ver os itens.</p> :
