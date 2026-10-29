@@ -8,6 +8,10 @@ export type NpsItem = {
 };
 
 export const LOJA_PADRAO = "SALVADOR";
+/** Vendedores externos (outras lojas): nunca contam no NPS de Salvador. */
+export const EXTERNOS = new Set(["MAYCON.S", "IURI.R", "RAFAEL.F"]);
+/** Itens da loja padrão sem vendedores externos. */
+export const daLoja = (l: NpsItem[]) => l.filter((x) => x.loja_padrao === "1" && !EXTERNOS.has(x.consultor));
 /** % mínimo de promotores exigido pela montadora. */
 export const META_PROMOTOR: Record<Segmento, number> = { carro: 0.85, moto: 0.88 };
 

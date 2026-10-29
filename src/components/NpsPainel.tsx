@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { pct, uni } from "@/components/painel-ui";
 import {
-  LOJA_PADRAO, META_PROMOTOR, acaoFollowUp, baseNps, classe, filaFollowUp, historicoDetratores, lerAbaNps, resumir,
+  LOJA_PADRAO, META_PROMOTOR, daLoja, acaoFollowUp, baseNps, classe, filaFollowUp, historicoDetratores, lerAbaNps, resumir,
   type NpsItem, type Segmento,
 } from "@/lib/nps";
 
@@ -43,12 +43,12 @@ export function NpsPainel() {
       const { error } = await supabase.from("nps_imports").insert({ itens: lst as never, arquivo: f.name, nome: u.user?.email?.split("@")[0] ?? "" });
       if (error) { setMsg("Não foi possível salvar: " + error.message); return; }
       await supabase.from("update_log").insert({ nome: u.user?.email?.split("@")[0] ?? "", origem: "nps", mes: hojeISO().slice(0, 7) });
-      setMsg(`${lst.length} pesquisas importadas (${lst.filter((x) => x.loja_padrao === "1").length} de Salvador). A importação anterior foi substituída.`);
+      setMsg(`${lst.length} pesquisas importadas (${daLoja(lst).length} de Salvador). A importação anterior foi substituída.`);
       await load();
     } finally { setBusy(false); }
   };
 
-  const loja = useMemo(() => (itens ?? []).filter((x) => x.loja_padrao === "1"), [itens]);
+  const loja = useMemo(() => daLoja(itens ?? []), [itens]);
   const vis = seg === "todos" ? loja : loja.filter((x) => x.segmento === seg);
   const r = resumir(vis);
   const metaSeg = seg === "moto" ? META_PROMOTOR.moto : META_PROMOTOR.carro;
