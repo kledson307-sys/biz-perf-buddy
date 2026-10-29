@@ -90,11 +90,11 @@ export function ControleOS() {
   }), [lista]);
 
   return (
-    <section className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <section className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-xl font-semibold">Controle de Ordens de Serviço</h2>
-          <p className="text-sm text-muted-foreground">{atual ? `Atualização de ${new Date(atual.at).toLocaleString("pt-BR")} · ${atual.itens.length} O.S.${anterior ? ` · comparada com ${new Date(anterior.at).toLocaleDateString("pt-BR")}` : " · primeira atualização"}` : "Importe o relatório geral de O.S. uma vez por semana."}</p>
+          <h2 className="text-sm font-semibold">Controle de Ordens de Serviço</h2>
+          <p className="text-xs text-muted-foreground">{atual ? `Atualização de ${new Date(atual.at).toLocaleString("pt-BR")} · ${atual.itens.length} O.S.${anterior ? ` · comparada com ${new Date(anterior.at).toLocaleDateString("pt-BR")}` : " · primeira atualização"}` : "Importe o relatório geral de O.S. uma vez por semana."}</p>
         </div>
         <Button onClick={() => file.current?.click()} disabled={busy} className="print:hidden"><Upload />{busy ? "Importando…" : "Importar planilha da semana"}</Button>
         <input ref={file} type="file" accept=".xlsx,.xls" className="hidden" aria-label="Planilha de O.S." onChange={e => { void importar(e.target.files?.[0]); e.target.value = ""; }} />
@@ -102,13 +102,13 @@ export function ControleOS() {
       {msg && <p role="status" className="text-sm text-muted-foreground">{msg}</p>}
 
       {atual && <>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-8">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-8">
           {STATUS.map(s => {
             const l = lista.filter(a => a.item.st === s.k);
             const al = l.filter(a => a.alertas.some(x => x.nivel === "alto")).length;
-            return <button key={s.k} onClick={() => setAba(s.k)} className={`rounded-lg border p-3 text-left shadow-sm transition ${aba === s.k ? "border-primary bg-accent" : "border-border bg-card hover:bg-muted"}`}>
+            return <button key={s.k} onClick={() => setAba(s.k)} className={`rounded-lg border px-3 py-1.5 text-left shadow-sm transition ${aba === s.k ? "border-primary bg-accent" : "border-border bg-card hover:bg-muted"}`}>
               <div className="text-xs uppercase text-muted-foreground">{s.nome}</div>
-              <div className="text-2xl font-bold">{l.length}</div>
+              <div className="text-xl font-bold leading-tight">{l.length}</div>
               <div className="text-xs text-muted-foreground">{brl(l.reduce((n, a) => n + a.item.valor, 0))}</div>
               {al > 0 && <div className="mt-1 text-xs font-semibold text-destructive">⚠ {al} alerta{al > 1 ? "s" : ""}</div>}
             </button>;
@@ -120,50 +120,32 @@ export function ControleOS() {
           const media = ativas.length ? ativas.reduce((n, a) => n + a.item.dias, 0) / ativas.length : 0;
           const semaf = (d: number) => d > 30 ? "text-destructive" : d > 20 ? "text-warning" : "text-success";
           const antigas = [...ativas].sort((x, y) => y.item.dias - x.item.dias).slice(0, 8);
-          return <div className="grid gap-4 lg:grid-cols-3">
-            <div className="lux-card p-4">
-              <p className="text-xs uppercase text-muted-foreground">Tempo médio de permanência</p>
-              <p className={`text-3xl font-bold ${semaf(media)}`}>{Math.round(media)} dias</p>
-              <p className="text-xs text-muted-foreground">Meta ≤ 20 dias · {ativas.filter(a => a.item.dias <= 20).length} no verde · {ativas.filter(a => a.item.dias > 20 && a.item.dias <= 30).length} no amarelo · {ativas.filter(a => a.item.dias > 30).length} no vermelho</p>
-            </div>
-            <div className="lux-card p-4 lg:col-span-2">
-              <p className="mb-2 text-xs uppercase text-muted-foreground">O.S. mais antigas na oficina</p>
-              <table className="w-full text-xs"><tbody>{antigas.map(a => (
-                <tr key={a.item.n} className="cursor-pointer border-t border-border hover:bg-muted" onClick={() => { setAba(a.item.st); setAberto(a.item.n); }}>
-                  <td className="py-1 font-medium">{a.item.n}</td><td>{a.item.cons}</td><td className="truncate">{a.item.cli}</td>
-                  <td>{STATUS.find(s => s.k === a.item.st)?.nome}{ehJudicial(acomp[a.item.n]?.acoes) ? " · Judicial" : ""}</td>
-                  <td className={`text-right font-semibold ${semaf(a.item.dias)}`}>{a.item.dias} d</td>
-                </tr>))}</tbody></table>
-            </div>
-          </div>;
-        })()}
-
-
-        <div className="flex flex-wrap items-center gap-2 print:hidden" role="group" aria-label="Filtro de dias na oficina">
-          <span className="text-sm text-muted-foreground">Dias na oficina:</span>
-          {([[0, "Todas", "border-primary bg-primary text-primary-foreground"], [20, "> 20 dias", "border-warning bg-warning/20 text-warning"], [30, "> 30 dias", "border-destructive bg-destructive/20 text-destructive"]] as const).map(([d, n, on]) => (
-            <button key={d} type="button" aria-pressed={filtroDias === d} onClick={() => setFiltroDias(d)}
-              className={`rounded-full border px-3 py-1 text-sm font-medium ${filtroDias === d ? on : "border-border bg-card text-muted-foreground"}`}>
-              {n} ({lista.filter(a => a.item.st !== "encerrado" && a.item.dias > d).length})
-            </button>
-          ))}
-        </div>
-
-        <Box title="Ranking por status — gráficos de pizza">
-          <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 xl:grid-cols-4">
-            <CartaoPizza titulo="O.S. por status" sub="distribuição geral" fmt={n => `${n} O.S.`}
-              dados={STATUS.map(s => ({ label: s.nome, valor: lista.filter(a => a.item.st === s.k).length }))} />
-            {ranking.filter(r => r.total > 0).map(({ s, total, cons }) => (
-              <CartaoPizza key={s.k} titulo={s.nome} sub={`${total} O.S. · ${brl(cons.reduce((n, c) => n + c.valor, 0))}`}
-                fmt={n => `${n} O.S.`} onClick={() => setAba(s.k)}
-                dados={cons.map(c => ({ label: c.c, valor: c.qtd, extra: brl(c.valor) }))} />
-            ))}
-          </div>
-        </Box>
-
+          const dist = STATUS.map(s => ({ s, n: lista.filter(a => a.item.st === s.k).length })).filter(x => x.n > 0);
+          const totD = dist.reduce((n, x) => n + x.n, 0) || 1;
+          const CORES = ["var(--primary)", "var(--neon)", "var(--coral)", "var(--warning)", "var(--success)", "var(--destructive)", "var(--muted-foreground)", "var(--accent-foreground)"];
+          return <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
+            <div className="space-y-3">
+              <div className="lux-card grid grid-cols-[auto_1fr] items-center gap-3 px-4 py-2">
+                <svg viewBox="0 0 42 42" className="size-20" role="img" aria-label="Distribuição por status">{(() => { let off = 25; return dist.map((x, i) => { const p = x.n / totD * 100; const el = <circle key={x.s.k} cx="21" cy="21" r="15.9" fill="transparent" stroke={CORES[i % CORES.length]} strokeWidth="6" strokeDasharray={`${p} ${100 - p}`} strokeDashoffset={off} />; off -= p; return el; }); })()}</svg>
+                <div>
+                  <p className="text-[10px] uppercase text-muted-foreground">Tempo médio de permanência</p>
+                  <p className={`text-2xl font-bold leading-tight ${semaf(media)}`}>{Math.round(media)} dias</p>
+                  <p className="text-[11px] text-muted-foreground">Meta ≤ 20 dias · {ativas.filter(a => a.item.dias <= 20).length} verde · {ativas.filter(a => a.item.dias > 20 && a.item.dias <= 30).length} amarelo · {ativas.filter(a => a.item.dias > 30).length} vermelho</p>
+                </div>
+                <ul className="col-span-2 grid grid-cols-2 gap-x-3 text-[11px]">{dist.map((x, i) => <li key={x.s.k} className="flex items-center gap-1"><span className="size-2 rounded-full" style={{ background: CORES[i % CORES.length] }} />{x.s.nome} <b className="ml-auto">{x.n}</b></li>)}</ul>
+              </div>
+              <div className="lux-card px-4 py-2">
+                <p className="mb-1 text-[10px] uppercase text-muted-foreground">O.S. mais antigas na oficina</p>
+                <table className="w-full text-xs"><tbody>{antigas.map(a => (
+                  <tr key={a.item.n} className="cursor-pointer border-t border-border hover:bg-muted" onClick={() => { setAba(a.item.st); setAberto(a.item.n); }}>
+                    <td className="py-0.5 font-medium">{a.item.n}</td><td>{a.item.cons}</td>
+                    <td className="max-w-[110px] truncate">{STATUS.find(s => s.k === a.item.st)?.nome}{ehJudicial(acomp[a.item.n]?.acoes) ? " · Judicial" : ""}</td>
+                    <td className={`text-right font-semibold ${semaf(a.item.dias)}`}>{a.item.dias} d</td>
+                  </tr>))}</tbody></table>
+              </div>
         {novos.length > 0 && <Box title={`Retornos feitos pelos vendedores (${novos.length})`} right={<Button size="sm" variant="outline" onClick={() => void ciente(novos.map(r => r.id))}>Ciente de todos</Button>}>
-          <ul className="divide-y divide-border text-sm">
-            {novos.map(r => <li key={r.id} className="flex flex-wrap items-center gap-x-3 px-5 py-2">
+          <ul className="max-h-40 divide-y divide-border overflow-y-auto text-xs">
+            {novos.map(r => <li key={r.id} className="flex flex-wrap items-center gap-x-3 px-3 py-1">
               <span className="font-semibold">O.S. {r.os_n}</span><span>{r.consultor}</span>
               <span className="text-muted-foreground">{new Date(r.feito_at).toLocaleString("pt-BR")}</span>
               <span className="flex-1">{r.nota}</span>
@@ -172,8 +154,8 @@ export function ControleOS() {
           </ul>
         </Box>}
         {atrasados.length > 0 && <Box title={`Retornos ao cliente pendentes dos vendedores (${atrasados.length})`} right={<Bell className="size-4 text-destructive" />}>
-          <ul className="divide-y divide-border text-sm">
-            {atrasados.map(({ a, due }) => <li key={a.item.n} className="flex flex-wrap gap-x-3 px-5 py-2">
+          <ul className="max-h-40 divide-y divide-border overflow-y-auto text-xs">
+            {atrasados.map(({ a, due }) => <li key={a.item.n} className="flex flex-wrap gap-x-3 px-3 py-1">
               <span className="font-semibold">O.S. {a.item.n}</span><span>{a.item.cons}</span>
               <span className="text-destructive">retorno devido desde {fmt(due!)} — aguardando o vendedor marcar como feito</span>
             </li>)}
@@ -181,15 +163,27 @@ export function ControleOS() {
         </Box>}
 
         {lembretes.length > 0 && <Box title={`Lembretes de hoje (${lembretes.length})`} right={<Bell className="size-4" />}>
-          <ul className="divide-y divide-border text-sm">
-            {lembretes.map(a => <li key={a.item.n} className="flex flex-wrap gap-x-3 px-5 py-2">
+          <ul className="max-h-40 divide-y divide-border overflow-y-auto text-xs">
+            {lembretes.map(a => <li key={a.item.n} className="flex flex-wrap gap-x-3 px-3 py-1">
               <span className="font-semibold">O.S. {a.item.n}</span><span>{a.item.cons}</span><span className="text-muted-foreground">{STATUS.find(s => s.k === a.item.st)?.nome}</span>
               <span className={cor[a.alertas[a.alertas.length - 1]?.nivel ?? "info"]}>{a.alertas.filter(x => x.nivel !== "info").map(x => x.texto).join(" ")}</span>
             </li>)}
           </ul>
         </Box>}
 
-        <Box title={`${STATUS.find(s => s.k === aba)?.nome} — por consultor`}>
+            </div>
+            <div className="min-w-0 space-y-2">
+        <div className="flex flex-wrap items-center gap-2 print:hidden" role="group" aria-label="Filtro de dias na oficina">
+          <span className="text-xs text-muted-foreground">Dias na oficina:</span>
+          {([[0, "Todas", "border-primary bg-primary text-primary-foreground"], [20, "> 20 dias", "border-warning bg-warning/20 text-warning"], [30, "> 30 dias", "border-destructive bg-destructive/20 text-destructive"]] as const).map(([d, n, on]) => (
+            <button key={d} type="button" aria-pressed={filtroDias === d} onClick={() => setFiltroDias(d)}
+              className={`rounded-full border px-2 py-0.5 text-xs font-medium ${filtroDias === d ? on : "border-border bg-card text-muted-foreground"}`}>
+              {n} ({lista.filter(a => a.item.st !== "encerrado" && a.item.dias > d).length})
+            </button>
+          ))}
+        </div>
+
+        <Box title={`${STATUS.find(s => s.k === aba)?.nome} — por consultor`} right={<span className="text-xs">clique na O.S. para tratativas</span>} fit="xl:max-h-[calc(100vh-330px)] xl:min-h-[300px]">
           {porCons.length === 0 && <p className="p-5 text-sm text-muted-foreground">Nenhuma O.S. neste status.</p>}
           {porCons.map(({ c, l }) => <div key={c} className="border-t border-border first:border-t-0">
             <div className="flex flex-wrap justify-between gap-2 bg-muted px-5 py-2 text-sm font-semibold">
@@ -203,12 +197,27 @@ export function ControleOS() {
           </div>)}
         </Box>
 
+            </div>
+          </div>;
+        })()}
+        <details className="lux-card"><summary className="cursor-pointer px-4 py-2 text-sm font-semibold">Ranking por status — gráficos de pizza <span className="text-xs text-primary">abrir/fechar</span></summary>
+          <div className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 xl:grid-cols-4">
+            <CartaoPizza titulo="O.S. por status" sub="distribuição geral" fmt={n => `${n} O.S.`}
+              dados={STATUS.map(s => ({ label: s.nome, valor: lista.filter(a => a.item.st === s.k).length }))} />
+            {ranking.filter(r => r.total > 0).map(({ s, total, cons }) => (
+              <CartaoPizza key={s.k} titulo={s.nome} sub={`${total} O.S. · ${brl(cons.reduce((n, c) => n + c.valor, 0))}`}
+                fmt={n => `${n} O.S.`} onClick={() => setAba(s.k)}
+                dados={cons.map(c => ({ label: c.c, valor: c.qtd, extra: brl(c.valor) }))} />
+            ))}
+          </div>
+        </details>
+
         {saidas.length > 0 && <Box title={`Saíram desde a atualização anterior (${saidas.length})`}>
           <p className="px-5 py-3 text-sm text-muted-foreground">{saidas.map(i => `${i.n} (${i.cons})`).join(" · ")}</p>
         </Box>}
       </>}
 
-      <Box title="Histórico de atualizações">
+      <details className="lux-card"><summary className="cursor-pointer px-4 py-2 text-sm font-semibold">Histórico de atualizações <span className="text-xs text-primary">abrir/fechar</span></summary>
         <Tabela head={["Data", "Por", "Arquivo", "O.S.", "Valor total", ""]}>
           {imps.map((i, k) => <tr key={i.id} className={`border-t border-border ${k === sel ? "bg-accent" : ""}`}>
             <td className="px-3 py-2"><button className="font-medium underline-offset-2 hover:underline" onClick={() => setSel(k)}>{new Date(i.at).toLocaleString("pt-BR")}</button></td>
@@ -218,7 +227,7 @@ export function ControleOS() {
           </tr>)}
           {!imps.length && <tr><td colSpan={6} className="px-3 py-4 text-muted-foreground">Nenhuma atualização ainda.</td></tr>}
         </Tabela>
-      </Box>
+      </details>
     </section>
   );
 }
