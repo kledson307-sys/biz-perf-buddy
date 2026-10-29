@@ -116,7 +116,7 @@ export function ControleOS() {
         </div>
 
         {(() => {
-          const ativas = lista.filter(a => a.item.st !== "encerrado");
+          const ativas = lista.filter(a => a.item.st !== "encerrado" && !ehJudicial(acomp[a.item.n]?.acoes) && a.item.st !== ("judicial" as Status));
           const media = ativas.length ? ativas.reduce((n, a) => n + a.item.dias, 0) / ativas.length : 0;
           const semaf = (d: number) => d > 30 ? "text-destructive" : d > 20 ? "text-warning" : "text-success";
           const antigas = [...ativas].sort((x, y) => y.item.dias - x.item.dias).slice(0, 8);
