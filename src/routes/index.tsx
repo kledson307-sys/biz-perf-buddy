@@ -16,7 +16,8 @@ import { Notificacoes } from "@/components/Notificacoes";
 import { Mecanicos } from "@/components/Mecanicos";
 import { Equipe } from "@/components/Equipe";
 import { MinhaPerformance } from "@/components/MinhaPerformance";
-import { ChefeOficina } from "@/components/ChefeOficina";
+import { CockpitOficina } from "@/components/CockpitOficina";
+import { AcessoTunap } from "@/components/AcessoTunap";
 import { MeuDesempenhoTecnico } from "@/components/MeuDesempenhoTecnico";
 import { RankingAgregados, RankingTecnicos } from "@/components/RankingExtra";
 import { MetasExecutivo } from "@/components/MetasExecutivo";
@@ -84,7 +85,7 @@ function Index() {
   }, []);
   const [papel, setPapel] = useState<string | null | undefined>(undefined);
   const email = session?.user.email ?? "";
-  useAccessPresence(Boolean(session) && papel !== undefined && papel !== "vendedor");
+  useAccessPresence(Boolean(session) && papel !== undefined && papel !== "vendedor" && papel !== "tunap");
   useEffect(() => {
     if (!session) { setPapel(undefined); return; }
     supabase.from("team_members").select("papel").ilike("email", email).maybeSingle().then(({ data }) => setPapel(data?.papel ?? null));
@@ -92,7 +93,9 @@ function Index() {
   if (!ready || (session && papel === undefined)) return <div className="p-10 text-center text-muted-foreground">Carregando…</div>;
   if (!session) return <Login />;
   if (papel === "tecnico") return <MeuDesempenhoTecnico />;
-  if (papel === "chefe_oficina") return <ChefeOficina />;
+  if (papel === "chefe_oficina") return <CockpitOficina chefe />;
+  if (papel === "controlador") return <CockpitOficina chefe={false} />;
+  if (papel === "tunap") return <AcessoTunap />;
   return papel === "vendedor" ? <MinhaPerformance /> : <Painel email={email} />;
 }
 
