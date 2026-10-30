@@ -74,6 +74,6 @@ export function AcessoTunap() {
     </div>
   );
 }
-function K({ l, v, s, cls = "" }: { l: string; v: string; s?: string; cls?: string }) {
+function K({ l, v, s, cls = "" }: { l: string; v: string; s?: string | undefined; cls?: string }) {
   return <section className="lux-card p-3"><p className="text-xs uppercase tracking-wide text-muted-foreground">{l}</p><p className={`text-2xl font-bold ${cls}`}>{v}</p>{s && <p className="text-xs text-muted-foreground">{s}</p>}</section>;
 }
