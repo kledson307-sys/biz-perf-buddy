@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { daLoja, resumir, type NpsItem } from "@/lib/nps";
 import { useResumoMes } from "@/hooks/use-resumo-mes";
@@ -192,21 +192,33 @@ export function ConsultoresTela({ linhas, porDept, total, sales, mes, tot, dec, 
       <Bloco titulo="Ranking geral" icon={<Trophy className="size-4 text-warning" />} className="lg:col-span-12">
         <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-sm tabular-nums">
           <thead className="sticky top-0 bg-card text-[11px] text-muted-foreground"><tr className="text-right">
-            <th className="w-8 py-1 text-left font-normal">#</th><th className="text-left font-normal">Consultor</th><th className="font-normal">Meta</th><th className="font-normal">Realizado</th><th className="font-normal">%</th><th className="font-normal">M.O.</th><th className="font-normal">Peças</th><th className="font-normal">Ticket médio</th><th className="font-normal">Passagens</th>
+            <th className="w-8 py-1 text-left font-normal">#</th><th className="text-left font-normal">Consultor</th><th className="text-left font-normal">Linha</th><th className="font-normal">Meta</th><th className="font-normal">Realizado</th><th className="font-normal">%</th><th className="font-normal">Total (meta · real · %)</th><th className="font-normal">Ticket médio</th><th className="font-normal">Passagens</th>
           </tr></thead>
-          <tbody>{rank.map((l, i) => { const p = pass[l.c.id] ?? 0; const so = soPecas(l.c.nome); return (
-            <tr key={l.c.id} className="border-t border-border/60 text-right">
-              <td className="py-1 text-left"><span className={`inline-flex size-5 items-center justify-center rounded-full text-[10px] font-bold ${i === 0 ? "bg-warning text-background" : i === 1 ? "bg-muted-foreground text-background" : i === 2 ? "bg-coral text-background" : "text-muted-foreground"}`}>{i + 1}</span></td>
-              <td className="text-left font-semibold">{l.c.nome}</td>
-              <td className="text-muted-foreground">{brl(l.meta)}</td><td>{brl(l.real)}</td>
-              <td className={`font-bold ${l.meta ? tone(l.perf) : ""}`}>{l.meta ? pct(l.perf) : "—"}</td>
-              <td className="text-xs">{so ? "—" : <>{brl(l.servicos)} <span className={tone(l.perfS)}>{l.mS ? pct(l.perfS) : ""}</span></>}</td>
-              <td className="text-xs">{brl(l.pecas)} <span className={tone(l.perfP)}>{l.mP ? pct(l.perfP) : ""}</span></td>
-              <td>{p ? brl(div(l.real, p)) : "—"}</td><td>{p ? uni(p) : "—"}</td>
-            </tr>); })}
+          <tbody>{rank.map((l, i) => { const p = pass[l.c.id] ?? 0; const so = soPecas(l.c.nome); const rs = so ? 1 : 2; return (
+            <Fragment key={l.c.id}>
+              {!so && <tr className="border-t border-border/60 text-right">
+                <td rowSpan={rs} className="py-1 text-left align-middle"><span className={`inline-flex size-5 items-center justify-center rounded-full text-[10px] font-bold ${i === 0 ? "bg-warning text-background" : i === 1 ? "bg-muted-foreground text-background" : i === 2 ? "bg-coral text-background" : "text-muted-foreground"}`}>{i + 1}</span></td>
+                <td rowSpan={rs} className="text-left align-middle font-semibold">{l.c.nome}</td>
+                <td className="text-left text-xs text-muted-foreground">Serviços</td>
+                <td className="text-muted-foreground">{brl(l.mS)}</td><td>{brl(l.servicos)}</td>
+                <td className={`font-bold ${l.mS ? tone(l.perfS) : ""}`}>{l.mS ? pct(l.perfS) : "—"}</td>
+                <td rowSpan={rs} className="align-middle text-xs">{brl(l.meta)} · {brl(l.real)} · <b className={l.meta ? tone(l.perf) : ""}>{l.meta ? pct(l.perf) : "—"}</b></td>
+                <td rowSpan={rs} className="align-middle">{p ? brl(div(l.real, p)) : "—"}</td><td rowSpan={rs} className="align-middle">{p ? uni(p) : "—"}</td>
+              </tr>}
+              <tr className={`text-right ${so ? "border-t border-border/60" : ""}`}>
+                {so && <><td className="py-1 text-left"><span className={`inline-flex size-5 items-center justify-center rounded-full text-[10px] font-bold ${i === 0 ? "bg-warning text-background" : i === 1 ? "bg-muted-foreground text-background" : i === 2 ? "bg-coral text-background" : "text-muted-foreground"}`}>{i + 1}</span></td><td className="text-left font-semibold">{l.c.nome}</td></>}
+                <td className="text-left text-xs text-muted-foreground">Peças</td>
+                <td className="text-muted-foreground">{brl(l.mP)}</td><td>{brl(l.pecas)}</td>
+                <td className={`font-bold ${l.mP ? tone(l.perfP) : ""}`}>{l.mP ? pct(l.perfP) : "—"}</td>
+                {so && <><td className="text-xs">{brl(l.meta)} · {brl(l.real)} · <b className={l.meta ? tone(l.perf) : ""}>{l.meta ? pct(l.perf) : "—"}</b></td><td>{p ? brl(div(l.real, p)) : "—"}</td><td>{p ? uni(p) : "—"}</td></>}
+              </tr>
+            </Fragment>); })}
             {!rank.length && <tr><td colSpan={9} className="py-8 text-center text-muted-foreground">Sem consultores no mês.</td></tr>}
           </tbody>
-          {rank.length > 0 && <tfoot><tr className="border-t border-border text-right font-bold"><td /><td className="py-1 text-left">TOTAL</td><td>{brl(t.meta)}</td><td>{brl(t.real)}</td><td className={tone(t.perf)}>{pct(t.perf)}</td><td>{brl(t.servicos)}</td><td>{brl(t.pecas)}</td><td>{totPass ? brl(div(t.real, totPass)) : "—"}</td><td>{totPass ? uni(totPass) : "—"}</td></tr></tfoot>}
+          {rank.length > 0 && <tfoot>
+            <tr className="border-t border-border text-right font-bold"><td /><td rowSpan={2} className="py-1 text-left align-middle">TOTAL</td><td className="text-left text-xs">Serviços</td><td>{brl(t.mS)}</td><td>{brl(t.servicos)}</td><td className={tone(t.perfS)}>{pct(t.perfS)}</td><td rowSpan={2} className="align-middle text-xs">{brl(t.meta)} · {brl(t.real)} · <span className={tone(t.perf)}>{pct(t.perf)}</span></td><td rowSpan={2} className="align-middle">{totPass ? brl(div(t.real, totPass)) : "—"}</td><td rowSpan={2} className="align-middle">{totPass ? uni(totPass) : "—"}</td></tr>
+            <tr className="text-right font-bold"><td /><td className="text-left text-xs">Peças</td><td>{brl(t.mP)}</td><td>{brl(t.pecas)}</td><td className={tone(t.perfP)}>{pct(t.perfP)}</td></tr>
+          </tfoot>}
         </table></div>
         <button type="button" onClick={() => setTab("proj-total")} className="mt-1.5 flex items-center gap-1 rounded-md border border-primary px-3 py-1 text-xs font-medium text-primary hover:bg-primary/10"><Users className="size-3.5" />Ver detalhes de cada consultor <ArrowRight className="size-3" /></button>
       </Bloco>
