@@ -115,7 +115,7 @@ export function CentralGestao({ linhas, porDept, total, sales, mes, tot, dec, se
   if (gapS > 0) plano.push({ acao: "Revisar orçamentos de serviço pendentes", resp: "Consultores", prazo: "Hoje", st: "Pendente", ir: "proj-serv" });
 
   return (
-    <div className={`${GRID} lg:!h-[calc(100dvh-10rem)] lg:grid-cols-12 lg:grid-rows-[auto_auto_minmax(0,1fr)_minmax(0,1.1fr)_auto]`}>
+    <div className={`${GRID.replace("7rem", "10rem")} lg:grid-cols-12 lg:grid-rows-[auto_auto_minmax(0,1fr)_minmax(0,1.1fr)_auto]`}>
       <CabecalhoTela className="lg:col-span-12" titulo="Central de Gestão" sub="Visão estratégica da operação. Foque no que realmente importa." mes={mes} dec={dec} tot={tot} />
       <Bloco titulo="Status da operação" className="lg:col-span-12">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">{status.map(([n, p, ir]) => { const s = estado(p); return (
