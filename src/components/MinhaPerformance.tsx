@@ -131,7 +131,11 @@ export function MinhaPerformance() {
                 </div>
               </Box>
             )}
-            {aba === "detalhes" && d.agregados.length > 0 && (
+          </>
+        )}
+        {aba === "detalhes" && d && (
+          <>
+            {d.agregados.length > 0 && (
               <Box title="Agregados">
                 <div className="divide-y text-sm">
                   {d.agregados.map((a) => {
