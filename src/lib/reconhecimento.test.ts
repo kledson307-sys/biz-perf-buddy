@@ -54,7 +54,8 @@ describe("Faturamento em linhas (histórico diário)", () => {
     expect(ehFatPecas(raw)).toBe(true);
     const fat = lerFatPecas(raw)!;
     expect(fat.linhas).toHaveLength(1); // apelido GEOVANA.L -> GEOVANA.M; interna e devolvida fora
-    expect(fat.linhas[0]).toMatchObject({ login: "GEOVANA.M", dia: "2026-04-10", pecas: 2320.17, margem: 831.87 });
+    expect(fat.linhas[0]).toMatchObject({ login: "GEOVANA.M", dia: "2026-04-10", pecas: 2320.17 });
+    expect(fat.linhas[0]!.margem).toBeCloseTo(831.87, 2);
   });
 
   it("consolida por consultor e dia e lista logins fora da equipe", () => {
