@@ -6,8 +6,10 @@ import { ehFaturamentoPecas, lerItensPecas, type ItemPeca } from "@/lib/pecas-it
 import { ehRelatorioPassagens, lerPassagens, type PassReport } from "@/lib/mecanicos";
 import { salvarPassagens } from "@/lib/passagens-save";
 import { mesTravado } from "@/lib/month-lock";
+import { pecasPorDia, osDasPassagens, servicosPorDia, retornosPorChassi } from "@/lib/diario-retorno";
+import { salvarOficinaMes } from "@/lib/oficina-mes";
 
-type Achado = { arquivo: string; tipo: "nps" | "pecas" | "passagens" | "outro"; resumo: string; nps?: NpsItem[]; pecas?: ItemPeca[]; pass?: PassReport };
+type Achado = { arquivo: string; tipo: "nps" | "pecas" | "passagens" | "outro"; resumo: string; nps?: NpsItem[]; pecas?: ItemPeca[]; pass?: PassReport; raw?: unknown[][] };
 const ROTULO = { nps: "NPS da montadora", pecas: "Faturamento de Peças", passagens: "Faturamento de Serviços / Passagens", outro: "Não reconhecido" } as const;
 
 /** Esteira única: arraste os arquivos em qualquer ordem; cada um é reconhecido pelos cabeçalhos e conferido antes de salvar. */
@@ -25,9 +27,9 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
       const nps = abas.flatMap(({ s, raw }) => lerAbaNps(raw, s));
       if (nps.length) { out.push({ arquivo: f.name, tipo: "nps", nps, resumo: `${nps.length} pesquisas · ${daLoja(nps).length} de Salvador` }); continue; }
       const p = abas.find((a) => ehFaturamentoPecas(a.raw));
-      if (p) { const it = lerItensPecas(p.raw); out.push({ arquivo: f.name, tipo: "pecas", pecas: it, resumo: `${it.length} itens · ${it.reduce((a, i) => a + i.valor, 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} (sem O.S. internas)` }); continue; }
+      if (p) { const it = lerItensPecas(p.raw); out.push({ arquivo: f.name, tipo: "pecas", pecas: it, raw: p.raw, resumo: `${it.length} itens · ${it.reduce((a, i) => a + i.valor, 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} (sem O.S. internas)` }); continue; }
       const pa = abas.find((a) => ehRelatorioPassagens(a.raw));
-      if (pa) { const r = lerPassagens(pa.raw); out.push({ arquivo: f.name, tipo: "passagens", pass: r, resumo: `${r.mecanicos.length} técnicos · ${r.consultores.length} consultores · ${r.mecanicos.reduce((n, m) => n + m.passagens, 0)} passagens (O.S. únicas, sem internas)` }); continue; }
+      if (pa) { const r = lerPassagens(pa.raw); const ret = retornosPorChassi(osDasPassagens(pa.raw)).length; out.push({ arquivo: f.name, tipo: "passagens", pass: r, raw: pa.raw, resumo: `${r.mecanicos.length} técnicos · ${r.consultores.length} consultores · ${r.mecanicos.reduce((n, m) => n + m.passagens, 0)} passagens (O.S. únicas, sem internas) · ${ret} retornos por chassi` }); continue; }
       out.push({ arquivo: f.name, tipo: "outro", resumo: "Cabeçalhos não reconhecidos. Use o bloco específico abaixo." });
     }
     setAchados(out);
@@ -48,8 +50,10 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
         if (a.tipo === "pecas" && a.pecas) {
           const { error } = await supabase.from("parts_items").upsert({ mes, itens: a.pecas as never, nome, at: new Date().toISOString() }, { onConflict: "user_id,mes" });
           if (error) throw error; feitos.push("Peças por item");
+          if (a.raw) { await salvarOficinaMes(mes, { diario: pecasPorDia(a.raw, mes), fonte: "p" }); feitos.push("Peças por dia"); }
         }
-        if (a.tipo === "passagens" && a.pass) { await salvarPassagens(a.pass, mes); feitos.push("Passagens (técnicos, mix e consultores)"); }
+        if (a.tipo === "passagens" && a.pass) { await salvarPassagens(a.pass, mes); feitos.push("Passagens (técnicos, mix e consultores)");
+          if (a.raw) { const oss = osDasPassagens(a.raw); await salvarOficinaMes(mes, { diario: servicosPorDia(oss, mes), fonte: "s", retornos: retornosPorChassi(oss) }); feitos.push("Serviços por dia e retornos por chassi"); } }
       }
       setMsg(feitos.length ? `✅ Salvo: ${feitos.join(", ")}. Importações anteriores substituídas.` : "Nada para salvar aqui.");
       setAchados([]); onDone?.();
