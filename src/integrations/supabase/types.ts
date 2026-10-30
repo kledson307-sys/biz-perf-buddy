@@ -44,6 +44,140 @@ export type Database = {
         }
         Relationships: []
       }
+      agenda_metas: {
+        Row: {
+          categoria: string
+          id: string
+          mes: string
+          qtd_diaria: number
+          segmento: string
+          user_id: string
+        }
+        Insert: {
+          categoria: string
+          id?: string
+          mes: string
+          qtd_diaria?: number
+          segmento: string
+          user_id?: string
+        }
+        Update: {
+          categoria?: string
+          id?: string
+          mes?: string
+          qtd_diaria?: number
+          segmento?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agendamento_followups: {
+        Row: {
+          aceito_em: string | null
+          aceito_por: string
+          agendamento_id: string
+          confirmacao: string | null
+          confirmado_em: string | null
+          confirmado_por: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          aceito_em?: string | null
+          aceito_por?: string
+          agendamento_id: string
+          confirmacao?: string | null
+          confirmado_em?: string | null
+          confirmado_por?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Update: {
+          aceito_em?: string | null
+          aceito_por?: string
+          agendamento_id?: string
+          confirmacao?: string | null
+          confirmado_em?: string | null
+          confirmado_por?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agendamento_followups_agendamento_id_fkey"
+            columns: ["agendamento_id"]
+            isOneToOne: true
+            referencedRelation: "agendamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agendamentos: {
+        Row: {
+          arquivo: string
+          categoria: string
+          celular: string
+          cliente: string
+          consultor: string
+          created_at: string
+          data: string
+          hora: string
+          id: string
+          importado_por: string
+          obs: string
+          os: string
+          placa: string
+          produto: string
+          segmento: string
+          status: string
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          arquivo?: string
+          categoria?: string
+          celular?: string
+          cliente?: string
+          consultor?: string
+          created_at?: string
+          data: string
+          hora?: string
+          id?: string
+          importado_por?: string
+          obs?: string
+          os?: string
+          placa?: string
+          produto?: string
+          segmento?: string
+          status?: string
+          tipo: string
+          user_id?: string
+        }
+        Update: {
+          arquivo?: string
+          categoria?: string
+          celular?: string
+          cliente?: string
+          consultor?: string
+          created_at?: string
+          data?: string
+          hora?: string
+          id?: string
+          importado_por?: string
+          obs?: string
+          os?: string
+          placa?: string
+          produto?: string
+          segmento?: string
+          status?: string
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       agg_codes: {
         Row: {
           codigos: string
@@ -807,6 +941,7 @@ export type Database = {
       meu_nps: { Args: never; Returns: Json }
       minha_performance: { Args: { p_mes: string }; Returns: Json }
       minhas_os: { Args: never; Returns: Json }
+      oficina_retornos: { Args: { p_mes: string }; Returns: Json }
       painel_oficina: { Args: { p_mes: string }; Returns: Json }
       registrar_acesso: { Args: never; Returns: undefined }
       registrar_retorno: {

@@ -225,6 +225,13 @@
       "when": 1793380000000,
       "tag": "0031_oficina_retornos_rpc",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793396744519,
+      "tag": "0032_create_agendamentos",
+      "breakpoints": true
     }
   ]
 }
