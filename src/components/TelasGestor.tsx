@@ -7,6 +7,7 @@ import { AlertTriangle, ArrowRight, CalendarDays, ClipboardList, Download, MapPi
 import { Anel, Bloco } from "@/components/Cockpit";
 import { brl, div, pct, tone, uni } from "@/components/painel-ui";
 import { MixConsultores } from "@/components/MixConsultores";
+import type { PerformanceCalc } from "@/lib/performance";
 import farois from "@/assets/hero-farois.jpg";
 
 type L = { c: { id: string; nome: string; department_id: string | null }; servicos: number; pecas: number; mS: number; mP: number; meta: number; real: number; perf: number; perfS: number; perfP: number; projPct: number; proj: number; nec: number };
@@ -78,7 +79,7 @@ const estado = (p: number | null) => p === null ? { r: "Sem dados", c: "text-mut
 
 /** Central de Gestão (referência 16:9): status da operação, prioridades, plano de ação, evolução e resultado. */
 export function CentralGestao({ linhas, porDept, total, sales, mes, tot, dec, setTab, exportar, imprimir, fechamento, whats }: {
-  linhas: L[]; porDept: D[]; total: L & { projS: number; projP: number; necS: number; necP: number; projPctS: number; projPctP: number }; sales: S[]; mes: string; tot: number; dec: number;
+  linhas: L[]; porDept: D[]; total: PerformanceCalc; sales: S[]; mes: string; tot: number; dec: number;
   setTab: (t: string) => void; exportar: () => void; imprimir: () => void; fechamento: () => void; whats: ReactNode;
 }) {
   const { agg, mec, parados, amarelos } = useResumoMes(mes);
@@ -94,7 +95,7 @@ export function CentralGestao({ linhas, porDept, total, sales, mes, tot, dec, se
     ["Agregados", aggRitmo, "agregados"], ["Projeção", t.meta ? t.projPct : null, "proj-total"],
   ];
   const gapP = Math.max(t.mP - t.pecas, 0), gapS = Math.max(t.mS - t.servicos, 0);
-  type P = { nivel: "CRÍTICO" | "ATENÇÃO"; titulo: string; l1: string; l2?: string; ir: string };
+  type P = { nivel: "CRÍTICO" | "ATENÇÃO"; titulo: string; l1: string; l2?: string | undefined; ir: string };
   const prior: P[] = [];
   const piorGrupo = t.projPctP <= t.projPctS ? { n: "Peças", gap: gapP, p: t.projPctP, ir: "pecas" } : { n: "Serviços", gap: gapS, p: t.projPctS, ir: "proj-serv" };
   if (piorGrupo.p < 1 && piorGrupo.gap > 0) prior.push({ nivel: piorGrupo.p < 0.85 ? "CRÍTICO" : "ATENÇÃO", titulo: piorGrupo.n, l1: `Gap de ${brl(piorGrupo.gap)}`, l2: rest ? `Necessário por dia: ${brl(piorGrupo.gap / rest)}` : undefined, ir: piorGrupo.ir });
@@ -167,7 +168,7 @@ export function CentralGestao({ linhas, porDept, total, sales, mes, tot, dec, se
 
 /** Consultores (referência 16:9): 4 KPIs, ranking geral e rodapé com evolução, mix e departamentos. */
 export function ConsultoresTela({ linhas, porDept, total, sales, mes, tot, dec, setTab, soPecas }: {
-  linhas: L[]; porDept: D[]; total: L; sales: S[]; mes: string; tot: number; dec: number; setTab: (t: string) => void; soPecas: (n: string) => boolean;
+  linhas: L[]; porDept: D[]; total: PerformanceCalc; sales: S[]; mes: string; tot: number; dec: number; setTab: (t: string) => void; soPecas: (n: string) => boolean;
 }) {
   const [pass, setPass] = useState<Record<string, number>>({});
   useEffect(() => {
