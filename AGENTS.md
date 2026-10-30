@@ -38,3 +38,4 @@
 - Subdirectories may have their own `AGENTS.md` (e.g. `src/lib/AGENTS.md`); read it before changing files there.- Desktop tabs must fit one 16:9 screen (checked at 1440×900 and 1920×1080): put long lists in `Box fit="xl:max-h-[calc(100vh-…)]"` internal scroll or collapsed <details>, never extend the page height.
 
 - Restricted roles 'controlador' (Marcos) and 'tunap' (Geraldo) follow the chefe_oficina pattern: data_owner() is NULL and they read only via SECURITY DEFINER RPCs (`painel_oficina`, `tecnicos_carro`, `meu_nps`, `tunap_painel`); shared math in `src/lib/oficina.ts`.
+- Daily billing by real O.S. date and chassis returns (≤60 days, repair/warranty types, blamed on previous O.S. technician) live in oficina_mes, parsed by src/lib/diario-retorno.ts; it only shapes charts/quality and never replaces official sales totals.
