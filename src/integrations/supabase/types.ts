@@ -939,6 +939,35 @@ export type Database = {
       }
       meu_desempenho_tecnico: { Args: { p_mes: string }; Returns: Json }
       meu_nps: { Args: never; Returns: Json }
+      meus_agendamentos: {
+        Args: { p_mes: string }
+        Returns: {
+          arquivo: string
+          categoria: string
+          celular: string
+          cliente: string
+          consultor: string
+          created_at: string
+          data: string
+          hora: string
+          id: string
+          importado_por: string
+          obs: string
+          os: string
+          placa: string
+          produto: string
+          segmento: string
+          status: string
+          tipo: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "agendamentos"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       minha_performance: { Args: { p_mes: string }; Returns: Json }
       minhas_os: { Args: never; Returns: Json }
       oficina_retornos: { Args: { p_mes: string }; Returns: Json }

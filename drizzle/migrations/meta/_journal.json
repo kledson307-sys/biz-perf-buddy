@@ -232,6 +232,13 @@
       "when": 1793396744519,
       "tag": "0032_create_agendamentos",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793397544085,
+      "tag": "0033_meus_agendamentos_rpc",
+      "breakpoints": true
     }
   ]
 }
