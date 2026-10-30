@@ -24,7 +24,7 @@ export function pecasPorDia(raw: unknown[][], mes: string): Diario {
   for (const r of raw.slice(hi + 1)) {
     if (tipo >= 0 && TIPOS_INTERNOS.has(String(r[tipo] ?? "").trim().toUpperCase())) continue;
     const d = isoDia(r[dt]); if (!d?.startsWith(mes)) continue;
-    (out[d] ??= {}).p = (out[d].p ?? 0) + num(r[val]);
+    { const x = (out[d] ??= {}); x.p = (x.p ?? 0) + num(r[val]); }
   }
   return out;
 }
@@ -53,7 +53,7 @@ export function osDasPassagens(raw: unknown[][]): OsLinha[] {
 
 export function servicosPorDia(oss: OsLinha[], mes: string): Diario {
   const out: Diario = {};
-  for (const o of oss) if (o.data.startsWith(mes) && o.serv) (out[o.data] ??= {}).s = (out[o.data].s ?? 0) + o.serv;
+  for (const o of oss) if (o.data.startsWith(mes) && o.serv) { const x = (out[o.data] ??= {}); x.s = (x.s ?? 0) + o.serv; }
   return out;
 }
 
