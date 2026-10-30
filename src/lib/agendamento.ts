@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 export type Categoria = "revisao" | "diagnostico" | "recall";
 export type AgendItem = { hora: string; status: string; cliente: string; os: string; celular: string; consultor: string; produto: string; placa: string; segmento: "carro" | "moto"; categoria: Categoria; obs: string };
 export type AgendReport = { tipo: "d1" | "d0"; data: string; itens: AgendItem[] };
@@ -49,7 +51,6 @@ export function lerAgendamento(raw: unknown[][]): AgendReport | null {
   return { tipo: impressao && periodo > impressao ? "d1" : "d0", data: periodo, itens };
 }
 
-import { supabase } from "@/integrations/supabase/client";
 
 /** Agendas ficam numa linha própria de oficina_mes (mes = "agenda-AAAA-MM"), chave "tipo:data": reimportar o mesmo dia substitui. */
 export async function salvarAgendamento(r: AgendReport, arquivo: string, nome: string) {
