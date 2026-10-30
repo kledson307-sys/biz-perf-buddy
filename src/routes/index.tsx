@@ -785,7 +785,7 @@ function Config({ parte, params, salvarParams, depts, cons, goals, mes, reload, 
       })()}
       {parte === "metas" && <MetasAno cons={cons} irPara={irPara} onSaved={reload} />}
       <div className="grid gap-6 lg:grid-cols-3">
-      <section className={`space-y-4 rounded-xl border border-border bg-card p-6 ${parte === "metas" ? "hidden" : ""}`}>
+      {parte !== "metas" && <section className="space-y-4 rounded-xl border border-border bg-card p-6">
         <h2 className="text-lg font-semibold">Dias do mês {mes}</h2>
         <Num label="Dias úteis totais" v={params.du_totais} on={(v) => salvarParams({ ...params, du_totais: v })} />
         <Num label="Dias úteis decorridos" v={params.du_decorridos} on={(v) => salvarParams({ ...params, du_decorridos: v })} />
@@ -797,7 +797,10 @@ function Config({ parte, params, salvarParams, depts, cons, goals, mes, reload, 
             <option value="uteis">Dias úteis</option><option value="corridos">Dias corridos</option>
           </select>
         </label>
-        <h2 className="pt-4 text-lg font-semibold">Departamentos</h2>
+        <p className="text-xs text-muted-foreground">Departamentos, consultores e metas ficam em Metas & Planejamento.</p>
+      </section>}
+      {parte === "metas" && <section className="space-y-4 rounded-xl border border-border bg-card p-6">
+        <h2 className="text-lg font-semibold">Departamentos</h2>
         <div className="flex gap-2">
           <input value={novoDept} onChange={(e) => setNovoDept(e.target.value)} placeholder="Nome do departamento" className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm" />
           <button onClick={async () => { if (novoDept.trim()) { await supabase.from("departments").insert({ nome: novoDept.trim() }); setNovoDept(""); reload(); } }} className="rounded-lg bg-secondary px-3 text-sm font-medium text-secondary-foreground">Adicionar</button>
@@ -807,8 +810,8 @@ function Config({ parte, params, salvarParams, depts, cons, goals, mes, reload, 
             <button onClick={async () => { await supabase.from("departments").delete().eq("id", d.id); reload(); }} className="text-destructive">Remover</button>
           </div>
         ))}
-      </section>
-      <section className={`space-y-3 rounded-xl border border-border bg-card p-6 ${parte === "metas" ? "lg:col-span-3" : "lg:col-span-2"}`}>
+      </section>}
+      {parte === "metas" && <section className="space-y-3 rounded-xl border border-border bg-card p-6 lg:col-span-2">
         <h2 className="text-lg font-semibold">Consultores e metas de {mes}</h2>
         <div className="flex flex-wrap gap-2">
           <input value={novoCons} onChange={(e) => setNovoCons(e.target.value)} placeholder="Nome do consultor" className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm" />
@@ -846,7 +849,7 @@ function Config({ parte, params, salvarParams, depts, cons, goals, mes, reload, 
           </div>
         ))}
         <p className="text-xs text-muted-foreground">As metas são salvas ao sair do campo e valem para o mês selecionado no topo.</p>
-      </section>
+      </section>}
       </div>
       {parte === "metas" && <TecnicosMetas mes={mes} />}
     </div>

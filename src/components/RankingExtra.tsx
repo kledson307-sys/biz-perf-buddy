@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Posicao, brl, div, pct, tone, uni } from "./painel-ui";
+import { Posicao, brl, div, num, pct, tone, uni } from "./painel-ui";
 import { naoVendeAgregado } from "@/lib/agregados";
 import { GRUPO_NOME, grupoDe, ocultoDaLista, type Grupo } from "@/lib/mecanicos";
 
@@ -38,7 +38,7 @@ export function RankingAgregados({ mes, cons, deptName, tot, dec }: { mes: strin
           <div><span className="block text-xs text-muted-foreground">Qtd / meta</span>{uni(l.qtd)} / {uni(l.meta)}</div>
           <div><span className="block text-xs text-muted-foreground">Perf.</span><b className={l.meta ? tone(l.perf) : ""}>{l.meta ? pct(l.perf) : "sem meta"}</b></div>
           <div><span className="block text-xs text-muted-foreground">Projeção</span><b className={l.meta ? tone(l.proj) : ""}>{l.meta ? pct(l.proj) : "—"}</b></div>
-          <div><span className="block text-xs text-muted-foreground">Valor · aproveit.</span>{brl(l.valor)} · {pct(l.aprov)}</div>
+          <div><span className="block text-xs text-muted-foreground">Valor · aproveit.</span>{brl(l.valor)} · {num(l.aprov)} un/pass</div>
         </li>
       ))}
     </ul>
