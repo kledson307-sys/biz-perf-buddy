@@ -131,7 +131,6 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
     return [...m.entries()].sort((a, b) => a[0] - b[0]);
   }, [sales, linhas, usaReal, real]);
   const maxDia = Math.max(1, ...diario.map(([, v]) => v));
-  const dptMax = Math.max(1, ...porDept.map((d) => Math.max(d.meta, d.servicos + d.pecas)));
   const resp: Record<string, string> = { ranking: "Consultores", "controle-os": "Oficina", painel: "Gestão", pecas: "Consultores", nps: "Consultores" };
   const lider = ranking[0];
   const res3: [string, number, number, typeof Wrench][] = [["Serviços", t.s, t.ms, Wrench], ["Peças", t.p, t.mp, Package], ["Total", t.s + t.p, metaT, TrendingUp]];
@@ -225,15 +224,16 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
       </Bloco>
 
       {/* Linha 3 */}
-      <Bloco titulo="Departamentos · meta x realizado" icon={<ClipboardList className="size-4 text-primary" />} ir={() => setTab("painel")} className="lg:col-span-4">
-        <div className="flex h-full items-end gap-2">{porDept.map((d) => (
-          <div key={d.nome} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-0.5">
-            <div className="flex h-full w-full items-end justify-center gap-0.5">
-              <div className="w-1/3 rounded-t bg-muted-foreground/40" style={{ height: `${div(d.meta, dptMax) * 100}%` }} title={`Meta ${brl(d.meta)}`} />
-              <div className="w-1/3 rounded-t bg-primary" style={{ height: `${div(d.servicos + d.pecas, dptMax) * 100}%` }} title={`Realizado ${brl(d.servicos + d.pecas)}`} />
-            </div>
-            <span className="w-full truncate text-center text-[10px] text-muted-foreground">{d.nome}</span>
-          </div>))}</div>
+      <Bloco titulo="Desempenho dos agregados" icon={<Package className="size-4 text-neon" />} ir={() => setTab("agregados")} className="lg:col-span-4 border-neon/40">
+        {(() => {
+          const fams = ITENS.map((it) => ({ it, a: agg[it.k] })).filter((x) => x.a && (x.a.mq || x.a.q));
+          const q = fams.reduce((m, x) => m + x.a!.q, 0), v = fams.reduce((m, x) => m + x.a!.v, 0);
+          if (!fams.length) return <p className="text-sm text-muted-foreground">Sem agregados importados neste mês.</p>;
+          return <>
+            <div className="flex flex-wrap justify-around gap-1">{fams.slice(0, 6).map(({ it, a }) => <Anel key={it.k} p={a!.mq && dec ? div(div(a!.q, dec) * tot, a!.mq) : 0} rot={it.nome} />)}</div>
+            <p className="mt-1 flex flex-wrap justify-between gap-2 text-[11px] text-muted-foreground"><span>Vendidos <b className="text-neon">{uni(q)} un.</b></span><span>Faturamento <b className="text-foreground">{brl(v)}</b></span>{pass > 0 && <span>Aproveit. <b className="text-foreground">{div(q, pass).toFixed(1).replace(".", ",")} un./passagem</b></span>}</p>
+          </>;
+        })()}
       </Bloco>
       <Bloco titulo="Destaques do mês" icon={<Star className="size-4 text-primary" />} className="lg:col-span-4">
         <ul className="space-y-0.5 text-xs">{destaques.map(([n, v]) => <li key={n} className="flex justify-between border-b border-border/50 py-0.5"><span className="text-muted-foreground">{n}</span><b>{v}</b></li>)}

@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Kpi, brl, div, pct, tone, uni } from "@/components/painel-ui";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { AcessoTopo } from "@/components/AcessoTopo";
+import { Anel } from "@/components/Cockpit";
 
 type Dados = {
   nome: string; grupo: string; servicos: number; pecas: number; passagens: number;
@@ -39,27 +38,35 @@ export function MeuDesempenhoTecnico() {
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="mx-auto max-w-3xl space-y-4">
-        <header className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h1 className="text-xl font-bold">Meu desempenho</h1>
-            <p className="text-sm text-muted-foreground">{d?.nome ?? ""}{d?.grupo && GRUPO[d.grupo] ? ` · Técnico ${GRUPO[d.grupo]}` : ""}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <input type="month" className="h-9 rounded-md border bg-background px-2 text-sm" value={mes} onChange={(e) => setMes(e.target.value)} />
-            <ThemeToggle />
-            <Button size="sm" variant="outline" onClick={() => supabase.auth.signOut()}><LogOut className="size-4" /> Sair</Button>
-          </div>
-        </header>
+      <div className="mx-auto max-w-5xl space-y-4">
+        <AcessoTopo titulo="Meu desempenho" sub={`${d?.nome ?? ""}${d?.grupo && GRUPO[d.grupo] ? ` · Técnico ${GRUPO[d.grupo]}` : ""}`} mes={mes} setMes={setMes} />
         {erro && <p className="text-sm text-destructive">{erro}</p>}
         {!erro && !d && <p className="text-sm text-muted-foreground">Ainda não há dados seus neste mês.</p>}
+        {d && (
+          <section className="lux-card flex flex-wrap items-center justify-around gap-4 p-4">
+            <Anel p={perf} rot="Performance" />
+            {ms > 0 && <Anel p={div(proj(sv), ms)} rot="Projeção serviços" />}
+            {mp > 0 && <Anel p={div(proj(pc), mp)} rot="Projeção peças" />}
+            <div className="text-sm">
+              <p className="text-muted-foreground">Produzido no mês</p><p className="text-2xl font-bold">{brl(sv + pc)}</p>
+              <p className="text-xs text-muted-foreground">Dia {uni(dec)} de {uni(tot)} · {uni(rest)} restantes</p>
+            </div>
+          </section>
+        )}
         {d && (
           <div className="grid gap-3 sm:grid-cols-2">
             <Kpi label="Serviços" value={brl(sv)} sub={linha(sv, ms)} />
             <Kpi label="Peças" value={brl(pc)} sub={linha(pc, mp)} />
-            <Kpi label="Passagens" value={uni(+d.passagens)} sub={<span>Média por passagem {brl(div(sv + pc, +d.passagens))}</span>} />
+            <Kpi label="Passagens" value={uni(+d.passagens)} sub={<span>Ticket médio por passagem {brl(div(sv + pc, +d.passagens))}<br />Peças por R$ 1 de mão de obra: <b>{sv ? `R$ ${div(pc, sv).toFixed(2).replace(".", ",")}` : "—"}</b> (ideal R$ 2,50–3,50)</span>} />
             <Kpi label="Posição no grupo" value={d.posicao ? `${d.posicao}º de ${d.participantes}` : "—"} sub={<span>Sua performance <b className={tone(perf)}>{pct(perf)}</b>{d.perf_lider ? <> · líder {pct(+d.perf_lider)}{d.posicao !== 1 ? ` (faltam ${pct(Math.max(0, +d.perf_lider - perf))})` : " — você é o líder!"}</> : null}</span>} />
           </div>
+        )}
+        {d && (
+          <section className="lux-card p-4 text-sm">
+            <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Necessidade diária · {uni(rest)} dias restantes</h2>
+            {ms > 0 && <p className="flex justify-between border-b border-border/50 py-1"><span>Mão de obra (serviços)</span><b>{ms - sv > 0 ? `${brl((ms - sv) / rest)} / dia` : "Meta batida ✅"}</b></p>}
+            {mp > 0 && <p className="flex justify-between py-1"><span>Peças</span><b>{mp - pc > 0 ? `${brl((mp - pc) / rest)} / dia` : "Meta batida ✅"}</b></p>}
+          </section>
         )}
       </div>
     </div>
