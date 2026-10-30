@@ -124,13 +124,10 @@ export function Agendamentos({ mes }: { mes: string }) {
         <div className="mt-2"><ImportadorUnificado mes={mes} onDone={() => void load()} /></div>
       </details>
       <Box title={`Agenda de amanhã (D+1) · ${amanha.data ? dBR(amanha.data) : "—"}`}
-        right={<p className="text-xs text-muted-foreground">Acumulado do mês: {uni(acumD1.carro + acumD1.moto)} agendados · {uni(atendidosMes)} atendidos</p>}>
-        <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-5">
-          <div className="rounded-lg bg-background/60 p-2 text-center"><p className="text-2xl font-bold text-primary">{uni(radar.carro)}</p><p className="text-[11px] uppercase text-muted-foreground">Carros</p></div>
-          <div className="rounded-lg bg-background/60 p-2 text-center"><p className="text-2xl font-bold text-neon">{uni(radar.moto)}</p><p className="text-[11px] uppercase text-muted-foreground">Motos</p></div>
-          {(["revisao", "diagnostico", "recall"] as const).map((c) => (
-            <div key={c} className="rounded-lg bg-background/60 p-2 text-center"><p className="text-lg font-bold">{uni(radar.porCat[c].carro + radar.porCat[c].moto)}</p><p className="text-[11px] uppercase text-muted-foreground">{CAT_LABEL[c]} · 🚗{uni(radar.porCat[c].carro)} 🏍{uni(radar.porCat[c].moto)}</p></div>
-          ))}
+        right={<p className="text-xs text-muted-foreground">Acumulado do mês: 🚗 {uni(acumD1.carro)} carros · 🏍 {uni(acumD1.moto)} motos · {uni(atendidosMes)} atendidos</p>}>
+        <div className="grid gap-2 p-3 sm:grid-cols-2">
+          <BlocoSegmento icone="🚗" nome="Carros" m={radar} seg="carro" cor="text-primary" />
+          <BlocoSegmento icone="🏍" nome="Motos" m={radar} seg="moto" cor="text-neon" />
         </div>
       </Box>
 
