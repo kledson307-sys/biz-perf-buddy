@@ -18,20 +18,18 @@ import { Equipe } from "@/components/Equipe";
 import { MinhaPerformance } from "@/components/MinhaPerformance";
 import { ChefeOficina } from "@/components/ChefeOficina";
 import { MeuDesempenhoTecnico } from "@/components/MeuDesempenhoTecnico";
-import { RankingMobile } from "@/components/RankingMobile";
 import { RankingAgregados, RankingTecnicos } from "@/components/RankingExtra";
-import { MixConsultores } from "@/components/MixConsultores";
-import { EvolucaoTime } from "@/components/EvolucaoTime";
 import { MetasExecutivo } from "@/components/MetasExecutivo";
 import { MetasAno } from "@/components/MetasAno";
 import { Cockpit } from "@/components/Cockpit";
 import { NpsPainel } from "@/components/NpsPainel";
 import { PecasEstoque } from "@/components/PecasEstoque";
+import { CentralGestao, ConsultoresTela } from "@/components/TelasGestor";
 import { CadeadoMes } from "@/components/CadeadoMes";
 import { AnaliseFechamento, Reconhecimento } from "@/components/RelatorioAnalise";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Car, ChevronDown, ClipboardList, Download, Gauge, Gem, LayoutDashboard, Lightbulb, LogOut, Menu, Package, Printer, Settings, Star, Target, TrendingUp, Upload, Users, Wrench, X } from "lucide-react";
+import { AlertTriangle, Car, ChevronDown, ClipboardList, Download, Gauge, Gem, LayoutDashboard, LogOut, Menu, Package, Printer, Settings, Star, Target, TrendingUp, Upload, Users, Wrench, X } from "lucide-react";
 import bmwLogo from "@/assets/bmw-logo.asset.json";
 import carroSilhueta from "@/assets/carro-silhueta.jpg";
 import { localDay, sourceLabels, sourceStatus, tabUpdateStatus, UPDATE_EVENT, type UpdateRecord, type UpdateSource } from "@/lib/update-status";
@@ -366,7 +364,8 @@ function Painel({ email }: { email: string }) {
     const t = total; const meta = t.mS + t.mP; const real = t.servicos + t.pecas;
     const ranking = [...linhas].filter((l) => l.meta > 0).sort((a, b) => b.perf - a.perf);
     switch (tab) {
-      case "painel": case "proj": case "os": return <AbaTopo titulo="Central de Gestão" sub={`Visão consolidada da loja por departamento · ${mesExtenso}`} icon={LayoutDashboard} kpis={[
+      case "painel": case "ranking": case "pecas": return null;
+      case "proj": case "os": return <AbaTopo titulo="Central de Gestão" sub={`Visão consolidada da loja por departamento · ${mesExtenso}`} icon={LayoutDashboard} kpis={[
         { label: "Faturamento total", value: brl(real), sub: `${pct(div(real, meta))} de ${brl(meta)}`, p: div(real, meta), barra: "bg-primary", cls: pctMeta(real, meta) },
         { label: "Mão de obra", value: brl(t.servicos), sub: `${pct(t.perfS)} de ${brl(t.mS)}`, p: t.perfS, barra: "bg-neon" },
         { label: "Peças", value: brl(t.pecas), sub: `${pct(t.perfP)} de ${brl(t.mP)}`, p: t.perfP, barra: "bg-coral" },
@@ -483,41 +482,6 @@ function Painel({ email }: { email: string }) {
       <main className={`mx-auto min-w-0 max-w-[1920px] space-y-3 px-3 py-3 sm:px-5 ${tab === "painel" ? "painel-phone" : ""}`}>
         {topo}
         {subBar}
-        {!relatorio && tab !== "cockpit" && (() => {
-          const rest = Math.max(tot - dec, 0);
-          type L = (typeof linhas)[number];
-          const abaixo = (arr: L[], f: (l: L) => number, m: (l: L) => number) => arr.filter((l) => m(l) > 0 && f(l) < 0.85).sort((a, b) => f(a) - f(b));
-          const piorS = abaixo(linhasServ, (l) => l.projPctS, (l) => l.mS)[0];
-          const piorP = abaixo(linhas, (l) => l.projPctP, (l) => l.mP)[0];
-          const pior = abaixo(linhas, (l) => l.projPct, (l) => l.meta)[0];
-          const semMeta = linhas.filter((l) => l.meta === 0).length;
-          const deptFraco = [...porDept].filter((d) => d.meta > 0).sort((a, b) => a.projPct - b.projPct)[0];
-          const o: Record<string, [string, string]> = {
-            painel: [`Projeção do mês em ${pct(total.projPct)} da meta (Serviços ${pct(total.projPctS)} · Peças ${pct(total.projPctP)}), faltando ${rest} dia(s).`,
-              total.projPct >= 1 ? `Ritmo bom: reconheça ${lider?.c.nome ?? "o líder"} e peça superação.` : `Cobre ${brl(total.nec)}/dia da equipe${deptFraco ? `; foco em ${deptFraco.nome} (${pct(deptFraco.projPct)})` : ""}.`],
-            "proj-serv": [`Serviços projetam ${pct(totalServ.projPctS)}; líder ${liderServ?.c.nome ?? "-"} em ${pct(liderServ?.perfS ?? 0)}.`,
-              piorS ? `Converse hoje com ${piorS.c.nome} (${pct(piorS.projPctS)}): revisar orçamentos pendentes; precisa ${brl(piorS.necS)}/dia.` : "Todos acima de 85%: mantenha a cobrança diária de agendamentos."],
-            "proj-pec": [`Peças projetam ${pct(total.projPctP)}; líder ${liderPec?.c.nome ?? "-"} em ${pct(liderPec?.perfP ?? 0)}.`,
-              piorP ? `Acompanhe ${piorP.c.nome} (${pct(piorP.projPctP)}): oferecer item complementar em toda OS; precisa ${brl(piorP.necP)}/dia.` : "Todos acima de 85%: incentive itens de maior valor."],
-            "proj-total": [`Projeção total ${brl(total.proj)} de ${brl(total.meta)} (${pct(total.projPct)}).`,
-              pior ? `Prioridade: ${pior.c.nome} em ${pct(pior.projPct)} — combine meta diária de ${brl(pior.nec)}.` : "Equipe no ritmo: mantenha a reunião rápida diária."],
-            os: ["Faturado + OS abertas mostram o que ainda dá para fechar no mês.", "Cobre de cada consultor o faturamento das OS prontas antes do fechamento."],
-            "controle-os": ["OS paradas viram prejuízo e risco de reclamação.", "Atualize a planilha toda semana e cobre ação nas OS sinalizadas sem mudança."],
-            mecanicos: ["O faturamento dos técnicos mostra a produtividade da oficina.", "Envie o resumo de Carro e Moto aos grupos e converse com quem está abaixo de 85%."],
-            agregados: ["Agregados medem o aproveitamento de cada passagem.", "Combine com cada consultor 1 agregado por atendimento e acompanhe o aproveitamento."],
-            config: [semMeta ? `${semMeta} consultor(es) sem meta neste mês.` : "Metas e dias configurados.", semMeta ? "Cadastre as metas faltantes para a projeção ficar correta." : "Confira feriados nos dias úteis."],
-          };
-          const [analise, acao] = o[tabKey(tab)] ?? o["painel"]!;
-          return (
-            <details className="group rounded-lg border-l-4 border-primary bg-primary/5 px-3 py-1 text-sm print:hidden">
-              <summary className="flex cursor-pointer list-none items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
-                <Lightbulb className="size-4" />Orientação ao gestor<ChevronDown className="ml-auto size-4 transition-transform group-open:rotate-180" />
-              </summary>
-              <p className="mt-2"><span className="font-medium">Análise:</span> {analise}</p>
-              <p><span className="font-medium">Ação:</span> {acao}</p>
-            </details>
-          );
-        })()}
         {relatorio && (
           <div className="hidden print:block">
             <div className="flex min-h-[250mm] flex-col items-center justify-center text-center">
@@ -544,7 +508,9 @@ function Painel({ email }: { email: string }) {
         {relatorio && <Secao relatorio={relatorio} titulo="Análise do fechamento"><AnaliseFechamento linhas={linhas} total={total} porDept={porDept} sales={sales} dec={dec} tot={tot} mes={mes} /></Secao>}
         {relatorio && <Secao relatorio={relatorio} titulo="Reconhecimento"><Reconhecimento linhas={linhas} sales={sales} dec={dec} tot={tot} mes={mes} /></Secao>}
         {show("os") && <Secao relatorio={relatorio} titulo="Projeção + Ordens de Serviço abertas"><OsAbertas linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} deptName={deptName} semServicos={semServicos} /></Secao>}
-        {show("painel") && (
+        {tab === "painel" && !relatorio && <CentralGestao linhas={linhas} porDept={porDept} total={total} sales={sales} mes={mes} tot={tot} dec={dec} setTab={setTab} exportar={exportar} imprimir={() => window.print()} fechamento={gerarRelatorio} whats={<button type="button" onClick={() => setAbrirWhats(!abrirWhats)} className="rounded-md border border-border px-2.5 py-1 hover:bg-muted">{abrirWhats ? "Ocultar WhatsApp" : "WhatsApp da equipe"}</button>} />}
+        {tab === "painel" && abrirWhats && !relatorio && <EnvioWhatsapp linhas={linhas} lider={lider} liderServ={liderServ} liderPec={liderPec} mes={mes} dec={dec} tot={tot} reload={load} />}
+        {relatorio && (
           <Secao relatorio={relatorio} titulo="Resumo executivo">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-sm font-semibold">Relatório de {mes}</h2>
@@ -737,39 +703,7 @@ function Painel({ email }: { email: string }) {
           </Secao>
         )}
 
-        {tab === "ranking" && (<>
-          <Box title={`Ranking dos consultores · ${mesExtenso}`} fit="md:max-h-[calc(100vh-590px)] md:min-h-[200px]">
-            <RankingMobile linhas={linhas} total={total} deptName={deptName} soPecas={soPecas} />
-            <div className="hidden md:block">
-              <Tabela head={["#", "Consultor", "Depto", "Serviços", "Peças", "Realizado", "Meta", "Perf.", "Projeção", "Nec./dia", "Peças/R$1 M.O.", "vs. Líder"]}>
-                {linhas.length === 0 && <tr><td colSpan={12} className="px-3 py-10 text-center text-muted-foreground">Sem dados no mês.</td></tr>}
-                {linhas.map((l, i) => {
-                  const semServ = soPecas(l.c.nome);
-                  return (
-                    <tr key={l.c.id} className="border-t border-border">
-                      <td className="px-3 py-1.5"><Posicao i={i} /></td>
-                      <td className="px-3 py-1.5 font-medium">{l.c.nome}</td>
-                      <td className="px-3 py-1.5 text-xs text-muted-foreground">{deptName(l.c.department_id)}</td>
-                      <td className="px-3 py-1.5">{semServ ? "—" : <>{brl(l.servicos)} <span className={`text-xs ${tone(l.perfS)}`}>{pct(l.perfS)}</span></>}</td>
-                      <td className="px-3 py-1.5">{brl(l.pecas)} <span className={`text-xs ${tone(l.perfP)}`}>{pct(l.perfP)}</span></td>
-                      <td className="px-3 py-1.5 font-semibold">{brl(l.real)}</td>
-                      <td className="px-3 py-1.5 text-muted-foreground">{brl(l.meta)}</td>
-                      <td className={`px-3 py-1.5 font-semibold ${tone(l.perf)}`}>{pct(l.perf)}</td>
-                      <td className={`px-3 py-1.5 ${tone(l.projPct)}`}>{brl(l.proj)}</td>
-                      <td className="px-3 py-1.5">{l.nec ? brl(l.nec) : "—"}</td>
-                      <td className={`px-3 py-1.5 ${semServ || !l.servicos ? "" : l.pecas / l.servicos >= 2.5 ? "text-success" : l.pecas / l.servicos >= 1.5 ? "text-warning" : "text-destructive"}`} title="Ideal: R$ 2,50 a R$ 3,50 de peças por R$ 1 de serviço">{semServ || !l.servicos ? "—" : (l.pecas / l.servicos).toFixed(2).replace(".", ",")}</td>
-                      <td className="whitespace-nowrap px-3 py-1.5">{!lider || l === lider ? <span className="font-semibold text-primary">Líder</span> : <span className="text-destructive">−{((lider.perf - l.perf) * 100).toFixed(1)} pts</span>}</td>
-                    </tr>
-                  );
-                })}
-              </Tabela>
-            </div>
-          </Box>
-          <div className="grid gap-3 lg:grid-cols-2 [&>*]:xl:max-h-[260px] [&>*]:xl:overflow-y-auto">
-            <EvolucaoTime sales={sales} ids={linhas.map((l) => l.c.id)} meta={total.meta} mes={mes} />
-            <MixConsultores mes={mes} />
-          </div>
-        </>)}
+        {tab === "ranking" && <ConsultoresTela linhas={linhas} porDept={porDept} total={total} sales={sales} mes={mes} tot={tot} dec={dec} setTab={setTab} soPecas={soPecas} />}
         {show("agregados") && <Secao relatorio={relatorio} titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} />{!relatorio && <details className="lux-card"><summary className="cursor-pointer px-4 py-2 text-sm font-semibold">Ranking geral de agregados · {mesExtenso} <span className="text-xs text-primary">abrir/fechar</span></summary><div className="max-h-[60vh] overflow-y-auto"><RankingAgregados mes={mes} cons={visiveis} deptName={deptName} tot={tot} dec={dec} /></div></details>}</Secao>}
         {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} lado={relatorio ? undefined : <RetrabalhoOficina />} />{!relatorio && <><div className="grid items-start gap-3"><details className="group lux-card"><summary className="flex cursor-pointer list-none items-center justify-between px-4 py-2 text-sm font-semibold">Ranking dos técnicos · Serviços, Peças e Total · {mesExtenso}<span className="text-xs text-primary">Abrir/fechar</span></summary><RankingTecnicos mes={mes} tot={tot} dec={dec} /></details></div></>}</Secao>}
         {tab === "controle-os" && <ControleOS />}
@@ -795,7 +729,7 @@ function Painel({ email }: { email: string }) {
         </div>}
         {tab === "cockpit" && !relatorio && <Cockpit linhas={linhas} porDept={porDept} mes={mes} tot={tot} dec={dec} soPecas={soPecas} setTab={setTab} sales={sales} nome={email.split("@")[0] ?? ""} deptName={deptName} />}
         {tab === "nps" && !relatorio && <NpsPainel />}
-        {tab === "pecas" && !relatorio && <PecasEstoque linhas={linhas} porDept={porDept} margemIdeal={margemIdeal} deptName={deptName} passagens={resumo.pass} mes={mes} />}
+        {tab === "pecas" && !relatorio && <PecasEstoque linhas={linhas} porDept={porDept} margemIdeal={margemIdeal} deptName={deptName} passagens={resumo.pass} mes={mes} tot={tot} dec={dec} />}
         {tab === "metas" && !relatorio && <>
           <details className="lux-card px-3 py-2"><summary className="cursor-pointer text-sm font-semibold text-primary">+ Ajustar metas (consultores, técnicos e plano anual)</summary><div className="mt-3"><Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div></details>
           <div className="grid items-start gap-3 xl:grid-cols-2">
