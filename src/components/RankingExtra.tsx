@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Posicao, brl, div, pct, tone, uni } from "./painel-ui";
+import { Posicao, brl, div, num, pct, tone, uni } from "./painel-ui";
 import { naoVendeAgregado } from "@/lib/agregados";
 import { GRUPO_NOME, grupoDe, ocultoDaLista, type Grupo } from "@/lib/mecanicos";
 
