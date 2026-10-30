@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { daLoja, resumir, type NpsItem } from "@/lib/nps";
 import { useResumoMes } from "@/hooks/use-resumo-mes";
@@ -7,6 +7,7 @@ import { AlertTriangle, ArrowRight, CalendarDays, ClipboardList, Download, MapPi
 import { Anel, Bloco } from "@/components/Cockpit";
 import { brl, div, pct, tone, uni } from "@/components/painel-ui";
 import { MixConsultores } from "@/components/MixConsultores";
+import { RankingConsultores } from "@/components/RankingConsultores";
 import type { PerformanceCalc } from "@/lib/performance";
 import farois from "@/assets/hero-farois.jpg";
 
@@ -177,8 +178,6 @@ export function ConsultoresTela({ linhas, porDept, total, sales, mes, tot, dec, 
       const r: Record<string, number> = {}; for (const x of data ?? []) r[x.consultant_id] = (r[x.consultant_id] ?? 0) + +x.passagens; setPass(r);
     });
   }, [mes]);
-  const rank = [...linhas].sort((a, b) => (b.meta ? b.perf : -1) - (a.meta ? a.perf : -1));
-  const totPass = Object.values(pass).reduce((a, n) => a + n, 0);
   const t = total;
   return (
     <div className={`${GRID} lg:grid-cols-12 lg:grid-rows-[auto_auto_minmax(0,1.6fr)_minmax(0,1fr)]`}>
@@ -190,37 +189,7 @@ export function ConsultoresTela({ linhas, porDept, total, sales, mes, tot, dec, 
         <KpiCard label="Atingimento" value={pct(t.perf)} cls={tone(t.perf)} sub={`Projeção ${pct(t.projPct)}`} className={t.perf >= 1 ? "border-success/40" : t.perf >= 0.85 ? "border-warning/40" : "border-destructive/40"} />
       </div>
       <Bloco titulo="Ranking geral" icon={<Trophy className="size-4 text-warning" />} className="lg:col-span-12">
-        <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-sm tabular-nums">
-          <thead className="sticky top-0 bg-card text-[11px] text-muted-foreground"><tr className="text-right">
-            <th className="w-8 py-1 text-left font-normal">#</th><th className="text-left font-normal">Consultor</th><th className="text-left font-normal">Linha</th><th className="font-normal">Meta</th><th className="font-normal">Realizado</th><th className="font-normal">%</th><th className="font-normal">Total (meta · real · %)</th><th className="font-normal">Ticket médio</th><th className="font-normal">Passagens</th>
-          </tr></thead>
-          <tbody>{rank.map((l, i) => { const p = pass[l.c.id] ?? 0; const so = soPecas(l.c.nome); const rs = so ? 1 : 2; return (
-            <Fragment key={l.c.id}>
-              {!so && <tr className="border-t border-border/60 text-right">
-                <td rowSpan={rs} className="py-1 text-left align-middle"><span className={`inline-flex size-5 items-center justify-center rounded-full text-[10px] font-bold ${i === 0 ? "bg-warning text-background" : i === 1 ? "bg-muted-foreground text-background" : i === 2 ? "bg-coral text-background" : "text-muted-foreground"}`}>{i + 1}</span></td>
-                <td rowSpan={rs} className="text-left align-middle font-semibold">{l.c.nome}</td>
-                <td className="text-left text-xs text-muted-foreground">Serviços</td>
-                <td className="text-muted-foreground">{brl(l.mS)}</td><td>{brl(l.servicos)}</td>
-                <td className={`font-bold ${l.mS ? tone(l.perfS) : ""}`}>{l.mS ? pct(l.perfS) : "—"}</td>
-                <td rowSpan={rs} className="align-middle text-xs">{brl(l.meta)} · {brl(l.real)} · <b className={l.meta ? tone(l.perf) : ""}>{l.meta ? pct(l.perf) : "—"}</b></td>
-                <td rowSpan={rs} className="align-middle">{p ? brl(div(l.real, p)) : "—"}</td><td rowSpan={rs} className="align-middle">{p ? uni(p) : "—"}</td>
-              </tr>}
-              <tr className={`text-right ${so ? "border-t border-border/60" : ""}`}>
-                {so && <><td className="py-1 text-left"><span className={`inline-flex size-5 items-center justify-center rounded-full text-[10px] font-bold ${i === 0 ? "bg-warning text-background" : i === 1 ? "bg-muted-foreground text-background" : i === 2 ? "bg-coral text-background" : "text-muted-foreground"}`}>{i + 1}</span></td><td className="text-left font-semibold">{l.c.nome}</td></>}
-                <td className="text-left text-xs text-muted-foreground">Peças</td>
-                <td className="text-muted-foreground">{brl(l.mP)}</td><td>{brl(l.pecas)}</td>
-                <td className={`font-bold ${l.mP ? tone(l.perfP) : ""}`}>{l.mP ? pct(l.perfP) : "—"}</td>
-                {so && <><td className="text-xs">{brl(l.meta)} · {brl(l.real)} · <b className={l.meta ? tone(l.perf) : ""}>{l.meta ? pct(l.perf) : "—"}</b></td><td>{p ? brl(div(l.real, p)) : "—"}</td><td>{p ? uni(p) : "—"}</td></>}
-              </tr>
-            </Fragment>); })}
-            {!rank.length && <tr><td colSpan={9} className="py-8 text-center text-muted-foreground">Sem consultores no mês.</td></tr>}
-          </tbody>
-          {rank.length > 0 && <tfoot>
-            <tr className="border-t border-border text-right font-bold"><td /><td rowSpan={2} className="py-1 text-left align-middle">TOTAL</td><td className="text-left text-xs">Serviços</td><td>{brl(t.mS)}</td><td>{brl(t.servicos)}</td><td className={tone(t.perfS)}>{pct(t.perfS)}</td><td rowSpan={2} className="align-middle text-xs">{brl(t.meta)} · {brl(t.real)} · <span className={tone(t.perf)}>{pct(t.perf)}</span></td><td rowSpan={2} className="align-middle">{totPass ? brl(div(t.real, totPass)) : "—"}</td><td rowSpan={2} className="align-middle">{totPass ? uni(totPass) : "—"}</td></tr>
-            <tr className="text-right font-bold"><td /><td className="text-left text-xs">Peças</td><td>{brl(t.mP)}</td><td>{brl(t.pecas)}</td><td className={tone(t.perfP)}>{pct(t.perfP)}</td></tr>
-          </tfoot>}
-        </table></div>
-        <button type="button" onClick={() => setTab("proj-total")} className="mt-1.5 flex items-center gap-1 rounded-md border border-primary px-3 py-1 text-xs font-medium text-primary hover:bg-primary/10"><Users className="size-3.5" />Ver detalhes de cada consultor <ArrowRight className="size-3" /></button>
+        <RankingConsultores linhas={linhas} pass={pass} mes={mes} dec={dec} tot={tot} soPecas={soPecas} evolution={(l) => <GraficoEvolucao sales={sales} ids={[l.c.id]} meta={l.meta} mes={mes} />} />
       </Bloco>
       <Bloco titulo="Evolução do time" icon={<TrendingUp className="size-4 text-primary" />} className="lg:col-span-5">
         <GraficoEvolucao sales={sales} ids={linhas.map((l) => l.c.id)} meta={t.meta} mes={mes} />
