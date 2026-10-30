@@ -3,7 +3,7 @@ import { Ghost, UserX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ImportadorUnificado } from "@/components/ImportadorUnificado";
 import { Box, Tabela, uni } from "@/components/painel-ui";
-import { carregarAgendamentos, carregarFollowups, aceitarFollowup, confirmarFollowup, contar, separarPassantes, fechamentoDoDia, faltasDoMes, type AgendRow, type Followup } from "@/lib/agendamentos-data";
+import { carregarAgendamentos, carregarFollowups, aceitarFollowup, confirmarFollowup, contar, separarPassantes, fechamentoDoDia, faltasDoMes, type AgendRow, type Contagem, type Followup } from "@/lib/agendamentos-data";
 import { classe, type NpsItem } from "@/lib/nps";
 
 const CAT_LABEL = { revisao: "Revisão", diagnostico: "Diagnóstico", recall: "Recall" } as const;
@@ -32,6 +32,34 @@ function SeloNps({ item }: { item?: NpsItem | undefined }) {
   if (!item || item.nota === null) return <span className="text-muted-foreground">sem pesquisa</span>;
   const c = classe(item.nota);
   return <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold text-background ${NPS_COR[c]}`}>{item.nota} · {c === "promotor" ? "Promotor" : c === "neutro" ? "Neutro" : "Detrator"}</span>;
+}
+
+/** Bloco de um segmento (Carros ou Motos) com Revisão/Diagnóstico/Recall contados à parte. */
+function BlocoSegmento({ icone, nome, m, seg, cor }: { icone: string; nome: string; m: Contagem; seg: "carro" | "moto"; cor: string }) {
+  return (
+    <div className="rounded-lg bg-background/60 p-3">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{icone} {nome}</p>
+      <p className={`text-3xl font-bold ${cor}`}>{uni(m[seg])}</p>
+      <div className="mt-2 grid grid-cols-3 gap-1 text-center">
+        {(["revisao", "diagnostico", "recall"] as const).map((c) => (
+          <div key={c} className="rounded bg-card/70 px-1 py-1.5">
+            <p className="text-lg font-bold">{uni(m.porCat[c][seg])}</p>
+            <p className="text-[10px] uppercase text-muted-foreground">{CAT_LABEL[c]}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Linha de um segmento com Revisão/Diagnóstico/Recall contados à parte. */
+function LinhaSegmento({ icone, nome, m, seg }: { icone: string; nome: string; m: Contagem; seg: "carro" | "moto" }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded bg-background/70 px-2 py-1">
+      <span className="text-xs font-semibold">{icone} {nome} · {uni(m[seg])}</span>
+      <span className="text-[11px] text-muted-foreground">Rev {uni(m.porCat.revisao[seg])} · Diag {uni(m.porCat.diagnostico[seg])} · Recall {uni(m.porCat.recall[seg])}</span>
+    </div>
+  );
 }
 
 /** Aba Agendamentos: radar D+1, controle de qualidade do testador, agenda do dia, fechamento, penetração e faltas. */
