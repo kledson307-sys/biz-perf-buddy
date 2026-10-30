@@ -3,7 +3,7 @@ import { Ghost, UserX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ImportadorUnificado } from "@/components/ImportadorUnificado";
 import { Box, Tabela, uni } from "@/components/painel-ui";
-import { carregarAgendamentos, carregarFollowups, aceitarFollowup, confirmarFollowup, contar, separarPassantes, fechamentoDoDia, faltasDoMes, type AgendRow, type Followup } from "@/lib/agendamentos-data";
+import { carregarAgendamentos, carregarFollowups, aceitarFollowup, confirmarFollowup, contar, separarPassantes, fechamentoDoDia, faltasDoMes, type AgendRow, type Contagem, type Followup } from "@/lib/agendamentos-data";
 import { classe, type NpsItem } from "@/lib/nps";
 
 const CAT_LABEL = { revisao: "Revisão", diagnostico: "Diagnóstico", recall: "Recall" } as const;
@@ -32,6 +32,34 @@ function SeloNps({ item }: { item?: NpsItem | undefined }) {
   if (!item || item.nota === null) return <span className="text-muted-foreground">sem pesquisa</span>;
   const c = classe(item.nota);
   return <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold text-background ${NPS_COR[c]}`}>{item.nota} · {c === "promotor" ? "Promotor" : c === "neutro" ? "Neutro" : "Detrator"}</span>;
+}
+
+/** Bloco de um segmento (Carros ou Motos) com Revisão/Diagnóstico/Recall contados à parte. */
+function BlocoSegmento({ icone, nome, m, seg, cor }: { icone: string; nome: string; m: Contagem; seg: "carro" | "moto"; cor: string }) {
+  return (
+    <div className="rounded-lg bg-background/60 p-3">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{icone} {nome}</p>
+      <p className={`text-3xl font-bold ${cor}`}>{uni(m[seg])}</p>
+      <div className="mt-2 grid grid-cols-3 gap-1 text-center">
+        {(["revisao", "diagnostico", "recall"] as const).map((c) => (
+          <div key={c} className="rounded bg-card/70 px-1 py-1.5">
+            <p className="text-lg font-bold">{uni(m.porCat[c][seg])}</p>
+            <p className="text-[10px] uppercase text-muted-foreground">{CAT_LABEL[c]}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Linha de um segmento com Revisão/Diagnóstico/Recall contados à parte. */
+function LinhaSegmento({ icone, nome, m, seg }: { icone: string; nome: string; m: Contagem; seg: "carro" | "moto" }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded bg-background/70 px-2 py-1">
+      <span className="text-xs font-semibold">{icone} {nome} · {uni(m[seg])}</span>
+      <span className="text-[11px] text-muted-foreground">Rev {uni(m.porCat.revisao[seg])} · Diag {uni(m.porCat.diagnostico[seg])} · Recall {uni(m.porCat.recall[seg])}</span>
+    </div>
+  );
 }
 
 /** Aba Agendamentos: radar D+1, controle de qualidade do testador, agenda do dia, fechamento, penetração e faltas. */
@@ -96,13 +124,10 @@ export function Agendamentos({ mes }: { mes: string }) {
         <div className="mt-2"><ImportadorUnificado mes={mes} onDone={() => void load()} /></div>
       </details>
       <Box title={`Agenda de amanhã (D+1) · ${amanha.data ? dBR(amanha.data) : "—"}`}
-        right={<p className="text-xs text-muted-foreground">Acumulado do mês: {uni(acumD1.carro + acumD1.moto)} agendados · {uni(atendidosMes)} atendidos</p>}>
-        <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-5">
-          <div className="rounded-lg bg-background/60 p-2 text-center"><p className="text-2xl font-bold text-primary">{uni(radar.carro)}</p><p className="text-[11px] uppercase text-muted-foreground">Carros</p></div>
-          <div className="rounded-lg bg-background/60 p-2 text-center"><p className="text-2xl font-bold text-neon">{uni(radar.moto)}</p><p className="text-[11px] uppercase text-muted-foreground">Motos</p></div>
-          {(["revisao", "diagnostico", "recall"] as const).map((c) => (
-            <div key={c} className="rounded-lg bg-background/60 p-2 text-center"><p className="text-lg font-bold">{uni(radar.porCat[c].carro + radar.porCat[c].moto)}</p><p className="text-[11px] uppercase text-muted-foreground">{CAT_LABEL[c]} · 🚗{uni(radar.porCat[c].carro)} 🏍{uni(radar.porCat[c].moto)}</p></div>
-          ))}
+        right={<p className="text-xs text-muted-foreground">Acumulado do mês: 🚗 {uni(acumD1.carro)} carros · 🏍 {uni(acumD1.moto)} motos · {uni(atendidosMes)} atendidos</p>}>
+        <div className="grid gap-2 p-3 sm:grid-cols-2">
+          <BlocoSegmento icone="🚗" nome="Carros" m={radar} seg="carro" cor="text-primary" />
+          <BlocoSegmento icone="🏍" nome="Motos" m={radar} seg="moto" cor="text-neon" />
         </div>
       </Box>
 
@@ -159,8 +184,11 @@ export function Agendamentos({ mes }: { mes: string }) {
               {[{ t: "Passantes (Wesley, Renan, Jadna, Andressa, Pedro, Gilberto)", m: mixPass, n: passantes.length }, { t: "Agendados demais consultores", m: mixAg, n: agendados.length }].map((g) => (
                 <div key={g.t} className="rounded-lg bg-background/60 p-3">
                   <p className="text-xs text-muted-foreground">{g.t}</p>
-                  <p className="text-xl font-bold">{uni(g.n)} <span className="text-sm font-normal text-muted-foreground">🚗{uni(g.m.carro)} 🏍{uni(g.m.moto)}</span></p>
-                  <p className="text-xs text-muted-foreground">Rev {uni(g.m.porCat.revisao.carro + g.m.porCat.revisao.moto)} · Diag {uni(g.m.porCat.diagnostico.carro + g.m.porCat.diagnostico.moto)} · Recall {uni(g.m.porCat.recall.carro + g.m.porCat.recall.moto)}</p>
+                  <p className="text-xl font-bold">{uni(g.n)}</p>
+                  <div className="mt-2 space-y-1">
+                    <LinhaSegmento icone="🚗" nome="Carros" m={g.m} seg="carro" />
+                    <LinhaSegmento icone="🏍" nome="Motos" m={g.m} seg="moto" />
+                  </div>
                 </div>
               ))}
             </div>

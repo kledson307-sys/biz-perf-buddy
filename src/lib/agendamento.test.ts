@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 import { readFileSync, existsSync } from "node:fs";
 import { lerAgendamento, classificar, ehAgendamento } from "./agendamento";
+import { contar } from "./agendamentos-data";
 
 describe("agendamento", () => {
   it("classifica recall, diagnóstico e revisão pela descrição", () => {
@@ -17,5 +18,19 @@ describe("agendamento", () => {
     expect(d1.tipo).toBe("d1"); expect(d1.data).toBe("2026-10-31");
     expect(d0.tipo).toBe("d0"); expect(d0.data).toBe("2026-10-30");
     console.log(d1.itens.length, d0.itens.length, d1.itens.map((i) => i.categoria + "/" + i.segmento).join(","));
+  });
+
+  it("separa carros e motos em cada categoria", () => {
+    const linha = (segmento: "carro" | "moto", categoria: "revisao" | "diagnostico" | "recall") =>
+      ({ segmento, categoria }) as never;
+    const c = contar([
+      linha("carro", "revisao"), linha("carro", "revisao"), linha("moto", "revisao"),
+      linha("carro", "diagnostico"), linha("moto", "recall"),
+    ] as never);
+    expect(c.carro).toBe(3);
+    expect(c.moto).toBe(2);
+    expect(c.porCat.revisao).toEqual({ carro: 2, moto: 1 });
+    expect(c.porCat.diagnostico).toEqual({ carro: 1, moto: 0 });
+    expect(c.porCat.recall).toEqual({ carro: 0, moto: 1 });
   });
 });
