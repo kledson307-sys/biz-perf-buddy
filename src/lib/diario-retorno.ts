@@ -65,9 +65,10 @@ export function ehRevisao(tipo: string, tmos: Iterable<string>): boolean {
   if (/^N/.test(tipo) && t.some((x) => x.startsWith("0000111") || x.startsWith("0000119"))) return true;
   return false;
 }
-const FUNILARIA = new Set(["CF", "C5", "MF", "MS"]);
+/** Tipos de O.S. de reparo/garantia que caracterizam retorno. */
+const REPARO = new Set(["C7", "M7", "C4", "MG", "NG", "N7", "N5", "NF"]);
 
-/** Retorno: mesmo chassi volta em até `janela` dias com O.S. de reparo/garantia (não revisão, não funilaria). */
+/** Retorno: mesmo chassi volta em até `janela` dias com O.S. de reparo/garantia (C7/M7/C4/MG/NG/N7/N5/NF, sem revisão). */
 export function retornosPorChassi(oss: OsLinha[], janela = 60): Retorno[] {
   const porChassi = new Map<string, OsLinha[]>();
   for (const o of oss) if (o.chassi.length >= 6) (porChassi.get(o.chassi) ?? porChassi.set(o.chassi, []).get(o.chassi)!).push(o);
@@ -76,7 +77,7 @@ export function retornosPorChassi(oss: OsLinha[], janela = 60): Retorno[] {
     lista.sort((a, b) => a.data.localeCompare(b.data) || a.os.localeCompare(b.os));
     for (let i = 1; i < lista.length; i++) {
       const o = lista[i]!, a = lista[i - 1]!; const d = diasEntre(a.data, o.data);
-      if (d < 0 || d > janela || ehRevisao(o.tipo, o.tmos) || FUNILARIA.has(o.tipo)) continue;
+      if (d < 0 || d > janela || !REPARO.has(o.tipo) || ehRevisao(o.tipo, o.tmos)) continue;
       out.push({ chassi: o.chassi, placa: o.placa, cliente: o.cliente, modelo: o.modelo, osAnterior: a.os, dataAnterior: a.data, tipoAnterior: a.tipo, os: o.os, data: o.data, tipo: o.tipo, dias: d,
         tecnico: [...o.prods].join(", "), tecnicoAnterior: [...a.prods].join(", "), consultor: o.cons });
     }
