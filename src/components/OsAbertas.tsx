@@ -2,9 +2,10 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Barra, Box, Kpi, Tabela, brl, div, norm, parseNum, pct, tone } from "@/components/painel-ui";
-import { nomeVendedor, readSalesReport } from "@/lib/sales-report";
+import { readSalesReport } from "@/lib/sales-report";
 import { loadOpenOrders, saveOpenOrders, type OpenOrders } from "@/lib/open-orders.functions";
 import { registrarUpdate } from "@/lib/update-log";
+import { OS_PERMITIDOS, lerOsTabela, lerOsSistema } from "@/lib/os-abertas";
 
 type Linha = { c: { id: string; nome: string; department_id: string | null }; servicos: number; pecas: number; mS: number; mP: number };
 type Os = OpenOrders;
