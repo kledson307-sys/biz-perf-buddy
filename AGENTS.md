@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Architecture rules
+- Consultant ranking and detail panels consume the shared performance calculations; reuse the monthly consultant mix for drill-down so visual changes do not create alternate totals.
 - The unchanged-O.S. warning lives only in Controle O.S. (never on Painel); it compares the latest two shared Controle O.S. snapshots using analisar, resolving departments from consultant logins; never infer stagnation from sales freshness.
 - The shared notification bell reuses team O.S. reads and the seller-only minhas_os RPC; refresh on focus, timer and O.S. completion events to preserve access isolation and existing acknowledgement semantics.
 - Dashboard section wrappers must have module-level component identities, with report mode passed as a prop, so freshness refreshes never reset imports or form state.
