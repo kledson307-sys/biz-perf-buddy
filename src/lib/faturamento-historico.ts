@@ -8,7 +8,13 @@ export type FatHistorico = { linhas: FatDia[]; meses: string[]; ignorados: Map<s
 
 const txt = (v: unknown) => String(v ?? "").trim();
 const low = (v: unknown) => norm(txt(v)).toLowerCase();
-const num = (v: unknown) => (typeof v === "number" ? v : Number(txt(v).replace(/\./g, "").replace(",", ".")) || 0);
+const num = (v: unknown) => {
+  if (typeof v === "number") return v;
+  const s = txt(v);
+  // "1.234,56" é formato BR; "2320.17" já é decimal ponto.
+  const n = /^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s) || s.includes(",") ? Number(s.replace(/\./g, "").replace(",", ".")) : Number(s);
+  return Number.isFinite(n) ? n : 0;
+};
 const iso = (v: unknown): string => {
   if (v instanceof Date) return v.toISOString().slice(0, 10);
   const m = txt(v).match(/(\d{2})\/(\d{2})\/(\d{4})/);
