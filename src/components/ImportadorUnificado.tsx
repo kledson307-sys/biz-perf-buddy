@@ -124,7 +124,7 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
         className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-6 text-center text-sm ${over ? "border-primary bg-primary/10" : "border-border"}`}>
         <Upload className="size-6 text-primary" />
         <span>Solte aqui Faturamento de Peças, Faturamento de Serviços, O.S. Abertas, NPS e Agendamentos (D+1 e do dia) — em qualquer ordem</span>
-        <input type="file" multiple accept=".xlsx,.xls" className="hidden" onChange={(e) => { if (e.target.files) void ler(e.target.files); e.target.value = ""; }} />
+        <input type="file" multiple accept=".xlsx,.xls" className="hidden" onChange={(e) => { const fs = e.target.files ? Array.from(e.target.files) : []; e.target.value = ""; if (fs.length) void ler(fs).catch((err) => setMsg("❌ Não consegui ler o arquivo: " + (err instanceof Error ? err.message : String(err)))); }} />
       </label>
       {achados.length > 0 && <>
         <ul className="space-y-1 text-sm">{achados.map((a) => <li key={a.arquivo} className="rounded border border-border p-2">{a.tipo === "outro" ? "❌" : "✅"} <b>{ROTULO[a.tipo]}</b> · {a.arquivo}<p className="text-xs text-muted-foreground">{a.resumo}</p></li>)}</ul>

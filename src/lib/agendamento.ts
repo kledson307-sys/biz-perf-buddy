@@ -10,7 +10,7 @@ const dataBR = (s: string) => { const m = s.match(/(\d{2})\/(\d{2})\/(\d{4})/); 
 
 /** Reconhece o "Controle de Agendamento" pelo conteúdo (título + cabeçalho Agendada/Status/Placa), nunca pelo nome do arquivo. */
 export function ehAgendamento(raw: unknown[][]) {
-  const flat = raw.slice(0, 15).map((r) => norm(r.map(txt).join(" ")));
+  const flat = raw.slice(0, 35).map((r) => norm(r.map(txt).join(" ")));
   return flat.some((l) => l.includes("CONTROLE DE AGENDAMENTO")) && flat.some((l) => l.includes("AGENDADA") && l.includes("STATUS") && l.includes("PLACA"));
 }
 

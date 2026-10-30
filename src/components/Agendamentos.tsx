@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Ghost, UserX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { ImportadorUnificado } from "@/components/ImportadorUnificado";
 import { Box, Tabela, uni } from "@/components/painel-ui";
 import { carregarAgendamentos, carregarFollowups, aceitarFollowup, confirmarFollowup, contar, separarPassantes, fechamentoDoDia, faltasDoMes, type AgendRow, type Followup } from "@/lib/agendamentos-data";
 import { classe, type NpsItem } from "@/lib/nps";
@@ -90,6 +91,10 @@ export function Agendamentos({ mes }: { mes: string }) {
 
   return (
     <div className="space-y-3">
+      <details className="rounded-xl border border-border bg-card/60 p-2">
+        <summary className="cursor-pointer text-sm font-semibold text-primary">📥 Importar agendamento (D+1 ou do dia)</summary>
+        <div className="mt-2"><ImportadorUnificado mes={mes} onDone={() => void load()} /></div>
+      </details>
       <Box title={`Agenda de amanhã (D+1) · ${amanha.data ? dBR(amanha.data) : "—"}`}
         right={<p className="text-xs text-muted-foreground">Acumulado do mês: {uni(acumD1.carro + acumD1.moto)} agendados · {uni(atendidosMes)} atendidos</p>}>
         <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-5">
