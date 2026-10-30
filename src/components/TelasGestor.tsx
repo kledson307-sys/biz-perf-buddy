@@ -180,7 +180,7 @@ export function ConsultoresTela({ linhas, porDept, total, sales, mes, tot, dec, 
   }, [mes]);
   const t = total;
   return (
-    <div className={`${GRID} lg:grid-cols-12 lg:grid-rows-[auto_auto_minmax(0,1.6fr)_minmax(0,1fr)]`}>
+    <div className={`${GRID} lg:grid-cols-12 lg:grid-rows-[auto_auto_minmax(0,3.2fr)_minmax(0,0.9fr)]`}>
       <CabecalhoTela className="lg:col-span-12" titulo="Consultores" sub="Performance individual e coletiva do time de vendas." mes={mes} dec={dec} tot={tot} />
       <div className="grid grid-cols-2 gap-2 lg:col-span-12 lg:grid-cols-4">
         <KpiCard label="Total de consultores" value={uni(linhas.length)} sub={`${linhas.filter((l) => l.meta > 0).length} com meta no mês`} />
@@ -196,7 +196,7 @@ export function ConsultoresTela({ linhas, porDept, total, sales, mes, tot, dec, 
       </Bloco>
       <div className="min-h-0 overflow-auto lg:col-span-4 [&_.lux-card]:h-full"><MixConsultores mes={mes} /></div>
       <Bloco titulo="Desempenho por departamento" icon={<Target className="size-4 text-primary" />} className="lg:col-span-3 [&_h2]:text-primary">
-        <div className="flex h-full flex-wrap items-center justify-around gap-2">
+        <div className="flex flex-wrap items-center justify-around gap-2">
           <Anel p={t.perfS} rot="M.O." /><Anel p={t.perfP} rot="Peças" /><Anel p={t.projPct} rot="Projeção" />
         </div>
         <ul className="mt-1 space-y-0.5 text-[11px]">{porDept.slice(0, 4).map((d) => <li key={d.nome} className="flex justify-between"><span className="truncate text-muted-foreground">{d.nome}</span><b className={tone(d.projPct)}>{pct(d.projPct)}</b></li>)}</ul>
