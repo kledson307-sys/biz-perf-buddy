@@ -5,3 +5,4 @@
 - Main sales Excel/paste parsing lives in `src/lib/sales-report.ts` and the import UI in `SalesImport`; match seller login before full name to preserve existing consultant identities.
 - Seller aliases live in `nomeVendedor` (`src/lib/sales-report.ts`); parts margin stored in R$, % always derived as margem ÷ peças.
 - Open-order import keeps only `TIPOS_OK` types and applies seller aliases.
+- Agendamento reports (D+1/D0) are recognised by content in `src/lib/agendamento.ts` (D+1 when period date > print date) and stored as rows `mes = "agenda-AAAA-MM"` in `oficina_mes.diario` keyed `tipo:data`, because migrations could not be created in this environment; move to a dedicated table when possible.

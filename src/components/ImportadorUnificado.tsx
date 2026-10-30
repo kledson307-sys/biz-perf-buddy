@@ -8,9 +8,10 @@ import { salvarPassagens } from "@/lib/passagens-save";
 import { mesTravado } from "@/lib/month-lock";
 import { pecasPorDia, osDasPassagens, servicosPorDia, retornosPorChassi } from "@/lib/diario-retorno";
 import { salvarOficinaMes } from "@/lib/oficina-mes";
+import { lerAgendamento, salvarAgendamento, resumoAgenda, type AgendReport } from "@/lib/agendamento";
 
-type Achado = { arquivo: string; tipo: "nps" | "pecas" | "passagens" | "outro"; resumo: string; nps?: NpsItem[]; pecas?: ItemPeca[]; pass?: PassReport; raw?: unknown[][] };
-const ROTULO = { nps: "NPS da montadora", pecas: "Faturamento de Peças", passagens: "Faturamento de Serviços / Passagens", outro: "Não reconhecido" } as const;
+type Achado = { arquivo: string; tipo: "nps" | "pecas" | "passagens" | "d1" | "d0" | "outro"; agenda?: AgendReport; resumo: string; nps?: NpsItem[]; pecas?: ItemPeca[]; pass?: PassReport; raw?: unknown[][] };
+const ROTULO = { nps: "NPS da montadora", pecas: "Faturamento de Peças", passagens: "Faturamento de Serviços / Passagens", d1: "Agendamento D+1", d0: "Agendamento do dia", outro: "Não reconhecido" } as const;
 
 /** Esteira única: arraste os arquivos em qualquer ordem; cada um é reconhecido pelos cabeçalhos e conferido antes de salvar. */
 export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () => void }) {
@@ -24,6 +25,8 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
     for (const f of Array.from(files)) {
       const wb = XLSX.read(await f.arrayBuffer(), { type: "array", cellDates: true });
       const abas = wb.SheetNames.map((s) => ({ s, raw: XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[s]!, { header: 1, defval: "" }) }));
+      const ag = abas.map((a) => lerAgendamento(a.raw)).find(Boolean);
+      if (ag) { out.push({ arquivo: f.name, tipo: ag.tipo, agenda: ag, resumo: `Agenda de ${ag.data.split("-").reverse().join("/")} · ${resumoAgenda(ag)}` }); continue; }
       const nps = abas.flatMap(({ s, raw }) => lerAbaNps(raw, s));
       if (nps.length) { out.push({ arquivo: f.name, tipo: "nps", nps, resumo: `${nps.length} pesquisas · ${daLoja(nps).length} de Salvador` }); continue; }
       const p = abas.find((a) => ehFaturamentoPecas(a.raw));
@@ -45,8 +48,9 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
         if (a.tipo === "nps" && a.nps) {
           const { error } = await supabase.from("nps_imports").insert({ itens: a.nps as never, arquivo: a.arquivo, nome });
           if (error) throw error;
-          await supabase.from("update_log").insert({ nome, origem: "nps", mes }); feitos.push("NPS");
+          await supabase.from("update_log").insert({ nome, origem: "NPS", mes }); feitos.push("NPS");
         }
+        if (a.agenda) { await salvarAgendamento(a.agenda, a.arquivo, nome); feitos.push(ROTULO[a.agenda.tipo]); }
         if (a.tipo === "pecas" && a.pecas) {
           const { error } = await supabase.from("parts_items").upsert({ mes, itens: a.pecas as never, nome, at: new Date().toISOString() }, { onConflict: "user_id,mes" });
           if (error) throw error; feitos.push("Peças por item");
@@ -67,7 +71,7 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
         onDrop={(e) => { e.preventDefault(); setOver(false); void ler(e.dataTransfer.files); }}
         className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-6 text-center text-sm ${over ? "border-primary bg-primary/10" : "border-border"}`}>
         <Upload className="size-6 text-primary" />
-        <span>Solte aqui Faturamento de Peças, Faturamento de Serviços e NPS — em qualquer ordem</span>
+        <span>Solte aqui Faturamento de Peças, Faturamento de Serviços, NPS e Agendamentos (D+1 e do dia) — em qualquer ordem</span>
         <input type="file" multiple accept=".xlsx,.xls" className="hidden" onChange={(e) => { if (e.target.files) void ler(e.target.files); e.target.value = ""; }} />
       </label>
       {achados.length > 0 && <>
