@@ -1,5 +1,5 @@
 export type UpdateRecord = { at: string; nome: string; origem: string; mes: string | null };
-export type UpdateSource = "faturamento" | "os" | "controle-os" | "mecanicos" | "agregados";
+export type UpdateSource = "faturamento" | "os" | "controle-os" | "mecanicos" | "agregados" | "nps" | "agenda-d1" | "agenda-d0";
 export const UPDATE_EVENT = "haus-data-updated";
 
 export function updateSources(origem: string): UpdateSource[] {
@@ -9,6 +9,9 @@ export function updateSources(origem: string): UpdateSource[] {
   if (origem.startsWith("Técnicos")) return origem === "Técnicos (grupo)" ? [] : ["mecanicos"];
   if (origem === "Passagens (importação)") return ["mecanicos", "agregados"];
   if (origem.startsWith("Agregados") || origem.startsWith("Passagens agregados")) return ["agregados"];
+  if (origem.toLowerCase() === "nps") return ["nps"];
+  if (origem === "Agendamento D+1") return ["agenda-d1"];
+  if (origem === "Agendamento do dia") return ["agenda-d0"];
   return [];
 }
 
@@ -20,7 +23,7 @@ export function sourcesForTab(tab: string): UpdateSource[] {
 }
 
 export const sourceLabels: Record<UpdateSource, string> = {
-  faturamento: "Faturamento", os: "O.S. abertas", "controle-os": "Controle O.S.", mecanicos: "Técnicos", agregados: "Agregados",
+  faturamento: "Faturamento", os: "O.S. abertas", "controle-os": "Controle O.S.", mecanicos: "Técnicos", agregados: "Agregados", nps: "NPS", "agenda-d1": "Agendamento D+1", "agenda-d0": "Agendamentos do dia",
 };
 
 export const localDay = (date: Date) => new Intl.DateTimeFormat("en-CA", {

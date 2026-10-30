@@ -42,7 +42,7 @@ export function NpsPainel() {
       const { data: u } = await supabase.auth.getUser();
       const { error } = await supabase.from("nps_imports").insert({ itens: lst as never, arquivo: f.name, nome: u.user?.email?.split("@")[0] ?? "" });
       if (error) { setMsg("Não foi possível salvar: " + error.message); return; }
-      await supabase.from("update_log").insert({ nome: u.user?.email?.split("@")[0] ?? "", origem: "nps", mes: hojeISO().slice(0, 7) });
+      await supabase.from("update_log").insert({ nome: u.user?.email?.split("@")[0] ?? "", origem: "NPS", mes: hojeISO().slice(0, 7) });
       setMsg(`${lst.length} pesquisas importadas (${daLoja(lst).length} de Salvador). A importação anterior foi substituída.`);
       await load();
     } finally { setBusy(false); }
