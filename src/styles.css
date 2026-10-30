@@ -153,6 +153,17 @@
   --sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
+/* Tema rosa do acesso da Andressa: troca apenas os acentos, mantendo o fundo escuro. */
+.tema-rosa {
+  --primary: oklch(0.72 0.19 350);
+  --primary-foreground: oklch(0.15 0.02 350);
+  --accent: oklch(0.3 0.08 350);
+  --accent-foreground: oklch(0.97 0.01 350);
+  --ring: oklch(0.72 0.19 350);
+  --neon: oklch(0.8 0.18 350);
+  --glow: 0 0 0 1px var(--border), 0 10px 30px -18px oklch(0.72 0.19 350 / 60%);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
