@@ -180,7 +180,7 @@ export function ConsultoresTela({ linhas, porDept, total, sales, mes, tot, dec, 
   }, [mes]);
   const t = total;
   return (
-    <div className={`${GRID} lg:grid-cols-12 lg:grid-rows-[auto_auto_minmax(0,3.2fr)_minmax(0,0.9fr)]`}>
+    <div className={`${GRID} lg:grid-cols-12 lg:grid-rows-[auto_auto_minmax(0,5fr)_minmax(0,0.7fr)]`}>
       <CabecalhoTela className="lg:col-span-12" titulo="Consultores" sub="Performance individual e coletiva do time de vendas." mes={mes} dec={dec} tot={tot} />
       <div className="grid grid-cols-2 gap-2 lg:col-span-12 lg:grid-cols-4">
         <KpiCard label="Total de consultores" value={uni(linhas.length)} sub={`${linhas.filter((l) => l.meta > 0).length} com meta no mês`} />
