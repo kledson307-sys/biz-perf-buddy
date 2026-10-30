@@ -5,6 +5,10 @@ import { GRUPO_NOME, ITENS, naoVende, naoVendeAgregado, splitCods, type Grupo } 
 import { AgregadosImport } from "./AgregadosImport";
 import { AgregadosIA } from "./AgregadosIA";
 import { registrarUpdate } from "@/lib/update-log";
+import { consultorMoto, type MixCons } from "@/lib/mecanicos";
+
+/** Un./passagem de revisão: Carro = BSI + Revisão C7; Moto = Revisão N7. */
+const aprovFmt = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " un/pass";
 
 type Cons = { id: string; nome: string; department_id: string | null };
 type ASale = { consultant_id: string; dia: string; item: string; codigo: string; qtd: number; valor: number };
@@ -21,6 +25,7 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
   const [sales, setSales] = useState<ASale[]>([]);
   const [goals, setGoals] = useState<AGoal[]>([]);
   const [visits, setVisits] = useState<AVisit[]>([]);
+  const [mix, setMix] = useState<Map<string, MixCons>>(new Map());
   const [codigos, setCodigos] = useState<Record<string, string[]>>(() => Object.fromEntries(ITENS.map((i) => [i.k, i.cod])));
 
   const [y, m] = mes.split("-").map(Number);
@@ -34,6 +39,8 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
       supabase.from("agg_visits").select("consultant_id,dia,passagens").gte("dia", ini).lte("dia", end),
       supabase.from("agg_codes").select("item,codigos"),
     ]);
+    const mx = await supabase.from("cons_mix").select("nome,composicao").eq("mes", mes);
+    setMix(new Map((mx.data ?? []).map((r) => [r.nome.trim().toUpperCase(), r.composicao as unknown as MixCons])));
     setSales((s.data ?? []).map((x) => ({ ...x, qtd: +x.qtd, valor: +x.valor })));
     setGoals((g.data ?? []).map((x) => ({ ...x, meta_qtd: +x.meta_qtd, meta_valor: +x.meta_valor })));
     setVisits((v.data ?? []).map((x) => ({ ...x, passagens: +x.passagens })));
@@ -50,7 +57,11 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
     let qtd = 0, valor = 0, mq = 0, mv = 0, pass = 0;
     for (const s of sales) if (idSet.has(s.consultant_id) && itSet.has(s.item)) { qtd += s.qtd; valor += s.valor; }
     for (const g of goals) if (idSet.has(g.consultant_id) && itSet.has(g.item)) { mq += g.meta_qtd; mv += g.meta_valor; }
-    for (const v of visits) if (idSet.has(v.consultant_id)) pass += v.passagens;
+    for (const c of cons) if (idSet.has(c.id)) {
+      const m = mix.get(c.nome.trim().toUpperCase());
+      if (m) pass += consultorMoto(c.nome) ? (m.rev?.length ?? 0) : (m.bsi?.length ?? 0) + (m.rev?.length ?? 0);
+      else for (const v of visits) if (v.consultant_id === c.id) pass += v.passagens;
+    }
     const projQ = div(qtd, dec) * tot, projV = div(valor, dec) * tot;
     return {
       qtd, valor, mq, mv, pass, projQ, projV,
@@ -67,7 +78,7 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
     const f = (n: number) => n.toFixed(2).replace(".", ",");
     const fi = (n: number) => String(Math.round(n));
     const rows: string[][] = [];
-    for (const it of ITENS) for (const l of ranking([it.k])) rows.push([GRUPO_NOME[it.g], it.nome, l.c.nome, deptName(l.c.department_id), fi(l.qtd), fi(l.mq), pct(l.perfQ), fi(l.projQ), f(l.valor), f(l.mv), pct(l.perfV), f(l.projV), fi(l.pass), pct(l.aprov)]);
+    for (const it of ITENS) for (const l of ranking([it.k])) rows.push([GRUPO_NOME[it.g], it.nome, l.c.nome, deptName(l.c.department_id), fi(l.qtd), fi(l.mq), pct(l.perfQ), fi(l.projQ), f(l.valor), f(l.mv), pct(l.perfV), f(l.projV), fi(l.pass), aprovFmt(l.aprov)]);
     const csv = "\uFEFF" + [h, ...rows].map((r) => r.map((x) => `"${String(x).replace(/"/g, '""')}"`).join(";")).join("\n");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
@@ -127,7 +138,7 @@ function GrupoView({ g, stat, ranking, ids, deptName, rest, sales }: {
         <Kpi label="Quantidade vendida" value={uni(T.qtd)} cls={tone(T.perfQ)} sub={<ItensDetalhe perItem={perItem} T={T} modo="qtd" />} />
         <Kpi label="Projeção (qtd)" value={uni(T.projQ)} cls={tone(T.projPctQ)} sub={<ItensDetalhe perItem={perItem} T={T} modo="proj" rest={rest} />} />
         <Kpi label="Valor vendido" value={brl(T.valor)} cls={tone(T.perfV)} sub={<ItensDetalhe perItem={perItem} T={T} modo="valor" />} />
-        <Kpi label="Aproveitamento" value={pct(T.aprov)} sub={<ItensDetalhe perItem={perItem} T={T} modo="aprov" />} />
+        <Kpi label="Aproveitamento (un/passagem de revisão)" value={aprovFmt(T.aprov)} sub={<ItensDetalhe perItem={perItem} T={T} modo="aprov" />} />
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -136,7 +147,7 @@ function GrupoView({ g, stat, ranking, ids, deptName, rest, sales }: {
           return <button key={it.k} type="button" onClick={() => setSel(on ? null : it.k)} className={`lux-card px-3 py-2 text-left ${on ? "ring-2 ring-primary" : ""}`}>
             <p className="flex justify-between text-sm font-semibold"><span>{it.nome}</span><span className={tone(s.projPctQ)}>{pct(s.projPctQ)}</span></p>
             <p className="text-lg font-bold">{uni(s.qtd)} <span className="text-xs font-normal text-muted-foreground">de {uni(s.mq)} un · proj. {uni(s.projQ)}</span></p>
-            <p className="text-xs text-muted-foreground">{brl(s.valor)} de {brl(s.mv)} · conversão {pct(s.aprov)}</p>
+            <p className="text-xs text-muted-foreground">{brl(s.valor)} de {brl(s.mv)} · conversão {aprovFmt(s.aprov)}</p>
             <div className="my-1"><Barra p={s.projPctQ} /></div>
             <p className="text-[11px] text-primary">{lid && lid.qtd > 0 ? `Líder: ${lid.c.nome}` : "—"} · {on ? "mostrando abaixo" : "clique para ver por consultor"}</p>
           </button>;
@@ -154,7 +165,7 @@ function ItensDetalhe({ perItem, T, modo, rest = 0 }: { perItem: { it: (typeof I
     modo === "qtd" ? `${uni(s.qtd)} de ${uni(s.mq)}`
     : modo === "proj" ? `${uni(s.projQ)} de ${uni(s.mq)}`
     : modo === "valor" ? `${brl(s.valor)} de ${brl(s.mv)}`
-    : `${pct(s.aprov)}`;
+    : aprovFmt(s.aprov);
   const total =
     modo === "qtd" ? `${uni(T.qtd)} de ${uni(T.mq)} · ${pct(T.perfQ)}`
     : modo === "proj" ? `${uni(T.projQ)} de ${uni(T.mq)} · ${pct(T.projPctQ)} · precisa ${Math.ceil(T.necQ)}/dia (${rest} dias)`
@@ -218,7 +229,7 @@ function RankTable({ title, rows, deptName, sales, items }: { title: string; row
               <td className="px-3 py-2">{brl(l.valor)}</td>
               <td className="px-3 py-2 text-muted-foreground">{brl(l.mv)}</td>
               <td className={`px-3 py-2 ${tone(l.perfV)}`}>{pct(l.perfV)}</td>
-              <td className="px-3 py-2">{pct(l.aprov)}</td>
+              <td className="px-3 py-2">{aprovFmt(l.aprov)}</td>
               <td className="px-3 py-2">{l.necQ ? Math.ceil(l.necQ) : "—"}</td>
               <td className="whitespace-nowrap px-3 py-2">{lider && lider.c.id === l.c.id ? <span className="font-semibold text-primary">Líder</span> : <span className="text-destructive">{gap}</span>}</td>
             </tr>

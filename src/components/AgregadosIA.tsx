@@ -60,7 +60,7 @@ export function AgregadosIA({ mes, cons, tot, dec, stat, deptName }: {
               <td className="px-3 py-2">{uni(l.qtd)}</td>
               <td className="px-3 py-2 text-muted-foreground">{uni(l.mq)}</td>
               <td className={`px-3 py-2 font-semibold ${tone(l.perfQ)}`}>{pct(l.perfQ)}</td>
-              <td className="px-3 py-2">{pct(l.aprov)}</td>
+              <td className="px-3 py-2">{num(l.aprov)} un/pass</td>
               <td className="px-3 py-2">{uni(l.projQ)}</td>
             </tr>
           ))}
