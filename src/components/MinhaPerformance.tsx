@@ -158,24 +158,26 @@ export function MinhaPerformance() {
                 </div>
               </Box>
             )}
-            <Box title="Resumo das necessidades diárias">
-              <div className="divide-y text-sm">
-                <p className="px-5 py-2 text-xs text-muted-foreground">Quanto vender por dia nos {uni(rest)} dias restantes para bater 100% das metas.</p>
-                {ms > 0 && (
-                  <div className="flex justify-between gap-2 px-5 py-3"><span className="font-medium">Mão de obra (serviços)</span><b>{ms - sv > 0 ? `${brl((ms - sv) / rest)} / dia` : "Meta batida ✅"}</b></div>
-                )}
-                {mp > 0 && (
-                  <div className="flex justify-between gap-2 px-5 py-3"><span className="font-medium">Peças</span><b>{mp - pc > 0 ? `${brl((mp - pc) / rest)} / dia` : "Meta batida ✅"}</b></div>
-                )}
-                {d.agregados.filter((a) => +a.meta_qtd > 0).map((a) => {
-                  const nome = ITENS.find((i) => i.k === a.item)?.nome ?? a.item;
-                  const falta = +a.meta_qtd - +a.qtd;
-                  return (
-                    <div key={a.item} className="flex justify-between gap-2 px-5 py-3"><span className="font-medium">{nome}</span><b>{falta > 0 ? `${uni(Math.ceil(falta / rest))} / dia` : "Meta batida ✅"}</b></div>
-                  );
-                })}
-              </div>
-            </Box>
+            {aba === "detalhes" && (
+              <Box title="Resumo das necessidades diárias">
+                <div className="divide-y text-sm">
+                  <p className="px-5 py-2 text-xs text-muted-foreground">Quanto vender por dia nos {uni(rest)} dias restantes para bater 100% das metas.</p>
+                  {ms > 0 && (
+                    <div className="flex justify-between gap-2 px-5 py-3"><span className="font-medium">Mão de obra (serviços)</span><b>{ms - sv > 0 ? `${brl((ms - sv) / rest)} / dia` : "Meta batida ✅"}</b></div>
+                  )}
+                  {mp > 0 && (
+                    <div className="flex justify-between gap-2 px-5 py-3"><span className="font-medium">Peças</span><b>{mp - pc > 0 ? `${brl((mp - pc) / rest)} / dia` : "Meta batida ✅"}</b></div>
+                  )}
+                  {d.agregados.filter((a) => +a.meta_qtd > 0).map((a) => {
+                    const nome = ITENS.find((i) => i.k === a.item)?.nome ?? a.item;
+                    const falta = +a.meta_qtd - +a.qtd;
+                    return (
+                      <div key={a.item} className="flex justify-between gap-2 px-5 py-3"><span className="font-medium">{nome}</span><b>{falta > 0 ? `${uni(Math.ceil(falta / rest))} / dia` : "Meta batida ✅"}</b></div>
+                    );
+                  })}
+                </div>
+              </Box>
+            )}
           </>
         )}
       </div>
