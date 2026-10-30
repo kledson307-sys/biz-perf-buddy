@@ -8,6 +8,7 @@ import { bg, brl, div, pct, tone, uni } from "@/components/painel-ui";
 import { lerOficinaMes } from "@/lib/oficina-mes";
 import type { Diario } from "@/lib/diario-retorno";
 import farois from "@/assets/hero-farois.jpg";
+import { CartaoAgendamento } from "@/components/CartaoAgendamento";
 
 type L = { c: { id: string; nome: string; department_id: string | null }; servicos: number; pecas: number; mS: number; mP: number; perf: number; projPct: number };
 type D = { nome: string; servicos: number; pecas: number; meta: number; projPct: number };
@@ -259,7 +260,7 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
           <div className="grid grid-cols-4 gap-1 text-center">{([["NPS", `${(nps.nps * 100).toFixed(1).replace(".", ",")}`, nps.nps >= 0.7], ["Promot.", pct(nps.pctProm), nps.pctProm >= 0.85], ["Detrat.", uni(nps.det), nps.det === 0], ["RAC", uni(nps.racs), nps.racs === 0]] as [string, string, boolean][]).map(([n, v, ok]) => (
             <div key={n} className="rounded-lg border border-border bg-background/40 py-1"><p className="text-[10px] text-muted-foreground">{n}</p><p className={`text-sm font-bold ${ok ? "text-success" : "text-warning"}`}>{v}</p></div>))}</div>}
       </Bloco>
-      <Bloco titulo="Metas" icon={<Target className="size-4 text-primary" />} ir={() => setTab("metas")} className="lg:col-span-4">
+      <Bloco titulo="Metas" icon={<Target className="size-4 text-primary" />} ir={() => setTab("metas")} className="lg:col-span-3">
         <table className="w-full text-[10px] [&_td]:px-0.5"><thead className="text-muted-foreground"><tr><th className="text-left font-normal">Mensal</th><th className="text-right font-normal">Meta</th><th className="text-right font-normal">Realizado</th><th className="text-right font-normal">Ating.</th><th className="text-right font-normal">Gap</th></tr></thead>
           <tbody>{res3.map(([n, r, m]) => <tr key={n}><td>{n}</td><td className="text-right">{brl(m)}</td><td className="text-right">{brl(r)}</td><td className={`text-right font-semibold ${tone(div(r, m))}`}>{pct(div(r, m))}</td><td className="text-right text-destructive">{brl(Math.min(r - m, 0))}</td></tr>)}</tbody></table>
       </Bloco>
