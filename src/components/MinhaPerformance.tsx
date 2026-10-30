@@ -109,7 +109,29 @@ export function MinhaPerformance() {
               <Kpi label="Margem de peças" value={pc ? pct(margem) : "—"} sub={<span>Ideal do departamento {pct(ideal)}{pc ? <> · <b className={tone(div(margem, ideal))}>{margem >= ideal ? "na média ou acima" : "abaixo do ideal"}</b></> : null}</span>} />
               <Kpi label="Posição no ranking" value={d.posicao ? `${d.posicao}º de ${d.participantes}` : "—"} sub={<span>Sua performance <b className={tone(perf)}>{pct(perf)}</b>{d.perf_lider ? <> · líder {pct(+d.perf_lider)}{d.posicao !== 1 ? ` (faltam ${pct(Math.max(0, +d.perf_lider - perf))})` : " — você é a líder!"}</> : null}</span>} />
             </div>
-            {d.agregados.length > 0 && (
+            {aba === "dash" && (
+              <Box title="Meus agendamentos">
+                <div className="divide-y text-sm">
+                  <p className="px-5 py-2 text-xs text-muted-foreground">Clientes agendados com você — agenda de amanhã (D+1) e de hoje.</p>
+                  {agendaD1.length === 0 && agendaDia.length === 0 && <p className="px-5 py-3 text-muted-foreground">Nenhum agendamento seu neste mês. A agenda é alimentada na aba Importações.</p>}
+                  {agendaD1.length > 0 && <p className="bg-muted/40 px-5 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Amanhã · {uni(agendaD1.length)}</p>}
+                  {agendaD1.map((a) => (
+                    <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-2.5">
+                      <span><b>{a.hora ?? "—"}</b> · {a.cliente ?? "Cliente"} <span className="text-muted-foreground">· {a.placa ?? "sem placa"}</span></span>
+                      <span className="text-xs text-muted-foreground">{a.categoria} · {a.segmento}</span>
+                    </div>
+                  ))}
+                  {agendaDia.length > 0 && <p className="bg-muted/40 px-5 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Hoje · {uni(agendaDia.length)}</p>}
+                  {agendaDia.map((a) => (
+                    <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-2.5">
+                      <span><b>{a.hora ?? "—"}</b> · {a.cliente ?? "Cliente"} <span className="text-muted-foreground">· {a.placa ?? "sem placa"}</span></span>
+                      <span className="text-xs text-muted-foreground">{a.categoria} · {a.status ?? "—"}</span>
+                    </div>
+                  ))}
+                </div>
+              </Box>
+            )}
+            {aba === "detalhes" && d.agregados.length > 0 && (
               <Box title="Agregados">
                 <div className="divide-y text-sm">
                   {d.agregados.map((a) => {
