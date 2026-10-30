@@ -3,20 +3,23 @@ import { uni } from "@/components/painel-ui";
 import { carregarAgendamentos, contar, type AgendRow, type Contagem } from "@/lib/agendamentos-data";
 
 const CAT = { revisao: "Revisão", diagnostico: "Diagnóstico", recall: "Recall" } as const;
-const SEGMENTOS = [["🚗", "Carros", "carro", "text-primary"], ["🏍", "Motos", "moto", "text-neon"]] as const;
+const SEGMENTOS: readonly [string, string, "carro" | "moto", string][] = [
+  ["🚗", "Carros", "carro", "text-primary"],
+  ["🏍", "Motos", "moto", "text-neon"],
+];
 
 /** Uma linha do cartão: segmento (Carros ou Motos) com Revisão/Diagnóstico/Recall contados à parte. */
-function LinhaSegmento({ icone, nome, cor, m }: { icone: string; nome: string; cor: string; m: Contagem }) {
+function LinhaSegmento({ icone, nome, seg, cor, m }: { icone: string; nome: string; seg: "carro" | "moto"; cor: string; m: Contagem }) {
   return (
     <div className="rounded-lg bg-background/60 p-2">
       <div className="flex items-baseline justify-between">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{icone} {nome}</p>
-        <p className={`text-xl font-bold ${cor}`}>{uni(m[nome === "Carros" ? "carro" : "moto"])}</p>
+        <p className={`text-xl font-bold ${cor}`}>{uni(m[seg])}</p>
       </div>
       <div className="mt-1 grid grid-cols-3 gap-1 text-center text-[11px]">
         {(["revisao", "diagnostico", "recall"] as const).map((c) => (
           <div key={c} className="rounded bg-card/70 px-1 py-1">
-            <p className="text-sm font-bold">{uni(m.porCat[c][nome === "Carros" ? "carro" : "moto"])}</p>
+            <p className="text-sm font-bold">{uni(m.porCat[c][seg])}</p>
             <p className="text-muted-foreground">{CAT[c]}</p>
           </div>
         ))}
