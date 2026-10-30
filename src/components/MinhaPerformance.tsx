@@ -63,12 +63,24 @@ export function MinhaPerformance() {
   const ideal = IDEAL[semAcento(d?.departamento ?? "")] ?? 0.31;
   const margem = div(+(d?.margem ?? 0), pc);
 
+  const rosa = (d?.nome ?? "").toUpperCase().startsWith("ANDRESSA");
+  const hoje = new Date().toISOString().slice(0, 10);
+  const amanha = new Date(Date.now() + 864e5).toISOString().slice(0, 10);
+  const agendaD1 = agenda.filter((a) => a.tipo === "d1" && a.data >= hoje);
+  const agendaDia = agenda.filter((a) => a.tipo === "d0" && a.data === hoje);
+
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
+    <div className={`min-h-screen bg-background p-4 md:p-8${rosa ? " tema-rosa" : ""}`}>
       <div className="mx-auto max-w-5xl space-y-4">
         <AcessoTopo titulo="Minha performance" sub={`${d?.nome ?? ""}${d?.departamento ? ` · ${d.departamento}` : ""}`} mes={mes} setMes={setMes}
           extra={<Notificacoes vendedor abrir={() => document.getElementById("retornos-vendedor")?.scrollIntoView({ behavior: "smooth", block: "start" })} />} />
-        {d && (
+        <div className="flex gap-2" role="tablist" aria-label="Visões">
+          {([["dash", "Dashboard"], ["detalhes", "Detalhes"]] as const).map(([k, rot]) => (
+            <button key={k} role="tab" aria-selected={aba === k} onClick={() => setAba(k)}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${aba === k ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>{rot}</button>
+          ))}
+        </div>
+        {aba === "dash" && d && (
           <section className="lux-card flex flex-wrap items-center justify-around gap-4 p-4">
             <Anel p={perf} rot="Performance" />
             {ms > 0 && <Anel p={div(proj(sv), ms)} rot="Projeção serviços" />}
@@ -84,10 +96,10 @@ export function MinhaPerformance() {
           {presenceStatus === "pending" && <span className="text-muted-foreground">Confirmando presença…</span>}
           {presenceStatus === "error" && <><span className="text-destructive">Presença não confirmada. Tentaremos novamente.</span><Button size="sm" variant="outline" onClick={() => { void register(); }}>Tentar novamente</Button></>}
         </div>
-        <RetornosVendedor />
-        <NpsResumoRestrito titulo="Meu NPS & clientes para encantar" />
+        {aba === "detalhes" && <RetornosVendedor />}
+        {aba === "detalhes" && <NpsResumoRestrito titulo="Meu NPS & clientes para encantar" />}
         {erro && <p className="text-sm text-destructive">{erro}</p>}
-        {d && (
+        {aba === "dash" && d && (
           <>
             <div className="grid gap-3 sm:grid-cols-2">
               {ms > 0 || sv > 0 ? (
