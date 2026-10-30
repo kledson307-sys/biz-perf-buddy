@@ -10,6 +10,7 @@ import { META_PROMOTOR, classe, type NpsItem } from "@/lib/nps";
 import { analisar, fmt, hoje, type OsImport, type OsItem } from "@/lib/os-controle";
 import type { Composicao } from "@/lib/mecanicos";
 import { dicaTecnico, ratioFaixa, ritmo } from "@/lib/oficina";
+import type { Retorno } from "@/lib/diario-retorno";
 
 type T = { nome: string; servicos: number; pecas: number; passagens: number; meta_servicos: number; meta_pecas: number; composicao?: Composicao };
 type Params = { du_totais: number; du_decorridos: number; dc_totais: number; dc_decorridos: number; base: string } | null;
@@ -18,6 +19,7 @@ const OCULTOS = ["VINICIUS", "DELMIR", "LUIS SANDRO"];
 
 /** Cockpit da oficina de Carro. Marcos (controlador de quadro) e Delmir (chefe: + auditoria e dossiê). */
 export function CockpitOficina({ chefe }: { chefe: boolean }) {
+  const [ret, setRet] = useState<Retorno[]>([]);
   const [mes, setMes] = useState(() => new Date().toISOString().slice(0, 7));
   const [aba, setAba] = useState("resumo");
   const [tec, setTec] = useState<{ tecnicos: T[]; params: Params } | null>(null);
@@ -27,6 +29,7 @@ export function CockpitOficina({ chefe }: { chefe: boolean }) {
   useEffect(() => {
     setErro("");
     void supabase.rpc("tecnicos_carro", { p_mes: mes }).then(({ data, error }) => (error ? setErro("Não foi possível carregar os dados.") : setTec(data as unknown as { tecnicos: T[]; params: Params })));
+    void supabase.rpc("oficina_retornos" as never, { p_mes: mes } as never).then(({ data }) => setRet(((data as unknown) as Retorno[] | null) ?? []));
     void supabase.rpc("painel_oficina" as never, { p_mes: mes } as never).then(({ data }) => setPn(data as unknown as Painel));
     void supabase.rpc("meu_nps").then(({ data }) => setNps(((data as { itens?: NpsItem[] } | null)?.itens) ?? []));
   }, [mes]);
@@ -66,6 +69,9 @@ export function CockpitOficina({ chefe }: { chefe: boolean }) {
   const V = pn?.vendas ?? { servicos: 0, pecas: 0 }, M = pn?.metas ?? { servicos: 0, pecas: 0 };
   const abas: [string, string][] = [["resumo", "Resumo"], ["patio", "Pátio & O.S."], ["tecnicos", "Técnicos & Boxes"], ["qualidade", "Qualidade & Retorno"], ...(chefe ? [["dossie", "Dossiê técnico"] as [string, string]] : [])];
 
+  const retTec = new Map<string, number>();
+  for (const r of ret) for (const t of (r.tecnicoAnterior || "SEM TÉCNICO").split(", ")) retTec.set(norm(t), (retTec.get(norm(t)) ?? 0) + 1);
+  const rankRet = [...ret.reduce((m, r) => { for (const t of (r.tecnicoAnterior || "SEM TÉCNICO").split(", ")) m.set(t, (m.get(t) ?? 0) + 1); return m; }, new Map<string, number>()).entries()].sort((a, b) => b[1] - a[1]);
   return (
     <div className="min-h-screen bg-background p-3 md:p-6">
       <div className="mx-auto max-w-[1600px] space-y-3">
@@ -117,20 +123,30 @@ export function CockpitOficina({ chefe }: { chefe: boolean }) {
           </Box>
         </div>}
 
-        {aba === "qualidade" && <div className="grid gap-3 lg:grid-cols-2">
+        {aba === "qualidade" && <div className="grid gap-3 lg:grid-cols-3">
           <NpsResumoRestrito titulo="NPS da oficina · Carro" meta={META_PROMOTOR.carro} />
-          <Box title="Retorno por O.S. (clientes insatisfeitos de volta à oficina)">
+          <Box title={`Retornos por chassi · até 60 dias (${uni(ret.length)})`} fit="xl:max-h-[calc(100vh-260px)]">
+            <div className="p-3 text-xs">
+              <p className="mb-1 text-muted-foreground">Mesmo veículo voltou com reparo/garantia. Responsável = técnico da O.S. anterior.</p>
+              <ul className="mb-2 space-y-0.5">{rankRet.map(([t, q], i) => <li key={t} className="flex justify-between"><span>{i + 1}. {t}</span><b className="text-destructive">{uni(q)}</b></li>)}</ul>
+              <ul className="space-y-1">{ret.map((r) => <li key={r.os + r.osAnterior} className="rounded border border-border p-1.5">
+                <b>O.S. {r.os}</b> ({r.tipo}) ← <b>O.S. {r.osAnterior}</b> ({r.tipoAnterior}) · <b className={r.dias <= 30 ? "text-destructive" : "text-warning"}>{r.dias} dias</b>
+                <p className="text-muted-foreground">{r.modelo} · {r.placa || r.chassi} · técnico anterior: <b className="text-foreground">{r.tecnicoAnterior || "—"}</b></p></li>)}
+                {!ret.length && <li className="text-muted-foreground">Nenhum retorno identificado (ou planilha de Passagens ainda não reimportada).</li>}</ul>
+            </div>
+          </Box>
+          <Box title="Clientes insatisfeitos de volta ao pátio">
             <ul className="space-y-1 p-3 text-xs">{preventivo.map((a) => <li key={a.item.n} className="rounded border border-border p-2">O.S. <b>{a.item.n}</b> · {a.item.mod} · {a.item.cons} · {a.diasStatus} dias</li>)}
-              {!preventivo.length && <li className="text-muted-foreground">Nenhum retorno de cliente insatisfeito no pátio.</li>}</ul>
+              {!preventivo.length && <li className="text-muted-foreground">Nenhum cliente insatisfeito no pátio.</li>}</ul>
           </Box>
         </div>}
 
         {aba === "dossie" && chefe && <Box title="Dossiê técnico do mês">
           <div className="overflow-x-auto"><table className="w-full text-sm">
-            <thead><tr className="text-xs text-muted-foreground"><th className="px-3 py-2 text-left">Técnico</th><th>BSI</th><th>Revisão C7</th><th>C7 pagos</th><th>Garantia</th><th>Funilaria</th><th>Ticket</th><th>Ratio P/M.O.</th><th>Atingimento</th></tr></thead>
+            <thead><tr className="text-xs text-muted-foreground"><th className="px-3 py-2 text-left">Técnico</th><th>BSI</th><th>Revisão C7</th><th>C7 pagos</th><th>Garantia</th><th>Funilaria</th><th>Ticket</th><th>Ratio P/M.O.</th><th>Retornos</th><th>Atingimento</th></tr></thead>
             <tbody>{lista.map((t) => { const c = t.composicao ?? {}; const n = (a?: string[]) => a?.length ?? 0; const r = ratioFaixa(+t.pecas, +t.servicos);
               return <tr key={t.nome} className="border-t border-border text-center"><td className="px-3 py-2 text-left font-medium">{t.nome}</td><td>{n(c.bs)}</td><td>{n(c.rev)}</td><td>{n(c.pagos)}</td><td>{n(c.c4)}</td><td>{n(c.funilaria)}</td>
-                <td>{brl(div(+t.servicos + +t.pecas, +t.passagens))}</td><td className={r.cls}>{r.txt}</td><td className={tone(t.perf)}>{pct(t.perf)}</td></tr>; })}</tbody>
+                <td>{brl(div(+t.servicos + +t.pecas, +t.passagens))}</td><td className={r.cls}>{r.txt}</td><td className={(retTec.get(norm(t.nome)) ?? 0) ? "text-destructive font-semibold" : ""}>{uni(retTec.get(norm(t.nome)) ?? 0)}</td><td className={tone(t.perf)}>{pct(t.perf)}</td></tr>; })}</tbody>
           </table></div>
         </Box>}
       </div>
