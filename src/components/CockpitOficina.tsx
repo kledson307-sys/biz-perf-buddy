@@ -64,7 +64,7 @@ export function CockpitOficina({ chefe }: { chefe: boolean }) {
   const pecasHoje = por("pecas").filter((a) => a.prev && a.prev <= ref);
 
   const V = pn?.vendas ?? { servicos: 0, pecas: 0 }, M = pn?.metas ?? { servicos: 0, pecas: 0 };
-  const abas = [["resumo", "Resumo"], ["patio", "Pátio & O.S."], ["tecnicos", "Técnicos & Boxes"], ["qualidade", "Qualidade & Retorno"], ...(chefe ? [["dossie", "Dossiê técnico"]] : [])];
+  const abas: [string, string][] = [["resumo", "Resumo"], ["patio", "Pátio & O.S."], ["tecnicos", "Técnicos & Boxes"], ["qualidade", "Qualidade & Retorno"], ...(chefe ? [["dossie", "Dossiê técnico"] as [string, string]] : [])];
 
   return (
     <div className="min-h-screen bg-background p-3 md:p-6">
