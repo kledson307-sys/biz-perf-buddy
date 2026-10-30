@@ -14,4 +14,4 @@
 - [ ] Aba Agendamentos (D+1/testador, D0, fechamento D+1×D0, agendados×passantes, penetração, faltas/fantasmas)
 - [x] Reconhecimento por conteúdo: NPS (2 formatos), O.S. abertas e faturamento em linhas na esteira única
 - [x] Aba Agendamentos + cartão D+1 no Dashboard + metas diárias de agendamento
-- [ ] Andressa: tema rosa, aba Dashboard própria com seus dados + agendamentos dela
+- [x] Andressa: tema rosa, aba Dashboard própria com seus dados + agendamentos dela (sem teste visual com o login dela)

@@ -39,3 +39,5 @@
 
 - Restricted roles 'controlador' (Marcos) and 'tunap' (Geraldo) follow the chefe_oficina pattern: data_owner() is NULL and they read only via SECURITY DEFINER RPCs (`painel_oficina`, `tecnicos_carro`, `meu_nps`, `tunap_painel`); shared math in `src/lib/oficina.ts`.
 - Daily billing by real O.S. date and chassis returns (≤60 days, repair/warranty types, blamed on previous O.S. technician) live in oficina_mes, parsed by src/lib/diario-retorno.ts; it only shapes charts/quality and never replaces official sales totals.
+- Agendamentos live in `agendamentos`/`agendamento_followups`/`agenda_metas` (team RLS); sellers read only their own rows via SECURITY DEFINER `meus_agendamentos(p_mes)` matching `agendamentos.consultor` to their consultant login.
+- Seller view (`MinhaPerformance`) has Dashboard/Detalhes tabs; consultant ANDRESSA gets the `tema-rosa` pink accent class from `src/styles.css`.
