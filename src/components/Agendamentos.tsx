@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarCheck, ClipboardCheck, Ghost, UserX, Users } from "lucide-react";
+import { Ghost, UserX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Box, Tabela, uni } from "@/components/painel-ui";
 import { carregarAgendamentos, carregarFollowups, aceitarFollowup, confirmarFollowup, contar, separarPassantes, fechamentoDoDia, faltasDoMes, type AgendRow, type Followup } from "@/lib/agendamentos-data";
@@ -7,6 +7,7 @@ import { classe, type NpsItem } from "@/lib/nps";
 
 const CAT_LABEL = { revisao: "Revisão", diagnostico: "Diagnóstico", recall: "Recall" } as const;
 const dBR = (iso: string) => iso.split("-").reverse().join("/");
+const limpa = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toUpperCase();
 
 /** Última nota NPS por cliente (nome normalizado). */
 function useNpsPorCliente() {
@@ -16,8 +17,7 @@ function useNpsPorCliente() {
       const { data } = await supabase.from("nps_imports").select("itens").order("at", { ascending: false }).limit(1).maybeSingle();
       const m = new Map<string, NpsItem>();
       for (const it of (data?.itens as NpsItem[] | null) ?? []) {
-        const k = it.cliente.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toUpperCase();
-        if (it.nota !== null) m.set(k, it);
+        if (it.nota !== null) m.set(limpa(it.cliente), it);
       }
       setMapa(m);
     })();
@@ -27,7 +27,7 @@ function useNpsPorCliente() {
 
 const NPS_COR = { promotor: "bg-success", neutro: "bg-warning", detrator: "bg-destructive" } as const;
 
-function SeloNps({ item }: { item?: NpsItem }) {
+function SeloNps({ item }: { item?: NpsItem | undefined }) {
   if (!item || item.nota === null) return <span className="text-muted-foreground">sem pesquisa</span>;
   const c = classe(item.nota);
   return <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold text-background ${NPS_COR[c]}`}>{item.nota} · {c === "promotor" ? "Promotor" : c === "neutro" ? "Neutro" : "Detrator"}</span>;
@@ -62,8 +62,7 @@ export function Agendamentos({ mes }: { mes: string }) {
 
   const radar = contar(d1);
   const acumD1 = contar(rows.filter((r) => r.tipo === "d1"));
-  const acumD0 = rows.filter((r) => r.tipo === "d0");
-  const atendidosMes = acumD0.filter((r) => /EFETIVAD|ENCERRAD|FINALIZAD/i.test(r.status)).length;
+  const atendidosMes = rows.filter((r) => r.tipo === "d0" && /EFETIVAD|ENCERRAD|FINALIZAD/i.test(r.status)).length;
 
   const diagnosticos = d1.filter((r) => r.categoria === "diagnostico");
   const followPorAg = new Map(follows.map((f) => [f.agendamento_id, f]));
@@ -73,12 +72,11 @@ export function Agendamentos({ mes }: { mes: string }) {
   const { passantes, agendados } = separarPassantes(d0);
   const mixPass = contar(passantes), mixAg = contar(agendados);
 
-  // Fechamento: D+1 da véspera × D0 do dia correspondente (mesma data)
+  // Fechamento: D+1 × agenda do dia na mesma data, casando por placa
   const fechamento = useMemo(() => {
     const data = d0[0]?.data;
     if (!data) return [];
-    const d1mesma = rows.filter((r) => r.tipo === "d1" && r.data === data);
-    return fechamentoDoDia(d1mesma, d0);
+    return fechamentoDoDia(rows.filter((r) => r.tipo === "d1" && r.data === data), d0);
   }, [rows, d0]);
 
   const faltas = faltasDoMes(rows);
@@ -88,19 +86,13 @@ export function Agendamentos({ mes }: { mes: string }) {
   const aceitar = async (id: string) => { await aceitarFollowup(id, await nome()); await load(); };
   const confirmar = async (id: string, c: "sim" | "nao" | "faltou") => { await confirmarFollowup(id, c, await nome()); await load(); };
 
-  const npsDe = (cliente: string) => npsMap.get(cliente.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toUpperCase());
-
-  if (!rows.length) return <Box><p className="text-sm text-muted-foreground">Nenhum agendamento importado em {dBR(mes + "-01").slice(3)}. Arraste as planilhas "Controle de Agendamento" (D+1 e do dia) na aba Importações.</p>{msg && <p className="text-sm text-destructive">{msg}</p>}</Box>;
+  if (!rows.length) return <Box title="Agendamentos"><p className="p-4 text-sm text-muted-foreground">Nenhum agendamento importado em {dBR(mes + "-01").slice(3)}. Arraste as planilhas "Controle de Agendamento" (D+1 e do dia) na aba Importações.</p>{msg && <p className="px-4 pb-3 text-sm text-destructive">{msg}</p>}</Box>;
 
   return (
     <div className="space-y-3">
-      {/* Radar D+1 */}
-      <Box>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="flex items-center gap-2 text-sm font-semibold"><CalendarCheck className="size-4 text-primary" />Agenda de amanhã (D+1) · {amanha.data ? dBR(amanha.data) : "—"}</h3>
-          <p className="text-xs text-muted-foreground">Acumulado do mês: {uni(acumD1.carro + acumD1.moto)} agendados · {uni(atendidosMes)} atendidos</p>
-        </div>
-        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <Box title={`Agenda de amanhã (D+1) · ${amanha.data ? dBR(amanha.data) : "—"}`}
+        right={<p className="text-xs text-muted-foreground">Acumulado do mês: {uni(acumD1.carro + acumD1.moto)} agendados · {uni(atendidosMes)} atendidos</p>}>
+        <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-5">
           <div className="rounded-lg bg-background/60 p-2 text-center"><p className="text-2xl font-bold text-primary">{uni(radar.carro)}</p><p className="text-[11px] uppercase text-muted-foreground">Carros</p></div>
           <div className="rounded-lg bg-background/60 p-2 text-center"><p className="text-2xl font-bold text-neon">{uni(radar.moto)}</p><p className="text-[11px] uppercase text-muted-foreground">Motos</p></div>
           {(["revisao", "diagnostico", "recall"] as const).map((c) => (
@@ -109,24 +101,23 @@ export function Agendamentos({ mes }: { mes: string }) {
         </div>
       </Box>
 
-      {/* Follow-up do testador */}
-      <Box>
-        <h3 className="flex items-center gap-2 text-sm font-semibold"><ClipboardCheck className="size-4 text-primary" />Follow-up do testador · diagnósticos de amanhã ({uni(filaTestador.length)} pendentes)</h3>
+      <Box title={`Follow-up do testador · diagnósticos de amanhã (${uni(filaTestador.length)} pendentes)`} fit="xl:max-h-[36vh]">
+        {!diagnosticos.length && <p className="p-3 text-sm text-muted-foreground">Sem diagnósticos agendados para amanhã.</p>}
         {filaTestador.length > 0 && (
           <Tabela head={["Hora", "Cliente", "Placa", "Alegação", "Último NPS", ""]}>
             {filaTestador.map((d) => (
               <tr key={d.id} className="border-t border-border">
                 <td className="px-2 py-1.5">{d.hora}</td><td className="px-2 py-1.5 font-medium">{d.cliente}</td><td className="px-2 py-1.5">{d.placa}</td>
                 <td className="max-w-[16rem] truncate px-2 py-1.5 text-muted-foreground" title={d.obs}>{d.obs.split("\n")[0] || "—"}</td>
-                <td className="px-2 py-1.5"><SeloNps item={npsDe(d.cliente)} /></td>
+                <td className="px-2 py-1.5"><SeloNps item={npsMap.get(limpa(d.cliente))} /></td>
                 <td className="px-2 py-1.5"><button type="button" onClick={() => void aceitar(d.id)} className="rounded-md bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">Aceitar</button></td>
               </tr>
             ))}
           </Tabela>
         )}
         {controleQualidade.length > 0 && (
-          <>
-            <h4 className="mt-3 text-xs font-semibold uppercase text-muted-foreground">Controle de qualidade · confirmação de sintoma</h4>
+          <div className="border-t border-border p-3">
+            <h4 className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Controle de qualidade · confirmação de sintoma</h4>
             <Tabela head={["Hora", "Cliente", "Placa", "Aceito por", "Sintoma confirmado?"]}>
               {controleQualidade.map((d) => {
                 const f = followPorAg.get(d.id)!;
@@ -151,37 +142,32 @@ export function Agendamentos({ mes }: { mes: string }) {
                 );
               })}
             </Tabela>
-          </>
-        )}
-        {!diagnosticos.length && <p className="text-sm text-muted-foreground">Sem diagnósticos agendados para amanhã.</p>}
-      </Box>
-
-      {/* Agenda do dia: passantes × agendados */}
-      <Box>
-        <h3 className="flex items-center gap-2 text-sm font-semibold"><Users className="size-4 text-primary" />Agenda do dia · {d0.length ? dBR(d0[0]!.data) : "—"} · passantes × agendados</h3>
-        {!d0.length && <p className="text-sm text-muted-foreground">Planilha do dia ainda não importada.</p>}
-        {d0.length > 0 && (
-          <div className="grid gap-2 sm:grid-cols-2">
-            {[{ t: "Passantes (Wesley, Renan, Jadna, Andressa, Pedro, Gilberto)", m: mixPass, n: passantes.length }, { t: "Agendados demais consultores", m: mixAg, n: agendados.length }].map((g) => (
-              <div key={g.t} className="rounded-lg bg-background/60 p-3">
-                <p className="text-xs text-muted-foreground">{g.t}</p>
-                <p className="text-xl font-bold">{uni(g.n)} <span className="text-sm font-normal text-muted-foreground">🚗{uni(g.m.carro)} 🏍{uni(g.m.moto)}</span></p>
-                <p className="text-xs text-muted-foreground">Rev {uni(g.m.porCat.revisao.carro + g.m.porCat.revisao.moto)} · Diag {uni(g.m.porCat.diagnostico.carro + g.m.porCat.diagnostico.moto)} · Recall {uni(g.m.porCat.recall.carro + g.m.porCat.recall.moto)}</p>
-              </div>
-            ))}
           </div>
         )}
+      </Box>
+
+      <Box title={`Agenda do dia · ${d0.length ? dBR(d0[0]!.data) : "—"} · passantes × agendados`}>
+        {!d0.length && <p className="p-3 text-sm text-muted-foreground">Planilha do dia ainda não importada.</p>}
         {d0.length > 0 && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Penetração de agendados: {d0.length ? Math.round((agendados.length / d0.length) * 100) : 0}% do dia ({uni(agendados.length)} de {uni(d0.length)}) · indicador sem meta
-          </p>
+          <div className="p-3">
+            <div className="grid gap-2 sm:grid-cols-2">
+              {[{ t: "Passantes (Wesley, Renan, Jadna, Andressa, Pedro, Gilberto)", m: mixPass, n: passantes.length }, { t: "Agendados demais consultores", m: mixAg, n: agendados.length }].map((g) => (
+                <div key={g.t} className="rounded-lg bg-background/60 p-3">
+                  <p className="text-xs text-muted-foreground">{g.t}</p>
+                  <p className="text-xl font-bold">{uni(g.n)} <span className="text-sm font-normal text-muted-foreground">🚗{uni(g.m.carro)} 🏍{uni(g.m.moto)}</span></p>
+                  <p className="text-xs text-muted-foreground">Rev {uni(g.m.porCat.revisao.carro + g.m.porCat.revisao.moto)} · Diag {uni(g.m.porCat.diagnostico.carro + g.m.porCat.diagnostico.moto)} · Recall {uni(g.m.porCat.recall.carro + g.m.porCat.recall.moto)}</p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Penetração de agendados: {Math.round((agendados.length / d0.length) * 100)}% do dia ({uni(agendados.length)} de {uni(d0.length)}) · indicador sem meta
+            </p>
+          </div>
         )}
       </Box>
 
-      {/* Fechamento do dia */}
       {fechamento.length > 0 && (
-        <Box fit="xl:max-h-[40vh]">
-          <h3 className="text-sm font-semibold">Fechamento do dia · D+1 × agenda do dia ({uni(fechamento.filter((f) => f.atendido).length)} atendidos de {uni(fechamento.length)})</h3>
+        <Box title={`Fechamento do dia · D+1 × agenda do dia (${uni(fechamento.filter((f) => f.atendido).length)} atendidos de ${uni(fechamento.length)})`} fit="xl:max-h-[40vh]">
           <Tabela head={["Hora", "Cliente", "Placa", "Tipo", "Confirmação", "Resultado"]}>
             {fechamento.map((f) => (
               <tr key={f.placa + f.hora} className="border-t border-border">
@@ -195,10 +181,8 @@ export function Agendamentos({ mes }: { mes: string }) {
         </Box>
       )}
 
-      {/* Faltas e fantasmas */}
       <div className="grid items-start gap-3 xl:grid-cols-2">
-        <Box fit="xl:max-h-[32vh]">
-          <h3 className="flex items-center gap-2 text-sm font-semibold"><UserX className="size-4 text-warning" />Não compareceram no mês ({uni(faltas.length)})</h3>
+        <Box title={`Não compareceram no mês (${uni(faltas.length)})`} fit="xl:max-h-[32vh]">
           {faltas.length > 0 ? (
             <Tabela head={["Cliente", "Placa", "Faltas", "Datas"]}>
               {faltas.map((f) => (
@@ -208,14 +192,13 @@ export function Agendamentos({ mes }: { mes: string }) {
                 </tr>
               ))}
             </Tabela>
-          ) : <p className="text-sm text-muted-foreground">Nenhuma falta registrada no mês.</p>}
+          ) : <p className="p-3 text-sm text-muted-foreground">Nenhuma falta registrada no mês.</p>}
         </Box>
-        <Box>
-          <h3 className="flex items-center gap-2 text-sm font-semibold"><Ghost className="size-4 text-destructive" />Clientes fantasmas ({uni(listaFantasmas.length)})</h3>
-          <p className="text-xs text-muted-foreground">Agendaram mais de 2 vezes e não compareceram.</p>
+        <Box title={`Clientes fantasmas (${uni(listaFantasmas.length)})`}>
+          <p className="px-3 pt-2 text-xs text-muted-foreground">Agendaram mais de 2 vezes e não compareceram.</p>
           {listaFantasmas.length > 0 ? (
-            <ul className="mt-1 space-y-1 text-sm">{listaFantasmas.map((f) => <li key={f.placa + f.cliente} className="rounded bg-background/60 px-2 py-1"><b>{f.cliente}</b> · {f.placa} · <span className="text-destructive">{uni(f.faltas)} faltas</span></li>)}</ul>
-          ) : <p className="text-sm text-muted-foreground">Nenhum cliente fantasma no mês.</p>}
+            <ul className="space-y-1 p-3 text-sm">{listaFantasmas.map((f) => <li key={f.placa + f.cliente} className="rounded bg-background/60 px-2 py-1"><b>{f.cliente}</b> · {f.placa} · <span className="text-destructive">{uni(f.faltas)} faltas</span></li>)}</ul>
+          ) : <p className="p-3 text-sm text-muted-foreground">Nenhum cliente fantasma no mês.</p>}
         </Box>
       </div>
       {msg && <p className="text-sm text-destructive">{msg}</p>}
