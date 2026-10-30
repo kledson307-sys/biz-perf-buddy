@@ -22,21 +22,29 @@ const IDEAL: Record<string, number> = { "SG OFICINA": 0.33, "ESTETICA": 0.38, "A
 const semAcento = (s: string) => s.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
 /** Tela da vendedora: só os números dela, posição no ranking e distância do líder. */
+type Agend = { id: string; data: string; hora: string | null; cliente: string | null; placa: string | null; categoria: string; segmento: string; tipo: string; status: string | null; servico: string | null };
+
 export function MinhaPerformance() {
   const [mes, setMes] = useState(() => new Date().toISOString().slice(0, 7));
   const [d, setD] = useState<Dados | null>(null);
   const [aberto, setAberto] = useState<string | null>(null);
   const [erro, setErro] = useState("");
+  const [aba, setAba] = useState<"dash" | "detalhes">("dash");
+  const [agenda, setAgenda] = useState<Agend[]>([]);
   const latestMonth = useRef(mes);
   latestMonth.current = mes;
   const load = useCallback(async () => {
     const month = latestMonth.current;
     setErro("");
     try {
-      const { data, error } = await supabase.rpc("minha_performance", { p_mes: month });
+      const [{ data, error }, ag] = await Promise.all([
+        supabase.rpc("minha_performance", { p_mes: month }),
+        supabase.rpc("meus_agendamentos", { p_mes: month }),
+      ]);
       if (month !== latestMonth.current) return;
       if (error) setErro("Não foi possível carregar seus dados.");
       else setD(data as unknown as Dados);
+      setAgenda((ag.data ?? []) as unknown as Agend[]);
     } catch {
       setErro("Não foi possível carregar seus dados.");
     }
