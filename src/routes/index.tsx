@@ -40,6 +40,8 @@ import { useResumoMes } from "@/hooks/use-resumo-mes";
 import { AbaTopo, type TopoKpi } from "@/components/AbaTopo";
 import { ImportadorUnificado } from "@/components/ImportadorUnificado";
 import { RetrabalhoOficina } from "@/components/RetrabalhoOficina";
+import { Agendamentos } from "@/components/Agendamentos";
+import { AgendaMetas } from "@/components/AgendaMetas";
 import { ITENS } from "@/lib/agregados";
 
 export const Route = createFileRoute("/")({
@@ -712,6 +714,7 @@ function Painel({ email }: { email: string }) {
         {show("agregados") && <Secao relatorio={relatorio} titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} />{!relatorio && <details className="lux-card"><summary className="cursor-pointer px-4 py-2 text-sm font-semibold">Ranking geral de agregados · {mesExtenso} <span className="text-xs text-primary">abrir/fechar</span></summary><div className="max-h-[60vh] overflow-y-auto"><RankingAgregados mes={mes} cons={visiveis} deptName={deptName} tot={tot} dec={dec} /></div></details>}</Secao>}
         {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} lado={relatorio ? undefined : <RetrabalhoOficina mes={mes} />} />{!relatorio && <><div className="grid items-start gap-3"><details className="group lux-card"><summary className="flex cursor-pointer list-none items-center justify-between px-4 py-2 text-sm font-semibold">Ranking dos técnicos · Serviços, Peças e Total · {mesExtenso}<span className="text-xs text-primary">Abrir/fechar</span></summary><RankingTecnicos mes={mes} tot={tot} dec={dec} /></details></div></>}</Secao>}
         {tab === "controle-os" && <ControleOS />}
+        {tab === "agendamentos" && !relatorio && <Agendamentos mes={mes} />}
         {tab === "importacoes" && !relatorio && <div className="space-y-3 print:hidden">
           <div>
             <h2 className="text-sm font-semibold">Central de importações · {mes}</h2>
