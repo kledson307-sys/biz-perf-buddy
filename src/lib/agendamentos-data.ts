@@ -14,8 +14,14 @@ export const CONS_PASSANTES = /\b(WESLEY|RENAN|JADNA|ANDRESSA|PEDRO|GILBERTO)\b/
 /** Status que marcam o veículo como atendido no fechamento do dia. */
 export const STATUS_ATENDIDO = /EFETIVAD|ENCERRAD|FINALIZAD/i;
 
+/** Primeiro dia do mês seguinte (fim exclusivo do intervalo). */
+export const mesSeguinte = (mes: string) => {
+  const [a, m] = mes.split("-").map(Number);
+  return `${m === 12 ? a! + 1 : a}-${String(m === 12 ? 1 : m! + 1).padStart(2, "0")}-01`;
+};
+
 export async function carregarAgendamentos(mes: string): Promise<AgendRow[]> {
-  const { data, error } = await supabase.from("agendamentos").select("*").gte("data", `${mes}-01`).lt("data", `${mes}-32`).order("data").order("hora");
+  const { data, error } = await supabase.from("agendamentos").select("*").gte("data", `${mes}-01`).lt("data", mesSeguinte(mes)).order("data").order("hora");
   if (error) throw new Error("Erro ao carregar agendamentos: " + error.message);
   return (data ?? []) as AgendRow[];
 }

@@ -70,7 +70,7 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
     for (const m of meses) {
       if (await mesTravado(m)) throw new Error(`Mês ${m} fechado: desbloqueie para importar.`);
       const doMes = rows.filter((r) => r.dia.startsWith(m));
-      const { error: e1 } = await supabase.from("daily_sales").delete().gte("dia", `${m}-01`).lt("dia", `${m}-32`);
+      const { error: e1 } = await supabase.from("daily_sales").delete().gte("dia", `${m}-01`).lt("dia", mesSeguinte(m));
       if (e1) throw e1;
       const { error: e2 } = await supabase.from("daily_sales").insert(doMes);
       if (e2) throw e2;
