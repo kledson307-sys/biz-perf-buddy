@@ -18,9 +18,10 @@ export const segmentoProduto = (p: string): "carro" | "moto" => /SERIE [FGRKC]\b
 
 /** Classifica pela descrição: linhas negativas ("NÃO", "NÃO POSSUI") são ignoradas. */
 export function classificar(obs: string): Categoria {
-  const pos = obs.split("\n").map(norm).filter((l) => l && !/:\s*(NAO|NAO POSSUI|N\/A|-)?\s*$/.test(l) && !/NAO POSSUI/.test(l)).join(" ");
-  if (/CAMPANHA|RECALL|ATUALIZACAO DE SOFTWARE/.test(pos)) return "recall";
-  if (/ALEGA|BARULHO|RUIDO|MENSAGEM|LUZ|FALHA|DEFEITO|VAZAMENTO|DIAGNOS|NAO LIGA|BARULH/.test(pos)) return "diagnostico";
+  const t = norm(obs).replace(/\s+/g, " ")
+    .replace(/[A-Z/ ]{2,40}:\s*(N|NA|NAO)( POSSUI)?(?=\s|$)/g, " ").replace(/PREFERENCIA DO CONSULTOR\/TECNICO:[^:]*?(?=[A-Z ]{3,}:|$)/g, " ");
+  if (/RECALL|ATUALIZACAO DE SOFTWARE|CAMPANHA ATUALIZA|CAMPANHA TECNICA:\s*(SIM|\d)/.test(t)) return "recall";
+  if (/ALEGACOES:\s*(?!N\b|NAO)\S|ALEGA|BARULHO|RUIDO|MENSAGEM|LUZ |FALHA|DEFEITO|VAZAMENTO|DIAGNOS|NAO LIGA|NAO FUNCIONA/.test(t)) return "diagnostico";
   return "revisao";
 }
 
@@ -43,7 +44,7 @@ export function lerAgendamento(raw: unknown[][]): AgendReport | null {
     if (/^\d{2}\/\d{2} \d{2}:\d{2}/.test(ag)) {
       const produto = g(r, "PRODUTO");
       itens.push({ hora: ag.slice(6), status: g(r, "STATUS"), cliente: g(r, "CLIENTE"), os: g(r, "NR O.S"), celular: g(r, "CELULAR"), consultor: g(r, "TECNICO"), produto, placa: g(r, "PLACA").toUpperCase(), segmento: segmentoProduto(produto), categoria: "revisao", obs: obsCol >= 0 ? txt(r[obsCol]) : "" });
-    } else if (itens.length && obsCol >= 0 && txt(r[obsCol]) && !norm(txt(r[obsCol])).startsWith("PAGINA")) {
+    } else if (itens.length && obsCol >= 0 && txt(r[obsCol]) && !/^(PAGINA|DATA DE IMPRESSAO|OBSERVACOES E|RECLAMACOES)/.test(norm(txt(r[obsCol])))) {
       itens[itens.length - 1]!.obs += "\n" + txt(r[obsCol]);
     }
   }

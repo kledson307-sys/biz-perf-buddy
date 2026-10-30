@@ -5,7 +5,7 @@ import { lerAgendamento, classificar, ehAgendamento } from "./agendamento";
 
 describe("agendamento", () => {
   it("classifica recall, diagnóstico e revisão pela descrição", () => {
-    expect(classificar("CAMPANHA TÉCNICA: SIM 0032")).toBe("recall");
+    expect(classificar("CAMPANHA ATUALIZAÇÃO DE SOFTWARE")).toBe("recall");
     expect(classificar("ALEGAÇÕES: BARULHO NA SUSPENSÃO")).toBe("diagnostico");
     expect(classificar("ALEGAÇÕES:NÃO POSSUI\nBSI: NÃO\nTROCA DE ÓLEO")).toBe("revisao");
   });
