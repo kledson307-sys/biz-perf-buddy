@@ -87,5 +87,6 @@ export function faltasDoMes(rows: AgendRow[]): { placa: string; cliente: string;
   return [...faltas.values()].sort((a, b) => b.faltas - a.faltas);
 }
 
+export type Falta = { placa: string; cliente: string; faltas: number; datas: string[] };
 /** Fantasmas: mais de 2 agendamentos sem comparecimento. */
-export const fantasmas = (faltas: { faltas: number } & Record<string, unknown>[]) => faltas.filter((f) => f.faltas > 2);
+export const fantasmas = (faltas: Falta[]) => faltas.filter((f) => f.faltas > 2);

@@ -18,7 +18,7 @@ type Achado = {
   arquivo: string; resumo: string; raw?: unknown[][];
   tipo: "nps" | "pecas" | "passagens" | "d1" | "d0" | "os" | "outro";
   agenda?: AgendReport; nps?: NpsItem[]; pecas?: ItemPeca[]; pass?: PassReport;
-  fat?: FatHistorico; osLinhas?: { nome: string; servicos: number; pecas: number }[];
+  fat?: FatHistorico | undefined; osLinhas?: { nome: string; servicos: number; pecas: number }[];
 };
 const ROTULO = { nps: "NPS da montadora", pecas: "Faturamento de Peças", passagens: "Faturamento de Serviços / Passagens", d1: "Agendamento D+1", d0: "Agendamento do dia", os: "O.S. Abertas", outro: "Não reconhecido" } as const;
 const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
