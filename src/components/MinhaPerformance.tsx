@@ -63,12 +63,24 @@ export function MinhaPerformance() {
   const ideal = IDEAL[semAcento(d?.departamento ?? "")] ?? 0.31;
   const margem = div(+(d?.margem ?? 0), pc);
 
+  const rosa = (d?.nome ?? "").toUpperCase().startsWith("ANDRESSA");
+  const hoje = new Date().toISOString().slice(0, 10);
+  const amanha = new Date(Date.now() + 864e5).toISOString().slice(0, 10);
+  const agendaD1 = agenda.filter((a) => a.tipo === "d1" && a.data >= hoje);
+  const agendaDia = agenda.filter((a) => a.tipo === "d0" && a.data === hoje);
+
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
+    <div className={`min-h-screen bg-background p-4 md:p-8${rosa ? " tema-rosa" : ""}`}>
       <div className="mx-auto max-w-5xl space-y-4">
         <AcessoTopo titulo="Minha performance" sub={`${d?.nome ?? ""}${d?.departamento ? ` · ${d.departamento}` : ""}`} mes={mes} setMes={setMes}
           extra={<Notificacoes vendedor abrir={() => document.getElementById("retornos-vendedor")?.scrollIntoView({ behavior: "smooth", block: "start" })} />} />
-        {d && (
+        <div className="flex gap-2" role="tablist" aria-label="Visões">
+          {([["dash", "Dashboard"], ["detalhes", "Detalhes"]] as const).map(([k, rot]) => (
+            <button key={k} role="tab" aria-selected={aba === k} onClick={() => setAba(k)}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${aba === k ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>{rot}</button>
+          ))}
+        </div>
+        {aba === "dash" && d && (
           <section className="lux-card flex flex-wrap items-center justify-around gap-4 p-4">
             <Anel p={perf} rot="Performance" />
             {ms > 0 && <Anel p={div(proj(sv), ms)} rot="Projeção serviços" />}
@@ -84,10 +96,10 @@ export function MinhaPerformance() {
           {presenceStatus === "pending" && <span className="text-muted-foreground">Confirmando presença…</span>}
           {presenceStatus === "error" && <><span className="text-destructive">Presença não confirmada. Tentaremos novamente.</span><Button size="sm" variant="outline" onClick={() => { void register(); }}>Tentar novamente</Button></>}
         </div>
-        <RetornosVendedor />
-        <NpsResumoRestrito titulo="Meu NPS & clientes para encantar" />
+        {aba === "detalhes" && <RetornosVendedor />}
+        {aba === "detalhes" && <NpsResumoRestrito titulo="Meu NPS & clientes para encantar" />}
         {erro && <p className="text-sm text-destructive">{erro}</p>}
-        {d && (
+        {aba === "dash" && d && (
           <>
             <div className="grid gap-3 sm:grid-cols-2">
               {ms > 0 || sv > 0 ? (
@@ -97,6 +109,32 @@ export function MinhaPerformance() {
               <Kpi label="Margem de peças" value={pc ? pct(margem) : "—"} sub={<span>Ideal do departamento {pct(ideal)}{pc ? <> · <b className={tone(div(margem, ideal))}>{margem >= ideal ? "na média ou acima" : "abaixo do ideal"}</b></> : null}</span>} />
               <Kpi label="Posição no ranking" value={d.posicao ? `${d.posicao}º de ${d.participantes}` : "—"} sub={<span>Sua performance <b className={tone(perf)}>{pct(perf)}</b>{d.perf_lider ? <> · líder {pct(+d.perf_lider)}{d.posicao !== 1 ? ` (faltam ${pct(Math.max(0, +d.perf_lider - perf))})` : " — você é a líder!"}</> : null}</span>} />
             </div>
+            {aba === "dash" && (
+              <Box title="Meus agendamentos">
+                <div className="divide-y text-sm">
+                  <p className="px-5 py-2 text-xs text-muted-foreground">Clientes agendados com você — agenda de amanhã (D+1) e de hoje.</p>
+                  {agendaD1.length === 0 && agendaDia.length === 0 && <p className="px-5 py-3 text-muted-foreground">Nenhum agendamento seu neste mês. A agenda é alimentada na aba Importações.</p>}
+                  {agendaD1.length > 0 && <p className="bg-muted/40 px-5 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Amanhã · {uni(agendaD1.length)}</p>}
+                  {agendaD1.map((a) => (
+                    <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-2.5">
+                      <span><b>{a.hora ?? "—"}</b> · {a.cliente ?? "Cliente"} <span className="text-muted-foreground">· {a.placa ?? "sem placa"}</span></span>
+                      <span className="text-xs text-muted-foreground">{a.categoria} · {a.segmento}</span>
+                    </div>
+                  ))}
+                  {agendaDia.length > 0 && <p className="bg-muted/40 px-5 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Hoje · {uni(agendaDia.length)}</p>}
+                  {agendaDia.map((a) => (
+                    <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-2.5">
+                      <span><b>{a.hora ?? "—"}</b> · {a.cliente ?? "Cliente"} <span className="text-muted-foreground">· {a.placa ?? "sem placa"}</span></span>
+                      <span className="text-xs text-muted-foreground">{a.categoria} · {a.status ?? "—"}</span>
+                    </div>
+                  ))}
+                </div>
+              </Box>
+            )}
+          </>
+        )}
+        {aba === "detalhes" && d && (
+          <>
             {d.agregados.length > 0 && (
               <Box title="Agregados">
                 <div className="divide-y text-sm">
@@ -124,24 +162,26 @@ export function MinhaPerformance() {
                 </div>
               </Box>
             )}
-            <Box title="Resumo das necessidades diárias">
-              <div className="divide-y text-sm">
-                <p className="px-5 py-2 text-xs text-muted-foreground">Quanto vender por dia nos {uni(rest)} dias restantes para bater 100% das metas.</p>
-                {ms > 0 && (
-                  <div className="flex justify-between gap-2 px-5 py-3"><span className="font-medium">Mão de obra (serviços)</span><b>{ms - sv > 0 ? `${brl((ms - sv) / rest)} / dia` : "Meta batida ✅"}</b></div>
-                )}
-                {mp > 0 && (
-                  <div className="flex justify-between gap-2 px-5 py-3"><span className="font-medium">Peças</span><b>{mp - pc > 0 ? `${brl((mp - pc) / rest)} / dia` : "Meta batida ✅"}</b></div>
-                )}
-                {d.agregados.filter((a) => +a.meta_qtd > 0).map((a) => {
-                  const nome = ITENS.find((i) => i.k === a.item)?.nome ?? a.item;
-                  const falta = +a.meta_qtd - +a.qtd;
-                  return (
-                    <div key={a.item} className="flex justify-between gap-2 px-5 py-3"><span className="font-medium">{nome}</span><b>{falta > 0 ? `${uni(Math.ceil(falta / rest))} / dia` : "Meta batida ✅"}</b></div>
-                  );
-                })}
-              </div>
-            </Box>
+            {(
+              <Box title="Resumo das necessidades diárias">
+                <div className="divide-y text-sm">
+                  <p className="px-5 py-2 text-xs text-muted-foreground">Quanto vender por dia nos {uni(rest)} dias restantes para bater 100% das metas.</p>
+                  {ms > 0 && (
+                    <div className="flex justify-between gap-2 px-5 py-3"><span className="font-medium">Mão de obra (serviços)</span><b>{ms - sv > 0 ? `${brl((ms - sv) / rest)} / dia` : "Meta batida ✅"}</b></div>
+                  )}
+                  {mp > 0 && (
+                    <div className="flex justify-between gap-2 px-5 py-3"><span className="font-medium">Peças</span><b>{mp - pc > 0 ? `${brl((mp - pc) / rest)} / dia` : "Meta batida ✅"}</b></div>
+                  )}
+                  {d.agregados.filter((a) => +a.meta_qtd > 0).map((a) => {
+                    const nome = ITENS.find((i) => i.k === a.item)?.nome ?? a.item;
+                    const falta = +a.meta_qtd - +a.qtd;
+                    return (
+                      <div key={a.item} className="flex justify-between gap-2 px-5 py-3"><span className="font-medium">{nome}</span><b>{falta > 0 ? `${uni(Math.ceil(falta / rest))} / dia` : "Meta batida ✅"}</b></div>
+                    );
+                  })}
+                </div>
+              </Box>
+            )}
           </>
         )}
       </div>
