@@ -57,7 +57,15 @@ export function lerAgendamento(raw: unknown[][]): AgendReport | null {
 export async function salvarAgendamento(r: AgendReport, arquivo: string, nome: string) {
   const { error: del } = await supabase.from("agendamentos").delete().eq("tipo", r.tipo).eq("data", r.data);
   if (del) throw new Error("Erro ao substituir agendamento: " + del.message);
-  const rows = r.itens.map((it) => ({
+  // A mesma placa/horário pode aparecer repetida no relatório (quebra de página ou placa vazia): mantém uma linha só.
+  const unicos = new Map<string, AgendReport["itens"][number]>();
+  for (const it of r.itens) {
+    const k = `${it.placa || norm(it.cliente)}|${it.hora}`;
+    const ja = unicos.get(k);
+    if (!ja) { unicos.set(k, { ...it, placa: it.placa || `SEM-PLACA ${norm(it.cliente)}`.slice(0, 40) }); continue; }
+    if (it.obs && !ja.obs.includes(it.obs)) ja.obs += "\n" + it.obs;
+  }
+  const rows = [...unicos.values()].map((it) => ({
     data: r.data, tipo: r.tipo, hora: it.hora, status: it.status, cliente: it.cliente, os: it.os,
     celular: it.celular, consultor: it.consultor, produto: it.produto, placa: it.placa,
     segmento: it.segmento, categoria: it.categoria, obs: it.obs, arquivo, importado_por: nome,
