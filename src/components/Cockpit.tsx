@@ -51,6 +51,20 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
   const [nps, setNps] = useState<ReturnType<typeof resumir> | null>(null);
   useEffect(() => { void supabase.from("nps_imports").select("itens").order("at", { ascending: false }).limit(1).maybeSingle().then(({ data }) => { const l = daLoja((data?.itens as unknown as NpsItem[]) ?? []); setNps(l.length ? resumir(l) : null); }); }, []);
 
+  // Comparação com o mês anterior até o mesmo dia do mês.
+  const [ant, setAnt] = useState<{ s: number; p: number } | null>(null);
+  const diaCorte = useMemo(() => sales.reduce((m, x) => Math.max(m, Number(x.dia.slice(8, 10))), 0), [sales]);
+  useEffect(() => {
+    const [a, m] = mes.split("-").map(Number); const pa = m === 1 ? a! - 1 : a!, pm = m === 1 ? 12 : m! - 1;
+    const ini = `${pa}-${String(pm).padStart(2, "0")}-01`, fimDia = Math.min(diaCorte || 31, new Date(pa, pm, 0).getDate());
+    const fim = `${pa}-${String(pm).padStart(2, "0")}-${String(fimDia).padStart(2, "0")}`;
+    const ids = linhas.map((l) => l.c.id); if (!ids.length) { setAnt(null); return; }
+    void supabase.from("daily_sales").select("consultant_id,servicos,pecas").gte("dia", ini).lte("dia", fim).in("consultant_id", ids).then(({ data }) => {
+      if (!data?.length) { setAnt(null); return; }
+      const so = new Set(linhas.filter((l) => soPecas(l.c.nome)).map((l) => l.c.id));
+      setAnt(data.reduce((x, r) => ({ s: x.s + (so.has(r.consultant_id) ? 0 : +r.servicos), p: x.p + +r.pecas }), { s: 0, p: 0 }));
+    });
+  }, [mes, diaCorte, linhas, soPecas]);
   const rest = Math.max(tot - dec, 0);
   const t = linhas.reduce((a, l) => {
     const so = soPecas(l.c.nome); const o = os[l.c.id] ?? { s: 0, p: 0 };
@@ -135,7 +149,9 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
         <div className="grid h-full gap-2 sm:grid-cols-3">{res3.map(([n, r, m, I]) => (
           <div key={n} className="flex flex-col justify-between rounded-lg border border-border bg-background/40 p-2">
             <p className="flex items-center gap-2 text-xs font-semibold uppercase"><span className="flex size-6 items-center justify-center rounded-full bg-primary/20"><I className="size-3.5 text-primary" /></span>{n}</p>
-            <div className="text-[11px] text-muted-foreground"><span>Realizado<b className="block text-base text-foreground">{brl(r)}</b></span><span>Meta <b className="font-normal text-foreground/80">{brl(m)}</b></span></div>
+            <div className="text-[11px] text-muted-foreground"><span>Realizado<b className="block text-base text-foreground">{brl(r)}</b></span><span>Meta <b className="font-normal text-foreground/80">{brl(m)}</b></span>
+              {(() => { const base = ant ? (n === "Serviços" ? ant.s : n === "Peças" ? ant.p : ant.s + ant.p) : 0; if (!base) return <span className="block">vs mês anterior: —</span>; const v = r / base - 1;
+                return <span className="block">vs mês ant. (até dia {diaCorte}): <b className={v >= 0 ? "text-success" : "text-destructive"}>{v >= 0 ? "▲" : "▼"} {pct(Math.abs(v))}</b> <span className="opacity-70">({brl(base)})</span></span>; })()}</div>
             <div className="flex items-center gap-2"><Linha p={div(r, m)} /><b className={`text-xs ${tone(div(r, m))}`}>{pct(div(r, m))}</b></div>
           </div>))}</div>
       </Bloco>
