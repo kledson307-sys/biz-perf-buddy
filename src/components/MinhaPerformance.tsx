@@ -162,7 +162,7 @@ export function MinhaPerformance() {
                 </div>
               </Box>
             )}
-            {aba === "detalhes" && (
+            {(
               <Box title="Resumo das necessidades diárias">
                 <div className="divide-y text-sm">
                   <p className="px-5 py-2 text-xs text-muted-foreground">Quanto vender por dia nos {uni(rest)} dias restantes para bater 100% das metas.</p>
