@@ -44,8 +44,16 @@ const dataISO = (v: unknown): string => {
 
 /** Lê uma aba (linhas brutas) da planilha NPS; reconhece a fonte pelos cabeçalhos. */
 export function lerAbaNps(raw: unknown[][], aba: string): NpsItem[] {
-  const hi = raw.findIndex((r) => r.some((c) => norm(c) === "NOTA PSI") && r.some((c) => norm(c) === "CONSULTOR"));
-  if (hi < 0) return [];
+  const hi = raw.findIndex((r) => {
+    const h = r.map(norm);
+    return h.includes("NOTA PSI") && (h.includes("CONSULTOR") || h.some((x) => /^VENDEDOR/.test(x)));
+  });
+  if (hi >= 0) return lerPosVendas(raw, hi, aba);
+  return lerProspeccao(raw);
+}
+
+/** Formato pós-vendas da montadora (LOJA/CLIENTE/CHASSI/VENDEDOR (A)/NOTA PSI…). */
+function lerPosVendas(raw: unknown[][], hi: number, aba: string): NpsItem[] {
   const h = raw[hi]!.map(norm);
   const col = (...n: string[]) => h.findIndex((x) => n.includes(x));
   const c = {
@@ -53,6 +61,7 @@ export function lerAbaNps(raw: unknown[][], aba: string): NpsItem[] {
     rec: col("DATA DE RECEBIMENTO", "RECEBIMENTO"), nota: col("NOTA PSI"), tel: col("TELEFONE"), obs: col("OBSERVACAO"),
     rac: col("RAC ABERTA"), mot: col("MOTIVO DA RAC"), vei: col("VEICULO"), doc: col("CPF/CNPJ", "CNPJ", "CPF", "DOCUMENTO"),
   };
+  if (c.cons < 0) c.cons = h.findIndex((x) => /^VENDEDOR/.test(x));
   const g = (r: unknown[], i: number) => (i >= 0 ? r[i] : "");
   const out: NpsItem[] = [];
   for (const r of raw.slice(hi + 1)) {
@@ -69,6 +78,42 @@ export function lerAbaNps(raw: unknown[][], aba: string): NpsItem[] {
       nota, status: nota === null ? norm(notaRaw) : "", telefone: String(g(r, c.tel) ?? "").replace(/\D/g, ""),
       obs: String(g(r, c.obs) ?? "").trim(), rac: norm(g(r, c.rac)) === "SIM", motivo: norm(g(r, c.mot)),
       veiculo, segmento: segmentoDe(chassi, veiculo), pj: ehPJ(cliente, String(g(r, c.doc) ?? "")),
+    });
+  }
+  return out;
+}
+
+/** Formato de prospecção da montadora (Brand/Customer ID/Advisor/VIN/NOTA/Status…). */
+function lerProspeccao(raw: unknown[][]): NpsItem[] {
+  const hi = raw.findIndex((r) => {
+    const h = r.map(norm);
+    return h.includes("ADVISOR") && h.includes("VIN") && h.some((x) => /^NOTA/.test(x)) && h.includes("DEALER NAME");
+  });
+  if (hi < 0) return [];
+  const h = raw[hi]!.map(norm);
+  const col = (...n: string[]) => h.findIndex((x) => n.includes(x));
+  const c = {
+    brand: col("BRAND"), cli: col("CUSTOMER ID"), dealer: col("DEALER NAME"), cons: col("ADVISOR"),
+    tel: col("MOBILEPHONE"), vei: col("MODEL"), chassi: col("VIN"), rec: col("IMPORT DATE"),
+    status: col("STATUS"), nota: h.findIndex((x) => /^NOTA/.test(x)), obs: col("OBSERVACAO"),
+  };
+  const g = (r: unknown[], i: number) => (i >= 0 ? r[i] : "");
+  const out: NpsItem[] = [];
+  for (const r of raw.slice(hi + 1)) {
+    const cliente = String(g(r, c.cli) ?? "").trim();
+    if (!cliente) continue;
+    const notaRaw = String(g(r, c.nota) ?? "").trim();
+    const n = Number(notaRaw.replace(",", "."));
+    const nota = notaRaw !== "" && Number.isFinite(n) && n >= 1 && n <= 10 ? n : null; // 0 = ainda não respondeu
+    const chassi = String(g(r, c.chassi) ?? "").trim(), veiculo = String(g(r, c.vei) ?? "").trim();
+    const dealer = String(g(r, c.dealer) ?? "").trim();
+    const moto = norm(String(g(r, c.brand))).includes("MOTORRAD");
+    out.push({
+      loja: dealer, loja_padrao: /^HAUS \(/.test(norm(dealer)) ? "1" : "0", cliente, chassi,
+      consultor: norm(g(r, c.cons)), fechamento: "", recebimento: dataISO(g(r, c.rec)),
+      nota, status: nota === null ? norm(g(r, c.status)) : "", telefone: String(g(r, c.tel) ?? "").replace(/\D/g, ""),
+      obs: String(g(r, c.obs) ?? "").trim(), rac: false, motivo: "",
+      veiculo, segmento: moto ? "moto" : segmentoDe(chassi, veiculo), pj: ehPJ(cliente),
     });
   }
   return out;

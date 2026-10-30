@@ -8,3 +8,10 @@
 - [x] Acesso Marcos (controlador de quadro) — marcos@hausmotors.com.br
 - [x] Acesso Delmir no layout do Marcos + recursos de chefia
 - [ ] Bloco 3: faturamento diário por data real, comparação com mês anterior, retrabalho por chassi 30–60 dias
+- [x] Carga histórica 01–09/2026 gravada (917 registros diários; NPS via importador corrigido)
+- [ ] Corrigir reconhecimento por conteúdo: faturamento geral, O.S. abertas e NPS não reconhecidos
+- [ ] Cartão Agendamento D+1 no Dashboard (Carros/Motos por tipo + acumulado mensal)
+- [ ] Aba Agendamentos (D+1/testador, D0, fechamento D+1×D0, agendados×passantes, penetração, faltas/fantasmas)
+- [x] Reconhecimento por conteúdo: NPS (2 formatos), O.S. abertas e faturamento em linhas na esteira única
+- [x] Aba Agendamentos + cartão D+1 no Dashboard + metas diárias de agendamento
+- [ ] Andressa: tema rosa, aba Dashboard própria com seus dados + agendamentos dela

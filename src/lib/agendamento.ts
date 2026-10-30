@@ -53,14 +53,20 @@ export function lerAgendamento(raw: unknown[][]): AgendReport | null {
 }
 
 
-/** Agendas ficam numa linha própria de oficina_mes (mes = "agenda-AAAA-MM"), chave "tipo:data": reimportar o mesmo dia substitui. */
+/** Agendas ficam na tabela `agendamentos`: reimportar o mesmo dia/tipo substitui as linhas. */
 export async function salvarAgendamento(r: AgendReport, arquivo: string, nome: string) {
-  const mes = `agenda-${r.data.slice(0, 7)}`;
-  const { data: atual } = await supabase.from("oficina_mes").select("diario").eq("mes", mes).maybeSingle();
-  const diario = { ...((atual?.diario as Record<string, unknown> | null) ?? {}), [`${r.tipo}:${r.data}`]: { ...r, arquivo, nome, at: new Date().toISOString() } };
-  const { error } = await supabase.from("oficina_mes").upsert({ mes, diario: diario as never, updated_at: new Date().toISOString() }, { onConflict: "user_id,mes" });
-  if (error) throw new Error("Erro ao salvar agendamento: " + error.message);
-  await supabase.from("update_log").insert({ nome, origem: r.tipo === "d1" ? "Agendamento D+1" : "Agendamento do dia", mes: new Date().toISOString().slice(0, 7) });
+  const { error: del } = await supabase.from("agendamentos").delete().eq("tipo", r.tipo).eq("data", r.data);
+  if (del) throw new Error("Erro ao substituir agendamento: " + del.message);
+  const rows = r.itens.map((it) => ({
+    data: r.data, tipo: r.tipo, hora: it.hora, status: it.status, cliente: it.cliente, os: it.os,
+    celular: it.celular, consultor: it.consultor, produto: it.produto, placa: it.placa,
+    segmento: it.segmento, categoria: it.categoria, obs: it.obs, arquivo, importado_por: nome,
+  }));
+  if (rows.length) {
+    const { error } = await supabase.from("agendamentos").insert(rows);
+    if (error) throw new Error("Erro ao salvar agendamento: " + error.message);
+  }
+  await supabase.from("update_log").insert({ nome, origem: r.tipo === "d1" ? "Agendamento D+1" : "Agendamento do dia", mes: r.data.slice(0, 7) });
 }
 
 export const resumoAgenda = (r: AgendReport) => {

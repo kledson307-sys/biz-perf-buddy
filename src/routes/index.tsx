@@ -30,7 +30,7 @@ import { CadeadoMes } from "@/components/CadeadoMes";
 import { AnaliseFechamento, Reconhecimento } from "@/components/RelatorioAnalise";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Car, ChevronDown, ClipboardList, Download, Gauge, Gem, LayoutDashboard, LogOut, Menu, Package, Printer, Settings, Star, Target, TrendingUp, Upload, Users, Wrench, X } from "lucide-react";
+import { AlertTriangle, CalendarClock, Car, ChevronDown, ClipboardList, Download, Gauge, Gem, LayoutDashboard, LogOut, Menu, Package, Printer, Settings, Star, Target, TrendingUp, Upload, Users, Wrench, X } from "lucide-react";
 import bmwLogo from "@/assets/bmw-logo.asset.json";
 import carroSilhueta from "@/assets/carro-silhueta.jpg";
 import { localDay, sourceLabels, sourceStatus, tabUpdateStatus, UPDATE_EVENT, type UpdateRecord, type UpdateSource } from "@/lib/update-status";
@@ -40,6 +40,8 @@ import { useResumoMes } from "@/hooks/use-resumo-mes";
 import { AbaTopo, type TopoKpi } from "@/components/AbaTopo";
 import { ImportadorUnificado } from "@/components/ImportadorUnificado";
 import { RetrabalhoOficina } from "@/components/RetrabalhoOficina";
+import { Agendamentos } from "@/components/Agendamentos";
+import { AgendaMetas } from "@/components/AgendaMetas";
 import { ITENS } from "@/lib/agregados";
 
 export const Route = createFileRoute("/")({
@@ -296,7 +298,7 @@ function Painel({ email }: { email: string }) {
     a.download = `relatorio-${mes}.csv`; a.click();
   };
 
-  // 10 abas oficiais; algumas agrupam sub-abas (mantém deep links setTab antigos).
+  // 11 abas oficiais; algumas agrupam sub-abas (mantém deep links setTab antigos).
   const tabs: [string, string, typeof Gauge, string[]][] = [
     ["cockpit", "Dashboard", Gauge, []],
     ["painel", "Central de Gestão", LayoutDashboard, ["proj", "os"]],
@@ -305,6 +307,7 @@ function Painel({ email }: { email: string }) {
     ["mecanicos", "Oficina & Técnicos", Wrench, []],
     ["pecas", "Peças & Estoque", Package, []],
     ["controle-os", "Ordens de Serviço", Car, []],
+    ["agendamentos", "Agendamentos", CalendarClock, []],
     ["nps", "NPS & Satisfação", Star, []],
     ["metas", "Metas & Planejamento", Target, []],
     ["importacoes", "Importações & Config.", Upload, ["config"]],
@@ -402,6 +405,7 @@ function Painel({ email }: { email: string }) {
       })} />;
       case "mecanicos": return <AbaTopo titulo="Oficina & Técnicos" sub="Produtividade da oficina, passagens por tipo e metas dos técnicos" icon={Wrench} kpis={[]} />;
       case "controle-os": return <AbaTopo titulo="Ordens de Serviço" sub={`Status das O.S. em aberto e tempo na oficina · ${uni(resumo.abertas)} abertas · ${uni(resumo.parados)} acima de 30 dias`} icon={Car} kpis={[]} />;
+      case "agendamentos": return <AbaTopo titulo="Agendamentos" sub="Radar D+1, follow-up do testador, passantes × agendados, fechamento do dia e faltas" icon={CalendarClock} kpis={[]} />;
       case "pecas": return <AbaTopo titulo="Peças & Estoque" sub="Faturamento de peças por canal, margem e ranking" icon={Package} kpis={[]} />;
       case "nps": return <AbaTopo titulo="NPS & Satisfação" sub="Qualidade e pesquisa da montadora · aguardando planilha de pesquisas" icon={Star} kpis={[]} />;
       case "importacoes": case "config": return <AbaTopo titulo="Importações & Configurações" sub="Atualização diária das fontes e ajustes do painel" icon={Upload} kpis={(Object.keys(sourceLabels) as UpdateSource[]).map((source) => ({ source, ...sourceStatus(source, mes, updates, clock) })).map(({ source, record, fresh }) => ({
@@ -710,6 +714,7 @@ function Painel({ email }: { email: string }) {
         {show("agregados") && <Secao relatorio={relatorio} titulo="Agregados"><Agregados mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={relatorio} />{!relatorio && <details className="lux-card"><summary className="cursor-pointer px-4 py-2 text-sm font-semibold">Ranking geral de agregados · {mesExtenso} <span className="text-xs text-primary">abrir/fechar</span></summary><div className="max-h-[60vh] overflow-y-auto"><RankingAgregados mes={mes} cons={visiveis} deptName={deptName} tot={tot} dec={dec} /></div></details>}</Secao>}
         {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} lado={relatorio ? undefined : <RetrabalhoOficina mes={mes} />} />{!relatorio && <><div className="grid items-start gap-3"><details className="group lux-card"><summary className="flex cursor-pointer list-none items-center justify-between px-4 py-2 text-sm font-semibold">Ranking dos técnicos · Serviços, Peças e Total · {mesExtenso}<span className="text-xs text-primary">Abrir/fechar</span></summary><RankingTecnicos mes={mes} tot={tot} dec={dec} /></details></div></>}</Secao>}
         {tab === "controle-os" && <ControleOS />}
+        {tab === "agendamentos" && !relatorio && <Agendamentos mes={mes} />}
         {tab === "importacoes" && !relatorio && <div className="space-y-3 print:hidden">
           <div>
             <h2 className="text-sm font-semibold">Central de importações · {mes}</h2>
@@ -739,6 +744,7 @@ function Painel({ email }: { email: string }) {
             <MetasExecutivo linhas={linhas} deptName={deptName} />
             <div className="space-y-3">
               <CadeadoMes mes={mes} />
+              <AgendaMetas mes={mes} />
               <section className="lux-card space-y-2 px-3 py-2 xl:max-h-[calc(100vh-420px)] xl:overflow-y-auto"><h3 className="text-sm font-semibold">Metas de agregados</h3><Agregados modo="metas" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section>
             </div>
           </div></>}
