@@ -48,3 +48,20 @@ export function lerAgendamento(raw: unknown[][]): AgendReport | null {
   itens.forEach((it) => { it.categoria = classificar(it.obs); });
   return { tipo: impressao && periodo > impressao ? "d1" : "d0", data: periodo, itens };
 }
+
+import { supabase } from "@/integrations/supabase/client";
+
+/** Agendas ficam numa linha própria de oficina_mes (mes = "agenda-AAAA-MM"), chave "tipo:data": reimportar o mesmo dia substitui. */
+export async function salvarAgendamento(r: AgendReport, arquivo: string, nome: string) {
+  const mes = `agenda-${r.data.slice(0, 7)}`;
+  const { data: atual } = await supabase.from("oficina_mes").select("diario").eq("mes", mes).maybeSingle();
+  const diario = { ...((atual?.diario as Record<string, unknown> | null) ?? {}), [`${r.tipo}:${r.data}`]: { ...r, arquivo, nome, at: new Date().toISOString() } };
+  const { error } = await supabase.from("oficina_mes").upsert({ mes, diario: diario as never, updated_at: new Date().toISOString() }, { onConflict: "user_id,mes" });
+  if (error) throw new Error("Erro ao salvar agendamento: " + error.message);
+  await supabase.from("update_log").insert({ nome, origem: r.tipo === "d1" ? "Agendamento D+1" : "Agendamento do dia", mes: new Date().toISOString().slice(0, 7) });
+}
+
+export const resumoAgenda = (r: AgendReport) => {
+  const c = (s: "carro" | "moto", k?: Categoria) => r.itens.filter((i) => i.segmento === s && (!k || i.categoria === k)).length;
+  return `${r.itens.length} veículos · Carros ${c("carro")} (Rev ${c("carro", "revisao")} · Diag ${c("carro", "diagnostico")} · Recall ${c("carro", "recall")}) · Motos ${c("moto")}`;
+};
