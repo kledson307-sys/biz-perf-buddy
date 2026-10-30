@@ -11,7 +11,7 @@ type L = { c: { id: string; nome: string; department_id: string | null }; servic
 type D = { nome: string; servicos: number; pecas: number; meta: number; projPct: number };
 type S = { consultant_id: string; dia: string; servicos: number; pecas: number };
 
-function Bloco({ titulo, icon, ir, children, right, className = "" }: { titulo: string; icon?: ReactNode; ir?: () => void; children: ReactNode; right?: ReactNode; className?: string }) {
+export function Bloco({ titulo, icon, ir, children, right, className = "" }: { titulo: string; icon?: ReactNode; ir?: () => void; children: ReactNode; right?: ReactNode; className?: string }) {
   return (
     <section className={`lux-card flex min-h-0 flex-col p-3 ${className}`}>
       <div className="mb-1.5 flex shrink-0 items-center justify-between gap-2">
@@ -23,11 +23,11 @@ function Bloco({ titulo, icon, ir, children, right, className = "" }: { titulo: 
   );
 }
 
-function Linha({ p, cor }: { p: number; cor?: string }) {
+export function Linha({ p, cor }: { p: number; cor?: string }) {
   return <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted"><div className={`h-full rounded-full ${cor ?? bg(p)}`} style={{ width: `${Math.min(Math.max(p, 0) * 100, 100)}%` }} /></div>;
 }
 
-function Anel({ p, rot }: { p: number; rot: string }) {
+export function Anel({ p, rot }: { p: number; rot: string }) {
   const r = 30, c = 2 * Math.PI * r;
   return (
     <div className="flex flex-col items-center gap-1 text-center">
