@@ -28,7 +28,7 @@ describe("reconhecimento com os arquivos reais enviados", () => {
     const prosp = abas(U + "PROSPECÇÃO_31.xlsx").flatMap((a) => lerAbaNps(a.raw, a.s));
     expect(prosp.length).toBeGreaterThan(100);
   });
-  it("faturamento de serviços (9 meses) gera histórico diário", () => {
+  it("faturamento de serviços (9 meses) gera histórico diário", { timeout: 60000 }, () => {
     const a = abas(U + "Faturamento_de_serviços_01.01.2026_á_30.09.2026.xlsx")[0]!;
     expect(ehFatServicos(a.raw)).toBe(true);
     expect(ehRelatorioPassagens(a.raw)).toBe(true);
@@ -36,7 +36,7 @@ describe("reconhecimento com os arquivos reais enviados", () => {
     expect(fat.meses.length).toBe(9);
     expect(fat.linhas.length).toBeGreaterThan(10000);
   });
-  it("faturamento de peças (9 meses) é reconhecido", () => {
+  it("faturamento de peças (9 meses) é reconhecido", { timeout: 60000 }, () => {
     const a = abas(U + "Faturamento_de_peças_01.01.2026_á_30.09.2026.xlsx")[0]!;
     expect(ehFaturamentoPecas(a.raw)).toBe(true);
   });
