@@ -36,3 +36,5 @@
 - Navigation has 10 official sidebar tabs (order: cockpit, painel, ranking, agregados, mecanicos, pecas, controle-os, nps, metas, importacoes); Central de Gestão groups painel/proj/os and Importações & Config groups importacoes/config as sub-tabs, so legacy `setTab(...)` deep links (incl. `proj-*`) keep working.
 
 - Subdirectories may have their own `AGENTS.md` (e.g. `src/lib/AGENTS.md`); read it before changing files there.- Desktop tabs must fit one 16:9 screen (checked at 1440×900 and 1920×1080): put long lists in `Box fit="xl:max-h-[calc(100vh-…)]"` internal scroll or collapsed <details>, never extend the page height.
+
+- Restricted roles 'controlador' (Marcos) and 'tunap' (Geraldo) follow the chefe_oficina pattern: data_owner() is NULL and they read only via SECURITY DEFINER RPCs (`painel_oficina`, `tecnicos_carro`, `meu_nps`, `tunap_painel`); shared math in `src/lib/oficina.ts`.
