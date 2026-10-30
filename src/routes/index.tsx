@@ -744,6 +744,7 @@ function Painel({ email }: { email: string }) {
             <MetasExecutivo linhas={linhas} deptName={deptName} />
             <div className="space-y-3">
               <CadeadoMes mes={mes} />
+              <AgendaMetas mes={mes} />
               <section className="lux-card space-y-2 px-3 py-2 xl:max-h-[calc(100vh-420px)] xl:overflow-y-auto"><h3 className="text-sm font-semibold">Metas de agregados</h3><Agregados modo="metas" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section>
             </div>
           </div></>}

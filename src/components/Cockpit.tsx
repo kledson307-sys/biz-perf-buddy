@@ -246,12 +246,15 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
       </Bloco>
 
       {/* Linha 4 */}
-      <Bloco titulo="Ordens de serviço" icon={<ClipboardList className="size-4 text-primary" />} ir={() => setTab("controle-os")} className="lg:col-span-5">
+      <Bloco titulo="Ordens de serviço" icon={<ClipboardList className="size-4 text-primary" />} ir={() => setTab("controle-os")} className="lg:col-span-4">
         {fluxo.length === 0 ? <p className="text-sm text-muted-foreground">Sem importação semanal.</p> :
           <div className="flex gap-1.5">{fluxo.slice(0, 6).map((f) => <div key={f.st} className="min-w-0 flex-1 rounded-lg border border-border bg-background/40 px-1.5 py-1"><p className="truncate text-[10px] text-muted-foreground">{f.st}</p><p className="text-base font-bold">{f.n}</p></div>)}
             <div className="rounded-lg border border-border bg-background/40 px-2 py-1 text-[10px]"><p className="text-muted-foreground">Na oficina</p><p className="text-warning">{amarelos} &gt;20d</p><p className="text-destructive">{parados} &gt;30d</p></div></div>}
       </Bloco>
-      <Bloco titulo="NPS / qualidade" icon={<Star className="size-4 text-primary" />} ir={() => setTab("nps")} className="lg:col-span-3">
+      <Bloco titulo="Agendamentos de amanhã (D+1)" icon={<CalendarDays className="size-4 text-primary" />} ir={() => setTab("agendamentos")} className="lg:col-span-3">
+        <CartaoAgendamento mes={mes} />
+      </Bloco>
+      <Bloco titulo="NPS / qualidade" icon={<Star className="size-4 text-primary" />} ir={() => setTab("nps")} className="lg:col-span-2">
         {!nps ? <p className="text-sm text-muted-foreground">Aguardando planilha NPS.</p> :
           <div className="grid grid-cols-4 gap-1 text-center">{([["NPS", `${(nps.nps * 100).toFixed(1).replace(".", ",")}`, nps.nps >= 0.7], ["Promot.", pct(nps.pctProm), nps.pctProm >= 0.85], ["Detrat.", uni(nps.det), nps.det === 0], ["RAC", uni(nps.racs), nps.racs === 0]] as [string, string, boolean][]).map(([n, v, ok]) => (
             <div key={n} className="rounded-lg border border-border bg-background/40 py-1"><p className="text-[10px] text-muted-foreground">{n}</p><p className={`text-sm font-bold ${ok ? "text-success" : "text-warning"}`}>{v}</p></div>))}</div>}
