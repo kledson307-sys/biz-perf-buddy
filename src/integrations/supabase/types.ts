@@ -752,6 +752,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _membro: {
+        Args: { p_papeis: string[] }
+        Returns: {
+          consultant_id: string | null
+          created_at: string
+          email: string
+          id: string
+          owner_id: string
+          papel: string
+          tecnico_nome: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "team_members"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       can_edit: { Args: never; Returns: boolean }
       data_owner: { Args: never; Returns: string }
       import_sales_period: {
@@ -762,6 +780,7 @@ export type Database = {
       meu_nps: { Args: never; Returns: Json }
       minha_performance: { Args: { p_mes: string }; Returns: Json }
       minhas_os: { Args: never; Returns: Json }
+      painel_oficina: { Args: { p_mes: string }; Returns: Json }
       registrar_acesso: { Args: never; Returns: undefined }
       registrar_retorno: {
         Args: { p_data: string; p_nota: string; p_os: string }
@@ -769,6 +788,7 @@ export type Database = {
       }
       sou_editor_de: { Args: { p_owner: string }; Returns: boolean }
       tecnicos_carro: { Args: { p_mes: string }; Returns: Json }
+      tunap_painel: { Args: { p_mes: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
