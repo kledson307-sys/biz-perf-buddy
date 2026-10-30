@@ -322,11 +322,11 @@ function Painel({ email }: { email: string }) {
         const keys = [k, ...subs];
         const stale = k === "importacoes" ? status.pending.some((x) => x !== "controle-os") : keys.some((x) => tabUpdateStatus(tabKey(x), mes, updates, clock).stale);
         const ativo = keys.includes(tab);
-        return <Fragment key={k}>{i === 9 && <span aria-hidden className="my-2 h-px bg-border" />}
+        return <Fragment key={k}>{i === 9 && <span aria-hidden className="my-1 h-px bg-border" />}
           <button type="button" onClick={() => { setTab(k); setMenu(false); }}
             data-update-status={stale ? "pending" : "current"} title={stale ? `${l}: atualização pendente` : l}
             aria-current={ativo ? "page" : undefined}
-            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${ativo ? "bg-gradient-to-r from-primary/30 to-primary/5 font-semibold text-foreground shadow-[inset_3px_0_0_var(--color-primary)]" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+            className={`flex items-center gap-3 rounded-lg px-3 py-1.5 text-left text-sm transition-colors ${ativo ? "bg-gradient-to-r from-primary/30 to-primary/5 font-semibold text-foreground shadow-[inset_3px_0_0_var(--color-primary)]" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
             <Icon strokeWidth={1.5} className={`size-4 shrink-0 ${ativo ? "text-primary" : ""}`} />
             <span className="flex-1">{l}</span>
             {stale && <span className="update-alert size-2 rounded-full bg-destructive" aria-label="atualização pendente" />}
@@ -345,8 +345,8 @@ function Painel({ email }: { email: string }) {
     </div>
   );
   const rodapeMenu = (
-    <div className="border-t border-border p-3">
-      <img src={carroSilhueta} alt="" aria-hidden loading="lazy" width={1152} height={576} className="mx-auto w-full opacity-80 mix-blend-screen" />
+    <div className="border-t border-border p-2">
+      <img src={carroSilhueta} alt="" aria-hidden loading="lazy" width={1152} height={576} className="mx-auto max-h-11 w-auto opacity-80 mix-blend-screen" />
       <div className="m-stripe mx-auto mt-2 w-16 rounded-full" />
       <p className="mt-2 text-center text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Juntos pela melhor experiência.</p>
       <p className="mt-1 break-all text-center text-[10px] text-muted-foreground">{email}</p>
