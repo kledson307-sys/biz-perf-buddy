@@ -10,11 +10,11 @@ type Consultant = { c: { id: string; nome: string }; servicos: number; pecas: nu
 type Props = { linhas: Consultant[]; pass: Record<string, number>; mes: string; dec: number; tot: number; soPecas: (nome: string) => boolean; evolution: (consultor: Consultant) => ReactNode };
 
 /** The marker is elapsed-month progress; the fill is actual goal attainment. */
-function Ritmo({ realizado, projetado, dec, tot, meta }: { realizado: number; projetado: number; dec: number; tot: number; meta: number }) {
+function Ritmo({ realizado, projetado, dec, tot, meta, compact = false }: { realizado: number; projetado: number; dec: number; tot: number; meta: number; compact?: boolean }) {
   const expected = Math.min(Math.max(div(dec, tot), 0), 1);
-  return <div className="min-w-24">
-    <div className={`mb-1 flex justify-between gap-1 font-semibold ${meta && dec ? tone(projetado) : "text-muted-foreground"}`}><span>{meta && dec ? pct(projetado) : "—"}</span><span className="text-[9px] font-normal text-muted-foreground">da meta</span></div>
-    <div className="relative h-1.5 rounded-full bg-muted" role="img" aria-label={`Realizado ${pct(realizado)}; ritmo esperado ${pct(expected)}; projeção ${meta && dec ? pct(projetado) : "indisponível"}`}>
+  return <div className={compact ? "flex w-24 items-center gap-1.5" : "min-w-24"}>
+    <div className={`${compact ? "w-10 shrink-0 text-right" : "mb-1 flex justify-between gap-1"} font-semibold ${meta && dec ? tone(projetado) : "text-muted-foreground"}`}><span>{meta && dec ? pct(projetado) : "—"}</span>{!compact && <span className="text-[9px] font-normal text-muted-foreground">da meta</span>}</div>
+    <div className="relative h-1.5 flex-1 rounded-full bg-muted" role="img" aria-label={`Realizado ${pct(realizado)}; ritmo esperado ${pct(expected)}; projeção ${meta && dec ? pct(projetado) : "indisponível"}`}>
       <div className={`h-full rounded-full ${meta && dec ? bg(projetado) : "bg-muted"}`} style={{ width: `${Math.min(Math.max(realizado, 0), 1) * 100}%` }} />
       <span className="absolute -top-0.5 h-2.5 border-l-2 border-dashed border-foreground/80" style={{ left: `calc(${expected * 100}% - 1px)` }} />
     </div>
@@ -50,7 +50,7 @@ export function RankingConsultores({ linhas, pass, mes, dec, tot, soPecas, evolu
             return <tr key={parts ? "pecas" : "servicos"} className={`text-right ${idx === 0 ? "border-t border-border" : "border-t border-border/20"}`}>
               {idx === 0 && <><td rowSpan={onlyParts ? 1 : 2} className="text-left align-middle">{badge(i)}</td><td rowSpan={onlyParts ? 1 : 2} className="text-left align-middle"><Button variant="ghost" size="sm" className="h-auto max-w-36 justify-start whitespace-normal px-1 py-1 text-left text-xs font-semibold" onClick={() => setSelectedId(l.c.id)} aria-label={`Ver detalhes de ${l.c.nome}`}>{l.c.nome}<ArrowUpRight className="size-3 shrink-0 text-primary" /></Button><p className="px-1 text-[10px] text-muted-foreground">Total {brl(l.real)} · <span className={l.meta ? tone(l.perf) : ""}>{l.meta ? pct(l.perf) : "Sem meta"}</span></p></td></>}
               <td className="py-1 text-left"><LinhaLabel pecas={parts} /></td><td className="px-2 text-muted-foreground">{brl(goal)}</td><td className="px-2 font-semibold">{brl(real)}</td><td className={`px-2 ${goal ? tone(perf) : "text-muted-foreground"}`}>{goal ? pct(perf) : "—"}</td>
-              <td className="px-2 py-1"><p className="mb-0.5 font-semibold">{dec ? brl(projection) : "—"}</p><Ritmo realizado={perf} projetado={projected} dec={dec} tot={tot} meta={goal} /></td>
+              <td className="px-2 py-1"><div className="flex items-center justify-end gap-2"><span className="whitespace-nowrap font-semibold">{dec ? brl(projection) : "—"}</span><Ritmo compact realizado={perf} projetado={projected} dec={dec} tot={tot} meta={goal} /></div></td>
               <td className="px-2"><span className={`inline-block rounded border px-1.5 py-0.5 ${goal && real < goal ? "border-warning/25 bg-warning/5 text-warning" : "border-border text-muted-foreground"}`}>{daily(parts ? calc.necP : calc.necS, goal, real)}</span></td>
               {idx === 0 && <><td rowSpan={onlyParts ? 1 : 2} className="px-2 align-middle">{!onlyParts && visits ? brl(div(l.servicos, visits)) : "—"}</td><td rowSpan={onlyParts ? 1 : 2} className="px-2 align-middle">{uni(visits)}</td><td rowSpan={onlyParts ? 1 : 2} className="align-middle text-muted-foreground">{!onlyParts && l.servicos > 0 ? div(l.pecas, l.servicos).toFixed(2).replace(".", ",") : "—"}</td></>}
             </tr>;
