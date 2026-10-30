@@ -296,7 +296,7 @@ function Painel({ email }: { email: string }) {
     a.download = `relatorio-${mes}.csv`; a.click();
   };
 
-  // 10 abas oficiais; algumas agrupam sub-abas (mantém deep links setTab antigos).
+  // 11 abas oficiais; algumas agrupam sub-abas (mantém deep links setTab antigos).
   const tabs: [string, string, typeof Gauge, string[]][] = [
     ["cockpit", "Dashboard", Gauge, []],
     ["painel", "Central de Gestão", LayoutDashboard, ["proj", "os"]],
@@ -305,6 +305,7 @@ function Painel({ email }: { email: string }) {
     ["mecanicos", "Oficina & Técnicos", Wrench, []],
     ["pecas", "Peças & Estoque", Package, []],
     ["controle-os", "Ordens de Serviço", Car, []],
+    ["agendamentos", "Agendamentos", CalendarClock, []],
     ["nps", "NPS & Satisfação", Star, []],
     ["metas", "Metas & Planejamento", Target, []],
     ["importacoes", "Importações & Config.", Upload, ["config"]],
@@ -402,6 +403,7 @@ function Painel({ email }: { email: string }) {
       })} />;
       case "mecanicos": return <AbaTopo titulo="Oficina & Técnicos" sub="Produtividade da oficina, passagens por tipo e metas dos técnicos" icon={Wrench} kpis={[]} />;
       case "controle-os": return <AbaTopo titulo="Ordens de Serviço" sub={`Status das O.S. em aberto e tempo na oficina · ${uni(resumo.abertas)} abertas · ${uni(resumo.parados)} acima de 30 dias`} icon={Car} kpis={[]} />;
+      case "agendamentos": return <AbaTopo titulo="Agendamentos" sub="Radar D+1, follow-up do testador, passantes × agendados, fechamento do dia e faltas" icon={CalendarClock} kpis={[]} />;
       case "pecas": return <AbaTopo titulo="Peças & Estoque" sub="Faturamento de peças por canal, margem e ranking" icon={Package} kpis={[]} />;
       case "nps": return <AbaTopo titulo="NPS & Satisfação" sub="Qualidade e pesquisa da montadora · aguardando planilha de pesquisas" icon={Star} kpis={[]} />;
       case "importacoes": case "config": return <AbaTopo titulo="Importações & Configurações" sub="Atualização diária das fontes e ajustes do painel" icon={Upload} kpis={(Object.keys(sourceLabels) as UpdateSource[]).map((source) => ({ source, ...sourceStatus(source, mes, updates, clock) })).map(({ source, record, fresh }) => ({
