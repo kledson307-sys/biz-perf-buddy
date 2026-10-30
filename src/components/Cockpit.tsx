@@ -5,6 +5,8 @@ import { useResumoMes } from "@/hooks/use-resumo-mes";
 import { AlertTriangle, ArrowRight, CalendarDays, ClipboardList, MapPin, Package, Star, Target, TrendingUp, Trophy, Wrench } from "lucide-react";
 import { ITENS } from "@/lib/agregados";
 import { bg, brl, div, pct, tone, uni } from "@/components/painel-ui";
+import { lerOficinaMes } from "@/lib/oficina-mes";
+import type { Diario } from "@/lib/diario-retorno";
 import farois from "@/assets/hero-farois.jpg";
 
 type L = { c: { id: string; nome: string; department_id: string | null }; servicos: number; pecas: number; mS: number; mP: number; perf: number; projPct: number };
@@ -51,6 +53,10 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
   const [nps, setNps] = useState<ReturnType<typeof resumir> | null>(null);
   useEffect(() => { void supabase.from("nps_imports").select("itens").order("at", { ascending: false }).limit(1).maybeSingle().then(({ data }) => { const l = daLoja((data?.itens as unknown as NpsItem[]) ?? []); setNps(l.length ? resumir(l) : null); }); }, []);
 
+  // Faturamento por data real (planilhas Peças/Passagens), quando importado.
+  const [real, setReal] = useState<Diario>({});
+  useEffect(() => { const f = () => void lerOficinaMes(mes).then((x) => setReal(x.diario)); f(); window.addEventListener("oficina-mes-atualizada", f); return () => window.removeEventListener("oficina-mes-atualizada", f); }, [mes]);
+  const usaReal = Object.keys(real).length > 1;
   // Comparação com o mês anterior até o mesmo dia do mês.
   const [ant, setAnt] = useState<{ s: number; p: number } | null>(null);
   const diaCorte = useMemo(() => sales.reduce((m, x) => Math.max(m, Number(x.dia.slice(8, 10))), 0), [sales]);
@@ -86,11 +92,12 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
   const evol = useMemo(() => {
     const ids = new Set(linhas.map((l) => l.c.id));
     const porDia = new Map<string, number>();
-    for (const s of sales) if (ids.has(s.consultant_id)) porDia.set(s.dia, (porDia.get(s.dia) ?? 0) + +s.servicos + +s.pecas);
+    if (usaReal) for (const [d, v] of Object.entries(real)) porDia.set(d, (v.s ?? 0) + (v.p ?? 0));
+    else for (const s of sales) if (ids.has(s.consultant_id)) porDia.set(s.dia, (porDia.get(s.dia) ?? 0) + +s.servicos + +s.pecas);
     let acc = 0;
     const pts = [...porDia.keys()].sort().map((d) => ({ d: Number(d.slice(8, 10)), v: (acc += porDia.get(d)!) }));
     return pts.length ? [{ d: 0, v: 0 }, ...pts] : pts;
-  }, [sales, linhas]);
+  }, [sales, linhas, usaReal, real]);
   const [yy, mo] = mes.split("-").map(Number);
   const diasMes = new Date(yy!, mo!, 0).getDate();
   const maxY = Math.max(metaT, evol.at(-1)?.v ?? 0, 1);
@@ -119,9 +126,10 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
   ];
   const diario = useMemo(() => {
     const ids = new Set(linhas.map((l) => l.c.id)); const m = new Map<number, number>();
-    for (const s of sales) if (ids.has(s.consultant_id)) { const d = Number(s.dia.slice(8, 10)); m.set(d, (m.get(d) ?? 0) + +s.servicos + +s.pecas); }
+    if (usaReal) for (const [d, v] of Object.entries(real)) m.set(Number(d.slice(8, 10)), (v.s ?? 0) + (v.p ?? 0));
+    else for (const s of sales) if (ids.has(s.consultant_id)) { const d = Number(s.dia.slice(8, 10)); m.set(d, (m.get(d) ?? 0) + +s.servicos + +s.pecas); }
     return [...m.entries()].sort((a, b) => a[0] - b[0]);
-  }, [sales, linhas]);
+  }, [sales, linhas, usaReal, real]);
   const maxDia = Math.max(1, ...diario.map(([, v]) => v));
   const dptMax = Math.max(1, ...porDept.map((d) => Math.max(d.meta, d.servicos + d.pecas)));
   const resp: Record<string, string> = { ranking: "Consultores", "controle-os": "Oficina", painel: "Gestão", pecas: "Consultores", nps: "Consultores" };
@@ -199,7 +207,7 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
             <circle cx={px(evol.at(-1)!.d)} cy={py(evol.at(-1)!.v)} r="4" fill="var(--primary)" />
             {[1, 10, 20, diasMes].map((d) => <text key={d} x={Math.min(px(d), W - 12)} y={H + 14} className="fill-muted-foreground text-[10px]">{d}</text>)}
           </svg>)}
-        <p className="flex gap-4 text-[11px] text-muted-foreground"><span><span className="mr-1 inline-block h-0.5 w-4 bg-primary align-middle" />Realizado</span><span>- - - Meta</span></p>
+        <p className="flex gap-4 text-[11px] text-muted-foreground"><span><span className="mr-1 inline-block h-0.5 w-4 bg-primary align-middle" />Realizado</span><span>- - - Meta</span>{usaReal && <span>· por data real das O.S.</span>}</p>
       </Bloco>
       <Bloco titulo="Ranking dos consultores" icon={<Trophy className="size-4 text-warning" />} ir={() => setTab("ranking")} className="lg:col-span-3">
         <ol className="space-y-1">{ranking.slice(0, 5).map((l, i) => (
