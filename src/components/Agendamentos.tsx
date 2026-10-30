@@ -184,8 +184,11 @@ export function Agendamentos({ mes }: { mes: string }) {
               {[{ t: "Passantes (Wesley, Renan, Jadna, Andressa, Pedro, Gilberto)", m: mixPass, n: passantes.length }, { t: "Agendados demais consultores", m: mixAg, n: agendados.length }].map((g) => (
                 <div key={g.t} className="rounded-lg bg-background/60 p-3">
                   <p className="text-xs text-muted-foreground">{g.t}</p>
-                  <p className="text-xl font-bold">{uni(g.n)} <span className="text-sm font-normal text-muted-foreground">🚗{uni(g.m.carro)} 🏍{uni(g.m.moto)}</span></p>
-                  <p className="text-xs text-muted-foreground">Rev {uni(g.m.porCat.revisao.carro + g.m.porCat.revisao.moto)} · Diag {uni(g.m.porCat.diagnostico.carro + g.m.porCat.diagnostico.moto)} · Recall {uni(g.m.porCat.recall.carro + g.m.porCat.recall.moto)}</p>
+                  <p className="text-xl font-bold">{uni(g.n)}</p>
+                  <div className="mt-2 space-y-1">
+                    <LinhaSegmento icone="🚗" nome="Carros" m={g.m} seg="carro" />
+                    <LinhaSegmento icone="🏍" nome="Motos" m={g.m} seg="moto" />
+                  </div>
                 </div>
               ))}
             </div>
