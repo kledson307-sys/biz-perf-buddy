@@ -23,6 +23,10 @@ export function RetrabalhoOficina({ mes }: { mes: string }) {
   const rac = (itens ?? []).filter((x) => x.rac && RETRABALHO.test(x.motivo));
   const porTec = new Map<string, number>();
   for (const r of ret) for (const t of (r.tecnicoAnterior || "SEM TÉCNICO").split(", ")) porTec.set(t, (porTec.get(t) ?? 0) + 1);
+  // RAC → técnico: cruza o chassi da pesquisa com as O.S. de Passagens (técnico da última O.S. do veículo).
+  const tecPorChassi = new Map<string, string>();
+  for (const r of [...ret].sort((a, b) => a.data.localeCompare(b.data))) { if (r.tecnicoAnterior) tecPorChassi.set(r.chassi, r.tecnicoAnterior); if (r.tecnico) tecPorChassi.set(r.chassi, r.tecnico); }
+  const tecRac = (ch: string) => tecPorChassi.get((ch || "").trim().toUpperCase()) ?? "Técnico a identificar na O.S.";
   const ranking = [...porTec.entries()].sort((a, b) => b[1] - a[1]);
 
   return (
@@ -48,7 +52,7 @@ export function RetrabalhoOficina({ mes }: { mes: string }) {
             <p className="flex justify-between"><span>Retrabalho (RAC)</span><b className={rac.length / aval.length > 0.05 ? "text-destructive" : "text-success"}>{pct(rac.length / aval.length)}</b></p>
             <p className="text-xs text-muted-foreground">RACs com motivo "problema continua" ou qualidade do reparo, de {uni(aval.length)} avaliações.</p>
           </div>
-          <ul className="max-h-48 space-y-1 overflow-y-auto text-xs lg:col-span-2">{rac.map((x) => <li key={x.chassi + x.recebimento} className="rounded border border-border p-1.5"><b>{x.cliente}</b> · {x.veiculo} · {x.consultor} · nota {x.nota ?? "—"}<p className="text-muted-foreground">{x.motivo.toLowerCase()}{x.obs ? ` — ${x.obs}` : ""}</p></li>)}
+          <ul className="max-h-48 space-y-1 overflow-y-auto text-xs lg:col-span-2">{rac.map((x) => <li key={x.chassi + x.recebimento} className="rounded border border-border p-1.5"><b>{x.cliente}</b> · {x.veiculo} · Técnico: <b className="text-foreground">{tecRac(x.chassi)}</b> · nota {x.nota ?? "—"}<p className="text-muted-foreground">{x.motivo.toLowerCase()}{x.obs ? ` — ${x.obs}` : ""}</p></li>)}
             {!rac.length && <li className="text-muted-foreground">Nenhuma RAC de retrabalho. 👏</li>}</ul>
         </div>))}
     </Box>

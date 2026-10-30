@@ -6,9 +6,9 @@ import { Notificacoes } from "@/components/Notificacoes";
 import { supabase } from "@/integrations/supabase/client";
 import { Box, Kpi, brl, div, pct, tone, uni } from "@/components/painel-ui";
 import { ITENS } from "@/lib/agregados";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { AcessoTopo } from "@/components/AcessoTopo";
+import { Anel } from "@/components/Cockpit";
 
 type Agg = { item: string; qtd: number; valor: number; meta_qtd: number; codigos?: { codigo: string; qtd: number; valor: number }[] };
 type Dados = {
@@ -57,19 +57,20 @@ export function MinhaPerformance() {
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="mx-auto max-w-3xl space-y-4">
-        <header className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h1 className="text-xl font-bold">Minha performance</h1>
-            <p className="text-sm text-muted-foreground">{d?.nome ?? ""}{d?.departamento ? ` · ${d.departamento}` : ""}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <input type="month" className="h-9 rounded-md border bg-background px-2 text-sm" value={mes} onChange={(e) => setMes(e.target.value)} />
-            <ThemeToggle />
-            <Notificacoes vendedor abrir={() => document.getElementById("retornos-vendedor")?.scrollIntoView({ behavior: "smooth", block: "start" })} />
-            <Button size="sm" variant="outline" onClick={() => supabase.auth.signOut()}><LogOut className="size-4" /> Sair</Button>
-          </div>
-        </header>
+      <div className="mx-auto max-w-5xl space-y-4">
+        <AcessoTopo titulo="Minha performance" sub={`${d?.nome ?? ""}${d?.departamento ? ` · ${d.departamento}` : ""}`} mes={mes} setMes={setMes}
+          extra={<Notificacoes vendedor abrir={() => document.getElementById("retornos-vendedor")?.scrollIntoView({ behavior: "smooth", block: "start" })} />} />
+        {d && (
+          <section className="lux-card flex flex-wrap items-center justify-around gap-4 p-4">
+            <Anel p={perf} rot="Performance" />
+            {ms > 0 && <Anel p={div(proj(sv), ms)} rot="Projeção serviços" />}
+            {mp > 0 && <Anel p={div(proj(pc), mp)} rot="Projeção peças" />}
+            <div className="text-sm">
+              <p className="text-muted-foreground">Faturado no mês</p><p className="text-2xl font-bold">{brl(sv + pc)}</p>
+              <p className="text-xs text-muted-foreground">Dia {uni(dec)} de {uni(tot)} · {uni(rest)} restantes</p>
+            </div>
+          </section>
+        )}
         <div role="status" aria-live="polite" className="flex flex-wrap items-center gap-2 text-xs">
           {presenceStatus === "confirmed" && confirmedAt ? <span className="text-success">✅ Presença confirmada · {confirmedAt.toLocaleString("pt-BR")}</span> : null}
           {presenceStatus === "pending" && <span className="text-muted-foreground">Confirmando presença…</span>}
@@ -98,7 +99,7 @@ export function MinhaPerformance() {
                       <div key={a.item} className="px-5 py-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <button type="button" onClick={() => setAberto(aberto === a.item ? null : a.item)} className="font-medium underline decoration-dotted underline-offset-2" aria-expanded={aberto === a.item}>{nome} {aberto === a.item ? "▴" : "▾"}</button>
-                          <span>{uni(+a.qtd)} / meta {uni(+a.meta_qtd)} · <b className={tone(pf)}>{pct(pf)}</b> · {brl(+a.valor)} · aproveitamento {pct(div(+a.qtd, +d.passagens))}</span>
+                          <span>{uni(+a.qtd)} / meta {uni(+a.meta_qtd)} · <b className={tone(pf)}>{pct(pf)}</b> · {brl(+a.valor)} · aproveitamento {div(+a.qtd, +d.passagens).toFixed(1).replace(".", ",")} un./passagem</span>
                         </div>
                         {aberto === a.item && (
                           <ul className="mt-2 space-y-1 rounded-md bg-muted/50 p-3 text-xs">
