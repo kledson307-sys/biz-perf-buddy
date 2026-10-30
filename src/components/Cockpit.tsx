@@ -131,7 +131,6 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
     return [...m.entries()].sort((a, b) => a[0] - b[0]);
   }, [sales, linhas, usaReal, real]);
   const maxDia = Math.max(1, ...diario.map(([, v]) => v));
-  const dptMax = Math.max(1, ...porDept.map((d) => Math.max(d.meta, d.servicos + d.pecas)));
   const resp: Record<string, string> = { ranking: "Consultores", "controle-os": "Oficina", painel: "Gestão", pecas: "Consultores", nps: "Consultores" };
   const lider = ranking[0];
   const res3: [string, number, number, typeof Wrench][] = [["Serviços", t.s, t.ms, Wrench], ["Peças", t.p, t.mp, Package], ["Total", t.s + t.p, metaT, TrendingUp]];
