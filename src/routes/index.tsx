@@ -18,10 +18,7 @@ import { Equipe } from "@/components/Equipe";
 import { MinhaPerformance } from "@/components/MinhaPerformance";
 import { ChefeOficina } from "@/components/ChefeOficina";
 import { MeuDesempenhoTecnico } from "@/components/MeuDesempenhoTecnico";
-import { RankingMobile } from "@/components/RankingMobile";
 import { RankingAgregados, RankingTecnicos } from "@/components/RankingExtra";
-import { MixConsultores } from "@/components/MixConsultores";
-import { EvolucaoTime } from "@/components/EvolucaoTime";
 import { MetasExecutivo } from "@/components/MetasExecutivo";
 import { MetasAno } from "@/components/MetasAno";
 import { Cockpit } from "@/components/Cockpit";
@@ -32,7 +29,7 @@ import { CadeadoMes } from "@/components/CadeadoMes";
 import { AnaliseFechamento, Reconhecimento } from "@/components/RelatorioAnalise";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Car, ChevronDown, ClipboardList, Download, Gauge, Gem, LayoutDashboard, Lightbulb, LogOut, Menu, Package, Printer, Settings, Star, Target, TrendingUp, Upload, Users, Wrench, X } from "lucide-react";
+import { AlertTriangle, Car, ChevronDown, ClipboardList, Download, Gauge, Gem, LayoutDashboard, LogOut, Menu, Package, Printer, Settings, Star, Target, TrendingUp, Upload, Users, Wrench, X } from "lucide-react";
 import bmwLogo from "@/assets/bmw-logo.asset.json";
 import carroSilhueta from "@/assets/carro-silhueta.jpg";
 import { localDay, sourceLabels, sourceStatus, tabUpdateStatus, UPDATE_EVENT, type UpdateRecord, type UpdateSource } from "@/lib/update-status";
@@ -485,41 +482,6 @@ function Painel({ email }: { email: string }) {
       <main className={`mx-auto min-w-0 max-w-[1920px] space-y-3 px-3 py-3 sm:px-5 ${tab === "painel" ? "painel-phone" : ""}`}>
         {topo}
         {subBar}
-        {false && (() => {
-          const rest = Math.max(tot - dec, 0);
-          type L = (typeof linhas)[number];
-          const abaixo = (arr: L[], f: (l: L) => number, m: (l: L) => number) => arr.filter((l) => m(l) > 0 && f(l) < 0.85).sort((a, b) => f(a) - f(b));
-          const piorS = abaixo(linhasServ, (l) => l.projPctS, (l) => l.mS)[0];
-          const piorP = abaixo(linhas, (l) => l.projPctP, (l) => l.mP)[0];
-          const pior = abaixo(linhas, (l) => l.projPct, (l) => l.meta)[0];
-          const semMeta = linhas.filter((l) => l.meta === 0).length;
-          const deptFraco = [...porDept].filter((d) => d.meta > 0).sort((a, b) => a.projPct - b.projPct)[0];
-          const o: Record<string, [string, string]> = {
-            painel: [`Projeção do mês em ${pct(total.projPct)} da meta (Serviços ${pct(total.projPctS)} · Peças ${pct(total.projPctP)}), faltando ${rest} dia(s).`,
-              total.projPct >= 1 ? `Ritmo bom: reconheça ${lider?.c.nome ?? "o líder"} e peça superação.` : `Cobre ${brl(total.nec)}/dia da equipe${deptFraco ? `; foco em ${deptFraco.nome} (${pct(deptFraco.projPct)})` : ""}.`],
-            "proj-serv": [`Serviços projetam ${pct(totalServ.projPctS)}; líder ${liderServ?.c.nome ?? "-"} em ${pct(liderServ?.perfS ?? 0)}.`,
-              piorS ? `Converse hoje com ${piorS.c.nome} (${pct(piorS.projPctS)}): revisar orçamentos pendentes; precisa ${brl(piorS.necS)}/dia.` : "Todos acima de 85%: mantenha a cobrança diária de agendamentos."],
-            "proj-pec": [`Peças projetam ${pct(total.projPctP)}; líder ${liderPec?.c.nome ?? "-"} em ${pct(liderPec?.perfP ?? 0)}.`,
-              piorP ? `Acompanhe ${piorP.c.nome} (${pct(piorP.projPctP)}): oferecer item complementar em toda OS; precisa ${brl(piorP.necP)}/dia.` : "Todos acima de 85%: incentive itens de maior valor."],
-            "proj-total": [`Projeção total ${brl(total.proj)} de ${brl(total.meta)} (${pct(total.projPct)}).`,
-              pior ? `Prioridade: ${pior.c.nome} em ${pct(pior.projPct)} — combine meta diária de ${brl(pior.nec)}.` : "Equipe no ritmo: mantenha a reunião rápida diária."],
-            os: ["Faturado + OS abertas mostram o que ainda dá para fechar no mês.", "Cobre de cada consultor o faturamento das OS prontas antes do fechamento."],
-            "controle-os": ["OS paradas viram prejuízo e risco de reclamação.", "Atualize a planilha toda semana e cobre ação nas OS sinalizadas sem mudança."],
-            mecanicos: ["O faturamento dos técnicos mostra a produtividade da oficina.", "Envie o resumo de Carro e Moto aos grupos e converse com quem está abaixo de 85%."],
-            agregados: ["Agregados medem o aproveitamento de cada passagem.", "Combine com cada consultor 1 agregado por atendimento e acompanhe o aproveitamento."],
-            config: [semMeta ? `${semMeta} consultor(es) sem meta neste mês.` : "Metas e dias configurados.", semMeta ? "Cadastre as metas faltantes para a projeção ficar correta." : "Confira feriados nos dias úteis."],
-          };
-          const [analise, acao] = o[tabKey(tab)] ?? o["painel"]!;
-          return (
-            <details className="group rounded-lg border-l-4 border-primary bg-primary/5 px-3 py-1 text-sm print:hidden">
-              <summary className="flex cursor-pointer list-none items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
-                <Lightbulb className="size-4" />Orientação ao gestor<ChevronDown className="ml-auto size-4 transition-transform group-open:rotate-180" />
-              </summary>
-              <p className="mt-2"><span className="font-medium">Análise:</span> {analise}</p>
-              <p><span className="font-medium">Ação:</span> {acao}</p>
-            </details>
-          );
-        })()}
         {relatorio && (
           <div className="hidden print:block">
             <div className="flex min-h-[250mm] flex-col items-center justify-center text-center">
