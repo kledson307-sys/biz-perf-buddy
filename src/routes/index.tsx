@@ -729,7 +729,7 @@ function Painel({ email }: { email: string }) {
         </div>}
         {tab === "cockpit" && !relatorio && <Cockpit linhas={linhas} porDept={porDept} mes={mes} tot={tot} dec={dec} soPecas={soPecas} setTab={setTab} sales={sales} nome={email.split("@")[0] ?? ""} deptName={deptName} />}
         {tab === "nps" && !relatorio && <NpsPainel />}
-        {tab === "pecas" && !relatorio && <PecasEstoque linhas={linhas} porDept={porDept} margemIdeal={margemIdeal} deptName={deptName} passagens={resumo.pass} mes={mes} />}
+        {tab === "pecas" && !relatorio && <PecasEstoque linhas={linhas} porDept={porDept} margemIdeal={margemIdeal} deptName={deptName} passagens={resumo.pass} mes={mes} tot={tot} dec={dec} />}
         {tab === "metas" && !relatorio && <>
           <details className="lux-card px-3 py-2"><summary className="cursor-pointer text-sm font-semibold text-primary">+ Ajustar metas (consultores, técnicos e plano anual)</summary><div className="mt-3"><Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div></details>
           <div className="grid items-start gap-3 xl:grid-cols-2">

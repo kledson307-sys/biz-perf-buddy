@@ -4,7 +4,7 @@ import { Box, brl, div, pct, tone, uni } from "@/components/painel-ui";
 import { curvaAbc, type ItemPeca } from "@/lib/pecas-itens";
 import { Bloco, Linha } from "@/components/Cockpit";
 import { CabecalhoTela, KpiCard } from "@/components/TelasGestor";
-import { BarChart3, Boxes, Package, PieChart, RefreshCw, Trophy, Users } from "lucide-react";
+import { BarChart3, Package, PieChart, RefreshCw, Trophy, Users } from "lucide-react";
 
 type Linha = { c: { id: string; nome: string; department_id: string | null }; pecas: number; mP: number; margem: number; projP: number; perfP: number };
 type Dept = { nome: string; pecas: number; mP: number; margem: number; projP: number };
@@ -108,7 +108,6 @@ export function PecasEstoque({ linhas, porDept, margemIdeal, deptName, passagens
         <div className="max-h-96 overflow-y-auto"><table className="w-full text-xs"><thead className="sticky top-0 bg-card text-muted-foreground"><tr><th className="px-2 text-left">Classe</th><th className="text-left">Item</th><th>Qtd</th><th>Faturamento</th><th>Margem</th><th>% acum.</th></tr></thead>
           <tbody>{curva.map((i) => <tr key={i.cod} className="border-t border-border"><td className="px-2 font-bold">{i.classe}</td><td>{i.cod} · {i.desc}</td><td className="text-center">{uni(i.qtd)}</td><td className="text-right">{brl(i.valor)}</td><td className="text-right">{pct(div(i.margem, i.valor))}</td><td className="text-right">{pct(i.acum)}</td></tr>)}</tbody></table></div>
       </Box>}
-      <span className="hidden"><Boxes /></span>
     </section>
   );
 }
