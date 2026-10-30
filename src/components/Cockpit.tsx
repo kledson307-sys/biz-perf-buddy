@@ -224,14 +224,14 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
       </Bloco>
 
       {/* Linha 3 */}
-      <Bloco titulo="Desempenho dos agregados" icon={<Package className="size-4 text-coral" />} ir={() => setTab("agregados")} className="lg:col-span-4 border-coral/40">
+      <Bloco titulo="Desempenho dos agregados" icon={<Package className="size-4 text-neon" />} ir={() => setTab("agregados")} className="lg:col-span-4 border-neon/40">
         {(() => {
           const fams = ITENS.map((it) => ({ it, a: agg[it.k] })).filter((x) => x.a && (x.a.mq || x.a.q));
           const q = fams.reduce((m, x) => m + x.a!.q, 0), v = fams.reduce((m, x) => m + x.a!.v, 0);
           if (!fams.length) return <p className="text-sm text-muted-foreground">Sem agregados importados neste mês.</p>;
           return <>
             <div className="flex flex-wrap justify-around gap-1">{fams.slice(0, 6).map(({ it, a }) => <Anel key={it.k} p={a!.mq && dec ? div(div(a!.q, dec) * tot, a!.mq) : 0} rot={it.nome} />)}</div>
-            <p className="mt-1 flex flex-wrap justify-between gap-2 text-[11px] text-muted-foreground"><span>Vendidos <b className="text-coral">{uni(q)} un.</b></span><span>Faturamento <b className="text-foreground">{brl(v)}</b></span>{pass > 0 && <span>Aproveit. <b className="text-foreground">{div(q, pass).toFixed(1).replace(".", ",")} un./passagem</b></span>}</p>
+            <p className="mt-1 flex flex-wrap justify-between gap-2 text-[11px] text-muted-foreground"><span>Vendidos <b className="text-neon">{uni(q)} un.</b></span><span>Faturamento <b className="text-foreground">{brl(v)}</b></span>{pass > 0 && <span>Aproveit. <b className="text-foreground">{div(q, pass).toFixed(1).replace(".", ",")} un./passagem</b></span>}</p>
           </>;
         })()}
       </Bloco>
