@@ -1,6 +1,29 @@
 import { useEffect, useState } from "react";
 import { uni } from "@/components/painel-ui";
-import { carregarAgendamentos, contar, type AgendRow } from "@/lib/agendamentos-data";
+import { carregarAgendamentos, contar, type AgendRow, type Contagem } from "@/lib/agendamentos-data";
+
+const CAT = { revisao: "Revisão", diagnostico: "Diagnóstico", recall: "Recall" } as const;
+const SEGMENTOS = [["🚗", "Carros", "carro", "text-primary"], ["🏍", "Motos", "moto", "text-neon"]] as const;
+
+/** Uma linha do cartão: segmento (Carros ou Motos) com Revisão/Diagnóstico/Recall contados à parte. */
+function LinhaSegmento({ icone, nome, cor, m }: { icone: string; nome: string; cor: string; m: Contagem }) {
+  return (
+    <div className="rounded-lg bg-background/60 p-2">
+      <div className="flex items-baseline justify-between">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{icone} {nome}</p>
+        <p className={`text-xl font-bold ${cor}`}>{uni(m[nome === "Carros" ? "carro" : "moto"])}</p>
+      </div>
+      <div className="mt-1 grid grid-cols-3 gap-1 text-center text-[11px]">
+        {(["revisao", "diagnostico", "recall"] as const).map((c) => (
+          <div key={c} className="rounded bg-card/70 px-1 py-1">
+            <p className="text-sm font-bold">{uni(m.porCat[c][nome === "Carros" ? "carro" : "moto"])}</p>
+            <p className="text-muted-foreground">{CAT[c]}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /** Conteúdo do cartão do Dashboard: radar do agendamento D+1 (amanhã) + acumulado do mês. */
 export function CartaoAgendamento({ mes }: { mes: string }) {
@@ -20,16 +43,10 @@ export function CartaoAgendamento({ mes }: { mes: string }) {
   if (!d1.length) return <p className="text-sm text-muted-foreground">Sem agenda D+1 importada. Arraste o relatório na aba Importações.</p>;
   return (
     <div className="space-y-2">
-      <div className="flex items-end justify-between">
-        <p className="text-2xl font-bold text-primary">{uni(radar.carro)} <span className="text-sm font-normal text-muted-foreground">carros</span></p>
-        <p className="text-2xl font-bold text-neon">{uni(radar.moto)} <span className="text-sm font-normal text-muted-foreground">motos</span></p>
-      </div>
-      <div className="grid grid-cols-3 gap-1 text-center text-[11px]">
-        {([["Revisão", radar.porCat.revisao], ["Diagnóstico", radar.porCat.diagnostico], ["Recall", radar.porCat.recall]] as const).map(([l, c]) => (
-          <div key={l} className="rounded bg-background/60 px-1 py-1"><p className="text-sm font-bold">{uni(c.carro + c.moto)}</p><p className="text-muted-foreground">{l}</p></div>
-        ))}
-      </div>
-      <p className="text-[11px] text-muted-foreground">Acumulado do mês: {uni(acum.carro + acum.moto)} agendados · {uni(atendidos)} atendidos</p>
+      {SEGMENTOS.map(([icone, nome, , cor]) => (
+        <LinhaSegmento key={nome} icone={icone} nome={nome} cor={cor} m={radar} />
+      ))}
+      <p className="text-[11px] text-muted-foreground">Acumulado do mês: 🚗 {uni(acum.carro)} carros · 🏍 {uni(acum.moto)} motos · {uni(atendidos)} atendidos</p>
     </div>
   );
 }
