@@ -46,8 +46,8 @@ export function CartaoAgendamento({ mes }: { mes: string }) {
   if (!d1.length) return <p className="text-sm text-muted-foreground">Sem agenda D+1 importada. Arraste o relatório na aba Importações.</p>;
   return (
     <div className="space-y-2">
-      {SEGMENTOS.map(([icone, nome, , cor]) => (
-        <LinhaSegmento key={nome} icone={icone} nome={nome} cor={cor} m={radar} />
+      {SEGMENTOS.map(([icone, nome, seg, cor]) => (
+        <LinhaSegmento key={nome} icone={icone} nome={nome} seg={seg} cor={cor} m={radar} />
       ))}
       <p className="text-[11px] text-muted-foreground">Acumulado do mês: 🚗 {uni(acum.carro)} carros · 🏍 {uni(acum.moto)} motos · {uni(atendidos)} atendidos</p>
     </div>
