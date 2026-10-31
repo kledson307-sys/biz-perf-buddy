@@ -15,3 +15,5 @@
 - [x] Reconhecimento por conteúdo: NPS (2 formatos), O.S. abertas e faturamento em linhas na esteira única
 - [x] Aba Agendamentos + cartão D+1 no Dashboard + metas diárias de agendamento
 - [x] Andressa: tema rosa, aba Dashboard própria com seus dados + agendamentos dela (sem teste visual com o login dela)
+- [ ] Relatório Executivo PDF no Dashboard (4 páginas, BMW)
+- [ ] Sininho de Marcos/Delmir com alertas de agendamento/testador
