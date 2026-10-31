@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Ghost, UserX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ImportadorUnificado } from "@/components/ImportadorUnificado";
 import { Box, Tabela, uni } from "@/components/painel-ui";
-import { carregarAgendamentos, carregarFollowups, aceitarFollowup, confirmarFollowup, contar, separarPassantes, fechamentoDoDia, faltasDoMes, type AgendRow, type Contagem, type Followup } from "@/lib/agendamentos-data";
+import { carregarAgendamentos, carregarFollowups, aceitarFollowup, confirmarFollowup, contar, separarPassantes, fechamentoDoDia, faltasDoMes, situacaoCapacidade, picosPorHora, linkResgate, type AgendRow, type Contagem, type Followup } from "@/lib/agendamentos-data";
 import { classe, type NpsItem } from "@/lib/nps";
 
 const CAT_LABEL = { revisao: "Revisão", diagnostico: "Diagnóstico", recall: "Recall" } as const;
@@ -68,6 +69,11 @@ export function Agendamentos({ mes }: { mes: string }) {
   const [follows, setFollows] = useState<Followup[]>([]);
   const [msg, setMsg] = useState("");
   const npsMap = useNpsPorCliente();
+  const [filtroCons, setFiltroCons] = useState("");
+  const [metas, setMetas] = useState<{ segmento: string; categoria: string; qtd_diaria: number }[]>([]);
+  useEffect(() => {
+    void supabase.from("agenda_metas").select("segmento,categoria,qtd_diaria").eq("mes", mes).then(({ data }) => setMetas(data ?? []));
+  }, [mes]);
 
   const load = async () => {
     try {
@@ -84,7 +90,9 @@ export function Agendamentos({ mes }: { mes: string }) {
     const datas = [...new Set(d1.map((r) => r.data))].sort();
     return { data: datas.find((d) => d >= hoje) ?? datas.at(-1) ?? "", itens: d1 };
   }, [rows, hoje]);
-  const d1 = amanha.itens.filter((r) => r.data === amanha.data);
+  const d1Todos = amanha.itens.filter((r) => r.data === amanha.data);
+  const consultoresD1 = [...new Set(d1Todos.map((r) => (r.consultor || "").trim().toUpperCase()).filter(Boolean))].sort();
+  const d1 = filtroCons ? d1Todos.filter((r) => (r.consultor || "").trim().toUpperCase() === filtroCons) : d1Todos;
   const d0Hoje = rows.filter((r) => r.tipo === "d0" && r.data === hoje);
   const d0UltimaData = [...new Set(rows.filter((r) => r.tipo === "d0").map((r) => r.data))].sort().at(-1) ?? "";
   const d0 = d0Hoje.length ? d0Hoje : rows.filter((r) => r.tipo === "d0" && r.data === d0UltimaData);
@@ -113,7 +121,17 @@ export function Agendamentos({ mes }: { mes: string }) {
 
   const nome = () => supabase.auth.getUser().then(({ data }) => data.user?.email?.split("@")[0] ?? "");
   const aceitar = async (id: string) => { await aceitarFollowup(id, await nome()); await load(); };
-  const confirmar = async (id: string, c: "sim" | "nao" | "faltou") => { await confirmarFollowup(id, c, await nome()); await load(); };
+  const confirmar = async (id: string, c: "sim" | "nao" | "faltou") => {
+    await confirmarFollowup(id, c, await nome());
+    const a = rows.find((r) => r.id === id);
+    toast.success(`Quadro avisado: ${a?.cliente ?? "cliente"} (${a?.hora ?? ""}) · ${c === "sim" ? "sintoma confirmado" : c === "nao" ? "sintoma não confirmado" : "não compareceu"}`);
+    await load();
+  };
+  const criticos = d1.filter((r) => { const n = npsMap.get(limpa(r.cliente)); return n && n.nota !== null && classe(n.nota) === "detrator"; });
+  const metaSeg = (seg: string) => metas.filter((m) => m.segmento === seg).reduce((t, m) => t + m.qtd_diaria, 0);
+  const picos = picosPorHora(d1);
+  const alertasQuadro = follows.filter((f) => f.confirmacao && f.confirmado_em).sort((a, b) => (b.confirmado_em ?? "").localeCompare(a.confirmado_em ?? "")).slice(0, 8);
+  const SIT = { "sem-meta": ["Sem meta", "text-muted-foreground"], ociosa: ["Ociosa · espaço para encaixe", "text-warning"], ok: ["Dentro da capacidade", "text-success"], saturada: ["Saturada · risco de atraso", "text-destructive"] } as const;
 
   if (!rows.length) return <Box title="Agendamentos"><p className="p-4 text-sm text-muted-foreground">Nenhum agendamento importado em {dBR(mes + "-01").slice(3)}. Arraste as planilhas "Controle de Agendamento" (D+1 e do dia) na aba Importações.</p>{msg && <p className="px-4 pb-3 text-sm text-destructive">{msg}</p>}</Box>;
 
@@ -125,11 +143,45 @@ export function Agendamentos({ mes }: { mes: string }) {
       </details>
       <Box title={`Agenda de amanhã (D+1) · ${amanha.data ? dBR(amanha.data) : "—"}`}
         right={<p className="text-xs text-muted-foreground">Acumulado do mês: 🚗 {uni(acumD1.carro)} carros · 🏍 {uni(acumD1.moto)} motos · {uni(atendidosMes)} atendidos</p>}>
+        <div className="flex flex-wrap items-center gap-2 px-3 pt-3 text-xs">
+          <span className="text-muted-foreground">Consultor:</span>
+          <select value={filtroCons} onChange={(e) => setFiltroCons(e.target.value)} className="rounded-md border border-border bg-background px-2 py-1">
+            <option value="">Todos</option>
+            {consultoresD1.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
         <div className="grid gap-2 p-3 sm:grid-cols-2">
           <BlocoSegmento icone="🚗" nome="Carros" m={radar} seg="carro" cor="text-primary" />
           <BlocoSegmento icone="🏍" nome="Motos" m={radar} seg="moto" cor="text-neon" />
         </div>
+        <div className="grid gap-2 px-3 pb-3 sm:grid-cols-2">
+          {(["carro", "moto"] as const).map((seg) => {
+            const meta = metaSeg(seg), real = radar[seg], sit = SIT[situacaoCapacidade(real, meta)];
+            return <p key={seg} className="rounded bg-background/60 px-2 py-1 text-xs">{seg === "carro" ? "🚗" : "🏍"} Capacidade: {uni(real)} de {meta ? uni(meta) : "—"} meta/dia · <b className={sit[1]}>{sit[0]}</b></p>;
+          })}
+        </div>
+        {picos.length > 0 && (
+          <div className="px-3 pb-3">
+            <p className="mb-1 text-[11px] font-semibold uppercase text-muted-foreground">Entradas por horário</p>
+            <div className="flex flex-wrap gap-1">
+              {picos.map((p) => {
+                const max = Math.max(...Object.values(p.porConsultor));
+                return <span key={p.hora} title={Object.entries(p.porConsultor).map(([c, n]) => `${c}: ${n}`).join(" · ")} className={`rounded px-2 py-1 text-[11px] ${max >= 4 ? "bg-destructive text-background" : "bg-card/70"}`}>{p.hora}h · {uni(p.total)}</span>;
+              })}
+            </div>
+            <p className="mt-1 text-[10px] text-muted-foreground">Vermelho: um consultor com 4+ entradas no mesmo horário.</p>
+          </div>
+        )}
       </Box>
+
+      {criticos.length > 0 && (
+        <Box title={`⚠️ Alerta de recepção · ${uni(criticos.length)} cliente(s) detrator(es) amanhã`}>
+          <ul className="space-y-1 p-3 text-sm">
+            {criticos.map((r) => <li key={r.id} className="flex flex-wrap items-center gap-2 rounded bg-destructive/10 px-2 py-1"><b>{r.hora}</b> {r.cliente} · {r.placa} · {r.consultor} <SeloNps item={npsMap.get(limpa(r.cliente))} /></li>)}
+          </ul>
+          <p className="px-3 pb-3 text-xs text-muted-foreground">Recepção acompanhada pelo gestor para reverter a experiência.</p>
+        </Box>
+      )}
 
       <Box title={`Follow-up do testador · diagnósticos de amanhã (${uni(filaTestador.length)} pendentes)`} fit="xl:max-h-[36vh]">
         {!diagnosticos.length && <p className="p-3 text-sm text-muted-foreground">Sem diagnósticos agendados para amanhã.</p>}
@@ -176,6 +228,14 @@ export function Agendamentos({ mes }: { mes: string }) {
         )}
       </Box>
 
+      {alertasQuadro.length > 0 && (
+        <Box title="Alertas para o quadro · confirmação de sintoma">
+          <ul className="space-y-1 p-3 text-xs">
+            {alertasQuadro.map((f) => { const a = rows.find((r) => r.id === f.agendamento_id); return <li key={f.id} className="rounded bg-background/60 px-2 py-1">{a?.cliente} agendado {a?.hora} · <b className={f.confirmacao === "sim" ? "text-success" : f.confirmacao === "nao" ? "text-warning" : "text-destructive"}>{f.confirmacao === "sim" ? "sintoma confirmado" : f.confirmacao === "nao" ? "não confirmado" : "não compareceu"}</b> às {new Date(f.confirmado_em!).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} · {f.confirmado_por}</li>; })}
+          </ul>
+        </Box>
+      )}
+
       <Box title={`Agenda do dia · ${d0.length ? dBR(d0[0]!.data) : "—"} · passantes × agendados`}>
         {!d0.length && <p className="p-3 text-sm text-muted-foreground">Planilha do dia ainda não importada.</p>}
         {d0.length > 0 && (
@@ -217,11 +277,12 @@ export function Agendamentos({ mes }: { mes: string }) {
       <div className="grid items-start gap-3 xl:grid-cols-2">
         <Box title={`Não compareceram no mês (${uni(faltas.length)})`} fit="xl:max-h-[32vh]">
           {faltas.length > 0 ? (
-            <Tabela head={["Cliente", "Placa", "Faltas", "Datas"]}>
+            <Tabela head={["Cliente", "Placa", "Faltas", "Datas", ""]}>
               {faltas.map((f) => (
                 <tr key={f.placa + f.cliente} className="border-t border-border">
                   <td className="px-2 py-1.5 font-medium">{f.cliente}</td><td className="px-2 py-1.5">{f.placa}</td>
                   <td className="px-2 py-1.5">{uni(f.faltas)}</td><td className="px-2 py-1.5 text-muted-foreground">{f.datas.map(dBR).join(", ")}</td>
+                  <td className="px-2 py-1.5">{(() => { const l = linkResgate(f.celular, f.cliente); return l ? <a href={l} target="_blank" rel="noreferrer" className="rounded bg-success px-2 py-1 text-[11px] font-semibold text-background">WhatsApp</a> : <span className="text-muted-foreground">sem celular</span>; })()}</td>
                 </tr>
               ))}
             </Tabela>
@@ -230,7 +291,7 @@ export function Agendamentos({ mes }: { mes: string }) {
         <Box title={`Clientes fantasmas (${uni(listaFantasmas.length)})`}>
           <p className="px-3 pt-2 text-xs text-muted-foreground">Agendaram mais de 2 vezes e não compareceram.</p>
           {listaFantasmas.length > 0 ? (
-            <ul className="space-y-1 p-3 text-sm">{listaFantasmas.map((f) => <li key={f.placa + f.cliente} className="rounded bg-background/60 px-2 py-1"><b>{f.cliente}</b> · {f.placa} · <span className="text-destructive">{uni(f.faltas)} faltas</span></li>)}</ul>
+            <ul className="space-y-1 p-3 text-sm">{listaFantasmas.map((f) => <li key={f.placa + f.cliente} className="rounded bg-background/60 px-2 py-1"><b>{f.cliente}</b> · {f.placa} · <span className="text-destructive">{uni(f.faltas)} faltas</span>{(() => { const l = linkResgate(f.celular, f.cliente); return l ? <> · <a href={l} target="_blank" rel="noreferrer" className="font-semibold text-success underline">WhatsApp</a></> : null; })()}</li>)}</ul>
           ) : <p className="p-3 text-sm text-muted-foreground">Nenhum cliente fantasma no mês.</p>}
         </Box>
       </div>

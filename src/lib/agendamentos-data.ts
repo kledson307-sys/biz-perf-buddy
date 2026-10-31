@@ -78,21 +78,50 @@ export function fechamentoDoDia(d1: AgendRow[], d0: AgendRow[]): LinhaFechamento
 }
 
 /** Clientes que agendaram e não compareceram (D0 com status de falta ou D1 sem par no D0). */
-export function faltasDoMes(rows: AgendRow[]): { placa: string; cliente: string; faltas: number; datas: string[] }[] {
+export function faltasDoMes(rows: AgendRow[]): Falta[] {
   const d1 = rows.filter((r) => r.tipo === "d1");
   const d0porDataPlaca = new Map(rows.filter((r) => r.tipo === "d0").map((r) => [`${r.data}|${r.placa}`, r]));
-  const faltas = new Map<string, { placa: string; cliente: string; faltas: number; datas: string[] }>();
+  const faltas = new Map<string, Falta>();
   for (const a of d1) {
     const real = d0porDataPlaca.get(`${a.data}|${a.placa}`);
     const faltou = real ? /NAO COMPAREC|FALTOU|FALTA/i.test(real.status) || !STATUS_ATENDIDO.test(real.status) : true;
     if (!faltou) continue;
     const k = a.placa || a.cliente;
-    const e = faltas.get(k) ?? { placa: a.placa, cliente: a.cliente, faltas: 0, datas: [] };
+    const e = faltas.get(k) ?? { placa: a.placa, cliente: a.cliente, celular: a.celular, faltas: 0, datas: [] };
     e.faltas++; e.datas.push(a.data); faltas.set(k, e);
   }
   return [...faltas.values()].sort((a, b) => b.faltas - a.faltas);
 }
 
-export type Falta = { placa: string; cliente: string; faltas: number; datas: string[] };
+export type Falta = { placa: string; cliente: string; celular?: string; faltas: number; datas: string[] };
 /** Fantasmas: mais de 2 agendamentos sem comparecimento. */
 export const fantasmas = (faltas: Falta[]) => faltas.filter((f) => f.faltas > 2);
+
+/** Situação do D+1 frente à meta diária: ociosa (<85%), ok, saturada (>110%). */
+export function situacaoCapacidade(real: number, meta: number): "sem-meta" | "ociosa" | "ok" | "saturada" {
+  if (!meta) return "sem-meta";
+  const p = real / meta;
+  return p < 0.85 ? "ociosa" : p > 1.1 ? "saturada" : "ok";
+}
+
+/** Entradas por faixa de hora (HH) e consultor, para achar picos na recepção. */
+export function picosPorHora(itens: AgendRow[]): { hora: string; total: number; porConsultor: Record<string, number> }[] {
+  const m = new Map<string, { hora: string; total: number; porConsultor: Record<string, number> }>();
+  for (const i of itens) {
+    const h = (i.hora || "--").slice(0, 2);
+    const e = m.get(h) ?? { hora: h, total: 0, porConsultor: {} };
+    e.total++; const c = (i.consultor || "—").trim().toUpperCase(); e.porConsultor[c] = (e.porConsultor[c] ?? 0) + 1;
+    m.set(h, e);
+  }
+  return [...m.values()].sort((a, b) => a.hora.localeCompare(b.hora));
+}
+
+/** Link wa.me de resgate para cliente faltoso (Brasil, DDI 55). */
+export function linkResgate(celular: string | undefined, cliente: string): string | null {
+  const d = (celular ?? "").replace(/\D/g, "");
+  if (d.length < 10) return null;
+  const num = d.startsWith("55") && d.length > 11 ? d : "55" + d;
+  const nome = cliente.split(" ")[0] ?? "";
+  const txt = `Olá ${nome}, sentimos sua falta no agendamento na HAUS MOTORS. Podemos reagendar para uma data mais conveniente?`;
+  return `https://wa.me/${num}?text=${encodeURIComponent(txt)}`;
+}
