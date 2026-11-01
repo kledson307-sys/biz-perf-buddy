@@ -9,6 +9,8 @@ import { CATEGORIAS, GRUPO_NOME, blocoMec, ehRelatorioPassagens, grupoDe, lerPas
 import { registrarUpdate } from "@/lib/update-log";
 import { MecanicosIA } from "@/components/MecanicosIA";
 import { salvarPassagens } from "@/lib/passagens-save";
+import { inicializarTecnicosMes } from "@/lib/tecnicos-mes";
+import { mesTravado, msgTravado } from "@/lib/month-lock";
 
 const asGrupo = (v: string): Grupo => (v === "carro" || v === "moto" ? v : "outros");
 
@@ -40,6 +42,7 @@ export function Mecanicos({ mes, tot, dec, modo = "ver", lado }: { mes: string; 
   };
 
   const load = async () => {
+    try { await inicializarTecnicosMes(mes); } catch (e) { setMsg(e instanceof Error ? e.message : "Erro ao preparar equipe."); return; }
     const { data, error } = await supabase.from("mech_month").select("id,nome,grupo,servicos,pecas,passagens,meta_servicos,meta_pecas,composicao").eq("mes", mes).order("nome");
     if (error) { setMsg(error.message); return; }
     let lst: Mec[] = (data ?? []).map(r => ({ ...r, grupo: asGrupo(r.grupo), composicao: (r.composicao ?? {}) as Composicao }));
@@ -64,10 +67,13 @@ export function Mecanicos({ mes, tot, dec, modo = "ver", lado }: { mes: string; 
   const gravar = async (lst: Mec[], origem: string) => {
     if (!lst.length) return false;
     setBusy(true);
+    try {
+    if (await mesTravado(mes)) { setMsg(msgTravado(mes)); return false; }
     const { error } = await supabase.from("mech_month").upsert(lst.map(({ id: _i, ...r }) => ({ ...r, mes, updated_at: new Date().toISOString() })), { onConflict: "user_id,mes,nome" });
-    setBusy(false);
     if (error) { setMsg("Erro ao salvar: " + error.message); return false; }
     await registrarUpdate(origem, mes); await load(); return true;
+    } catch (e) { setMsg(e instanceof Error ? e.message : "Erro ao salvar técnicos."); return false; }
+    finally { setBusy(false); }
   };
   const base = (nome: string): Mec => rows.find(r => norm(r.nome) === norm(nome)) ?? { nome: nome.trim().toUpperCase(), grupo: grupoDe(nome), servicos: 0, pecas: 0, passagens: 0, meta_servicos: 0, meta_pecas: 0 };
 
@@ -98,6 +104,8 @@ export function Mecanicos({ mes, tot, dec, modo = "ver", lado }: { mes: string; 
 
   const confirmar = async () => {
     if (!previa) return;
+    try { if (await mesTravado(mes)) { setMsg(msgTravado(mes)); return; } }
+    catch (e) { setMsg(e instanceof Error ? e.message : "Erro ao verificar fechamento."); return; }
     if (previa.tipo === "fat") {
       const r = previa;
       if (r.periodo && r.periodo.fim.slice(0, 7) !== mes && !confirm(`O relatório é de ${r.periodo.ini.slice(0, 7)}, mas o mês aberto é ${mes}. Importar mesmo assim neste mês?`)) return;
@@ -185,7 +193,7 @@ export function Mecanicos({ mes, tot, dec, modo = "ver", lado }: { mes: string; 
       ]} />
         </div>
       </details>
-      <p className="text-xs text-muted-foreground print:hidden">Faturamento e passagens são importados na aba <b>Importações</b>. As metas dos técnicos ficam em <b>Configurar → Técnicos e metas</b>.</p>
+      <p className="text-xs text-muted-foreground print:hidden">Metas: <b>Metas & Planejamento → Técnicos</b>.</p>
       </>}
 
       {modo === "importar" && <div className="grid gap-4 print:hidden">

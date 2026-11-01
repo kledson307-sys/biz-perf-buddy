@@ -1,5 +1,12 @@
 # Roadmap
 
+## Pacote aprovado — novembro
+- [ ] Metas: quatro sub-abas, técnicos visíveis, edição em lote e cópia do mês anterior
+- [ ] Técnicos: cadastrar novembro e continuidade segura de equipe/metas sem copiar faturamento
+- [ ] Acessos: corrigir Marcos/Delmir/Tunap e disponibilizar papéis na Equipe
+- [ ] Blindagem: remover Jadna, proteger importação técnica em mês fechado e revogar funções anônimas
+- [ ] Validar regras, dados e fluxo de metas com sessão real
+
 - [x] Consultores: tabela executiva com ritmo, projeção e necessidade separadas, detalhes laterais e leitura mobile
 - [x] Central de Gestão, Consultores e Peças iguais às fotos (16:9 sem rolar)
 - [x] Agregados: aproveitamento em un/passagem de revisão; Metas centraliza departamentos/consultores

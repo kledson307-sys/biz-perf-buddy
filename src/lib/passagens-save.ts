@@ -3,6 +3,8 @@ import { grupoDe, type PassReport } from "@/lib/mecanicos";
 import { norm } from "@/components/painel-ui";
 import { registrarUpdate } from "@/lib/update-log";
 import { ENCERRADO_KEY, osFaturadasAtivas, type OsItem } from "@/lib/os-controle";
+import { mesTravado, msgTravado } from "@/lib/month-lock";
+import { inicializarTecnicosMes } from "@/lib/tecnicos-mes";
 
 /** Baixa automática: O.S. ativas do Controle de O.S. que aparecem como faturadas são encerradas. Retorna quantas. */
 export async function baixarOsFaturadas(faturadas: string[]): Promise<number> {
@@ -27,6 +29,8 @@ export async function baixarOsFaturadas(faturadas: string[]): Promise<number> {
 
 /** Grava o relatório de Passagens do mês: técnicos (passagens + composição), mix e passagens dos consultores. Substitui o mês, nunca soma. */
 export async function salvarPassagens(r: PassReport, mes: string): Promise<string> {
+  if (await mesTravado(mes)) throw new Error(msgTravado(mes));
+  await inicializarTecnicosMes(mes);
   const { data: atuais } = await supabase.from("mech_month").select("nome,grupo,servicos,pecas,meta_servicos,meta_pecas").eq("mes", mes);
   const porNome = new Map((atuais ?? []).map((a) => [norm(a.nome), a]));
   const mecs = r.mecanicos.map((x) => {

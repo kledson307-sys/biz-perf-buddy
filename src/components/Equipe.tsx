@@ -123,6 +123,9 @@ export function Equipe() {
             <select className="h-9 rounded-md border bg-background px-2 text-sm" value={papel} onChange={(e) => setPapel(e.target.value)}>
               <option value="viewer">Visualizador</option>
               <option value="editor">Editor</option>
+              <option value="chefe_oficina">Chefe de Oficina · Carro</option>
+              <option value="controlador">Controlador de Quadro</option>
+              <option value="tunap">Tunap</option>
             </select>
             <Button onClick={add}>Adicionar</Button>
           </div>
@@ -135,6 +138,9 @@ export function Equipe() {
                   <select className="h-8 rounded-md border bg-background px-2" value={m.papel} onChange={async (e) => { await supabase.from("team_members").update({ papel: e.target.value }).eq("id", m.id); void load(); }}>
                     <option value="viewer">Visualizador</option>
                     <option value="editor">Editor</option>
+                    <option value="chefe_oficina">Chefe de Oficina · Carro</option>
+                    <option value="controlador">Controlador de Quadro</option>
+                    <option value="tunap">Tunap</option>
                   </select>
                   <Button size="sm" variant="outline" onClick={async () => { await supabase.from("team_members").delete().eq("id", m.id); void load(); }}>Remover</Button>
                 </span>

@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { brl, norm, parseNum } from "@/components/painel-ui";
 import { GRUPO_NOME, grupoDe, ocultoDaLista, type Grupo } from "@/lib/mecanicos";
 import { registrarUpdate } from "@/lib/update-log";
+import { copiarMetasTecnicos, inicializarTecnicosMes } from "@/lib/tecnicos-mes";
+import { mesTravado, msgTravado } from "@/lib/month-lock";
+import { Copy } from "lucide-react";
 
 type Row = { id?: string; nome: string; grupo: Grupo; servicos: number; pecas: number; passagens: number; meta_servicos: number; meta_pecas: number };
 const asGrupo = (v: string): Grupo => (v === "carro" || v === "moto" ? v : "outros");
@@ -19,6 +22,7 @@ export function TecnicosMetas({ mes }: { mes: string }) {
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
+    try { await inicializarTecnicosMes(mes); } catch (e) { setMsg(e instanceof Error ? e.message : "Erro ao preparar equipe."); return; }
     const { data, error } = await supabase.from("mech_month").select("id,nome,grupo,servicos,pecas,passagens,meta_servicos,meta_pecas").eq("mes", mes).order("nome");
     if (error) { setMsg(error.message); return; }
     const lst = (data ?? []).map(r => ({ ...r, grupo: asGrupo(r.grupo) })).filter(r => !ocultoDaLista(r.nome));
@@ -29,12 +33,26 @@ export function TecnicosMetas({ mes }: { mes: string }) {
 
   const gravar = async (lst: Row[], origem: string) => {
     setBusy(true);
+    try {
+    if (await mesTravado(mes)) { setMsg(msgTravado(mes)); return false; }
     const { error } = await supabase.from("mech_month").upsert(lst.map(({ id: _i, ...r }) => ({ ...r, mes, updated_at: new Date().toISOString() })), { onConflict: "user_id,mes,nome" });
-    setBusy(false);
     if (error) { setMsg("Erro ao salvar: " + error.message); return false; }
     await registrarUpdate(origem, mes); await load();
     window.dispatchEvent(new Event("tecnicos-atualizados"));
     return true;
+    } catch (e) { setMsg(e instanceof Error ? e.message : "Erro ao salvar metas."); return false; }
+    finally { setBusy(false); }
+  };
+
+  const copiar = async () => {
+    if (!confirm("Substituir as metas deste mês pelas do mês anterior? O faturamento e as passagens serão preservados.")) return;
+    setBusy(true);
+    try {
+      const n = await copiarMetasTecnicos(mes);
+      if (n) { await registrarUpdate("Técnicos (cópia de metas)", mes); await load(); window.dispatchEvent(new Event("tecnicos-atualizados")); }
+      setMsg(n ? `Metas copiadas para ${n} técnicos.` : "Nenhuma meta correspondente no mês anterior.");
+    } catch (e) { setMsg(e instanceof Error ? e.message : "Erro ao copiar metas."); }
+    finally { setBusy(false); }
   };
 
   const salvarUm = (r: Row) => {
@@ -68,8 +86,9 @@ export function TecnicosMetas({ mes }: { mes: string }) {
 
   const inp = "w-full rounded border border-input bg-background px-2 py-1";
   return (
-    <section className="space-y-4 lux-card p-6">
-      <h2 className="text-lg font-semibold">Técnicos e metas de {mes}</h2>
+    <section className="space-y-4 p-3 sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-lg font-semibold">Técnicos e metas de {mes}</h2>
+      <Button variant="outline" disabled={busy} onClick={copiar}><Copy className="mr-2 size-4" />Copiar metas do mês anterior</Button></div>
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <span className="text-muted-foreground">Metas em lote:</span>
         <select value={lote.grupo} onChange={e => setLote({ ...lote, grupo: e.target.value as Grupo })} className="rounded-lg border border-input bg-background px-2 py-2">
@@ -94,8 +113,8 @@ export function TecnicosMetas({ mes }: { mes: string }) {
                   return (
                     <tr key={r.nome} className="border-t border-border">
                       <td className="py-2 pr-2 font-medium">{r.nome}</td>
-                      <td className="pr-2"><input inputMode="decimal" value={e.s} disabled={busy} onChange={x => setEd({ ...ed, [r.nome]: { ...e, s: x.target.value } })} onBlur={() => salvarUm(r)} className={inp} /></td>
-                      <td className="pr-2"><input inputMode="decimal" value={e.p} disabled={busy} onChange={x => setEd({ ...ed, [r.nome]: { ...e, p: x.target.value } })} onBlur={() => salvarUm(r)} className={inp} /></td>
+                      <td className="pr-2"><input aria-label={`Meta serviços ${r.nome}`} inputMode="decimal" value={e.s} disabled={busy} onChange={x => setEd({ ...ed, [r.nome]: { ...e, s: x.target.value } })} onBlur={() => salvarUm(r)} className={inp} /></td>
+                      <td className="pr-2"><input aria-label={`Meta peças ${r.nome}`} inputMode="decimal" value={e.p} disabled={busy} onChange={x => setEd({ ...ed, [r.nome]: { ...e, p: x.target.value } })} onBlur={() => salvarUm(r)} className={inp} /></td>
                     </tr>
                   );
                 })}

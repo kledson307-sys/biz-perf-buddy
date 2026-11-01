@@ -246,6 +246,13 @@
       "when": 1793500207368,
       "tag": "0034_oficina_agenda_alertas",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1793502608703,
+      "tag": "0035_technician_month_continuity_and_lock",
+      "breakpoints": true
     }
   ]
 }
