@@ -68,7 +68,7 @@ export function analisar(e: EntradaRel) {
   if (e.os.parados) riscos.push(`${e.os.parados} O.S. com mais de 30 dias no pátio; ${e.os.amarelos} entre 21 e 30 dias.`);
   if (e.nps && e.nps.pctProm < 0.85) riscos.push(`Promotores NPS em ${pct(e.nps.pctProm)}, abaixo da meta BMW Carro de 85%.`);
   if (e.t.s && ratio < 2.5) oport.push(`Ratio de peças em R$ ${num(ratio)} por R$ 1 de M.O.: abaixo da faixa BMW; há espaço para orçamentos completos na recepção.`);
-  if (e.os.op + e.os.os > 0) oport.push(`${brl(e.os.os + e.os.op)} em O.S. abertas podem ser faturadas no mês (serviços ${brl(e.os.os)} · peças ${brl(e.os.op)}).`);
+  if (e.t.op + e.t.os > 0) oport.push(`${brl(e.t.os + e.t.op)} em O.S. abertas podem ser faturadas no mês (serviços ${brl(e.t.os)} · peças ${brl(e.t.op)}).`);
   for (const a of e.agg.filter((x) => x.mq > 0 && projetar(x.q, e.dec, e.tot) < x.mq)) oport.push(`${a.nome}: ${Math.round(a.q)} un. vendidas, ritmo projeta ${Math.round(projetar(a.q, e.dec, e.tot))} de ${Math.round(a.mq)} na meta.`);
   if (e.agenda && e.agenda.metaDiaria) { const med = div(e.agenda.d0, e.agenda.dias); if (med < e.agenda.metaDiaria) oport.push(`Agenda média de ${num(med, 1)} veículos/dia contra meta de ${e.agenda.metaDiaria}: capacidade ociosa para captação.`); }
   for (const c of destaque) positivos.push(`${c.nome}: ${pct(c.perf)} da meta (${brl(c.s + c.p)}).`);

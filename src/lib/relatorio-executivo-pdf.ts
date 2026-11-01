@@ -35,7 +35,7 @@ export function gerarPdf(e: EntradaRel, capa?: string): Blob {
     doc.lines([[0, -r * 0.6], [0, 0]], cx, cy);
     sector(cx, cy, r * 0.6, Math.PI, 1.5 * Math.PI); sector(cx, cy, r * 0.6, 0, 0.5 * Math.PI);
     doc.setDrawColor(150, 160, 175); doc.setLineWidth(0.15); doc.circle(cx, cy, r * 0.6, "S");
-    txt(claro ? WHITE : NAVY); font(r * 1.15, true);
+    txt(claro ? WHITE : NAVY); font(r * 0.95, true);
     doc.text("B", cx - r * 0.45, cy - r * 0.62, { angle: 28 }); doc.text("M", cx - r * 0.13, cy - r * 0.68); doc.text("W", cx + r * 0.3, cy - r * 0.58, { angle: -28 });
   };
   const sector = (cx: number, cy: number, r: number, a0: number, a1: number) => {
@@ -65,7 +65,7 @@ export function gerarPdf(e: EntradaRel, capa?: string): Blob {
   const BH = 74;
   fill(NAVY); doc.rect(0, 0, W, BH, "F");
   if (capa) { alpha(0.9); doc.addImage(capa, "JPEG", 0, 0, W, BH); alpha(1); }
-  for (let i = 0; i < 30; i++) { alpha(0.92 - i * 0.03); fill(NAVY); doc.rect(i * 4, 0, 4.2, BH, "F"); }
+  for (let i = 0; i < 80; i++) { alpha(Math.max(0, 0.94 - i * 0.0118)); fill(NAVY); doc.rect(i * 1.5, 0, 1.6, BH, "F"); }
   alpha(1);
   fill(BLUE); doc.rect(0, BH, W, 1, "F");
   roundel(M + 9, 17, 9);
@@ -112,11 +112,11 @@ export function gerarPdf(e: EntradaRel, capa?: string): Blob {
     { n: "Peças", f: mil(e.t.p), m: e.t.mp ? mil(e.t.mp) : "—", at: e.t.mp ? div(e.t.p, e.t.mp) : null, d: e.t.s ? `R$ ${num(a.ratio)} por R$1 de M.O.` : "—", p: e.t.s && a.ratio < 2.5 ? "Abaixo da faixa BMW 2,50–3,50" : "Dentro da faixa BMW" },
     { n: "Oficina", f: e.mec.ms ? mil(e.mec.s) : "—", m: e.mec.ms ? mil(e.mec.ms) : "—", at: e.mec.ms ? div(e.mec.s, e.mec.ms) : null, d: e.retornos === null ? "Retornos indisponíveis" : `${e.retornos} retorno(s) até 60 dias`, p: e.mec.ms ? "" : "Sem dados de técnicos" },
     { n: "Clientes / NPS", f: "—", m: "85% prom.", at: e.nps ? div(e.nps.pctProm, 0.85) : null, d: e.nps ? `NPS ${pct(e.nps.nps)} · ${e.nps.avaliados} avaliações` : "Sem pesquisa importada", p: e.nps ? `${e.nps.det} detrator(es) · ${e.nps.racs} RAC(s)` : "" },
-    { n: "Ordens de Serviço", f: e.os.os + e.os.op ? mil(e.os.os + e.os.op) : "—", m: "—", at: null, d: e.os.abertas ? `${e.os.abertas} abertas · média ${num(e.os.mediaDias, 0)} dias` : "Sem Controle O.S.", p: e.os.parados ? `${e.os.parados} O.S. > 30 dias` : "" },
+    { n: "Ordens de Serviço", f: e.t.os + e.t.op ? mil(e.t.os + e.t.op) : "—", m: "—", at: null, d: e.os.abertas ? `${e.os.abertas} abertas · média ${num(e.os.mediaDias, 0)} dias` : "Sem Controle O.S.", p: e.os.parados ? `${e.os.parados} O.S. > 30 dias` : "" },
     { n: "Agendamentos", f: "—", m: e.agenda?.metaDiaria ? `${e.agenda.metaDiaria}/dia` : "—", at: e.agenda?.metaDiaria ? div(div(e.agenda.d0, e.agenda.dias), e.agenda.metaDiaria) : null, d: e.agenda ? `${num(div(e.agenda.d0, e.agenda.dias), 1)} veíc./dia · Carros ${e.agenda.carro} · Motos ${e.agenda.moto}` : "Sem agenda importada", p: e.agenda?.d0 ? `Aproveitamento ${pct(div(e.agenda.d0Atendidos, e.agenda.d0))}` : "" },
   ];
   tabela(["Setor", "Faturamento", "Meta", "Atingimento", "Principais destaques", "Pontos de atenção"], setores.map((s) => [s.n, s.f, s.m, s.at === null ? "—" : pct(s.at), s.d, s.p || "—"]), {
-    columnStyles: { 0: { fontStyle: "bold", cellWidth: 28 }, 1: { cellWidth: 22 }, 2: { cellWidth: 20 }, 3: { cellWidth: 20, halign: "center", fontStyle: "bold" } },
+    columnStyles: { 0: { fontStyle: "bold", cellWidth: 28 }, 1: { cellWidth: 22 }, 2: { cellWidth: 20 }, 3: { cellWidth: 23, halign: "center", fontStyle: "bold" } },
     didParseCell: (d: { section: string; column: { index: number }; row: { index: number }; cell: { styles: { textColor: unknown } } }) => { if (d.section === "body" && d.column.index === 3) { const at = setores[d.row.index]?.at; if (at !== null && at !== undefined) d.cell.styles.textColor = cor(at); } },
   });
 
@@ -148,7 +148,7 @@ export function gerarPdf(e: EntradaRel, capa?: string): Blob {
   secao(4, "Análise por aba");
   const cards: { t: string; c: RGB; b: [string, boolean][] }[] = [
     { t: "DASHBOARD", c: BLUE, b: [[a.meta ? `Resultado em ${pct(a.ating)} da meta.` : "Meta não cadastrada.", a.ating >= (fech ? 1 : a.ritmo)], [antT ? `${a.total >= antT ? "Crescimento" : "Queda"} de ${pct(Math.abs(div(a.total, antT) - 1))} vs. mês anterior.` : "Sem base do mês anterior.", a.total >= antT], [fech ? `Fechamento em ${mil(a.total)}.` : `Projeção de ${mil(a.pT)}.`, div(a.pT, a.meta) >= 1]] },
-    { t: "CENTRAL DE GESTÃO", c: [20, 150, 110], b: [[`${a.deptGap.length} departamento(s) abaixo da meta projetada.`, !a.deptGap.length], [e.os.os + e.os.op ? `${mil(e.os.os + e.os.op)} em O.S. abertas a faturar.` : "Sem O.S. abertas importadas.", true], [`${a.abaixo.length} consultor(es) abaixo de 85%.`, !a.abaixo.length]] },
+    { t: "CENTRAL DE GESTÃO", c: [20, 150, 110], b: [[`${a.deptGap.length} departamento(s) abaixo da meta projetada.`, !a.deptGap.length], [e.t.os + e.t.op ? `${mil(e.t.os + e.t.op)} em O.S. abertas a faturar.` : "Sem O.S. abertas importadas.", true], [`${a.abaixo.length} consultor(es) abaixo de 85%.`, !a.abaixo.length]] },
     { t: "OFICINA", c: [130, 70, 190], b: [[e.mec.ms ? `Técnicos em ${pct(div(e.mec.s, e.mec.ms))} da meta de serviços.` : "Sem dados de técnicos.", e.mec.ms ? div(e.mec.s, e.mec.ms) >= 1 : false], [e.retornos === null ? "Retornos não importados." : `${e.retornos} retorno(s) em até 60 dias.`, !e.retornos], [e.os.parados ? `${e.os.parados} O.S. paradas há mais de 30 dias.` : "Nenhuma O.S. acima de 30 dias.", !e.os.parados]] },
     { t: "PEÇAS", c: [230, 140, 20], b: [[e.t.mp ? `${pct(div(e.t.p, e.t.mp))} da meta de peças.` : "Meta de peças não cadastrada.", div(e.t.p, e.t.mp) >= 1], [e.t.s ? `R$ ${num(a.ratio)} de peças por R$1 de M.O.` : "Sem M.O. no período.", a.ratio >= 2.5], [`Ticket de peças ${e.pass ? brl(div(e.t.p, e.pass)) : "indisponível"}.`, true]] },
     { t: "CLIENTES / NPS", c: [210, 40, 80], b: e.nps ? [[`NPS ${pct(e.nps.nps)} · ${pct(e.nps.pctProm)} promotores.`, e.nps.pctProm >= 0.85], [`${e.nps.prom} promotores · ${e.nps.det} detratores.`, e.nps.det === 0], [a.motivos[0] ? `Principal reclamação: ${a.motivos[0][0].toLowerCase()} (${a.motivos[0][1]}).` : "Sem reclamações registradas.", !a.motivos.length]] : [["Sem pesquisa NPS importada.", false]] },
@@ -218,7 +218,7 @@ export function gerarPdf(e: EntradaRel, capa?: string): Blob {
   });
   doc.setDrawColor(45, 70, 105); doc.setLineWidth(0.2); doc.line(M + CW / 2, y + 19, M + CW / 2, y + ph - 4);
   y += ph + 14;
-  if (capa) { alpha(0.95); doc.addImage(capa, "JPEG", 0, H - 70, W, 73.5); alpha(1); for (let i = 0; i < 30; i++) { alpha(Math.max(0, 1 - i * 0.045)); fill(WHITE); doc.rect(i * 4, H - 70, 4.2, 70, "F"); } alpha(1); }
+  if (capa) { alpha(0.95); doc.addImage(capa, "JPEG", 0, H - 70, W, 73.5); alpha(1); for (let i = 0; i < 90; i++) { alpha(Math.max(0, 1 - i * 0.014)); fill(WHITE); doc.rect(i * 1.5, H - 70, 1.6, 70, "F"); } alpha(1); for (let i = 0; i < 20; i++) { alpha(1 - i * 0.05); fill(WHITE); doc.rect(0, H - 70 + i, W, 1.05, "F"); } alpha(1); }
   txt(BLUE); font(22, true); doc.text("\u201C", M, y + 4); txt(MUTED); doc.setFont("helvetica", "italic"); doc.setFontSize(9.5); doc.text("Juntos por uma experiência cada vez melhor.", M + 8, y + 2);
   y += 22;
   doc.setDrawColor(...INK); doc.setLineWidth(0.3); doc.line(M, y, M + 60, y);
