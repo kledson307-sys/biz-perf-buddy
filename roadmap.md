@@ -17,3 +17,4 @@
 - [x] Andressa: tema rosa, aba Dashboard própria com seus dados + agendamentos dela (sem teste visual com o login dela)
 - [ ] Relatório Executivo PDF no Dashboard (4 páginas, BMW)
 - [ ] Sininho de Marcos/Delmir com alertas de agendamento/testador
+- [ ] PDF no layout do modelo enviado (capa, KPIs, análise por aba, resumo da gestão)

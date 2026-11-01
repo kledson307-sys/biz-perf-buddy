@@ -76,11 +76,11 @@ export function analisar(e: EntradaRel) {
 
   const acoes: Acao[] = [];
   for (const d of deptGap.slice(0, 2)) acoes.push({ acao: `Reforçar vendas em ${d.nome} com acompanhamento diário do gap`, indicador: "% atingimento da meta", alvo: `${brl(Math.max(d.meta - d.v, 0) / Math.max(e.tot - e.dec, 1))}/dia restante`, prioridade: d.projPct < 0.85 ? "Alta" : "Média", prazo: "Até o fim do mês", resp: "Gerente de Pós-Venda" });
-  for (const c of abaixo.slice(0, 3)) acoes.push({ acao: `Conversa individual e plano de recuperação com ${c.nome}`, indicador: "Projeção do consultor", alvo: "≥ 100% da meta", prioridade: "Alta", prazo: "Esta semana", resp: "Gerente de Pós-Venda" });
+  for (const c of abaixo.slice(0, 3)) acoes.push({ acao: `Conversa individual e plano de recuperação com ${c.nome}`, indicador: "Projeção do consultor", alvo: "mín. 100% da meta", prioridade: "Alta", prazo: "Esta semana", resp: "Gerente de Pós-Venda" });
   if (e.os.parados) acoes.push({ acao: "Revisar O.S. paradas há mais de 30 dias e definir prazo de saída", indicador: "O.S. > 30 dias", alvo: "0 O.S.", prioridade: "Alta", prazo: "7 dias", resp: "Controlador de Quadro" });
   if (e.t.s && ratio < 2.5) acoes.push({ acao: "Orçamento completo de peças em toda passagem", indicador: "Peças por R$ 1 de M.O.", alvo: "R$ 2,50 a R$ 3,50", prioridade: "Média", prazo: "Mês corrente", resp: "Consultores" });
   if (motivos[0]) acoes.push({ acao: acaoReversao(motivos[0][0]), indicador: `Reclamação "${motivos[0][0].toLowerCase()}"`, alvo: "Reduzir ocorrências", prioridade: "Média", prazo: "30 dias", resp: "Gerente de Pós-Venda" });
-  if (e.nps && e.nps.pctProm < 0.85) acoes.push({ acao: "Follow-up D-13 com clientes antes da pesquisa BMW", indicador: "% promotores", alvo: "≥ 85% (Carro)", prioridade: "Alta", prazo: "Contínuo", resp: "Consultores" });
+  if (e.nps && e.nps.pctProm < 0.85) acoes.push({ acao: "Follow-up D-13 com clientes antes da pesquisa BMW", indicador: "% promotores", alvo: "mín. 85% (Carro)", prioridade: "Alta", prazo: "Contínuo", resp: "Consultores" });
 
   const conclusao = !meta ? "Sem meta cadastrada, o relatório apresenta apenas os valores realizados."
     : fechamento ? `O período fechou com ${pct(ating)} da meta de faturamento${ating >= 1 ? ", meta atingida" : ", abaixo da meta"}. ${riscos.length ? "Os pontos de atenção listados devem orientar o planejamento do próximo mês." : ""}`
