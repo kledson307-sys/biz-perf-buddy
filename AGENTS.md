@@ -41,4 +41,3 @@
 - Daily billing by real O.S. date and chassis returns (≤60 days, repair/warranty types, blamed on previous O.S. technician) live in oficina_mes, parsed by src/lib/diario-retorno.ts; it only shapes charts/quality and never replaces official sales totals.
 - Agendamentos live in `agendamentos`/`agendamento_followups`/`agenda_metas` (team RLS); sellers read only their own rows via SECURITY DEFINER `meus_agendamentos(p_mes)` matching `agendamentos.consultor` to their consultant login.
 - Seller view (`MinhaPerformance`) has Dashboard/Detalhes tabs; consultant ANDRESSA gets the `tema-rosa` pink accent class from `src/styles.css`.
-- Executive PDF report: analysis rules in `src/lib/relatorio-executivo.ts` (pure, tested) and jsPDF drawing in `relatorio-executivo-pdf.ts`, dynamically imported from `RelatorioExecutivo` in the Cockpit; it reuses Dashboard-computed values and never lets text invent numbers.
