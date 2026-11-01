@@ -6,7 +6,8 @@ export const MASTER_EMAIL = "kledson307@gmail.com";
 const t = () => (supabase as any).from("month_locks");
 
 export async function mesTravado(mes: string): Promise<boolean> {
-  const { data } = await t().select("mes").eq("mes", mes).maybeSingle();
+  const { data, error } = await t().select("mes").eq("mes", mes).maybeSingle();
+  if (error) throw new Error("Não foi possível verificar o fechamento do mês. Tente novamente.");
   return !!data;
 }
 export async function travarMes(mes: string, email: string) {

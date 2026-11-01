@@ -49,6 +49,14 @@ export function perfilGuia(papel: string | null | undefined): string {
 export type Novidade = { versao: number; data: string; itens: { titulo: string; oque: string; como: string }[] };
 export const NOVIDADES: Novidade[] = [
   {
+    versao: 2, data: "01/11/2026",
+    itens: [
+      { titulo: "Metas organizadas", oque: "Metas & Planejamento agora separa acompanhamento, consultores, técnicos e agregados/agenda.", como: "Abra Metas & Planejamento e escolha a sub-aba Técnicos para editar individualmente, aplicar em lote ou copiar metas anteriores." },
+      { titulo: "Equipe técnica no mês novo", oque: "Meses vazios herdam a equipe e as metas anteriores, sem copiar produção.", como: "Selecione o mês no topo e confira as metas. Novembro já está preparado." },
+      { titulo: "Acessos e mês fechado", oque: "Marcos, Delmir e Geraldo têm seus acessos operacionais corrigidos; meses fechados bloqueiam alterações técnicas.", como: "Entre com seu acesso habitual. Alterações em mês fechado exigem reabertura pelo gestor." },
+    ],
+  },
+  {
     versao: 1, data: "01/11/2026",
     itens: [
       { titulo: "Avisos no celular e no ícone do app", oque: "O sininho agora mostra o número de alertas no ícone do app e pode avisar no celular.", como: "Abra o sininho e toque em “Ativar avisos no aparelho”. No iPhone, adicione o app à Tela de Início antes." },
