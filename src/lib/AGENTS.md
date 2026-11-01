@@ -8,3 +8,5 @@
 - Agendamento reports (D+1/D0) are recognised by content in `src/lib/agendamento.ts` (D+1 when period date > print date) and stored as rows `mes = "agenda-AAAA-MM"` in `oficina_mes.diario` keyed `tipo:data`, because migrations could not be created in this environment; move to a dedicated table when possible.
 
 - Executive PDF report: analysis rules in `src/lib/relatorio-executivo.ts` (pure, tested) and jsPDF drawing in `relatorio-executivo-pdf.ts`, dynamically imported from `RelatorioExecutivo` in the Cockpit; it reuses Dashboard-computed values and never lets text invent numbers.
+- Passagens: lines with empty Produtivo inherit the technician of the same O.S.; importing Passagens auto-closes matching active Controle O.S. items (`osFaturadasAtivas` → `__encerrado` with `auto: true`) because billed O.S. are finished.
+- Oficina bell (Marcos/Delmir) reads only SECURITY DEFINER RPCs (`painel_oficina`, `oficina_agenda_alertas`, `meu_nps`) since data_owner() is NULL for them.
