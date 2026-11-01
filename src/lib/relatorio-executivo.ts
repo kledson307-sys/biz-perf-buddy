@@ -44,13 +44,13 @@ export function analisar(e: EntradaRel) {
   else indisp.push("Meta de faturamento não cadastrada para o período.");
   if (!fechamento && meta) fato.push(`Decorridos ${e.dec} de ${e.tot} dias ${e.base === "uteis" ? "úteis" : "corridos"} (${pct(ritmo)}); projeção de fechamento em ${brl(pT)} (${pct(div(pT, meta))} da meta).`);
   if (meta && !fechamento) interp.push(ating >= ritmo ? `O resultado está ${num((ating - ritmo) * 100, 1)} p.p. acima do ritmo esperado para o dia.` : `O resultado está ${num((ritmo - ating) * 100, 1)} p.p. abaixo do ritmo esperado; sem recuperação, a meta não será atingida.`);
-  if (e.ant && (e.ant.s + e.ant.p)) { const v = div(total, e.ant.s + e.ant.p) - 1; fato.push(`Comparado ao mês anterior até o dia ${e.diaCorte}: ${v >= 0 ? "+" : ""}${pct(v)} (${brl(e.ant.s + e.ant.p)}).`); }
+  if (e.ant && (e.ant.s + e.ant.p) && total) { const v = div(total, e.ant.s + e.ant.p) - 1; fato.push(`Comparado ao mês anterior até o dia ${e.diaCorte}: ${v >= 0 ? "+" : ""}${pct(v)} (${brl(e.ant.s + e.ant.p)}).`); }
   else indisp.push("Comparação com o período anterior: sem vendas importadas no mês anterior.");
   if (e.t.s) fato.push(`Peças por R$ 1 de mão de obra: R$ ${num(ratio)} (referência BMW R$ 2,50–3,50).`);
   if (e.nps) fato.push(`NPS ${pct(e.nps.nps)} com ${pct(e.nps.pctProm)} de promotores em ${e.nps.avaliados} avaliações (${e.nps.det} detratores).`);
   else indisp.push("NPS: nenhuma pesquisa importada.");
   if (!e.agenda) indisp.push("Agendamentos: nenhum relatório de agenda importado no mês.");
-  if (e.retornos === null) indisp.push("Retornos ≤ 60 dias: planilha de Passagens não importada.");
+  if (e.retornos === null) indisp.push("Retornos até 60 dias: planilha de Passagens não importada.");
   if (!e.os.abertas) indisp.push("Ordens de serviço: nenhum snapshot do Controle O.S.");
   if (!e.pass) indisp.push("Passagens do mês não importadas (tickets médios indisponíveis).");
 
