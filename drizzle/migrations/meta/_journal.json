@@ -239,6 +239,13 @@
       "when": 1793397544085,
       "tag": "0033_meus_agendamentos_rpc",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1793500207368,
+      "tag": "0034_oficina_agenda_alertas",
+      "breakpoints": true
     }
   ]
 }

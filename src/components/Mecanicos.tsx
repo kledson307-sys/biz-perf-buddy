@@ -18,7 +18,7 @@ type Previa =
 type Filtro = "todos" | "carro" | "moto";
 const dataBR = (s: string) => s.split("-").reverse().join("/");
 
-export function Mecanicos({ mes, tot, dec, modo = "ver", lado }: { mes: string; tot: number; dec: number; modo?: "ver" | "importar"; lado?: React.ReactNode }) {
+export function Mecanicos({ mes, tot, dec, modo = "ver", lado }: { mes: string; tot: number; dec: number; modo?: "ver" | "importar"; lado?: React.ReactNode | ((filtro: "todos" | "carro" | "moto") => React.ReactNode) }) {
   const fileFat = useRef<HTMLInputElement>(null);
   const filePass = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<Mec[]>([]);
@@ -166,7 +166,7 @@ export function Mecanicos({ mes, tot, dec, modo = "ver", lado }: { mes: string; 
       })()}
 
       <div className="xl:max-h-[calc(100vh-485px)] xl:overflow-y-auto rounded-xl"><MixPassagens titulo={`Mix de passagens · ${filtro === "todos" ? "toda a oficina" : filtro === "carro" ? "Carro" : "Moto"}`} linhas={rows.filter(r => !ocultoDaLista(r.nome) && ver(r.grupo)).map(r => ({ nome: r.nome, composicao: r.composicao }))} todos={rows.filter(r => ver(r.grupo)).map(r => ({ composicao: r.composicao }))} /></div>
-      {lado && <div className="xl:max-h-[calc(100vh-485px)] xl:overflow-y-auto rounded-xl">{lado}</div>}
+      {lado && <div className="xl:max-h-[calc(100vh-485px)] xl:overflow-y-auto rounded-xl">{typeof lado === "function" ? lado(filtro as "todos" | "carro" | "moto") : lado}</div>}
       </div>
       <details className="group lux-card print:open">
         <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-2 text-sm font-semibold">Detalhe por técnico · Carro e Moto (metas, projeção e composição)<span className="text-xs text-primary group-open:hidden">Abrir</span><span className="hidden text-xs text-primary group-open:inline">Fechar</span></summary>

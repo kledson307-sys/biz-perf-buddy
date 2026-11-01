@@ -160,3 +160,10 @@ export const ENCERRADO_KEY = "__encerrado";
 export const ehEncerrado = (acoes: unknown) => Boolean((acoes as Record<string, { feito?: boolean }> | null)?.[ENCERRADO_KEY]?.feito);
 export const foraDosAlertas = (acoes: unknown) => ehJudicial(acoes) || ehEncerrado(acoes);
 export const PODE_ENCERRAR = ["kledson307@gmail.com", "vhdorosario@gmail.com"];
+
+/** Números de O.S. ativas no Controle (ainda não encerradas) que aparecem no faturamento → devem ser baixadas automaticamente. */
+export function osFaturadasAtivas(itens: Pick<OsItem, "n">[], acoes: Record<string, unknown>, faturadas: string[]): string[] {
+  const k = (v: string) => v.replace(/\D/g, "").replace(/^0+/, "");
+  const fat = new Set(faturadas.map(k).filter(Boolean));
+  return [...new Set(itens.map(i => i.n))].filter(n => fat.has(k(n)) && !ehEncerrado(acoes[n]));
+}

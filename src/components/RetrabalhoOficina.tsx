@@ -4,14 +4,17 @@ import { Box, pct, uni } from "@/components/painel-ui";
 import { baseNps, daLoja, type NpsItem } from "@/lib/nps";
 import { lerOficinaMes } from "@/lib/oficina-mes";
 import type { Retorno } from "@/lib/diario-retorno";
+import { grupoDe } from "@/lib/mecanicos";
 
 const RETRABALHO = /CONTINUA|RETRABALHO|QUALIDADE|REPARO/;
 const fmt = (d: string) => d.slice(8, 10) + "/" + d.slice(5, 7);
 
 /** Qualidade técnica: retornos por chassi (Passagens, até 60 dias) atribuídos ao técnico da O.S. anterior + índice de RAC da montadora. */
-export function RetrabalhoOficina({ mes }: { mes: string }) {
+export function RetrabalhoOficina({ mes, segmento = "todos" }: { mes: string; segmento?: "todos" | "carro" | "moto" }) {
   const [itens, setItens] = useState<NpsItem[] | null>(null);
-  const [ret, setRet] = useState<Retorno[]>([]);
+  const [ret0, setRet] = useState<Retorno[]>([]);
+  const doSeg = (tec: string) => segmento === "todos" || (tec || "").split(", ").some((t) => grupoDe(t) === segmento);
+  const ret = ret0.filter((r) => doSeg(r.tecnicoAnterior || r.tecnico || ""));
   const [aba, setAba] = useState<"chassi" | "rac">("chassi");
   useEffect(() => { void supabase.from("nps_imports").select("itens").order("at", { ascending: false }).limit(1).maybeSingle().then(({ data }) => setItens(baseNps(daLoja((data?.itens as unknown as NpsItem[]) ?? [])))); }, []);
   useEffect(() => {
@@ -19,13 +22,13 @@ export function RetrabalhoOficina({ mes }: { mes: string }) {
     f(); window.addEventListener("oficina-mes-atualizada", f); return () => window.removeEventListener("oficina-mes-atualizada", f);
   }, [mes]);
 
-  const aval = (itens ?? []).filter((x) => x.nota !== null);
-  const rac = (itens ?? []).filter((x) => x.rac && RETRABALHO.test(x.motivo));
+  const aval = (itens ?? []).filter((x) => x.nota !== null && (segmento === "todos" || x.segmento === segmento));
+  const rac = aval.filter((x) => x.rac && RETRABALHO.test(x.motivo));
   const porTec = new Map<string, number>();
   for (const r of ret) for (const t of (r.tecnicoAnterior || "SEM TÉCNICO").split(", ")) porTec.set(t, (porTec.get(t) ?? 0) + 1);
   // RAC → técnico: cruza o chassi da pesquisa com as O.S. de Passagens (técnico da última O.S. do veículo).
   const tecPorChassi = new Map<string, string>();
-  for (const r of [...ret].sort((a, b) => a.data.localeCompare(b.data))) { if (r.tecnicoAnterior) tecPorChassi.set(r.chassi, r.tecnicoAnterior); if (r.tecnico) tecPorChassi.set(r.chassi, r.tecnico); }
+  for (const r of [...ret0].sort((a, b) => a.data.localeCompare(b.data))) { if (r.tecnicoAnterior) tecPorChassi.set(r.chassi, r.tecnicoAnterior); if (r.tecnico) tecPorChassi.set(r.chassi, r.tecnico); }
   const tecRac = (ch: string) => tecPorChassi.get((ch || "").trim().toUpperCase()) ?? "Técnico a identificar na O.S.";
   const ranking = [...porTec.entries()].sort((a, b) => b[1] - a[1]);
 

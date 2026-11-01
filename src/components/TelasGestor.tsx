@@ -194,7 +194,7 @@ export function ConsultoresTela({ linhas, porDept, total, sales, mes, tot, dec, 
       <Bloco titulo="Evolução do time" icon={<TrendingUp className="size-4 text-primary" />} className="lg:col-span-5">
         <GraficoEvolucao sales={sales} ids={linhas.map((l) => l.c.id)} meta={t.meta} mes={mes} />
       </Bloco>
-      <div className="min-h-0 overflow-auto lg:col-span-4 [&_.lux-card]:h-full"><MixConsultores mes={mes} /></div>
+      <div className="min-h-0 overflow-auto lg:col-span-4 [&_.lux-card]:h-full"><MixConsultores mes={mes} nomes={linhas.map((l) => l.c.nome)} /></div>
       <Bloco titulo="Desempenho por departamento" icon={<Target className="size-4 text-primary" />} className="lg:col-span-3 [&_h2]:text-primary">
         <div className="flex flex-wrap items-center justify-around gap-2">
           <Anel p={t.perfS} rot="M.O." /><Anel p={t.perfP} rot="Peças" /><Anel p={t.projPct} rot="Projeção" />

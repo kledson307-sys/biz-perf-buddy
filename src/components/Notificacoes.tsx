@@ -3,20 +3,55 @@ import { Bell, CheckCheck, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
-import { foraDosAlertas, fmt, hoje, retornoDevido, type OsItem } from "@/lib/os-controle";
+import { analisar, foraDosAlertas, fmt, hoje, retornoDevido, type OsImport, type OsItem } from "@/lib/os-controle";
+import { classe, type NpsItem } from "@/lib/nps";
+import { norm } from "@/components/painel-ui";
+
+type AgendaAlerta = { id: string; hora: string; cliente: string; placa: string; categoria: string; segmento: string; aceito: boolean; confirmacao: string | null };
+
+/** Alertas da oficina (Marcos/Delmir): diagnóstico >3 dias, peças >7 dias, D+1 detrator e fila do testador. */
+export async function alertasOficina(): Promise<Notification[]> {
+  const mes = hoje().slice(0, 7);
+  const [pn, ag, nps] = await Promise.all([
+    supabase.rpc("painel_oficina" as never, { p_mes: mes } as never),
+    supabase.rpc("oficina_agenda_alertas" as never),
+    supabase.rpc("meu_nps"),
+  ]);
+  if (pn.error) throw pn.error;
+  const P = pn.data as unknown as { snapshots: { at: string; itens: OsItem[] }[]; acomp: { os_n: string; prev: string | null; judicial: boolean }[] } | null;
+  const [atual, ant] = P?.snapshots ?? [];
+  const anterior = ant ? ({ id: "", nome: "", arquivo: "", at: ant.at, itens: ant.itens } as OsImport) : undefined;
+  const ac = new Map((P?.acomp ?? []).map((a) => [a.os_n, a]));
+  const ref = hoje();
+  const out: Notification[] = [];
+  for (const i of atual?.itens ?? []) {
+    const a = ac.get(i.n); if (a?.judicial || i.st === "encerrado") continue;
+    const x = analisar(i, anterior, ref, a?.prev);
+    if (i.st === "diag" && x.diasStatus > 3) out.push({ id: `diag-${i.n}`, titulo: `O.S. ${i.n} · diagnóstico parado ${x.diasStatus} dias`, texto: `${i.cli} · ${i.mod} · ${i.cons}`, feito: false });
+    if (i.st === "pecas" && x.diasStatus > 7) out.push({ id: `pecas-${i.n}`, titulo: `O.S. ${i.n} · aguardando peça há ${x.diasStatus} dias`, texto: `${i.cli} · ${i.mod}${x.prev ? ` · previsão ${fmt(x.prev)}` : " · sem previsão"}`, feito: false });
+  }
+  const A = ag.data as unknown as { data: string | null; itens: AgendaAlerta[] } | null;
+  const detr = new Set((((nps.data as { itens?: NpsItem[] } | null)?.itens) ?? []).filter((n) => n.nota !== null && classe(n.nota) === "detrator").map((n) => norm(n.cliente.trim())));
+  for (const r of A?.itens ?? []) {
+    if (detr.has(norm(r.cliente.trim()))) out.push({ id: `detr-${r.id}`, titulo: `Amanhã ${r.hora} · cliente detrator NPS`, texto: `${r.cliente} · ${r.placa} · recepção blindada`, feito: false });
+    if (r.categoria === "diagnostico" && !r.aceito) out.push({ id: `test-${r.id}`, titulo: `Testador · diagnóstico de amanhã ${r.hora}`, texto: `${r.cliente} · ${r.placa} · follow-up pendente`, feito: false });
+  }
+  return out;
+}
 
 export const NOTIFICATIONS_EVENT = "os-notifications-updated";
 type Retorno = { id: string; os_n: string; consultor: string; data_ref: string; nota: string; visto: boolean };
 type Notification = { id: string; titulo: string; texto: string; feito: boolean };
 
 /** Reuses existing team reads and the seller-only RPC; never broadens seller access. */
-export function Notificacoes({ vendedor = false, abrir }: { vendedor?: boolean; abrir: () => void }) {
+export function Notificacoes({ vendedor = false, oficina = false, abrir }: { vendedor?: boolean; oficina?: boolean; abrir: () => void }) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Notification[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const load = useCallback(async () => {
     try {
+      if (oficina) { setItems(await alertasOficina()); setError(""); return; }
       let itens: OsItem[] = [];
       let retornos: Pick<Retorno, "os_n" | "data_ref">[] = [];
       let novos: Retorno[] = [];
@@ -54,7 +89,7 @@ export function Notificacoes({ vendedor = false, abrir }: { vendedor?: boolean; 
     } finally {
       setLoading(false);
     }
-  }, [vendedor]);
+  }, [vendedor, oficina]);
   useEffect(() => {
     void load();
     const refresh = () => { void load(); };
@@ -86,7 +121,7 @@ export function Notificacoes({ vendedor = false, abrir }: { vendedor?: boolean; 
             </Button>
           ))}
         </div>
-        <div className="border-t border-border p-3"><Button variant="outline" size="sm" className="w-full" onClick={go}>{vendedor ? "Ver meus retornos" : "Abrir Controle O.S."}</Button></div>
+        <div className="border-t border-border p-3"><Button variant="outline" size="sm" className="w-full" onClick={go}>{vendedor ? "Ver meus retornos" : oficina ? "Abrir Pátio & O.S." : "Abrir Controle O.S."}</Button></div>
       </PopoverContent>
     </Popover>
   );
