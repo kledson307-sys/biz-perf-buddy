@@ -932,11 +932,13 @@ export type Database = {
         }
       }
       can_edit: { Args: never; Returns: boolean }
+      copiar_metas_tecnicos: { Args: { p_mes: string }; Returns: number }
       data_owner: { Args: never; Returns: string }
       import_sales_period: {
         Args: { p_fim: string; p_ini: string; p_rows: Json }
         Returns: number
       }
+      inicializar_tecnicos_mes: { Args: { p_mes: string }; Returns: number }
       meu_desempenho_tecnico: { Args: { p_mes: string }; Returns: Json }
       meu_nps: { Args: never; Returns: Json }
       meus_agendamentos: {
