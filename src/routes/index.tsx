@@ -735,7 +735,7 @@ function Painel({ email }: { email: string }) {
             <Devolucoes mes={mes} cons={cons} onChange={load} /></div></details></section>
           </div>
         </div>}
-        {tab === "cockpit" && !relatorio && <Cockpit linhas={linhas} porDept={porDept} mes={mes} tot={tot} dec={dec} soPecas={soPecas} setTab={setTab} sales={sales} nome={email.split("@")[0] ?? ""} deptName={deptName} />}
+        {tab === "cockpit" && !relatorio && <Cockpit linhas={linhas} porDept={porDept} mes={mes} tot={tot} dec={dec} soPecas={soPecas} setTab={setTab} sales={sales} nome={email.split("@")[0] ?? ""} deptName={deptName} filtro={filtroDept === "todos" ? "Todos departamentos" : deptName(filtroDept)} base={params.base} mesAtual={mes === localDay(clock).slice(0, 7)} />}
         {tab === "nps" && !relatorio && <NpsPainel />}
         {tab === "pecas" && !relatorio && <PecasEstoque linhas={linhas} porDept={porDept} margemIdeal={margemIdeal} deptName={deptName} passagens={resumo.pass} mes={mes} tot={tot} dec={dec} />}
         {tab === "metas" && !relatorio && <>

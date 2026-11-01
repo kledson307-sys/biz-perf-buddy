@@ -6,3 +6,5 @@
 - Seller aliases live in `nomeVendedor` (`src/lib/sales-report.ts`); parts margin stored in R$, % always derived as margem ÷ peças.
 - Open-order import keeps only `TIPOS_OK` types and applies seller aliases.
 - Agendamento reports (D+1/D0) are recognised by content in `src/lib/agendamento.ts` (D+1 when period date > print date) and stored as rows `mes = "agenda-AAAA-MM"` in `oficina_mes.diario` keyed `tipo:data`, because migrations could not be created in this environment; move to a dedicated table when possible.
+
+- Executive PDF report: analysis rules in `src/lib/relatorio-executivo.ts` (pure, tested) and jsPDF drawing in `relatorio-executivo-pdf.ts`, dynamically imported from `RelatorioExecutivo` in the Cockpit; it reuses Dashboard-computed values and never lets text invent numbers.
