@@ -9,6 +9,7 @@ import { lerOficinaMes } from "@/lib/oficina-mes";
 import type { Diario } from "@/lib/diario-retorno";
 import farois from "@/assets/hero-farois.jpg";
 import { CartaoAgendamento } from "@/components/CartaoAgendamento";
+import { RelatorioExecutivo } from "@/components/RelatorioExecutivo";
 
 type L = { c: { id: string; nome: string; department_id: string | null }; servicos: number; pecas: number; mS: number; mP: number; perf: number; projPct: number };
 type D = { nome: string; servicos: number; pecas: number; meta: number; projPct: number };
@@ -45,12 +46,13 @@ export function Anel({ p, rot }: { p: number; rot: string }) {
   );
 }
 
-export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales = [], nome = "", deptName }: {
+export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales = [], nome = "", deptName, filtro = "Todos departamentos", base = "uteis", mesAtual = true }: {
   linhas: L[]; porDept: D[]; mes: string; tot: number; dec: number; soPecas: (n: string) => boolean; setTab: (t: string) => void;
-  sales?: S[]; nome?: string; deptName?: (id: string | null) => string;
+  sales?: S[]; nome?: string; deptName?: (id: string | null) => string; filtro?: string; base?: string; mesAtual?: boolean;
 }) {
   const [comOs, setComOs] = useState(true);
-  const { os, pass, agg, mec, fluxo, parados, amarelos } = useResumoMes(mes);
+  const resumo = useResumoMes(mes);
+  const { os, pass, agg, mec, fluxo, parados, amarelos } = resumo;
   const [nps, setNps] = useState<ReturnType<typeof resumir> | null>(null);
   useEffect(() => { void supabase.from("nps_imports").select("itens").order("at", { ascending: false }).limit(1).maybeSingle().then(({ data }) => { const l = daLoja((data?.itens as unknown as NpsItem[]) ?? []); setNps(l.length ? resumir(l) : null); }); }, []);
 
@@ -149,6 +151,10 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
         <div className="relative flex flex-wrap gap-4 text-xs">
           <span className="flex items-center gap-2"><CalendarDays className="size-5 text-primary" /><span><b className="block capitalize">{mesNome}</b><span className="text-muted-foreground">dia útil {dec} de {tot}</span></span></span>
           <span className="flex items-center gap-2"><MapPin className="size-5 text-primary" /><span><b className="block">Haus Salvador</b><span className="text-muted-foreground">Concessionária BMW</span></span></span>
+          <RelatorioExecutivo mesAtual={mesAtual} base={{ mes, filtro, dec, tot, base, t, ant, diaCorte, pass, mec, os: { abertas: resumo.abertas, parados, amarelos, mediaDias: resumo.mediaDias, fluxo },
+            consultores: linhas.map((l) => { const so = soPecas(l.c.nome); return { nome: l.c.nome, dept: deptName?.(l.c.department_id) ?? "", s: so ? 0 : l.servicos, p: l.pecas, mS: so ? 0 : l.mS, mP: l.mP, perf: l.perf, projPct: l.projPct }; }),
+            depts: porDept.map((d) => ({ nome: d.nome, v: d.servicos + d.pecas, meta: d.meta, projPct: d.projPct })),
+            agg: ITENS.map((it) => ({ nome: it.nome, ...(agg[it.k] ?? { q: 0, v: 0, mq: 0 }) })).filter((x) => x.q || x.mq) }} />
         </div>
       </section>
 
