@@ -4,12 +4,13 @@ import { Box, uni } from "@/components/painel-ui";
 import { consultorMoto, type MixCons } from "@/lib/mecanicos";
 
 /** Qualidade e mix de passagens por consultor (Carro: BSI/Revisão C7/C4 Garantia/C7 Reparo; Moto: Revisões/Garantia/Reparo). */
-export function MixConsultores({ mes, nome }: { mes: string; nome?: string }) {
+export function MixConsultores({ mes, nome, nomes }: { mes: string; nome?: string; nomes?: string[] }) {
+  const chave = nomes?.map((x) => x.trim().toUpperCase()).sort().join("|");
   const [rows, setRows] = useState<{ nome: string; m: MixCons }[] | null>(null);
   useEffect(() => {
     void supabase.from("cons_mix").select("nome,composicao").eq("mes", mes).then(({ data }) =>
-      setRows((data ?? []).filter((r) => !nome || r.nome.trim().toUpperCase() === nome.trim().toUpperCase()).map((r) => ({ nome: r.nome, m: r.composicao as unknown as MixCons })).sort((a, b) => a.nome.localeCompare(b.nome))));
-  }, [mes, nome]);
+      setRows((data ?? []).filter((r) => (!nome || r.nome.trim().toUpperCase() === nome.trim().toUpperCase()) && (chave === undefined || chave.split("|").includes(r.nome.trim().toUpperCase()))).map((r) => ({ nome: r.nome, m: r.composicao as unknown as MixCons })).sort((a, b) => a.nome.localeCompare(b.nome))));
+  }, [mes, nome, chave]);
   if (!rows) return null;
   const n = (a?: string[]) => a?.length ?? 0;
   const tot = (m: MixCons) => n(m.bsi) + n(m.rev) + n(m.gar) + n(m.rep);
