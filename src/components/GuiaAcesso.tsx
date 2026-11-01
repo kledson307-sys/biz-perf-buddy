@@ -7,7 +7,7 @@ import { GUIA, NOVIDADES, VERSAO_ATUAL, oQueMostrar, perfilGuia } from "@/lib/gu
 /** Guia de primeiro acesso por perfil e novidades após cada atualização; lembrado por usuário neste aparelho. */
 export function GuiaAcesso({ email, papel }: { email: string; papel: string | null | undefined }) {
   const k = email.toLowerCase();
-  const passos = GUIA[perfilGuia(papel)];
+  const passos = GUIA[perfilGuia(papel)] ?? [];
   const [modo, setModo] = useState<"guia" | "novidades" | null>(null);
   const [i, setI] = useState(0);
   useEffect(() => {
@@ -22,7 +22,7 @@ export function GuiaAcesso({ email, papel }: { email: string; papel: string | nu
     if (modo === "novidades") localStorage.setItem(`novidades-vistas:${k}`, String(VERSAO_ATUAL));
     setModo(null); setI(0);
   };
-  const nov = NOVIDADES[0];
+  const nov = NOVIDADES[0]!;
   const p = passos[i];
   return (
     <>

@@ -32,8 +32,8 @@ export function avisarNovos(items: { id: string; titulo: string; texto: string; 
   localStorage.setItem(KEY, JSON.stringify(guardar));
   if (ant === null || !avisosAtivos() || !novos.length) return; // primeira leitura não dispara avalanche
   const lista = pend.filter((i) => novos.includes(i.id));
-  const titulo = lista.length === 1 ? lista[0].titulo : `${lista.length} novos alertas na HAUS MOTORS`;
-  const body = lista.length === 1 ? lista[0].texto : lista.slice(0, 3).map((i) => i.titulo).join("\n");
+  const titulo = lista.length === 1 ? lista[0]!.titulo : `${lista.length} novos alertas na HAUS MOTORS`;
+  const body = lista.length === 1 ? lista[0]!.texto : lista.slice(0, 3).map((i) => i.titulo).join("\n");
   try {
     const n = new Notification(titulo, { body, icon: "/icons/icon-192.png", badge: "/icons/icon-192.png", tag: "sininho" });
     n.onclick = () => { window.focus(); n.close(); };
