@@ -2,6 +2,28 @@ import { supabase } from "@/integrations/supabase/client";
 import { grupoDe, type PassReport } from "@/lib/mecanicos";
 import { norm } from "@/components/painel-ui";
 import { registrarUpdate } from "@/lib/update-log";
+import { ENCERRADO_KEY, osFaturadasAtivas, type OsItem } from "@/lib/os-controle";
+
+/** Baixa automática: O.S. ativas do Controle de O.S. que aparecem como faturadas são encerradas. Retorna quantas. */
+export async function baixarOsFaturadas(faturadas: string[]): Promise<number> {
+  if (!faturadas.length) return 0;
+  const [{ data: snap }, { data: acomp }] = await Promise.all([
+    supabase.from("os_imports").select("itens").order("at", { ascending: false }).limit(1),
+    supabase.from("os_acompanhamento").select("os_n,acoes,prev_manual"),
+  ]);
+  const itens = (snap?.[0]?.itens ?? []) as unknown as OsItem[];
+  const porOs = new Map((acomp ?? []).map((a) => [a.os_n, a]));
+  const acoes = Object.fromEntries([...porOs].map(([k, a]) => [k, a.acoes]));
+  const alvo = osFaturadasAtivas(itens, acoes, faturadas);
+  if (!alvo.length) return 0;
+  const d = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10).split("-").reverse().join("/");
+  const rows = alvo.map((n) => ({ os_n: n, prev_manual: porOs.get(n)?.prev_manual ?? null, updated_at: new Date().toISOString(),
+    acoes: { ...((porOs.get(n)?.acoes as Record<string, unknown>) ?? {}), [ENCERRADO_KEY]: { feito: true, nota: `Encerrada automaticamente · Faturada em ${d}`, at: new Date().toISOString(), auto: true } } as never }));
+  const { error } = await supabase.from("os_acompanhamento").upsert(rows, { onConflict: "user_id,os_n" });
+  if (error) throw new Error("Erro na baixa automática do Controle de O.S.: " + error.message);
+  window.dispatchEvent(new Event("os-notifications-updated"));
+  return alvo.length;
+}
 
 /** Grava o relatório de Passagens do mês: técnicos (passagens + composição), mix e passagens dos consultores. Substitui o mês, nunca soma. */
 export async function salvarPassagens(r: PassReport, mes: string): Promise<string> {
@@ -34,6 +56,7 @@ export async function salvarPassagens(r: PassReport, mes: string): Promise<strin
     if (error) throw new Error("Erro ao salvar passagens dos consultores: " + error.message);
   }
   await registrarUpdate("Passagens (importação)", mes);
+  const baixadas = await baixarOsFaturadas(r.osIds ?? []).catch(() => -1);
   window.dispatchEvent(new Event("tecnicos-atualizados"));
-  return `Passagens importadas: ${r.mecanicos.length} técnicos e ${vRows.length} consultores (O.S. repetidas contadas uma única vez).${ignorados ? ` ${ignorados} consultores não cadastrados foram ignorados.` : ""} Totais do mês substituídos, sem somar.`;
+  return `Passagens importadas: ${r.mecanicos.length} técnicos e ${vRows.length} consultores (O.S. repetidas contadas uma única vez).${ignorados ? ` ${ignorados} consultores não cadastrados foram ignorados.` : ""} Totais do mês substituídos, sem somar.${baixadas > 0 ? ` ${baixadas} O.S. faturada(s) encerrada(s) automaticamente no Controle de O.S.` : baixadas < 0 ? " Não foi possível fazer a baixa automática no Controle de O.S." : ""}`;
 }
