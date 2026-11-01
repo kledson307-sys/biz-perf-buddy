@@ -10,3 +10,5 @@
 - Executive PDF report: analysis rules in `src/lib/relatorio-executivo.ts` (pure, tested) and jsPDF drawing in `relatorio-executivo-pdf.ts`, dynamically imported from `RelatorioExecutivo` in the Cockpit; it reuses Dashboard-computed values and never lets text invent numbers.
 - Passagens: lines with empty Produtivo inherit the technician of the same O.S.; importing Passagens auto-closes matching active Controle O.S. items (`osFaturadasAtivas` → `__encerrado` with `auto: true`) because billed O.S. are finished.
 - Oficina bell (Marcos/Delmir) reads only SECURITY DEFINER RPCs (`painel_oficina`, `oficina_agenda_alertas`, `meu_nps`) since data_owner() is NULL for them.
+- Sininho/avisos: `src/lib/aviso-aparelho.ts` sets the app badge and native notifications without a service worker, deduping ids in localStorage.
+- First-access guide and release notes live in `src/lib/guia.ts` (bump `NOVIDADES` version per release); seen state is per email in localStorage.

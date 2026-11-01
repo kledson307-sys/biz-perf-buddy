@@ -16,5 +16,8 @@
 - [x] Aba Agendamentos + cartão D+1 no Dashboard + metas diárias de agendamento
 - [x] Andressa: tema rosa, aba Dashboard própria com seus dados + agendamentos dela (sem teste visual com o login dela)
 - [x] Relatório Executivo PDF no Dashboard (4 páginas, BMW)
-- [ ] Sininho de Marcos/Delmir com alertas de agendamento/testador
+- [x] Sininho de Marcos/Delmir com alertas de agendamento/testador
 - [x] PDF no layout do modelo enviado (capa, KPIs, análise por aba, resumo da gestão)
+- [x] Novo ícone do app (emblema BMW Pós-Venda)
+- [x] Contador no ícone e avisos no aparelho pelo sininho
+- [x] Guia de primeiro acesso por perfil + novidades por versão
