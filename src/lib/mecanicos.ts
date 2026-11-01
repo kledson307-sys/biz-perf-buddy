@@ -17,9 +17,9 @@ export type Mec = {
 export type Composicao = { bs?: string[]; rev?: string[]; pagos?: string[]; c4?: string[]; funilaria?: string[] };
 export const CATEGORIAS = [
   { k: "bs", nome: "BSI", desc: "O.S. do tipo BS" },
-  { k: "rev", nome: "REVISÃO C7", desc: "O.S. C7/M7 com código 0000105" },
-  { k: "pagos", nome: "C7 - PAGOS", desc: "O.S. C7 que não são Revisão C7" },
-  { k: "c4", nome: "C4 - GARANTIA", desc: "O.S. dos tipos C4 e MG" },
+  { k: "rev", nome: "REVISÃO C7", desc: "C7/M7 com 0000105 · Moto: N* com 0000111/0000119" },
+  { k: "pagos", nome: "C7 - PAGOS", desc: "C7 (Moto: N7/N5/NF) que não são revisão" },
+  { k: "c4", nome: "C4 - GARANTIA", desc: "O.S. dos tipos C4, MG e NG (Moto)" },
   { k: "funilaria", nome: "FUNILARIA", desc: "O.S. dos tipos CF, C5, MF e MS" },
 ] as const;
 export type CatKey = (typeof CATEGORIAS)[number]["k"];
