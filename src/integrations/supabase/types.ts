@@ -970,6 +970,7 @@ export type Database = {
       }
       minha_performance: { Args: { p_mes: string }; Returns: Json }
       minhas_os: { Args: never; Returns: Json }
+      oficina_agenda_alertas: { Args: never; Returns: Json }
       oficina_retornos: { Args: { p_mes: string }; Returns: Json }
       painel_oficina: { Args: { p_mes: string }; Returns: Json }
       registrar_acesso: { Args: never; Returns: undefined }
