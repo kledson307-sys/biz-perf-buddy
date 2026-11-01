@@ -218,7 +218,7 @@ export function gerarPdf(e: EntradaRel, capa?: string): Blob {
   });
   doc.setDrawColor(45, 70, 105); doc.setLineWidth(0.2); doc.line(M + CW / 2, y + 19, M + CW / 2, y + ph - 4);
   y += ph + 14;
-  if (capa) { alpha(0.95); doc.addImage(capa, "JPEG", 0, H - 70, W, 73.5); alpha(1); for (let i = 0; i < 90; i++) { alpha(Math.max(0, 1 - i * 0.014)); fill(WHITE); doc.rect(i * 1.5, H - 70, 1.6, 70, "F"); } alpha(1); for (let i = 0; i < 20; i++) { alpha(1 - i * 0.05); fill(WHITE); doc.rect(0, H - 70 + i, W, 1.05, "F"); } alpha(1); }
+  if (capa) { alpha(0.95); doc.addImage(capa, "JPEG", 0, H - 70, W, 73.5); alpha(1); alpha(1); }
   txt(BLUE); font(22, true); doc.text("\u201C", M, y + 4); txt(MUTED); doc.setFont("helvetica", "italic"); doc.setFontSize(9.5); doc.text("Juntos por uma experiência cada vez melhor.", M + 8, y + 2);
   y += 22;
   doc.setDrawColor(...INK); doc.setLineWidth(0.3); doc.line(M, y, M + 60, y);
