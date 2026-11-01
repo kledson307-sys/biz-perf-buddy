@@ -1,3 +1,4 @@
+import { GuiaAcesso } from "@/components/GuiaAcesso";
 import { Devolucoes } from "@/components/Devolucoes";
 import { TecnicosMetas } from "@/components/TecnicosMetas";
 import { createFileRoute } from "@tanstack/react-router";
@@ -94,11 +95,8 @@ function Index() {
   }, [session, email]);
   if (!ready || (session && papel === undefined)) return <div className="p-10 text-center text-muted-foreground">Carregando…</div>;
   if (!session) return <Login />;
-  if (papel === "tecnico") return <MeuDesempenhoTecnico />;
-  if (papel === "chefe_oficina") return <CockpitOficina chefe />;
-  if (papel === "controlador") return <CockpitOficina chefe={false} />;
-  if (papel === "tunap") return <AcessoTunap />;
-  return papel === "vendedor" ? <MinhaPerformance /> : <Painel email={email} />;
+  const tela = papel === "tecnico" ? <MeuDesempenhoTecnico /> : papel === "chefe_oficina" ? <CockpitOficina chefe /> : papel === "controlador" ? <CockpitOficina chefe={false} /> : papel === "tunap" ? <AcessoTunap /> : papel === "vendedor" ? <MinhaPerformance /> : <Painel email={email} />;
+  return <>{tela}<GuiaAcesso email={email} papel={papel} /></>;
 }
 
 function Login() {
