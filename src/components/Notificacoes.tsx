@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { analisar, foraDosAlertas, fmt, hoje, retornoDevido, type OsImport, type OsItem } from "@/lib/os-controle";
 import { classe, type NpsItem } from "@/lib/nps";
 import { norm } from "@/components/painel-ui";
+import { ativarAvisos, atualizarBadge, avisarNovos, avisosAtivos, avisosSuportados } from "@/lib/aviso-aparelho";
 
 type AgendaAlerta = { id: string; hora: string; cliente: string; placa: string; categoria: string; segmento: string; aceito: boolean; confirmacao: string | null };
 
@@ -102,6 +103,9 @@ export function Notificacoes({ vendedor = false, oficina = false, abrir }: { ven
       window.clearInterval(timer);
     };
   }, [load]);
+  const [ativos, setAtivos] = useState(false);
+  useEffect(() => { setAtivos(avisosAtivos()); }, []);
+  useEffect(() => { if (loading || error) return; atualizarBadge(items.length); avisarNovos(items); }, [items, loading, error]);
   const go = () => { setOpen(false); abrir(); };
   return (
     <Popover open={open} onOpenChange={v => { setOpen(v); if (v) void load(); }}>
@@ -112,7 +116,9 @@ export function Notificacoes({ vendedor = false, oficina = false, abrir }: { ven
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-96 max-w-[calc(100vw-2rem)] p-0">
-        <div className="border-b border-border px-4 py-3"><h2 className="font-semibold">Notificações {items.length > 0 && `(${items.length})`}</h2></div>
+        <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3"><h2 className="font-semibold">Notificações {items.length > 0 && `(${items.length})`}</h2>
+          {!ativos && avisosSuportados() && <Button size="sm" variant="outline" onClick={async () => setAtivos(await ativarAvisos())}>Ativar avisos no aparelho</Button>}
+        </div>
         <div className="max-h-80 overflow-y-auto" role="region" aria-label="Lista de notificações">
           {error ? <div className="space-y-2 p-4 text-sm text-destructive"><p role="alert">{error}</p><Button size="sm" variant="outline" onClick={() => void load()}>Tentar novamente</Button></div> : loading ? <p className="p-4 text-sm text-muted-foreground">Carregando…</p> : items.length === 0 ? <p className="p-4 text-sm text-muted-foreground">Nenhuma notificação pendente.</p> : items.map(item => (
             <Button key={item.id} variant="ghost" onClick={go} className="h-auto w-full justify-start gap-3 whitespace-normal rounded-none border-b border-border p-4 text-left">
