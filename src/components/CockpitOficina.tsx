@@ -4,6 +4,7 @@ import { Box, Posicao, brl, div, norm, pct, tone, uni } from "@/components/paine
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
+import { Notificacoes } from "@/components/Notificacoes";
 import { MixPassagens } from "@/components/MixPassagens";
 import { NpsResumoRestrito } from "@/components/NpsPainel";
 import { META_PROMOTOR, classe, type NpsItem } from "@/lib/nps";
@@ -80,6 +81,7 @@ export function CockpitOficina({ chefe }: { chefe: boolean }) {
             <h1 className="text-lg font-bold">Oficina Carro · {chefe ? "Chefe de Oficina · Delmir Xavier" : "Controlador de Quadro · Marcos"}</h1></div>
           <div className="flex items-center gap-2">
             <input type="month" className="h-9 rounded-md border bg-background px-2 text-sm" value={mes} onChange={(e) => setMes(e.target.value)} />
+            <Notificacoes oficina abrir={() => setAba("patio")} />
             <ThemeToggle />
             <Button size="sm" variant="outline" onClick={() => supabase.auth.signOut()}><LogOut className="size-4" /> Sair</Button>
           </div>
