@@ -44,6 +44,8 @@ import { RetrabalhoOficina } from "@/components/RetrabalhoOficina";
 import { Agendamentos } from "@/components/Agendamentos";
 import { AgendaMetas } from "@/components/AgendaMetas";
 import { ITENS } from "@/lib/agregados";
+import { inicializarTecnicosMes } from "@/lib/tecnicos-mes";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -186,6 +188,7 @@ function Painel({ email }: { email: string }) {
   };
 
   const load = useCallback(async () => {
+    await inicializarTecnicosMes(mes);
     const [y, m] = mes.split("-").map(Number);
     const fim = new Date(y!, m!, 0).getDate();
     const [d, c, g, s, p, dv] = await Promise.all([
@@ -736,16 +739,26 @@ function Painel({ email }: { email: string }) {
         {tab === "cockpit" && !relatorio && <Cockpit linhas={linhas} porDept={porDept} mes={mes} tot={tot} dec={dec} soPecas={soPecas} setTab={setTab} sales={sales} nome={email.split("@")[0] ?? ""} deptName={deptName} filtro={filtroDept === "todos" ? "Todos departamentos" : deptName(filtroDept)} base={params.base} mesAtual={mes === localDay(clock).slice(0, 7)} />}
         {tab === "nps" && !relatorio && <NpsPainel />}
         {tab === "pecas" && !relatorio && <PecasEstoque linhas={linhas} porDept={porDept} margemIdeal={margemIdeal} deptName={deptName} passagens={resumo.pass} mes={mes} tot={tot} dec={dec} />}
-        {tab === "metas" && !relatorio && <>
-          <details className="lux-card px-3 py-2"><summary className="cursor-pointer text-sm font-semibold text-primary">+ Ajustar metas (consultores, técnicos e plano anual)</summary><div className="mt-3"><Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div></details>
-          <div className="grid items-start gap-3 xl:grid-cols-2">
+        {tab === "metas" && !relatorio && <Tabs defaultValue="geral" className="min-w-0 gap-3">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 xl:grid-cols-4">
+            <TabsTrigger value="geral" className="whitespace-normal">Acompanhamento & Geral</TabsTrigger>
+            <TabsTrigger value="consultores">Consultores</TabsTrigger>
+            <TabsTrigger value="tecnicos">Técnicos</TabsTrigger>
+            <TabsTrigger value="agregados" className="whitespace-normal">Agregados & Agenda</TabsTrigger>
+          </TabsList>
+          <TabsContent value="geral" className="space-y-3 xl:max-h-[calc(100vh-350px)] xl:overflow-y-auto">
             <MetasExecutivo linhas={linhas} deptName={deptName} />
-            <div className="space-y-3">
-              <CadeadoMes mes={mes} />
-              <AgendaMetas mes={mes} />
-              <section className="lux-card space-y-2 px-3 py-2 xl:max-h-[calc(100vh-420px)] xl:overflow-y-auto"><h3 className="text-sm font-semibold">Metas de agregados</h3><Agregados modo="metas" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section>
-            </div>
-          </div></>}
+            <Config parte="geral" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} />
+          </TabsContent>
+          <TabsContent value="consultores" className="xl:max-h-[calc(100vh-350px)] xl:overflow-y-auto">
+            <Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={visiveis} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} />
+          </TabsContent>
+          <TabsContent value="tecnicos" className="xl:max-h-[calc(100vh-350px)] xl:overflow-y-auto"><TecnicosMetas mes={mes} /></TabsContent>
+          <TabsContent value="agregados" className="grid items-start gap-3 xl:max-h-[calc(100vh-350px)] xl:grid-cols-2 xl:overflow-y-auto">
+            <div className="space-y-3"><CadeadoMes mes={mes} /><AgendaMetas mes={mes} /></div>
+            <section className="space-y-2 px-3 py-2"><h3 className="text-sm font-semibold">Metas de agregados</h3><Agregados modo="metas" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section>
+          </TabsContent>
+        </Tabs>}
         {tab === "config" && <div className="space-y-6"><Equipe /><Config parte="config" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div>}
       </main>
       </div>
@@ -762,7 +775,7 @@ function StatusFonte({ source, mes, updates, clock }: { source: UpdateSource; me
 }
 
 function Config({ parte, params, salvarParams, depts, cons, goals, mes, reload, deptName, irPara }: {
-  parte: "config" | "metas"; params: Params; salvarParams: (p: Params) => void; depts: Dept[]; cons: Cons[]; goals: Goal[]; mes: string; reload: () => void; deptName: (id: string | null) => string; irPara: (mes: string) => void;
+  parte: "config" | "metas" | "geral"; params: Params; salvarParams: (p: Params) => void; depts: Dept[]; cons: Cons[]; goals: Goal[]; mes: string; reload: () => void; deptName: (id: string | null) => string; irPara: (mes: string) => void;
 }) {
   const [novoDept, setNovoDept] = useState("");
   const [novoCons, setNovoCons] = useState("");
@@ -776,8 +789,8 @@ function Config({ parte, params, salvarParams, depts, cons, goals, mes, reload, 
   };
   const grupos = useMemo(() => [...new Set(cons.map((c) => c.department_id))], [cons]);
   return (
-    <div className="space-y-6">
-      {parte === "metas" && (() => {
+    <div className="space-y-3">
+      {parte !== "config" && (() => {
         const ms = goals.reduce((a, g) => a + g.servicos, 0), mp = goals.reduce((a, g) => a + g.pecas, 0);
         const sem = cons.filter((c) => !goals.some((g) => g.consultant_id === c.id && g.servicos + g.pecas > 0));
         return <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -855,7 +868,7 @@ function Config({ parte, params, salvarParams, depts, cons, goals, mes, reload, 
         <p className="text-xs text-muted-foreground">As metas são salvas ao sair do campo e valem para o mês selecionado no topo.</p>
       </section>}
       </div>
-      {parte === "metas" && <TecnicosMetas mes={mes} />}
+
     </div>
   );
 }
