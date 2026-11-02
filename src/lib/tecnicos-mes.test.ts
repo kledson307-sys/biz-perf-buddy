@@ -18,9 +18,9 @@ describe("operações de continuidade", () => {
   });
 });
 
-const sessionPath = process.env.TECH_TEST_SESSION;
+const sessionPath = process.env['TECH_TEST_SESSION'];
 describe.skipIf(!sessionPath)("novembro na base real", () => {
-  const client = createClient(process.env.VITE_SUPABASE_URL ?? "", process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "", { auth: { persistSession: false, autoRefreshToken: false } });
+  const client = createClient(process.env['VITE_SUPABASE_URL'] ?? "", process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] ?? "", { auth: { persistSession: false, autoRefreshToken: false } });
   const authenticate = async () => {
     if (!sessionPath) throw new Error("Sessão de teste ausente");
     const { session } = JSON.parse(readFileSync(sessionPath, "utf8"));

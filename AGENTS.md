@@ -32,7 +32,7 @@
 - Technician logins use team_members papel 'tecnico' + tecnico_nome; data_owner() is NULL for them and they read only via SECURITY DEFINER meu_desempenho_tecnico RPC.
 - Judicial O.S. flag lives in `os_acompanhamento.acoes.__judicial` (os-controle helpers); excluded from Painel warning, bell and `minhas_os`.
 - Access: shared `useAccessPresence` confirms RPC writes before seller reads; retry errors, refresh on open/focus/visible/online/timer. History refreshes; keep one owner-scoped row/day.
-- Month closing lock lives in `month_locks` (helpers in `src/lib/month-lock.ts`); only the master email may insert/delete via RLS, and sales/agregados imports must check `mesTravado` before writing so closed months stay frozen.
+- month_locks uses master RLS; imports check mesTravado and mech_month enforces locks by trigger. Atomic technician continuity/copy RPCs never replace production; see src/lib/AGENTS.md.
 - Navigation has 10 official sidebar tabs (order: cockpit, painel, ranking, agregados, mecanicos, pecas, controle-os, nps, metas, importacoes); Central de Gestão groups painel/proj/os and Importações & Config groups importacoes/config as sub-tabs, so legacy `setTab(...)` deep links (incl. `proj-*`) keep working.
 
 - Subdirectories may have their own `AGENTS.md` (e.g. `src/lib/AGENTS.md`); read it before changing files there.- Desktop tabs must fit one 16:9 screen (checked at 1440×900 and 1920×1080): put long lists in `Box fit="xl:max-h-[calc(100vh-…)]"` internal scroll or collapsed <details>, never extend the page height.
