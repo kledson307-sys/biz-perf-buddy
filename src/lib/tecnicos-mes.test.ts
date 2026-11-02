@@ -50,4 +50,25 @@ describe.skipIf(!sessionPath)("novembro na base real", () => {
     expect(after.data).toEqual(before.data);
     expect(after.data?.every(r => r.servicos===0 && r.pecas===0 && r.passagens===0)).toBe(true);
   });
+  it("outubro fechado rejeita escrita técnica e preserva o histórico", async () => {
+    await authenticate();
+    const before = await client.from("mech_month").select("id,meta_servicos").eq("mes","2026-10").eq("nome","JONATAS MORAES").single();
+    expect(before.error).toBeNull();
+    if (!before.data) throw new Error("Técnico histórico ausente");
+    const write = await client.from("mech_month").update({ meta_servicos:before.data.meta_servicos }).eq("id",before.data.id);
+    expect(write.error?.message).toContain("Mês fechado");
+    const copy = await client.rpc("copiar_metas_tecnicos", { p_mes:"2026-10" });
+    expect(copy.error?.message).toContain("Mês fechado");
+    const after = await client.from("mech_month").select("id,meta_servicos").eq("id",before.data.id).single();
+    expect(after.data).toEqual(before.data);
+  });
+  it.each([
+    ["marcos@hausmotors.com.br","controlador"],
+    ["delmirxavier@hausmotors.com.br","chefe_oficina"],
+    ["tunap@tunap.com.br","tunap"],
+  ])("%s tem o acesso operacional aprovado", async (email,papel) => {
+    await authenticate();
+    const result = await client.from("team_members").select("papel").eq("email",email).single();
+    expect(result.error).toBeNull(); expect(result.data?.papel).toBe(papel);
+  });
 });
