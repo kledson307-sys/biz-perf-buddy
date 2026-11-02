@@ -16,7 +16,7 @@ export type EntradaRel = {
   nps: Resumo | null; npsItens: NpsItem[]; agg: AggRel[]; agenda: AgendaRel | null; retornos: number | null;
 };
 
-export type Acao = { acao: string; indicador: string; alvo: string; prioridade: "Alta" | "Média"; prazo: string; resp: string };
+export type Acao = { foco: string; acao: string; indicador: string; alvo: string; prioridade: "Alta" | "Média"; prazo: string; resp: string };
 const MOTO = /\b(PEDRO|GILBERTO)\b/i;
 export const div = (a: number, b: number) => (b ? a / b : 0);
 export const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -31,6 +31,8 @@ export function ranking(itens: NpsItem[]) {
   for (const x of itens) if (x.nota !== null && !x.pj && classe(x.nota) !== "promotor") { const k = (x.motivo || "Sem motivo informado").trim().toUpperCase(); m.set(k, (m.get(k) ?? 0) + 1); }
   return [...m.entries()].sort((a, b) => b[1] - a[1]);
 }
+
+const x_falta = (a: AggRel, e: EntradaRel) => a.mq - projetar(a.q, e.dec, e.tot);
 
 export function analisar(e: EntradaRel) {
   const fato: string[] = [], interp: string[] = [], indisp: string[] = [];
@@ -69,23 +71,36 @@ export function analisar(e: EntradaRel) {
   if (e.nps && e.nps.pctProm < 0.85) riscos.push(`Promotores NPS em ${pct(e.nps.pctProm)}, abaixo da meta BMW Carro de 85%.`);
   if (e.t.s && ratio < 2.5) oport.push(`Ratio de peças em R$ ${num(ratio)} por R$ 1 de M.O.: abaixo da faixa BMW; há espaço para orçamentos completos na recepção.`);
   if (e.t.op + e.t.os > 0) oport.push(`${brl(e.t.os + e.t.op)} em O.S. abertas podem ser faturadas no mês (serviços ${brl(e.t.os)} · peças ${brl(e.t.op)}).`);
-  for (const a of e.agg.filter((x) => x.mq > 0 && projetar(x.q, e.dec, e.tot) < x.mq)) oport.push(`${a.nome}: ${Math.round(a.q)} un. vendidas, ritmo projeta ${Math.round(projetar(a.q, e.dec, e.tot))} de ${Math.round(a.mq)} na meta.`);
   if (e.agenda && e.agenda.metaDiaria) { const med = div(e.agenda.d0, e.agenda.dias); if (med < e.agenda.metaDiaria) oport.push(`Agenda média de ${num(med, 1)} veículos/dia contra meta de ${e.agenda.metaDiaria}: capacidade ociosa para captação.`); }
   for (const c of destaque) positivos.push(`${c.nome}: ${pct(c.perf)} da meta (${brl(c.s + c.p)}).`);
   if (e.nps && e.nps.pctProm >= 0.85) positivos.push(`Promotores NPS em ${pct(e.nps.pctProm)}, acima da meta.`);
 
   const acoes: Acao[] = [];
-  for (const d of deptGap.slice(0, 2)) acoes.push({ acao: `Reforçar vendas em ${d.nome} com acompanhamento diário do gap`, indicador: "% atingimento da meta", alvo: `${brl(Math.max(d.meta - d.v, 0) / Math.max(e.tot - e.dec, 1))}/dia restante`, prioridade: d.projPct < 0.85 ? "Alta" : "Média", prazo: "Até o fim do mês", resp: "Gerente de Pós-Venda" });
-  for (const c of abaixo.slice(0, 3)) acoes.push({ acao: `Conversa individual e plano de recuperação com ${c.nome}`, indicador: "Projeção do consultor", alvo: "mín. 100% da meta", prioridade: "Alta", prazo: "Esta semana", resp: "Gerente de Pós-Venda" });
-  if (e.os.parados) acoes.push({ acao: "Revisar O.S. paradas há mais de 30 dias e definir prazo de saída", indicador: "O.S. > 30 dias", alvo: "0 O.S.", prioridade: "Alta", prazo: "7 dias", resp: "Controlador de Quadro" });
-  if (e.t.s && ratio < 2.5) acoes.push({ acao: "Orçamento completo de peças em toda passagem", indicador: "Peças por R$ 1 de M.O.", alvo: "R$ 2,50 a R$ 3,50", prioridade: "Média", prazo: "Mês corrente", resp: "Consultores" });
-  if (motivos[0]) acoes.push({ acao: acaoReversao(motivos[0][0]), indicador: `Reclamação "${motivos[0][0].toLowerCase()}"`, alvo: "Reduzir ocorrências", prioridade: "Média", prazo: "30 dias", resp: "Gerente de Pós-Venda" });
-  if (e.nps && e.nps.pctProm < 0.85) acoes.push({ acao: "Follow-up D-13 com clientes antes da pesquisa BMW", indicador: "% promotores", alvo: "mín. 85% (Carro)", prioridade: "Alta", prazo: "Contínuo", resp: "Consultores" });
+  for (const d of deptGap.slice(0, 2)) acoes.push({ foco: "Comercial", acao: `Reforçar vendas em ${d.nome} com acompanhamento diário do gap`, indicador: "% atingimento da meta", alvo: `${brl(Math.max(d.meta - d.v, 0) / Math.max(e.tot - e.dec, 1))}/dia restante`, prioridade: d.projPct < 0.85 ? "Alta" : "Média", prazo: "Até o fim do mês", resp: "Gerente de Pós-Venda" });
+  for (const c of abaixo.slice(0, 3)) acoes.push({ foco: "Gestão", acao: `Conversa individual e plano de recuperação com ${c.nome}`, indicador: "Projeção do consultor", alvo: "mín. 100% da meta", prioridade: "Alta", prazo: "Esta semana", resp: "Gerente de Pós-Venda" });
+  if (e.os.parados) acoes.push({ foco: "Operação", acao: "Revisar O.S. paradas há mais de 30 dias e definir prazo de saída", indicador: "O.S. > 30 dias", alvo: "0 O.S.", prioridade: "Alta", prazo: "7 dias", resp: "Controlador de Quadro" });
+  if (e.t.s && ratio < 2.5) acoes.push({ foco: "Comercial", acao: "Orçamento completo de peças em toda passagem", indicador: "Peças por R$ 1 de M.O.", alvo: "R$ 2,50 a R$ 3,50", prioridade: "Média", prazo: "Mês corrente", resp: "Consultores" });
+  if (motivos[0]) acoes.push({ foco: "Qualidade", acao: acaoReversao(motivos[0][0]), indicador: `Reclamação "${motivos[0][0].toLowerCase()}"`, alvo: "Reduzir ocorrências", prioridade: "Média", prazo: "30 dias", resp: "Gerente de Pós-Venda" });
+  if (e.nps && e.nps.pctProm < 0.85) acoes.push({ foco: "Qualidade", acao: "Follow-up D-13 com clientes antes da pesquisa BMW", indicador: "% promotores", alvo: "mín. 85% (Carro)", prioridade: "Alta", prazo: "Contínuo", resp: "Consultores" });
 
+  if (e.retornos !== null && e.pass) fato.push(`Qualidade de primeira passagem: ${pct(1 - div(e.retornos, e.pass))} (${e.retornos} retorno(s) em até 60 dias sobre ${e.pass} passagens).`);
+  for (const a of e.agg.filter((x) => x.mq > 0 && projetar(x.q, e.dec, e.tot) < x.mq && x.q > 0)) { const falta = Math.round(x_falta(a, e)); if (falta > 0) oport.push(`${a.nome}: faltam ${falta} un. para a meta; ao ticket atual ≈ ${brl(falta * div(a.v, a.q))} de receita adicional.`); }
   const conclusao = !meta ? "Sem meta cadastrada, o relatório apresenta apenas os valores realizados."
     : fechamento ? `O período fechou com ${pct(ating)} da meta de faturamento${ating >= 1 ? ", meta atingida" : ", abaixo da meta"}. ${riscos.length ? "Os pontos de atenção listados devem orientar o planejamento do próximo mês." : ""}`
       : `Com ${pct(ritmo)} do mês decorrido, a projeção indica ${pct(div(pT, meta))} da meta. ${acoes.length ? `As ${acoes.length} ações priorizadas concentram o esforço onde o gap é maior.` : "Nenhum desvio relevante identificado."}`;
 
   return { total, meta, ating, ritmo, pS, pP, pT, ratio, fato, interp, indisp, abaixo, destaque, deptGap, riscos, oport, positivos, acoes, conclusao, motivos,
     segmentos: { carro: { ...seg(carro), n: carro.length }, moto: { ...seg(moto), n: moto.length } } };
+}
+
+/** Texto curto para enviar à diretoria junto com o PDF (só números calculados). */
+export function resumoWhatsapp(e: EntradaRel, mesCap: string) {
+  const a = analisar(e);
+  const l = [`Diretoria, segue o Relatório Executivo ${e.modo === "fechamento" ? "de Fechamento" : "de Acompanhamento"} de ${mesCap} — Haus Salvador.`,
+    a.meta ? `Faturamento total ${brl(a.total)} (${pct(a.ating)} da meta).` : `Faturamento total ${brl(a.total)}.`,
+    e.t.ms ? `Serviços ${brl(e.t.s)} (${pct(div(e.t.s, e.t.ms))}) · Peças ${brl(e.t.p)} (${pct(div(e.t.p, e.t.mp))}).` : "",
+    e.nps ? `NPS ${pct(e.nps.nps)} · ${pct(e.nps.pctProm)} de promotores.` : "",
+    a.acoes.length ? `Plano com ${a.acoes.length} ações priorizadas no PDF em anexo.` : "",
+    "Kledson Souza — Gerente de Pós-Venda"];
+  return l.filter(Boolean).join("\n");
 }

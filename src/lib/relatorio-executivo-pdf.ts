@@ -143,15 +143,17 @@ export function gerarPdf(e: EntradaRel, capa?: string): Blob {
       const cx = d.cell.x + 4.5, cy = d.cell.y + d.cell.height / 2; fill(NAVY); doc.circle(cx, cy, 3.3, "F"); txt(WHITE); font(6, true); doc.text(c.nome.slice(0, 2).toUpperCase(), cx, cy + 0.9, { align: "center" });
       fill(cor(c.mS + c.mP ? c.projPct : 1)); doc.circle(d.cell.x + d.cell.height * 0 + 7.6, cy - 2.4, 0.9, "F");
     } });
-  y = ultimo() + 9;
+  y = ultimo() + 4;
+  { const sg = a.segmentos; const box = (x: number, t: string, g: { v: number; meta: number; n: number }) => { fill(PAPER); doc.roundedRect(x, y, CW / 2 - 2, 10, 1.2, 1.2, "F"); txt(NAVY); font(7.5, true); doc.text(t, x + 3, y + 6.3); txt(INK); font(7.5); doc.text(`${g.n} consultor(es) · ${mil(g.v)}${g.meta ? ` · ${pct(div(g.v, g.meta))} da meta` : ""}`, x + CW / 2 - 5, y + 6.3, { align: "right" }); };
+    box(M, "BMW CARROS", sg.carro); box(M + CW / 2 + 2, "BMW MOTORRAD", sg.moto); y += 16; }
 
   secao(4, "Análise por aba");
   const cards: { t: string; c: RGB; b: [string, boolean][] }[] = [
     { t: "DASHBOARD", c: BLUE, b: [[a.meta ? `Resultado em ${pct(a.ating)} da meta.` : "Meta não cadastrada.", a.ating >= (fech ? 1 : a.ritmo)], [antT ? `${a.total >= antT ? "Crescimento" : "Queda"} de ${pct(Math.abs(div(a.total, antT) - 1))} vs. mês anterior.` : "Sem base do mês anterior.", a.total >= antT], [fech ? `Fechamento em ${mil(a.total)}.` : `Projeção de ${mil(a.pT)}.`, div(a.pT, a.meta) >= 1]] },
     { t: "CENTRAL DE GESTÃO", c: [20, 150, 110], b: [[`${a.deptGap.length} departamento(s) abaixo da meta projetada.`, !a.deptGap.length], [e.t.os + e.t.op ? `${mil(e.t.os + e.t.op)} em O.S. abertas a faturar.` : "Sem O.S. abertas importadas.", true], [`${a.abaixo.length} consultor(es) abaixo de 85%.`, !a.abaixo.length]] },
-    { t: "OFICINA", c: [130, 70, 190], b: [[e.mec.ms ? `Técnicos em ${pct(div(e.mec.s, e.mec.ms))} da meta de serviços.` : "Sem dados de técnicos.", e.mec.ms ? div(e.mec.s, e.mec.ms) >= 1 : false], [e.retornos === null ? "Retornos não importados." : `${e.retornos} retorno(s) em até 60 dias.`, !e.retornos], [e.os.parados ? `${e.os.parados} O.S. paradas há mais de 30 dias.` : "Nenhuma O.S. acima de 30 dias.", !e.os.parados]] },
+    { t: "OFICINA", c: [130, 70, 190], b: [[e.mec.ms ? `Técnicos em ${pct(div(e.mec.s, e.mec.ms))} da meta de serviços.` : "Sem dados de técnicos.", e.mec.ms ? div(e.mec.s, e.mec.ms) >= 1 : false], [e.retornos === null ? "Retornos não importados." : `${e.retornos} retorno(s) em 60 dias${e.pass ? ` · 1ª passagem ${pct(1 - div(e.retornos, e.pass))}` : ""}.`, !e.retornos], [e.os.parados ? `${e.os.parados} O.S. paradas há mais de 30 dias.` : "Nenhuma O.S. acima de 30 dias.", !e.os.parados]] },
     { t: "PEÇAS", c: [230, 140, 20], b: [[e.t.mp ? `${pct(div(e.t.p, e.t.mp))} da meta de peças.` : "Meta de peças não cadastrada.", div(e.t.p, e.t.mp) >= 1], [e.t.s ? `R$ ${num(a.ratio)} de peças por R$1 de M.O.` : "Sem M.O. no período.", a.ratio >= 2.5], [`Ticket de peças ${e.pass ? brl(div(e.t.p, e.pass)) : "indisponível"}.`, true]] },
-    { t: "CLIENTES / NPS", c: [210, 40, 80], b: e.nps ? [[`NPS ${pct(e.nps.nps)} · ${pct(e.nps.pctProm)} promotores.`, e.nps.pctProm >= 0.85], [`${e.nps.prom} promotores · ${e.nps.det} detratores.`, e.nps.det === 0], [a.motivos[0] ? `Principal reclamação: ${a.motivos[0][0].toLowerCase()} (${a.motivos[0][1]}).` : "Sem reclamações registradas.", !a.motivos.length]] : [["Sem pesquisa NPS importada.", false]] },
+    { t: "CLIENTES / NPS", c: [210, 40, 80], b: e.nps ? [[`NPS ${pct(e.nps.nps)} · ${pct(e.nps.pctProm)} promotores.`, e.nps.pctProm >= 0.85], [`${e.nps.prom} promotores · ${e.nps.det} detratores.`, e.nps.det === 0], [a.motivos.length ? `Top reclamações: ${a.motivos.slice(0, 2).map((m) => `${m[0].toLowerCase()} (${m[1]})`).join("; ")}.` : "Sem reclamações registradas.", !a.motivos.length]] : [["Sem pesquisa NPS importada.", false]] },
     { t: "ORDENS DE SERVIÇO", c: NAVY2, b: e.os.abertas ? [[`${e.os.abertas} O.S. abertas no pátio.`, true], ...e.os.fluxo.slice(0, 3).map((f) => [`${f.n} ${f.st.toLowerCase()}.`, true] as [string, boolean])] : [["Sem snapshot do Controle O.S.", false]] },
   ];
   const cw3 = (CW - 8) / 3, ch = 44;
@@ -169,10 +171,10 @@ export function gerarPdf(e: EntradaRel, capa?: string): Blob {
   // ===== Página 3 — oportunidades e plano =====
   nova();
   secao(5, "Principais oportunidades de melhoria");
-  const ops = [...a.riscos.map((t) => ({ t, tipo: "Risco" })), ...a.oport.map((t) => ({ t, tipo: "Oportunidade" }))].slice(0, 7);
+  const ops = [...a.riscos.map((t) => ({ t, tipo: "Risco" })), ...a.oport.map((t) => ({ t, tipo: "Oportunidade" }))].slice(0, 5);
   if (!ops.length) { txt(MUTED); font(8.5); doc.text("Nenhum desvio relevante identificado com os dados disponíveis.", M, y); y += 8; }
   for (const o of ops) {
-    const l = wrap(o.t, CW - 26); const h = Math.max(15, l.length * 3.8 + 9); garantir(h + 2);
+    const l = wrap(o.t, CW - 26); const h = Math.max(14, l.length * 3.6 + 8.5); garantir(h + 2);
     doc.setDrawColor(...LINE); doc.setLineWidth(0.25); doc.roundedRect(M, y, CW, h, 1.5, 1.5, "S");
     fill(o.tipo === "Risco" ? NAVY : BLUE); doc.circle(M + 9, y + h / 2, 5.2, "F"); txt(WHITE); font(8, true); doc.text(o.tipo === "Risco" ? "!" : "+", M + 9, y + h / 2 + 1.1, { align: "center" });
     txt(NAVY); font(8.8, true); doc.text(o.tipo, M + 18, y + 6); txt(MUTED); font(7.8); doc.text(l, M + 18, y + 10.5);
@@ -181,13 +183,14 @@ export function gerarPdf(e: EntradaRel, capa?: string): Blob {
   y += 4;
   const prox = fech ? new Intl.DateTimeFormat("pt-BR", { month: "long" }).format(new Date(yy!, mm!, 1)).toUpperCase() : mesNome.toUpperCase();
   secao(6, `Plano de ação – ${prox}`);
-  if (a.acoes.length) tabela(["Prior.", "Ação recomendada", "Indicador", "Meta / esperado", "Prazo", "Responsável"], a.acoes.map((x) => [x.prioridade, x.acao, x.indicador, x.alvo, x.prazo, x.resp]), {
-    columnStyles: { 0: { cellWidth: 13, fontStyle: "bold" }, 1: { cellWidth: 60 }, 3: { fontStyle: "bold" } },
-    didParseCell: (d: { section: string; column: { index: number }; cell: { raw: unknown; styles: { textColor: unknown } } }) => { if (d.section === "body" && d.column.index === 0) d.cell.styles.textColor = d.cell.raw === "Alta" ? RED : YEL; },
+  if (a.acoes.length) tabela(["Foco", "Prior.", "Ação recomendada", "Indicador", "Meta / esperado", "Prazo", "Responsável"], a.acoes.slice(0, 6).map((x) => [x.foco, x.prioridade, x.acao, x.indicador, x.alvo, x.prazo, x.resp]), {
+    styles: { fontSize: 7.2, cellPadding: { top: 2, bottom: 2, left: 1.8, right: 1.8 }, textColor: INK, lineColor: LINE, lineWidth: { bottom: 0.25 } as never, valign: "middle" },
+    columnStyles: { 0: { cellWidth: 19, fontStyle: "bold", textColor: NAVY }, 1: { cellWidth: 12, fontStyle: "bold" }, 2: { cellWidth: 52 }, 4: { fontStyle: "bold" } },
+    didParseCell: (d: { section: string; column: { index: number }; cell: { raw: unknown; styles: { textColor: unknown } } }) => { if (d.section === "body" && d.column.index === 1) d.cell.styles.textColor = d.cell.raw === "Alta" ? RED : YEL; },
   });
   else { txt(MUTED); font(8.5); doc.text("Nenhuma ação necessária pelos dados disponíveis.", M, y); y += 8; }
   txt(MUTED); font(6.8); doc.text("Recomendações geradas por regras sobre os desvios calculados; responsáveis atribuídos por função.", M, y - 3); y += 4;
-  if (a.indisp.length) { garantir(10 + a.indisp.length * 4.5); txt(NAVY); font(9, true); doc.text("Indicadores não calculados por falta de dados", M, y); y += 5; font(7.6); txt(MUTED); for (const s of a.indisp) { doc.text(`•  ${s}`, M, y); y += 4.3; } }
+  if (a.indisp.length && y + 8 + a.indisp.length * 3.8 < H - 18) { txt(NAVY); font(9, true); doc.text("Indicadores não calculados por falta de dados", M, y); y += 5; font(7.6); txt(MUTED); for (const s of a.indisp) { doc.text(`•  ${s}`, M, y); y += 3.8; } }
 
   // ===== Página 4 — conclusão e assinatura =====
   doc.addPage();
@@ -218,7 +221,7 @@ export function gerarPdf(e: EntradaRel, capa?: string): Blob {
   });
   doc.setDrawColor(45, 70, 105); doc.setLineWidth(0.2); doc.line(M + CW / 2, y + 19, M + CW / 2, y + ph - 4);
   y += ph + 14;
-  if (capa) { alpha(0.95); doc.addImage(capa, "JPEG", 0, H - 70, W, 73.5); alpha(1); alpha(1); }
+  fill(NAVY); doc.rect(0, H - 26, W, 26, "F"); fill(BLUE); doc.rect(0, H - 27, W, 1, "F");
   txt(BLUE); font(22, true); doc.text("\u201C", M, y + 4); txt(MUTED); doc.setFont("helvetica", "italic"); doc.setFontSize(9.5); doc.text("Juntos por uma experiência cada vez melhor.", M + 8, y + 2);
   y += 22;
   doc.setDrawColor(...INK); doc.setLineWidth(0.3); doc.line(M, y, M + 60, y);
