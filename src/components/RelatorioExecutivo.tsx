@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { FileText, Download, Loader2, X } from "lucide-react";
+import { FileText, Download, Loader2, X, MessageCircle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { daLoja, resumir, type NpsItem } from "@/lib/nps";
 import { STATUS_ATENDIDO, contar, type AgendRow } from "@/lib/agendamentos-data";
 import { lerOficinaMes } from "@/lib/oficina-mes";
-import { nomeArquivo, type EntradaRel } from "@/lib/relatorio-executivo";
+import { nomeArquivo, resumoWhatsapp, type EntradaRel } from "@/lib/relatorio-executivo";
 import farois from "@/assets/hero-farois.jpg";
 
 export type BaseRel = Omit<EntradaRel, "geradoEm" | "modo" | "nps" | "npsItens" | "agenda" | "retornos">;
@@ -19,7 +19,7 @@ async function imagemBase64(src: string) {
 /** Botão do Dashboard: consolida os dados já calculados + NPS/agenda/retornos e gera o PDF para conferência e download. */
 export function RelatorioExecutivo({ base, mesAtual }: { base: BaseRel; mesAtual: boolean }) {
   const [busy, setBusy] = useState(false);
-  const [pdf, setPdf] = useState<{ url: string; blob: Blob } | null>(null);
+  const [pdf, setPdf] = useState<{ url: string; blob: Blob; zap: string } | null>(null);
   const [modo, setModo] = useState<EntradaRel["modo"]>(mesAtual ? "acompanhamento" : "fechamento");
   useEffect(() => setModo(mesAtual ? "acompanhamento" : "fechamento"), [mesAtual]);
   useEffect(() => () => { if (pdf) setTimeout(() => URL.revokeObjectURL(pdf.url), 30000); }, [pdf]);
@@ -47,7 +47,8 @@ export function RelatorioExecutivo({ base, mesAtual }: { base: BaseRel; mesAtual
       const entrada: EntradaRel = { ...base, geradoEm: new Date(), modo, nps: npsItens.length ? resumir(npsItens) : null, npsItens, agenda, retornos: of && of.retornos.length ? of.retornos.length : null };
       const [{ gerarPdf }, capa] = await Promise.all([import("@/lib/relatorio-executivo-pdf"), imagemBase64(farois).catch(() => undefined)]);
       const blob = gerarPdf(entrada, capa);
-      setPdf({ blob, url: URL.createObjectURL(blob) });
+      const [yy, mm] = mes.split("-").map(Number); const mn = new Intl.DateTimeFormat("pt-BR", { month: "long" }).format(new Date(yy!, mm! - 1, 1));
+      setPdf({ blob, url: URL.createObjectURL(blob), zap: resumoWhatsapp(entrada, `${mn[0]!.toUpperCase()}${mn.slice(1)}/${yy}`) });
       toast.success("Relatório gerado. Confira antes de compartilhar.");
     } catch (err) {
       console.error(err);
@@ -72,7 +73,10 @@ export function RelatorioExecutivo({ base, mesAtual }: { base: BaseRel; mesAtual
     {pdf && <div className="fixed inset-0 z-50 flex flex-col bg-background/95 p-2 backdrop-blur sm:p-6" role="dialog" aria-label="Pré-visualização do relatório">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold">{nomeArquivo(base.mes)}</p>
-        <div className="flex gap-2"><Button size="sm" onClick={baixar} className="gap-1"><Download className="size-4" />Baixar PDF</Button>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="outline" onClick={() => { void navigator.clipboard.writeText(pdf.zap).then(() => toast.success("Resumo copiado para colar no WhatsApp.")); }} className="gap-1"><MessageCircle className="size-4" />Copiar resumo WhatsApp</Button>
+          <Button size="sm" variant="outline" onClick={() => window.open(pdf.url, "_blank")} className="gap-1"><ExternalLink className="size-4" />Abrir em nova aba</Button>
+          <Button size="sm" onClick={baixar} className="gap-1"><Download className="size-4" />Baixar PDF</Button>
           <Button size="sm" variant="outline" onClick={() => setPdf(null)} className="gap-1"><X className="size-4" />Fechar</Button></div>
       </div>
       <iframe title="Relatório Executivo" src={pdf.url} className="min-h-0 w-full flex-1 rounded-lg border border-border bg-card" />
