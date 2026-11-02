@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { loadOpenOrders, type OpenOrders } from "@/lib/open-orders.functions";
 import { STATUS, type OsImport } from "@/lib/os-controle";
+import { inicializarTecnicosMes } from "@/lib/tecnicos-mes";
 
 export type ResumoMes = {
   os: OpenOrders;
@@ -25,6 +26,7 @@ export function useResumoMes(mes: string) {
     const [y, m] = mes.split("-").map(Number);
     const fim = `${mes}-${new Date(y!, m!, 0).getDate()}`;
     void (async () => {
+      await inicializarTecnicosMes(mes);
       const [o, v, s, g, mm, oi] = await Promise.all([
         loadOpenOrders({ data: { mes } }).catch(() => null),
         supabase.from("agg_visits").select("passagens").gte("dia", `${mes}-01`).lte("dia", fim),

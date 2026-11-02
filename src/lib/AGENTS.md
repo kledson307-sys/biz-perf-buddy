@@ -1,4 +1,5 @@
 ## Lib rules
+- Technician month continuity uses SECURITY INVOKER inicializar_tecnicos_mes for entirely empty unlocked months, copying the immediately preceding roster/groups/targets with zero production; copiar_metas_tecnicos updates only existing targets. Goals sub-tabs reuse existing editors and separate data sources.
 - Agregados catalogue (`ITENS`) and parser live in `src/lib/agregados.ts`; add items there. User codes in `agg_codes` override defaults.
 - Agregados import replaces only the item group in the report, from month start for cumulative ranking reports (total on last day) or per sale day for item lists, so re-imports never double-count.
 - System codes are matched ignoring spaces and case (`normCod`); code lists are split only on comma/semicolon/newline because some codes contain spaces.
