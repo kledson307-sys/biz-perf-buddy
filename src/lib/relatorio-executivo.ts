@@ -42,7 +42,7 @@ export function analisar(e: EntradaRel) {
   const ratio = div(e.t.p, e.t.s);
   const fechamento = e.modo === "fechamento";
 
-  if (meta) fato.push(`Faturamento de ${brl(total)} contra meta de ${brl(meta)} (${pct(ating)} de atingimento; diferença de ${brl(meta - total)}).`);
+  if (meta) fato.push(`Faturamento de ${brl(total)} contra meta de ${brl(meta)} (${pct(ating)} de atingimento; ${total >= meta ? `superou em ${brl(total - meta)}` : `faltaram ${brl(meta - total)}`}).`);
   else indisp.push("Meta de faturamento não cadastrada para o período.");
   if (!fechamento && meta) fato.push(`Decorridos ${e.dec} de ${e.tot} dias ${e.base === "uteis" ? "úteis" : "corridos"} (${pct(ritmo)}); projeção de fechamento em ${brl(pT)} (${pct(div(pT, meta))} da meta).`);
   if (meta && !fechamento) interp.push(ating >= ritmo ? `O resultado está ${num((ating - ritmo) * 100, 1)} p.p. acima do ritmo esperado para o dia.` : `O resultado está ${num((ritmo - ating) * 100, 1)} p.p. abaixo do ritmo esperado; sem recuperação, a meta não será atingida.`);

@@ -171,7 +171,7 @@ export function gerarPdf(e: EntradaRel, capa?: string): Blob {
   // ===== Página 3 — oportunidades e plano =====
   nova();
   secao(5, "Principais oportunidades de melhoria");
-  const ops = [...a.riscos.map((t) => ({ t, tipo: "Risco" })), ...a.oport.map((t) => ({ t, tipo: "Oportunidade" }))].slice(0, 5);
+  const nOp = Math.min(a.oport.length, Math.max(2, 5 - a.riscos.length)); const ops = [...a.riscos.slice(0, 5 - nOp).map((t) => ({ t, tipo: "Risco" })), ...a.oport.slice(0, nOp).map((t) => ({ t, tipo: "Oportunidade" }))];
   if (!ops.length) { txt(MUTED); font(8.5); doc.text("Nenhum desvio relevante identificado com os dados disponíveis.", M, y); y += 8; }
   for (const o of ops) {
     const l = wrap(o.t, CW - 26); const h = Math.max(14, l.length * 3.6 + 8.5); garantir(h + 2);
