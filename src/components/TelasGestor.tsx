@@ -79,9 +79,9 @@ const estado = (p: number | null) => p === null ? { r: "Sem dados", c: "text-mut
   : { r: "Crítico", c: "text-destructive", b: "border-destructive/50 bg-destructive/5" };
 
 /** Central de Gestão (referência 16:9): status da operação, prioridades, plano de ação, evolução e resultado. */
-export function CentralGestao({ linhas, porDept, total, sales, mes, tot, dec, setTab, exportar, imprimir, fechamento, whats }: {
+export function CentralGestao({ linhas, porDept, total, sales, mes, tot, dec, setTab, exportar, whats }: {
   linhas: L[]; porDept: D[]; total: PerformanceCalc; sales: S[]; mes: string; tot: number; dec: number;
-  setTab: (t: string) => void; exportar: () => void; imprimir: () => void; fechamento: () => void; whats: ReactNode;
+  setTab: (t: string) => void; exportar: () => void; whats: ReactNode;
 }) {
   const { agg, mec, parados, amarelos } = useResumoMes(mes);
   const [nps, setNps] = useState<ReturnType<typeof resumir> | null>(null);
@@ -159,8 +159,6 @@ export function CentralGestao({ linhas, porDept, total, sales, mes, tot, dec, se
         <span className="flex flex-wrap gap-1.5">
           {whats}
           <button type="button" onClick={exportar} className="flex items-center gap-1 rounded-md border border-border px-2.5 py-1 hover:bg-muted"><Download className="size-3.5" />Exportar CSV</button>
-          <button type="button" onClick={imprimir} className="flex items-center gap-1 rounded-md border border-border px-2.5 py-1 hover:bg-muted"><Printer className="size-3.5" />Imprimir / PDF</button>
-          <button type="button" onClick={fechamento} className="flex items-center gap-1 rounded-md border border-primary px-2.5 py-1 text-primary hover:bg-primary/10"><Printer className="size-3.5" />Relatório de fechamento</button>
         </span>
       </footer>
     </div>
