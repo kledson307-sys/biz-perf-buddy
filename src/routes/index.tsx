@@ -29,7 +29,7 @@ import { CentralGestao, ConsultoresTela } from "@/components/TelasGestor";
 import { CadeadoMes } from "@/components/CadeadoMes";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, CalendarClock, Car, ChevronDown, ClipboardList, Download, Gauge, Gem, LayoutDashboard, LogOut, Menu, Package, Printer, Settings, Star, Target, TrendingUp, Upload, Users, Wrench, X } from "lucide-react";
+import { AlertTriangle, CalendarClock, Car, ChevronDown, ClipboardList, Download, Gauge, Gem, LayoutDashboard, LogOut, Menu, Package, Settings, Star, Target, TrendingUp, Upload, Users, Wrench, X } from "lucide-react";
 import bmwLogo from "@/assets/bmw-logo.asset.json";
 import carroSilhueta from "@/assets/carro-silhueta.jpg";
 import { localDay, sourceLabels, sourceStatus, tabUpdateStatus, UPDATE_EVENT, type UpdateRecord, type UpdateSource } from "@/lib/update-status";

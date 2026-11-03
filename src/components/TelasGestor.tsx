@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { daLoja, resumir, type NpsItem } from "@/lib/nps";
 import { useResumoMes } from "@/hooks/use-resumo-mes";
 import { ITENS } from "@/lib/agregados";
-import { AlertTriangle, ArrowRight, CalendarDays, ClipboardList, Download, MapPin, Printer, Target, TrendingUp, Trophy, Users } from "lucide-react";
+import { AlertTriangle, ArrowRight, CalendarDays, ClipboardList, Download, MapPin, Target, TrendingUp, Trophy, Users } from "lucide-react";
 import { Anel, Bloco } from "@/components/Cockpit";
 import { brl, div, pct, tone, uni } from "@/components/painel-ui";
 import { MixConsultores } from "@/components/MixConsultores";
