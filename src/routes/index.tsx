@@ -10,7 +10,6 @@ import { Barra, Box, Cmp, Kpi, Num, Posicao, Secao, Tabela, bg, brl, dataHora, d
 import { Agregados } from "@/components/Agregados";
 import { SalesImport } from "@/components/SalesImport";
 import { EnvioWhatsapp } from "@/components/EnvioWhatsapp";
-import { ResumoPainel } from "@/components/ResumoPainel";
 import { OsAbertas } from "@/components/OsAbertas";
 import { ControleOS } from "@/components/ControleOS";
 import { Notificacoes } from "@/components/Notificacoes";
@@ -28,10 +27,9 @@ import { NpsPainel } from "@/components/NpsPainel";
 import { PecasEstoque } from "@/components/PecasEstoque";
 import { CentralGestao, ConsultoresTela } from "@/components/TelasGestor";
 import { CadeadoMes } from "@/components/CadeadoMes";
-import { AnaliseFechamento, Reconhecimento } from "@/components/RelatorioAnalise";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, CalendarClock, Car, ChevronDown, ClipboardList, Download, Gauge, Gem, LayoutDashboard, LogOut, Menu, Package, Printer, Settings, Star, Target, TrendingUp, Upload, Users, Wrench, X } from "lucide-react";
+import { AlertTriangle, CalendarClock, Car, ChevronDown, ClipboardList, Download, Gauge, Gem, LayoutDashboard, LogOut, Menu, Package, Settings, Star, Target, TrendingUp, Upload, Users, Wrench, X } from "lucide-react";
 import bmwLogo from "@/assets/bmw-logo.asset.json";
 import carroSilhueta from "@/assets/carro-silhueta.jpg";
 import { localDay, sourceLabels, sourceStatus, tabUpdateStatus, UPDATE_EVENT, type UpdateRecord, type UpdateSource } from "@/lib/update-status";
@@ -151,10 +149,8 @@ function Painel({ email }: { email: string }) {
   const [menu, setMenu] = useState(false);
   const [projSub, setProjSub] = useState<"proj-serv" | "proj-pec" | "proj-total">("proj-serv");
   const setTab = (k: string) => { if (k.startsWith("proj-")) { setProjSub(k as typeof projSub); setTabRaw("proj"); } else setTabRaw(k); };
-  const [relatorio, setRelatorio] = useState(false);
+  const relatorio = false;
   const show = (k: string) => tab === k || (tab === "proj" && k === projSub) || relatorio;
-  useEffect(() => { const f = () => setRelatorio(false); window.addEventListener("afterprint", f); return () => window.removeEventListener("afterprint", f); }, []);
-  const gerarRelatorio = () => { setRelatorio(true); setTimeout(() => window.print(), 1200); };
   const [filtroDept, setFiltroDept] = useState("todos");
   const [updates, setUpdates] = useState<UpdateRecord[]>([]);
   const [clock, setClock] = useState(() => new Date());
@@ -490,120 +486,9 @@ function Painel({ email }: { email: string }) {
       <main className={`mx-auto min-w-0 max-w-[1920px] space-y-3 px-3 py-3 sm:px-5 ${tab === "painel" ? "painel-phone" : ""}`}>
         {topo}
         {subBar}
-        {relatorio && (
-          <div className="hidden print:block">
-            <div className="flex min-h-[250mm] flex-col items-center justify-center text-center">
-              <img src={bmwLogo.url} alt="BMW" className="size-28" />
-              <p className="mt-10 text-sm font-semibold uppercase tracking-[0.3em] text-primary">Relatório de Fechamento</p>
-              <h1 className="mt-3 text-4xl font-bold">PAINEL ESTRATÉGICO</h1>
-              <p className="mt-1 text-xl font-medium text-primary">KLEDSON</p>
-              <p className="mt-8 text-2xl font-semibold">{mesExtenso}</p>
-              <div className="mx-auto mt-12 grid w-full max-w-2xl grid-cols-2 gap-4 text-left">
-                <Kpi label="Realizado Serviços" value={brl(total.servicos)} sub={`Meta ${brl(total.mS)} · ${pct(total.perfS)}`} cls={tone(total.perfS)} />
-                <Kpi label="Realizado Peças" value={brl(total.pecas)} sub={`Meta ${brl(total.mP)} · ${pct(total.perfP)}`} cls={tone(total.perfP)} />
-                <Kpi label="Projeção Serviços" value={brl(total.projS)} sub={`${pct(total.projPctS)} da meta ${brl(total.mS)}`} cls={tone(total.projPctS)} p={total.projPctS} />
-                <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta ${brl(total.mP)}`} cls={tone(total.projPctP)} />
-              </div>
-              <p className="mt-8 text-2xl font-bold">Projeção Total: {brl(total.proj)} <span className={tone(total.projPct)}>({pct(total.projPct)} da meta)</span></p>
-              <p className="mt-12 max-w-2xl text-xs text-muted-foreground">
-                Gerado em {dataHora(new Date().toISOString())}
-                {lastUp && ` · Última atualização dos dados: ${dataHora(lastUp.at)} por ${lastUp.nome}`}
-                {` · Projeção por ${params.base === "uteis" ? "dias úteis" : "dias corridos"}: ${dec} de ${tot}`}
-              </p>
-            </div>
-          </div>
-        )}
-        {relatorio && <Secao relatorio={relatorio} titulo="Análise do fechamento"><AnaliseFechamento linhas={linhas} total={total} porDept={porDept} sales={sales} dec={dec} tot={tot} mes={mes} /></Secao>}
-        {relatorio && <Secao relatorio={relatorio} titulo="Reconhecimento"><Reconhecimento linhas={linhas} sales={sales} dec={dec} tot={tot} mes={mes} /></Secao>}
         {show("os") && <Secao relatorio={relatorio} titulo="Projeção + Ordens de Serviço abertas"><OsAbertas linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} deptName={deptName} semServicos={semServicos} /></Secao>}
-        {tab === "painel" && !relatorio && <CentralGestao linhas={linhas} porDept={porDept} total={total} sales={sales} mes={mes} tot={tot} dec={dec} setTab={setTab} exportar={exportar} imprimir={() => window.print()} fechamento={gerarRelatorio} whats={<button type="button" onClick={() => setAbrirWhats(!abrirWhats)} className="rounded-md border border-border px-2.5 py-1 hover:bg-muted">{abrirWhats ? "Ocultar WhatsApp" : "WhatsApp da equipe"}</button>} />}
+        {tab === "painel" && !relatorio && <CentralGestao linhas={linhas} porDept={porDept} total={total} sales={sales} mes={mes} tot={tot} dec={dec} setTab={setTab} exportar={exportar} whats={<button type="button" onClick={() => setAbrirWhats(!abrirWhats)} className="rounded-md border border-border px-2.5 py-1 hover:bg-muted">{abrirWhats ? "Ocultar WhatsApp" : "WhatsApp da equipe"}</button>} />}
         {tab === "painel" && abrirWhats && !relatorio && <EnvioWhatsapp linhas={linhas} lider={lider} liderServ={liderServ} liderPec={liderPec} mes={mes} dec={dec} tot={tot} reload={load} />}
-        {relatorio && (
-          <Secao relatorio={relatorio} titulo="Resumo executivo">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-sm font-semibold">Relatório de {mes}</h2>
-              <div className="flex flex-wrap gap-1.5 print:hidden">
-                <Button size="sm" onClick={exportar}><Download />Exportar Excel (CSV)</Button>
-                <Button size="sm" variant="outline" onClick={() => window.print()}><Printer />Imprimir / PDF</Button>
-                <Button size="sm" onClick={gerarRelatorio}><Printer />Relatório de fechamento (PDF)</Button>
-                <Button size="sm" variant="outline" onClick={() => setAbrirWhats(!abrirWhats)}>{abrirWhats ? "Ocultar envio por WhatsApp" : "Mostrar envio por WhatsApp"}</Button>
-              </div>
-            </div>
-            {abrirWhats && <div className="print:hidden"><EnvioWhatsapp linhas={linhas} lider={lider} liderServ={liderServ} liderPec={liderPec} mes={mes} dec={dec} tot={tot} reload={load} /></div>}
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6 print:hidden" aria-label="Status da operação">
-              {porDept.map((d) => <div key={d.nome} className="lux-card flex items-center gap-2 px-3 py-1.5"><span className={`size-3 shrink-0 rounded-full ${d.projPct >= 1 ? "bg-success" : d.projPct >= 0.85 ? "bg-warning" : "bg-destructive"}`} /><div className="min-w-0"><p className="truncate text-[11px] uppercase text-muted-foreground">{d.nome}</p><p className={`text-sm font-bold ${tone(d.projPct)}`}>{pct(d.projPct)} <span className="text-[10px] font-normal text-muted-foreground">{d.projPct >= 1 ? "No ritmo" : d.projPct >= 0.85 ? "Atenção" : "Crítico"}</span></p></div></div>)}
-              <div className="lux-card flex items-center gap-2 px-3 py-1.5"><span className={`size-3 shrink-0 rounded-full ${total.projPct >= 1 ? "bg-success" : total.projPct >= 0.85 ? "bg-warning" : "bg-destructive"}`} /><div className="min-w-0"><p className="truncate text-[11px] uppercase text-muted-foreground">Loja (projeção)</p><p className={`text-sm font-bold ${tone(total.projPct)}`}>{pct(total.projPct)}</p></div></div>
-            </div>
-            <div className="grid grid-cols-2 gap-2 lg:grid-cols-3 painel-kpis">
-              <Kpi label="Projeção Serviços" value={brl(total.projS)} sub={`${pct(total.projPctS)} da meta ${brl(total.mS)} · precisa ${brl(total.necS)}/dia`} cls={tone(total.projPctS)} p={total.projPctS} />
-              <Kpi label="Projeção Peças" value={brl(total.projP)} sub={`${pct(total.projPctP)} da meta ${brl(total.mP)} · margem ${margemTxt(total)} · precisa ${brl(total.necP)}/dia`} cls={tone(total.projPctP)} p={total.projPctP} />
-              <Kpi label="Projeção Total" value={brl(total.proj)} sub={`${pct(total.projPct)} da meta · realizado ${brl(total.servicos + total.pecas)}`} cls={tone(total.projPct)} p={total.projPct} destaque />
-            </div>
-
-            <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <Box title="Resultados por departamento" fit="xl:max-h-[calc(100vh-600px)] xl:min-h-[200px]">
-              <div className="overflow-x-auto"><table className="w-full text-sm">
-                <thead className="sticky top-0 bg-card text-[11px] uppercase text-muted-foreground"><tr>
-                  <th className="px-3 py-1.5 text-left">Departamento</th><th className="px-2 text-right">Serviços</th><th className="px-2 text-right">Proj. serv.</th><th className="px-2 text-right">Peças</th><th className="px-2 text-right">Proj. peças</th><th className="px-2 text-right">Margem</th><th className="px-2 text-right">Projeção total</th><th className="px-3 text-right">Precisa/dia</th>
-                </tr></thead>
-                <tbody>{porDept.map((d) => (
-                  <tr key={d.nome} className="border-t border-border tabular-nums">
-                    <td className="px-3 py-1.5"><p className="font-semibold">{d.nome}</p><div className="mt-0.5 w-28"><Barra p={d.projPct} /></div></td>
-                    <td className="px-2 text-right">{semServicos(d.nome) ? "—" : <>{brl(d.servicos)}<br /><span className={`text-xs ${tone(d.perfS)}`}>{pct(d.perfS)} de {brl(d.mS)}</span></>}</td>
-                    <td className={`px-2 text-right text-xs ${tone(d.projPctS)}`}>{semServicos(d.nome) ? "—" : <>{brl(d.projS)}<br />{pct(d.projPctS)}</>}</td>
-                    <td className="px-2 text-right">{brl(d.pecas)}<br /><span className={`text-xs ${tone(d.perfP)}`}>{pct(d.perfP)} de {brl(d.mP)}</span></td>
-                    <td className={`px-2 text-right text-xs ${tone(d.projPctP)}`}>{brl(d.projP)}<br />{pct(d.projPctP)}</td>
-                    <td className="px-2 text-right text-xs"><span className={`font-semibold ${margemTone(d.nome, d.margem, d.pecas)}`}>{margemTxt(d)}</span><br /><span className="text-muted-foreground">ideal {pct(margemIdeal(d.nome))}</span></td>
-                    <td className="px-2 text-right"><span className={`font-semibold ${tone(d.projPct)}`}>{brl(d.proj)}</span><br /><span className="text-xs text-muted-foreground">{pct(d.projPct)} · meta {brl(d.meta)}</span></td>
-                    <td className="px-3 text-right text-xs">{semServicos(d.nome) ? `peças ${brl(d.necP)}` : <>serv. {brl(d.necS)}<br />peças {brl(d.necP)}</>}</td>
-                  </tr>))}
-                </tbody>
-              </table></div>
-              {!porDept.length && <p className="p-4 text-sm text-muted-foreground">Cadastre consultores e departamentos em "Configurar" para ver os resultados aqui.</p>}
-            </Box>
-            <Box title="Prioridades & plano de ação" fit="xl:max-h-[calc(100vh-600px)] xl:min-h-[200px]">
-              <ul className="divide-y divide-border text-sm">
-                {[...linhas].filter((l) => l.meta > 0).sort((a, b) => a.projPct - b.projPct).slice(0, 6).map((l, i) => (
-                  <li key={l.c.id} className="flex items-start gap-2 px-3 py-1.5">
-                    <span className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${l.projPct >= 1 ? "bg-success/20 text-success" : l.projPct >= 0.85 ? "bg-warning/20 text-warning" : "bg-destructive/20 text-destructive"}`}>{i + 1}</span>
-                    <div className="min-w-0"><p className="truncate font-medium">{l.c.nome} <span className={`text-xs ${tone(l.projPct)}`}>proj. {pct(l.projPct)}</span></p>
-                      <p className="text-[11px] text-muted-foreground">{recomendar(l)[0] ?? `Precisa ${brl(l.nec)}/dia`}</p></div>
-                  </li>))}
-                {!linhas.length && <li className="p-3 text-xs text-muted-foreground">Sem consultores no mês.</li>}
-              </ul>
-            </Box>
-            </div>
-
-            <div className="hidden print:block"><ResumoPainel linhas={linhas.map((l) => ({ nome: l.c.nome, servicos: l.servicos, pecas: l.pecas, mS: l.mS, mP: l.mP, perfS: l.perfS, perfP: l.perfP, perf: l.perf, projPct: l.projPct, mediaDia: l.mediaDia, necS: l.necS, necP: l.necP, nec: l.nec }))} liderNome={lider?.c.nome ?? null} dec={dec} tot={tot} mes={mes} /></div>
-
-
-            {/* sai da tela; continua no relatório de fechamento (PDF) */}
-            <div className="hidden print:block">
-              <Box title="Comparação com o líder e recomendações">
-                <div className="grid gap-4 p-4 md:grid-cols-2">
-                  {linhas.map((l) => (
-                    <div key={l.c.id} className="rounded-lg border border-border p-4">
-                      <div className="flex items-baseline justify-between">
-                        <p className="font-semibold">{l.c.nome}</p>
-                        <p className={`text-sm font-semibold ${tone(l.projPct)}`}>Proj. {pct(l.projPct)}</p>
-                      </div>
-                      {lider && lider.c.id !== l.c.id && (
-                        <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
-                          <Cmp label="Perf. Serviços" a={l.perfS} b={lider.perfS} />
-                          <Cmp label="Perf. Peças" a={l.perfP} b={lider.perfP} />
-                          <Cmp label="Perf. Total" a={l.perf} b={lider.perf} />
-                        </div>
-                      )}
-                      <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-                        {recomendar(l).map((r) => <li key={r}>{r}</li>)}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              </Box>
-            </div>
-          </Secao>
-        )}
 
         {tab === "proj" && !relatorio && (
           <div className="flex flex-wrap gap-2 print:hidden" role="tablist" aria-label="Tipo de projeção">
