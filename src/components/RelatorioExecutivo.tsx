@@ -79,8 +79,14 @@ export function RelatorioExecutivo({ base, mesAtual }: { base: BaseRel; mesAtual
           <Button size="sm" onClick={baixar} className="gap-1"><Download className="size-4" />Baixar PDF</Button>
           <Button size="sm" variant="outline" onClick={() => setPdf(null)} className="gap-1"><X className="size-4" />Fechar</Button></div>
       </div>
-      <iframe title="Relatório Executivo" src={pdf.url} className="min-h-0 w-full flex-1 rounded-lg border border-border bg-card" />
-      <p className="mt-1 text-[11px] text-muted-foreground">No celular, se a prévia não aparecer, toque em "Baixar PDF" para abrir o documento.</p>
+      <iframe title="Relatório Executivo" src={pdf.url} className="hidden min-h-0 w-full flex-1 rounded-lg border border-border bg-card sm:block" />
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-lg border border-border bg-card p-6 text-center sm:hidden">
+        <FileText className="size-10 text-primary" />
+        <p className="text-sm font-semibold">Relatório pronto · 4 páginas</p>
+        <p className="text-xs text-muted-foreground">No celular, abra em tela cheia para rolar todas as páginas.</p>
+        <Button onClick={() => window.open(pdf.url, "_blank")} className="w-full gap-1"><ExternalLink className="size-4" />Ver as 4 páginas em tela cheia</Button>
+        <Button variant="outline" onClick={baixar} className="w-full gap-1"><Download className="size-4" />Baixar PDF</Button>
+      </div>
     </div>}
   </>;
 }
