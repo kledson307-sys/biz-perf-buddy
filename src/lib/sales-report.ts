@@ -89,3 +89,22 @@ export function readSalesReport(raw: unknown[][]): SalesReport {
   if (!result.rows.length) throw new Error("Não encontrei vendas. O cabeçalho deve conter Vendedor ou Consultor e Serviços e/ou Peças.");
   return result;
 }
+
+/**
+ * Casa o nome completo exportado pela DMS ("GILBERTO RIBEIRO SOUSA") com o login do painel ("GILBERTO.S"):
+ * primeiro tenta o nome exato/apelido; depois PRIMEIRONOME.X onde X é a inicial de algum sobrenome.
+ */
+export function casarConsultor(nome: string, logins: string[]): string | undefined {
+  const k = (s: string) => norm(s).replace(/\s+/g, "");
+  const porK = new Map(logins.map((l) => [k(l), l]));
+  const direto = porK.get(k(nomeVendedor(nome))) ?? porK.get(k(nome));
+  if (direto) return direto;
+  const partes = norm(nome).trim().split(/\s+/).filter((p) => p.length > 2);
+  if (partes.length < 2) return undefined;
+  const [prim, ...resto] = partes;
+  for (const sob of [...resto].reverse()) {
+    const l = porK.get(k(nomeVendedor(`${prim}.${sob[0]}`)));
+    if (l) return l;
+  }
+  return undefined;
+}

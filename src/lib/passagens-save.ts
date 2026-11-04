@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { grupoDe, type PassReport } from "@/lib/mecanicos";
 import { norm } from "@/components/painel-ui";
+import { casarConsultor } from "@/lib/sales-report";
 import { registrarUpdate } from "@/lib/update-log";
 import { ENCERRADO_KEY, osFaturadasAtivas, type OsItem } from "@/lib/os-controle";
 import { mesTravado, msgTravado } from "@/lib/month-lock";
@@ -44,6 +45,9 @@ export async function salvarPassagens(r: PassReport, mes: string): Promise<strin
   }
   const { data: cons } = await supabase.from("consultants").select("id,nome");
   const byNome = new Map((cons ?? []).map((c) => [norm(c.nome).replace(/\s+/g, " "), c.id]));
+  // Nome completo da DMS → login do painel (ex.: WESLEY DE JESUS FERREIRA → WESLEY.F).
+  const logins = (cons ?? []).map((c) => c.nome);
+  r = { ...r, consultores: r.consultores.map((x) => ({ ...x, nome: casarConsultor(x.nome, logins) ?? x.nome })) };
   const [y, m] = mes.split("-").map(Number);
   const dia = `${mes}-${String(new Date(y!, m!, 0).getDate()).padStart(2, "0")}`;
   const vRows = r.consultores.filter((x) => byNome.has(norm(x.nome).replace(/\s+/g, " ")))

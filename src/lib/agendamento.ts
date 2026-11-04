@@ -20,6 +20,11 @@ export const segmentoProduto = (p: string): "carro" | "moto" => /SERIE [FGRKC]\b
 export function classificar(obs: string): Categoria {
   const t = norm(obs).replace(/\s+/g, " ")
     .replace(/[A-Z/ ]{2,40}:\s*(N|NA|NAO)( POSSUI)?(?=\s|$)/g, " ").replace(/PREFERENCIA DO CONSULTOR\/TECNICO:[^:]*?(?=[A-Z ]{3,}:|$)/g, " ");
+  // Códigos de serviço têm prioridade: 0000105 revisão carro, 0000111 revisão moto, DIAG diagnóstico, MEC troca de peça/recall.
+  const cru = norm(obs);
+  if (/\b0000105|\b0000111/.test(cru)) return "revisao";
+  if (/\bDIAG/.test(t)) return "diagnostico";
+  if (/\bMEC\b|\bMEC\d/.test(t)) return "recall";
   if (/RECALL|ATUALIZACAO DE SOFTWARE|CAMPANHA ATUALIZA|CAMPANHA TECNICA:\s*(SIM|\d)/.test(t)) return "recall";
   if (/ALEGACOES:\s*(?!N\b|NAO)\S|ALEGA|BARULHO|RUIDO|MENSAGEM|LUZ |FALHA|DEFEITO|VAZAMENTO|DIAGNOS|NAO LIGA|NAO FUNCIONA/.test(t)) return "diagnostico";
   return "revisao";
@@ -48,7 +53,7 @@ export function lerAgendamento(raw: unknown[][]): AgendReport | null {
       itens[itens.length - 1]!.obs += "\n" + txt(r[obsCol]);
     }
   }
-  itens.forEach((it) => { it.categoria = classificar(it.obs); });
+  itens.forEach((it) => { it.categoria = classificar(`${it.obs} ${it.produto}`); if (/\b0000111/.test(norm(it.obs))) it.segmento = "moto"; if (/\b0000105/.test(norm(it.obs))) it.segmento = "carro"; });
   return { tipo: impressao && periodo > impressao ? "d1" : "d0", data: periodo, itens };
 }
 

@@ -541,7 +541,9 @@ export type Database = {
           dc_decorridos: number
           dc_totais: number
           du_decorridos: number
+          du_decorridos_dec: number | null
           du_totais: number
+          du_totais_dec: number | null
           id: string
           mes: string
           user_id: string
@@ -551,7 +553,9 @@ export type Database = {
           dc_decorridos?: number
           dc_totais?: number
           du_decorridos?: number
+          du_decorridos_dec?: number | null
           du_totais?: number
+          du_totais_dec?: number | null
           id?: string
           mes: string
           user_id?: string
@@ -561,7 +565,9 @@ export type Database = {
           dc_decorridos?: number
           dc_totais?: number
           du_decorridos?: number
+          du_decorridos_dec?: number | null
           du_totais?: number
+          du_totais_dec?: number | null
           id?: string
           mes?: string
           user_id?: string

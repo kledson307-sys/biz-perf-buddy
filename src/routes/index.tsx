@@ -38,6 +38,8 @@ import { useAccessPresence } from "@/hooks/use-access-presence";
 import { useResumoMes } from "@/hooks/use-resumo-mes";
 import { AbaTopo, type TopoKpi } from "@/components/AbaTopo";
 import { ImportadorUnificado } from "@/components/ImportadorUnificado";
+import { diasUteis } from "@/lib/dias-uteis";
+import { toast } from "sonner";
 import { RetrabalhoOficina } from "@/components/RetrabalhoOficina";
 import { Agendamentos } from "@/components/Agendamentos";
 import { AgendaMetas } from "@/components/AgendaMetas";
@@ -66,17 +68,6 @@ type Sale = { consultant_id: string; dia: string; servicos: number; pecas: numbe
 type Params = { du_totais: number; du_decorridos: number; dc_totais: number; dc_decorridos: number; base: string };
 
 const defParams: Params = { du_totais: 22, du_decorridos: 1, dc_totais: 30, dc_decorridos: 1, base: "uteis" };
-
-// Conta dias úteis (seg-sex) de "mes" do dia 01 até o dia "ate".
-const diasUteis = (mes: string, ate: number) => {
-  const [y, m] = mes.split("-").map(Number);
-  let n = 0;
-  for (let d = 1; d <= ate; d++) {
-    const w = new Date(y!, m! - 1, d).getDay();
-    if (w !== 0 && w !== 6) n++;
-  }
-  return n;
-};
 
 function Index() {
   const [session, setSession] = useState<Session | null>(null);
@@ -183,6 +174,11 @@ function Painel({ email }: { email: string }) {
     setTab(source === "controle-os" ? source : "importacoes");
   };
 
+  const gravarParams = useCallback((p: Params) => supabase.from("month_params").upsert({
+    mes, base: p.base, dc_totais: p.dc_totais, dc_decorridos: p.dc_decorridos,
+    du_totais: Math.round(p.du_totais), du_decorridos: Math.round(p.du_decorridos),
+    du_totais_dec: p.du_totais, du_decorridos_dec: p.du_decorridos,
+  }, { onConflict: "user_id,mes" }), [mes]);
   const load = useCallback(async () => {
     await inicializarTecnicosMes(mes);
     const [y, m] = mes.split("-").map(Number);
@@ -200,23 +196,26 @@ function Painel({ email }: { email: string }) {
     // Devoluções manuais entram como lançamento negativo de peças no último dia → faturamento líquido em todas as visões.
     const devs = (dv.data ?? []).map((x) => ({ consultant_id: x.consultant_id, dia: `${mes}-${String(fim).padStart(2, "0")}`, servicos: 0, pecas: -Number(x.valor), margem_pecas: 0 }));
     setSales([...(s.data ?? []).map((x) => ({ ...x, servicos: +x.servicos, pecas: +x.pecas, margem_pecas: +(x.margem_pecas ?? 0) })), ...devs]);
-    let np: Params = p.data ? (p.data as Params) : { ...defParams, dc_totais: fim };
+    const row = p.data as (Params & { du_totais_dec: number | null; du_decorridos_dec: number | null }) | null;
+    // Dias úteis com meio dia (sábado 0,5) ficam nas colunas *_dec; as inteiras são cópia arredondada.
+    let np: Params = row
+      ? { base: row.base, dc_totais: row.dc_totais, dc_decorridos: row.dc_decorridos, du_totais: Number(row.du_totais_dec ?? row.du_totais), du_decorridos: Number(row.du_decorridos_dec ?? row.du_decorridos) }
+      : { ...defParams, dc_totais: fim, du_totais: diasUteis(mes, fim) };
     const hoje = new Date();
     const mesHoje = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
     if (mes === mesHoje) {
       const dia = hoje.getDate();
-      const muda: Partial<Params> = {};
-      if (dia > np.dc_decorridos) muda.dc_decorridos = dia;
-      const du = diasUteis(mes, dia);
-      if (du > np.du_decorridos) muda.du_decorridos = du;
-      if (!p.data) { muda.dc_totais = fim; muda.du_totais = diasUteis(mes, fim); }
-      if (Object.keys(muda).length) {
-        np = { ...np, ...muda };
-        await supabase.from("month_params").upsert({ ...np, mes }, { onConflict: "user_id,mes" });
+      if (!row) {
+        np = { ...np, dc_decorridos: dia, du_decorridos: diasUteis(mes, dia) };
+        await gravarParams(np);
+      } else if (dia > np.dc_decorridos) {
+        // Avança só os dias novos desde o último registro, preservando ajustes manuais (ex.: feriado local).
+        np = { ...np, du_decorridos: np.du_decorridos + diasUteis(mes, dia) - diasUteis(mes, np.dc_decorridos), dc_decorridos: dia };
+        await gravarParams(np);
       }
     }
     setParams(np);
-  }, [mes]);
+  }, [mes, gravarParams]);
   useEffect(() => { load(); }, [load]);
 
   const tot = params.base === "uteis" ? params.du_totais : params.dc_totais;
@@ -279,9 +278,15 @@ function Painel({ email }: { email: string }) {
     return r;
   };
 
-  const salvarParams = async (p: Params) => {
-    setParams(p);
-    await supabase.from("month_params").upsert({ ...p, mes }, { onConflict: "user_id,mes" });
+  const [rascunho, setRascunho] = useState<Params | null>(null);
+  const salvarParams = (p: Params) => setRascunho(p);
+  const form = rascunho ?? params;
+  const confirmarParams = async () => {
+    if (!rascunho) return;
+    const { error } = await gravarParams(rascunho);
+    if (error) { toast.error("Não foi possível salvar os dias: " + error.message); return; }
+    setParams(rascunho); setRascunho(null);
+    toast.success("Dias do mês salvos.");
   };
 
   const exportar = () => {
@@ -633,10 +638,10 @@ function Painel({ email }: { email: string }) {
           </TabsList>
           <TabsContent value="geral" className="space-y-3 xl:max-h-[calc(100vh-350px)] xl:overflow-y-auto">
             <MetasExecutivo linhas={linhas} deptName={deptName} />
-            <Config parte="geral" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} />
+            <Config parte="geral" params={form} salvarParams={salvarParams} confirmar={() => void confirmarParams()} pendente={!!rascunho} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} />
           </TabsContent>
           <TabsContent value="consultores" className="xl:max-h-[calc(100vh-350px)] xl:overflow-y-auto">
-            <Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={visiveis} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} />
+            <Config parte="metas" params={form} salvarParams={salvarParams} confirmar={() => void confirmarParams()} pendente={!!rascunho} depts={depts} cons={visiveis} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} />
           </TabsContent>
           <TabsContent value="tecnicos" className="xl:max-h-[calc(100vh-350px)] xl:overflow-y-auto"><TecnicosMetas mes={mes} /></TabsContent>
           <TabsContent value="agregados" className="grid items-start gap-3 xl:max-h-[calc(100vh-350px)] xl:grid-cols-2 xl:overflow-y-auto">
@@ -644,7 +649,7 @@ function Painel({ email }: { email: string }) {
             <section className="space-y-2 px-3 py-2"><h3 className="text-sm font-semibold">Metas de agregados</h3><Agregados modo="metas" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section>
           </TabsContent>
         </Tabs>}
-        {tab === "config" && <div className="space-y-6"><Equipe /><Config parte="config" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div>}
+        {tab === "config" && <div className="space-y-6"><Equipe /><Config parte="config" params={form} salvarParams={salvarParams} confirmar={() => void confirmarParams()} pendente={!!rascunho} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div>}
       </main>
       </div>
     </div>
@@ -659,8 +664,8 @@ function StatusFonte({ source, mes, updates, clock }: { source: UpdateSource; me
     : <>❌ Nenhuma atualização registrada neste mês.</>}</p>;
 }
 
-function Config({ parte, params, salvarParams, depts, cons, goals, mes, reload, deptName, irPara }: {
-  parte: "config" | "metas" | "geral"; params: Params; salvarParams: (p: Params) => void; depts: Dept[]; cons: Cons[]; goals: Goal[]; mes: string; reload: () => void; deptName: (id: string | null) => string; irPara: (mes: string) => void;
+function Config({ parte, params, salvarParams, confirmar, pendente, depts, cons, goals, mes, reload, deptName, irPara }: {
+  parte: "config" | "metas" | "geral"; params: Params; salvarParams: (p: Params) => void; confirmar: () => void; pendente: boolean; depts: Dept[]; cons: Cons[]; goals: Goal[]; mes: string; reload: () => void; deptName: (id: string | null) => string; irPara: (mes: string) => void;
 }) {
   const [novoDept, setNovoDept] = useState("");
   const [novoCons, setNovoCons] = useState("");
@@ -689,16 +694,17 @@ function Config({ parte, params, salvarParams, depts, cons, goals, mes, reload, 
       <div className="grid gap-6 lg:grid-cols-3">
       {parte !== "metas" && <section className="space-y-4 rounded-xl border border-border bg-card p-6">
         <h2 className="text-lg font-semibold">Dias do mês {mes}</h2>
-        <Num label="Dias úteis totais" v={params.du_totais} on={(v) => salvarParams({ ...params, du_totais: v })} />
-        <Num label="Dias úteis decorridos" v={params.du_decorridos} on={(v) => salvarParams({ ...params, du_decorridos: v })} />
+        <Num label="Dias úteis totais" v={params.du_totais} on={(v) => salvarParams({ ...params, du_totais: v })} step={0.5} />
+        <Num label="Dias úteis decorridos" v={params.du_decorridos} on={(v) => salvarParams({ ...params, du_decorridos: v })} step={0.5} />
         <Num label="Dias corridos totais" v={params.dc_totais} on={(v) => salvarParams({ ...params, dc_totais: v })} />
         <Num label="Dias corridos decorridos" v={params.dc_decorridos} on={(v) => salvarParams({ ...params, dc_decorridos: v })} />
-        <p className="text-xs text-muted-foreground">No mês atual, os dias decorridos avançam sozinhos a cada dia (fins de semana não contam nos úteis). Você ainda pode ajustar manualmente — feriados, por exemplo.</p>
+        <p className="text-xs text-muted-foreground">Sábado conta 0,5 dia útil e feriados nacionais já são descontados. Os decorridos avançam sozinhos a cada novo dia, mantendo seus ajustes (ex.: feriado local).</p>
         <label className="block text-sm"><span className="text-muted-foreground">Projeção baseada em</span>
           <select value={params.base} onChange={(e) => salvarParams({ ...params, base: e.target.value })} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2">
             <option value="uteis">Dias úteis</option><option value="corridos">Dias corridos</option>
           </select>
         </label>
+        <button type="button" onClick={confirmar} disabled={!pendente} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{pendente ? "Salvar dias do mês" : "Dias do mês salvos"}</button>
         <p className="text-xs text-muted-foreground">Departamentos, consultores e metas ficam em Metas & Planejamento.</p>
       </section>}
       {parte === "metas" && <section className="space-y-4 rounded-xl border border-border bg-card p-6">

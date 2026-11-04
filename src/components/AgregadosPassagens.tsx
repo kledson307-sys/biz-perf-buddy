@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { norm, uni } from "./painel-ui";
 import { lerPassagens } from "@/lib/mecanicos";
+import { casarConsultor } from "@/lib/sales-report";
 import { registrarUpdate } from "@/lib/update-log";
 
 type Cons = { id: string; nome: string };
@@ -22,7 +23,8 @@ export function AgregadosPassagens({ allCons, ini, end, onDone }: { allCons: Con
       const raw = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[wb.SheetNames[0]!]!, { header: 1, raw: true, defval: "" });
       const r = lerPassagens(raw);
       const map = new Map(allCons.map((c) => [chave(c.nome), c.id]));
-      setPrev(r.consultores.map((c) => ({ ...c, id: map.get(chave(c.nome)) })));
+      const logins = allCons.map((c) => c.nome);
+      setPrev(r.consultores.map((c) => { const nome = casarConsultor(c.nome, logins) ?? c.nome; return { ...c, nome, id: map.get(chave(nome)) }; }));
       setMsg("");
     } catch (e) { setPrev(null); setMsg((e as Error).message); }
   };

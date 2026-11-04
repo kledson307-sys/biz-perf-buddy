@@ -45,7 +45,7 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
     setGoals((g.data ?? []).map((x) => ({ ...x, meta_qtd: +x.meta_qtd, meta_valor: +x.meta_valor })));
     setVisits((v.data ?? []).map((x) => ({ ...x, passagens: +x.passagens })));
     const salvo = new Map((c.data ?? []).map((x) => [x.item, splitCods(x.codigos)]));
-    setCodigos(Object.fromEntries(ITENS.map((i) => [i.k, salvo.get(i.k) ?? i.cod])));
+    setCodigos({ ...Object.fromEntries(ITENS.map((i) => [i.k, salvo.get(i.k) ?? i.cod])), __ignorar: salvo.get("__ignorar") ?? [] });
   }, [mes, ini, end]);
   useEffect(() => { load(); }, [load]);
 
@@ -94,6 +94,10 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
 
   return (
     <div className="space-y-3">
+      <details className="rounded-xl border border-border bg-card/60 p-2">
+        <summary className="cursor-pointer text-sm font-semibold text-primary">📥 Importar relatório de agregados aqui</summary>
+        <div className="mt-2"><AgregadosImport allCons={allCons} codigos={codigos} ini={ini} end={end} onDone={() => { load(); reloadCons(); }} /></div>
+      </details>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">Agregados · {mes}</h2>
