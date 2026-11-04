@@ -23,8 +23,8 @@ export function classificar(obs: string): Categoria {
   // Códigos de serviço têm prioridade: 0000105 revisão carro, 0000111 revisão moto, DIAG diagnóstico, MEC troca de peça/recall.
   const cru = norm(obs);
   if (/\b0000105|\b0000111/.test(cru)) return "revisao";
-  if (/\bDIAG/.test(cru)) return "diagnostico";
-  if (/\bMEC\b|\bMEC\d/.test(cru)) return "recall";
+  if (/\bDIAG/.test(t)) return "diagnostico";
+  if (/\bMEC\b|\bMEC\d/.test(t)) return "recall";
   if (/RECALL|ATUALIZACAO DE SOFTWARE|CAMPANHA ATUALIZA|CAMPANHA TECNICA:\s*(SIM|\d)/.test(t)) return "recall";
   if (/ALEGACOES:\s*(?!N\b|NAO)\S|ALEGA|BARULHO|RUIDO|MENSAGEM|LUZ |FALHA|DEFEITO|VAZAMENTO|DIAGNOS|NAO LIGA|NAO FUNCIONA/.test(t)) return "diagnostico";
   return "revisao";
