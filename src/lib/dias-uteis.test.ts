@@ -12,3 +12,13 @@ describe("dias úteis com sábado 0,5 e feriados", () => {
     expect(diasUteis("2026-11", 7) - diasUteis("2026-11", 6)).toBe(0.5);
   });
 });
+
+import { casarConsultor } from "./sales-report";
+describe("nome completo da DMS → login", () => {
+  const logins = ["GEOVANA.M", "GILBERTO.S", "WESLEY.F", "PEDRO.B"];
+  it("casa os três nomes do relatório", () => {
+    expect(casarConsultor("GEOVANA DE MEDEIROS LIMA", logins)).toBe("GEOVANA.M");
+    expect(casarConsultor("GILBERTO RIBEIRO SOUSA", logins)).toBe("GILBERTO.S");
+    expect(casarConsultor("WESLEY DE JESUS FERREIRA", logins)).toBe("WESLEY.F");
+  });
+});

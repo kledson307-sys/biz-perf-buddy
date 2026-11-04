@@ -20,7 +20,7 @@
 - Reuse `src/components/painel-ui.tsx` for dashboard formatters/UI and `src/lib/performance.ts` for main consultant, department, total and report calculations to keep tested math shared.
 - Agregados data lives in its own tables (`agg_sales`, `agg_goals`, `agg_visits`) and its own component; never mix it into `daily_sales`/`goals` totals — the user tracks it separately.
 - AI calls go through Lovable AI Gateway from server-only helpers in `src/lib/ai/*.server.ts`, invoked by auth-protected `createServerFn`s in `src/lib/*.functions.ts`; the browser sends computed stats, never the key.
-- All daily imports (sales, open O.S., technicians, agregados) render only in the Importações tab via each component's `modo="importar"`; result tabs stay read-only and Controle O.S. keeps its own weekly import.
+- Daily imports live in the Importações tab via each component's `modo="importar"`; Agendamentos and Agregados also offer the same importer in a collapsed <details> inside their tab (no alternate import logic); Controle O.S. keeps its own weekly import.
 - Derive tab freshness from month-scoped update_log records using shared update-status helpers (sourceStatus also flags updates made today, shown as ✅/❌ per Importações block); sales views share their source, Projeção + OS requires both sales and open orders, and Controle O.S. uses its weekly cadence.
 - Cumulative main-sales reports use the authenticated SECURITY INVOKER `import_sales_period` RPC to replace included consultants' period atomically and store totals on the final day; period totals cannot reconstruct daily sales.
 - Brand primary and performance colors use independent semantic tokens so changing the brand never changes success/warning thresholds.
@@ -33,6 +33,7 @@
 - Judicial O.S. flag lives in `os_acompanhamento.acoes.__judicial` (os-controle helpers); excluded from Painel warning, bell and `minhas_os`.
 - Access: shared `useAccessPresence` confirms RPC writes before seller reads; retry errors, refresh on open/focus/visible/online/timer. History refreshes; keep one owner-scoped row/day.
 - month_locks uses master RLS; imports check mesTravado and mech_month enforces locks by trigger. Atomic technician continuity/copy RPCs never replace production; see src/lib/AGENTS.md.
+- Working days use `src/lib/dias-uteis.ts` (Sat 0.5, national holidays 0) stored in month_params `*_dec` columns (int columns are rounded copies read by restricted RPCs); edits save only via the explicit button and daily auto-advance adds only new days to preserve manual adjustments.
 - Navigation has 10 official sidebar tabs (order: cockpit, painel, ranking, agregados, mecanicos, pecas, controle-os, nps, metas, importacoes); Central de Gestão groups painel/proj/os and Importações & Config groups importacoes/config as sub-tabs, so legacy `setTab(...)` deep links (incl. `proj-*`) keep working.
 
 - Subdirectories may have their own `AGENTS.md` (e.g. `src/lib/AGENTS.md`); read it before changing files there.- Desktop tabs must fit one 16:9 screen (checked at 1440×900 and 1920×1080): put long lists in `Box fit="xl:max-h-[calc(100vh-…)]"` internal scroll or collapsed <details>, never extend the page height.

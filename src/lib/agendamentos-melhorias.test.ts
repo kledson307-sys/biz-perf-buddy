@@ -12,3 +12,13 @@ describe("agendamentos melhorias", () => {
     expect(linkResgate("", "X")).toBeNull();
   });
 });
+
+import { classificar as classificarCod } from "./agendamento";
+describe("códigos de serviço no agendamento", () => {
+  it("0000105/0000111 revisão, DIAG diagnóstico, MEC recall", () => {
+    expect(classificarCod("0000105 REVISAO")).toBe("revisao");
+    expect(classificarCod("0000111")).toBe("revisao");
+    expect(classificarCod("DIAG BARULHO")).toBe("diagnostico");
+    expect(classificarCod("MEC TROCA")).toBe("recall");
+  });
+});

@@ -94,6 +94,10 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
 
   return (
     <div className="space-y-3">
+      <details className="rounded-xl border border-border bg-card/60 p-2">
+        <summary className="cursor-pointer text-sm font-semibold text-primary">📥 Importar relatório de agregados aqui</summary>
+        <div className="mt-2"><AgregadosImport allCons={allCons} codigos={codigos} ini={ini} end={end} onDone={() => { load(); reloadCons(); }} /></div>
+      </details>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">Agregados · {mes}</h2>
