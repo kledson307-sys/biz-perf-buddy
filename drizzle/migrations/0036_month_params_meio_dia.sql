@@ -1,0 +1,3 @@
+ALTER TABLE public.month_params ADD COLUMN IF NOT EXISTS du_totais_dec numeric(5,1), ADD COLUMN IF NOT EXISTS du_decorridos_dec numeric(5,1);
+COMMENT ON COLUMN public.month_params.du_totais IS 'DEPRECATED for precision: rounded copy; du_totais_dec holds half-day (Saturday 0.5) value';
+COMMENT ON COLUMN public.month_params.du_decorridos IS 'DEPRECATED for precision: rounded copy; du_decorridos_dec holds half-day value';
