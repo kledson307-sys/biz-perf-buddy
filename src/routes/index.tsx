@@ -279,6 +279,7 @@ function Painel({ email }: { email: string }) {
 
   const [rascunho, setRascunho] = useState<Params | null>(null);
   const salvarParams = (p: Params) => setRascunho(p);
+  const form = rascunho ?? params;
   const confirmarParams = async () => {
     if (!rascunho) return;
     const { error } = await gravarParams(rascunho);
@@ -692,13 +693,13 @@ function Config({ parte, params, salvarParams, depts, cons, goals, mes, reload, 
       <div className="grid gap-6 lg:grid-cols-3">
       {parte !== "metas" && <section className="space-y-4 rounded-xl border border-border bg-card p-6">
         <h2 className="text-lg font-semibold">Dias do mês {mes}</h2>
-        <Num label="Dias úteis totais" v={params.du_totais} on={(v) => salvarParams({ ...params, du_totais: v })} />
-        <Num label="Dias úteis decorridos" v={params.du_decorridos} on={(v) => salvarParams({ ...params, du_decorridos: v })} />
-        <Num label="Dias corridos totais" v={params.dc_totais} on={(v) => salvarParams({ ...params, dc_totais: v })} />
-        <Num label="Dias corridos decorridos" v={params.dc_decorridos} on={(v) => salvarParams({ ...params, dc_decorridos: v })} />
-        <p className="text-xs text-muted-foreground">No mês atual, os dias decorridos avançam sozinhos a cada dia (fins de semana não contam nos úteis). Você ainda pode ajustar manualmente — feriados, por exemplo.</p>
+        <Num label="Dias úteis totais" v={form.du_totais} on={(v) => salvarParams({ ...form, du_totais: v })} step={0.5} />
+        <Num label="Dias úteis decorridos" v={form.du_decorridos} on={(v) => salvarParams({ ...form, du_decorridos: v })} step={0.5} />
+        <Num label="Dias corridos totais" v={form.dc_totais} on={(v) => salvarParams({ ...form, dc_totais: v })} />
+        <Num label="Dias corridos decorridos" v={form.dc_decorridos} on={(v) => salvarParams({ ...form, dc_decorridos: v })} />
+        <p className="text-xs text-muted-foreground">Sábado conta 0,5 dia útil e feriados nacionais já são descontados. Os decorridos avançam sozinhos a cada novo dia, mantendo seus ajustes (ex.: feriado local).</p>
         <label className="block text-sm"><span className="text-muted-foreground">Projeção baseada em</span>
-          <select value={params.base} onChange={(e) => salvarParams({ ...params, base: e.target.value })} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2">
+          <select value={form.base} onChange={(e) => salvarParams({ ...form, base: e.target.value })} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2">
             <option value="uteis">Dias úteis</option><option value="corridos">Dias corridos</option>
           </select>
         </label>
