@@ -13,3 +13,4 @@
 - Oficina bell (Marcos/Delmir) reads only SECURITY DEFINER RPCs (`painel_oficina`, `oficina_agenda_alertas`, `meu_nps`) since data_owner() is NULL for them.
 - Sininho/avisos: `src/lib/aviso-aparelho.ts` sets the app badge and native notifications without a service worker, deduping ids in localStorage.
 - First-access guide and release notes live in `src/lib/guia.ts` (bump `NOVIDADES` version per release); seen state is per email in localStorage.
+- Working days use `src/lib/dias-uteis.ts` (Sat 0.5, national holidays 0) stored in month_params `*_dec` columns (int columns are rounded copies read by restricted RPCs); edits save only via the explicit button and daily auto-advance adds only new days to preserve manual adjustments.
