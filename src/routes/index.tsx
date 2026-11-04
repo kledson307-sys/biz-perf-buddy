@@ -638,10 +638,10 @@ function Painel({ email }: { email: string }) {
           </TabsList>
           <TabsContent value="geral" className="space-y-3 xl:max-h-[calc(100vh-350px)] xl:overflow-y-auto">
             <MetasExecutivo linhas={linhas} deptName={deptName} />
-            <Config parte="geral" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} />
+            <Config parte="geral" params={form} salvarParams={salvarParams} confirmar={() => void confirmarParams()} pendente={!!rascunho} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} />
           </TabsContent>
           <TabsContent value="consultores" className="xl:max-h-[calc(100vh-350px)] xl:overflow-y-auto">
-            <Config parte="metas" params={params} salvarParams={salvarParams} depts={depts} cons={visiveis} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} />
+            <Config parte="metas" params={form} salvarParams={salvarParams} confirmar={() => void confirmarParams()} pendente={!!rascunho} depts={depts} cons={visiveis} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} />
           </TabsContent>
           <TabsContent value="tecnicos" className="xl:max-h-[calc(100vh-350px)] xl:overflow-y-auto"><TecnicosMetas mes={mes} /></TabsContent>
           <TabsContent value="agregados" className="grid items-start gap-3 xl:max-h-[calc(100vh-350px)] xl:grid-cols-2 xl:overflow-y-auto">
@@ -649,7 +649,7 @@ function Painel({ email }: { email: string }) {
             <section className="space-y-2 px-3 py-2"><h3 className="text-sm font-semibold">Metas de agregados</h3><Agregados modo="metas" mes={mes} cons={visiveis} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={load} relatorio={false} /></section>
           </TabsContent>
         </Tabs>}
-        {tab === "config" && <div className="space-y-6"><Equipe /><Config parte="config" params={params} salvarParams={salvarParams} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div>}
+        {tab === "config" && <div className="space-y-6"><Equipe /><Config parte="config" params={form} salvarParams={salvarParams} confirmar={() => void confirmarParams()} pendente={!!rascunho} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} /></div>}
       </main>
       </div>
     </div>
@@ -664,8 +664,8 @@ function StatusFonte({ source, mes, updates, clock }: { source: UpdateSource; me
     : <>❌ Nenhuma atualização registrada neste mês.</>}</p>;
 }
 
-function Config({ parte, params, salvarParams, depts, cons, goals, mes, reload, deptName, irPara }: {
-  parte: "config" | "metas" | "geral"; params: Params; salvarParams: (p: Params) => void; depts: Dept[]; cons: Cons[]; goals: Goal[]; mes: string; reload: () => void; deptName: (id: string | null) => string; irPara: (mes: string) => void;
+function Config({ parte, params, salvarParams, confirmar, pendente, depts, cons, goals, mes, reload, deptName, irPara }: {
+  parte: "config" | "metas" | "geral"; params: Params; salvarParams: (p: Params) => void; confirmar: () => void; pendente: boolean; depts: Dept[]; cons: Cons[]; goals: Goal[]; mes: string; reload: () => void; deptName: (id: string | null) => string; irPara: (mes: string) => void;
 }) {
   const [novoDept, setNovoDept] = useState("");
   const [novoCons, setNovoCons] = useState("");
@@ -694,17 +694,17 @@ function Config({ parte, params, salvarParams, depts, cons, goals, mes, reload, 
       <div className="grid gap-6 lg:grid-cols-3">
       {parte !== "metas" && <section className="space-y-4 rounded-xl border border-border bg-card p-6">
         <h2 className="text-lg font-semibold">Dias do mês {mes}</h2>
-        <Num label="Dias úteis totais" v={form.du_totais} on={(v) => salvarParams({ ...form, du_totais: v })} step={0.5} />
-        <Num label="Dias úteis decorridos" v={form.du_decorridos} on={(v) => salvarParams({ ...form, du_decorridos: v })} step={0.5} />
-        <Num label="Dias corridos totais" v={form.dc_totais} on={(v) => salvarParams({ ...form, dc_totais: v })} />
-        <Num label="Dias corridos decorridos" v={form.dc_decorridos} on={(v) => salvarParams({ ...form, dc_decorridos: v })} />
+        <Num label="Dias úteis totais" v={params.du_totais} on={(v) => salvarParams({ ...params, du_totais: v })} step={0.5} />
+        <Num label="Dias úteis decorridos" v={params.du_decorridos} on={(v) => salvarParams({ ...params, du_decorridos: v })} step={0.5} />
+        <Num label="Dias corridos totais" v={params.dc_totais} on={(v) => salvarParams({ ...params, dc_totais: v })} />
+        <Num label="Dias corridos decorridos" v={params.dc_decorridos} on={(v) => salvarParams({ ...params, dc_decorridos: v })} />
         <p className="text-xs text-muted-foreground">Sábado conta 0,5 dia útil e feriados nacionais já são descontados. Os decorridos avançam sozinhos a cada novo dia, mantendo seus ajustes (ex.: feriado local).</p>
         <label className="block text-sm"><span className="text-muted-foreground">Projeção baseada em</span>
-          <select value={form.base} onChange={(e) => salvarParams({ ...form, base: e.target.value })} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2">
+          <select value={params.base} onChange={(e) => salvarParams({ ...params, base: e.target.value })} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2">
             <option value="uteis">Dias úteis</option><option value="corridos">Dias corridos</option>
           </select>
         </label>
-        <button type="button" onClick={() => void confirmarParams()} disabled={!rascunho} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{rascunho ? "Salvar dias do mês" : "Dias do mês salvos"}</button>
+        <button type="button" onClick={confirmar} disabled={!pendente} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{pendente ? "Salvar dias do mês" : "Dias do mês salvos"}</button>
         <p className="text-xs text-muted-foreground">Departamentos, consultores e metas ficam em Metas & Planejamento.</p>
       </section>}
       {parte === "metas" && <section className="space-y-4 rounded-xl border border-border bg-card p-6">
