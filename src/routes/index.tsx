@@ -38,6 +38,7 @@ import { useAccessPresence } from "@/hooks/use-access-presence";
 import { useResumoMes } from "@/hooks/use-resumo-mes";
 import { AbaTopo, type TopoKpi } from "@/components/AbaTopo";
 import { ImportadorUnificado } from "@/components/ImportadorUnificado";
+import { diasUteis } from "@/lib/dias-uteis";
 import { RetrabalhoOficina } from "@/components/RetrabalhoOficina";
 import { Agendamentos } from "@/components/Agendamentos";
 import { AgendaMetas } from "@/components/AgendaMetas";
@@ -66,17 +67,6 @@ type Sale = { consultant_id: string; dia: string; servicos: number; pecas: numbe
 type Params = { du_totais: number; du_decorridos: number; dc_totais: number; dc_decorridos: number; base: string };
 
 const defParams: Params = { du_totais: 22, du_decorridos: 1, dc_totais: 30, dc_decorridos: 1, base: "uteis" };
-
-// Conta dias úteis (seg-sex) de "mes" do dia 01 até o dia "ate".
-const diasUteis = (mes: string, ate: number) => {
-  const [y, m] = mes.split("-").map(Number);
-  let n = 0;
-  for (let d = 1; d <= ate; d++) {
-    const w = new Date(y!, m! - 1, d).getDay();
-    if (w !== 0 && w !== 6) n++;
-  }
-  return n;
-};
 
 function Index() {
   const [session, setSession] = useState<Session | null>(null);
@@ -183,6 +173,11 @@ function Painel({ email }: { email: string }) {
     setTab(source === "controle-os" ? source : "importacoes");
   };
 
+  const gravarParams = useCallback((p: Params) => supabase.from("month_params").upsert({
+    mes, base: p.base, dc_totais: p.dc_totais, dc_decorridos: p.dc_decorridos,
+    du_totais: Math.round(p.du_totais), du_decorridos: Math.round(p.du_decorridos),
+    du_totais_dec: p.du_totais, du_decorridos_dec: p.du_decorridos,
+  }, { onConflict: "user_id,mes" }), [mes]);
   const load = useCallback(async () => {
     await inicializarTecnicosMes(mes);
     const [y, m] = mes.split("-").map(Number);
@@ -200,23 +195,26 @@ function Painel({ email }: { email: string }) {
     // Devoluções manuais entram como lançamento negativo de peças no último dia → faturamento líquido em todas as visões.
     const devs = (dv.data ?? []).map((x) => ({ consultant_id: x.consultant_id, dia: `${mes}-${String(fim).padStart(2, "0")}`, servicos: 0, pecas: -Number(x.valor), margem_pecas: 0 }));
     setSales([...(s.data ?? []).map((x) => ({ ...x, servicos: +x.servicos, pecas: +x.pecas, margem_pecas: +(x.margem_pecas ?? 0) })), ...devs]);
-    let np: Params = p.data ? (p.data as Params) : { ...defParams, dc_totais: fim };
+    const row = p.data as (Params & { du_totais_dec: number | null; du_decorridos_dec: number | null }) | null;
+    // Dias úteis com meio dia (sábado 0,5) ficam nas colunas *_dec; as inteiras são cópia arredondada.
+    let np: Params = row
+      ? { base: row.base, dc_totais: row.dc_totais, dc_decorridos: row.dc_decorridos, du_totais: Number(row.du_totais_dec ?? row.du_totais), du_decorridos: Number(row.du_decorridos_dec ?? row.du_decorridos) }
+      : { ...defParams, dc_totais: fim, du_totais: diasUteis(mes, fim) };
     const hoje = new Date();
     const mesHoje = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
     if (mes === mesHoje) {
       const dia = hoje.getDate();
-      const muda: Partial<Params> = {};
-      if (dia > np.dc_decorridos) muda.dc_decorridos = dia;
-      const du = diasUteis(mes, dia);
-      if (du > np.du_decorridos) muda.du_decorridos = du;
-      if (!p.data) { muda.dc_totais = fim; muda.du_totais = diasUteis(mes, fim); }
-      if (Object.keys(muda).length) {
-        np = { ...np, ...muda };
-        await supabase.from("month_params").upsert({ ...np, mes }, { onConflict: "user_id,mes" });
+      if (!row) {
+        np = { ...np, dc_decorridos: dia, du_decorridos: diasUteis(mes, dia) };
+        await gravarParams(np);
+      } else if (dia > np.dc_decorridos) {
+        // Avança só os dias novos desde o último registro, preservando ajustes manuais (ex.: feriado local).
+        np = { ...np, du_decorridos: np.du_decorridos + diasUteis(mes, dia) - diasUteis(mes, np.dc_decorridos), dc_decorridos: dia };
+        await gravarParams(np);
       }
     }
     setParams(np);
-  }, [mes]);
+  }, [mes, gravarParams]);
   useEffect(() => { load(); }, [load]);
 
   const tot = params.base === "uteis" ? params.du_totais : params.dc_totais;
@@ -279,9 +277,14 @@ function Painel({ email }: { email: string }) {
     return r;
   };
 
-  const salvarParams = async (p: Params) => {
-    setParams(p);
-    await supabase.from("month_params").upsert({ ...p, mes }, { onConflict: "user_id,mes" });
+  const [rascunho, setRascunho] = useState<Params | null>(null);
+  const salvarParams = (p: Params) => setRascunho(p);
+  const confirmarParams = async () => {
+    if (!rascunho) return;
+    const { error } = await gravarParams(rascunho);
+    if (error) { toast.error("Não foi possível salvar os dias: " + error.message); return; }
+    setParams(rascunho); setRascunho(null);
+    toast.success("Dias do mês salvos.");
   };
 
   const exportar = () => {

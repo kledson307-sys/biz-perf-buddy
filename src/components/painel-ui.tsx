@@ -81,10 +81,10 @@ export function Kpi({ label, value, sub, cls = "", p, destaque = false }: { labe
     </div>
   );
 }
-export function Num({ label, v, on }: { label: string; v: number; on: (v: number) => void }) {
+export function Num({ label, v, on, step }: { label: string; v: number; on: (v: number) => void; step?: number }) {
   return (
     <label className="block text-sm"><span className="text-muted-foreground">{label}</span>
-      <input type="number" value={v} onChange={(e) => on(+e.target.value)} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2" />
+      <input type="number" step={step} value={v} onChange={(e) => on(+e.target.value)} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2" />
     </label>
   );
 }
