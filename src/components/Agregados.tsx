@@ -45,7 +45,7 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
     setGoals((g.data ?? []).map((x) => ({ ...x, meta_qtd: +x.meta_qtd, meta_valor: +x.meta_valor })));
     setVisits((v.data ?? []).map((x) => ({ ...x, passagens: +x.passagens })));
     const salvo = new Map((c.data ?? []).map((x) => [x.item, splitCods(x.codigos)]));
-    setCodigos(Object.fromEntries(ITENS.map((i) => [i.k, salvo.get(i.k) ?? i.cod])));
+    setCodigos({ ...Object.fromEntries(ITENS.map((i) => [i.k, salvo.get(i.k) ?? i.cod])), __ignorar: salvo.get("__ignorar") ?? [] });
   }, [mes, ini, end]);
   useEffect(() => { load(); }, [load]);
 

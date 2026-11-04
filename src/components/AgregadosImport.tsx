@@ -20,20 +20,32 @@ export function AgregadosImport({ allCons, codigos, ini, end, onDone }: {
   const [msg, setMsg] = useState("");
   const [salvando, setSalvando] = useState(false);
 
-  const res = useMemo(() => (rel ? distribuir(rel, codigos) : null), [rel, codigos]);
+  // "__ignorar" guarda códigos que o gestor confirmou não serem agregados; nunca entram na distribuição.
+  const cods = useMemo(() => Object.fromEntries(Object.entries(codigos).filter(([k]) => k !== "__ignorar")), [codigos]);
+  const res = useMemo(() => (rel ? distribuir(rel, cods) : null), [rel, cods]);
+  const [decididos, setDecididos] = useState<Record<string, string>>({});
+  const classificarCod = async (codigo: string, item: string) => {
+    const atual = codigos[item] ?? [];
+    if (!atual.map(normCod).includes(normCod(codigo))) {
+      const { error } = await supabase.from("agg_codes").upsert({ item, codigos: [...atual, codigo].join(",") }, { onConflict: "user_id,item" });
+      if (error) { setMsg("Erro ao salvar código: " + error.message); return; }
+    }
+    setDecididos((d) => ({ ...d, [normCod(codigo)]: item }));
+    onDone();
+  };
   // Detector de códigos novos: descrição parece um agregado, mas o código não está cadastrado.
   const novosCods = useMemo(() => {
     if (!rel) return [];
     const cad = new Set(Object.values(codigos).flat().map(normCod));
     return rel.servicos.flatMap((s) => {
-      if (cad.has(normCod(s.codigo))) return [];
+      if (cad.has(normCod(s.codigo)) || decididos[normCod(s.codigo)]) return [];
       const it = ITENS.find((i) => i.re.test(norm(s.desc)));
       return it ? [{ codigo: s.codigo, desc: s.desc, qtd: s.qtd, item: it.nome }] : [];
     });
-  }, [rel, codigos]);
+  }, [rel, codigos, decididos]);
   // Só substitui o grupo (serviços ou peças) que aparece no relatório, para que importar um não apague o outro.
   const grupos = new Set((res?.usados ?? []).map((u) => ITENS.find((i) => i.k === u.item)?.g));
-  const itensAtivos = ITENS.filter((i) => (codigos[i.k] ?? []).length > 0 && grupos.has(i.g));
+  const itensAtivos = ITENS.filter((i) => (cods[i.k] ?? []).length > 0 && grupos.has(i.g));
   const itensSubst = itensAtivos;
   const periodo = rel?.periodo ?? { ini: dia, fim: dia };
   const conhecidos = new Set(allCons.map((c) => norm(c.nome)));
@@ -173,9 +185,17 @@ export function AgregadosImport({ allCons, codigos, ini, end, onDone }: {
             </details>
             {novosCods.length > 0 && (
               <div className="rounded-md border border-warning/50 bg-warning/10 p-3 text-xs">
-                <p className="font-semibold text-warning">⚠️ Códigos novos que parecem agregados e ainda não estão cadastrados ({novosCods.length}):</p>
-                <ul className="mt-1 space-y-0.5">{novosCods.map((n) => <li key={n.codigo}><span className="font-mono">{n.codigo}</span> — {n.desc} · provável <b>{n.item}</b> · {uni(n.qtd)} un</li>)}</ul>
-                <p className="mt-1 text-muted-foreground">Se forem desse item, adicione o código na lista de códigos abaixo e importe de novo.</p>
+                <p className="font-semibold text-warning">⚠️ Produtos novos encontrados — confirme o que é cada um ({novosCods.length}):</p>
+                <ul className="mt-2 space-y-2">{novosCods.map((n) => (
+                  <li key={n.codigo} className="space-y-1">
+                    <p><span className="font-mono">{n.codigo}</span> — {n.desc} · {uni(n.qtd)} un · parece <b>{n.item}</b>. É agregado? Qual família?</p>
+                    <div className="flex flex-wrap gap-1">
+                      {ITENS.map((it) => <button key={it.k} type="button" onClick={() => void classificarCod(n.codigo, it.k)} className="rounded border border-border bg-background px-2 py-0.5 hover:bg-muted">{it.nome}</button>)}
+                      <button type="button" onClick={() => void classificarCod(n.codigo, "__ignorar")} className="rounded border border-destructive/50 px-2 py-0.5 text-destructive hover:bg-destructive/10">Não é agregado (ignorar)</button>
+                    </div>
+                  </li>
+                ))}</ul>
+                <p className="mt-1 text-muted-foreground">Nada é contado sem a sua confirmação. A escolha fica gravada para as próximas importações.</p>
               </div>
             )}
             {avisos.length > 0 && (
