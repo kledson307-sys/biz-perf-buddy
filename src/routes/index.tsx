@@ -39,6 +39,7 @@ import { useResumoMes } from "@/hooks/use-resumo-mes";
 import { AbaTopo, type TopoKpi } from "@/components/AbaTopo";
 import { ImportadorUnificado } from "@/components/ImportadorUnificado";
 import { diasUteis } from "@/lib/dias-uteis";
+import { toast } from "sonner";
 import { RetrabalhoOficina } from "@/components/RetrabalhoOficina";
 import { Agendamentos } from "@/components/Agendamentos";
 import { AgendaMetas } from "@/components/AgendaMetas";
@@ -703,6 +704,7 @@ function Config({ parte, params, salvarParams, depts, cons, goals, mes, reload, 
             <option value="uteis">Dias úteis</option><option value="corridos">Dias corridos</option>
           </select>
         </label>
+        <button type="button" onClick={() => void confirmarParams()} disabled={!rascunho} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{rascunho ? "Salvar dias do mês" : "Dias do mês salvos"}</button>
         <p className="text-xs text-muted-foreground">Departamentos, consultores e metas ficam em Metas & Planejamento.</p>
       </section>}
       {parte === "metas" && <section className="space-y-4 rounded-xl border border-border bg-card p-6">
