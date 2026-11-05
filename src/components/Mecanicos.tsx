@@ -8,6 +8,7 @@ import { Barra, Box, Kpi, Tabela, brl, div, norm, num, parseNum, pct, tone, uni 
 import { CATEGORIAS, GRUPO_NOME, blocoMec, ehRelatorioPassagens, grupoDe, lerPassagens, ocultoDaLista, somarComposicao, type CatKey, type Composicao, type Grupo, type Mec, type MecBloco, type PassReport, lerMecanicos } from "@/lib/mecanicos";
 import { registrarUpdate } from "@/lib/update-log";
 import { MecanicosIA } from "@/components/MecanicosIA";
+import { TecnicosCockpit } from "@/components/TecnicosCockpit";
 import { salvarPassagens } from "@/lib/passagens-save";
 import { inicializarTecnicosMes } from "@/lib/tecnicos-mes";
 import { mesTravado, msgTravado } from "@/lib/month-lock";
