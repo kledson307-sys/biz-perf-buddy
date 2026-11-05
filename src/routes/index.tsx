@@ -627,7 +627,7 @@ function Painel({ email }: { email: string }) {
           </div>
         </div>}
         {tab === "cockpit" && !relatorio && <Cockpit linhas={linhas} porDept={porDept} mes={mes} tot={tot} dec={dec} soPecas={soPecas} setTab={setTab} sales={sales} nome={email.split("@")[0] ?? ""} deptName={deptName} filtro={filtroDept === "todos" ? "Todos departamentos" : deptName(filtroDept)} base={params.base} mesAtual={mes === localDay(clock).slice(0, 7)} />}
-        {tab === "nps" && !relatorio && <NpsPainel />}
+        {tab === "nps" && !relatorio && <NpsPainel mes={mes} />}
         {tab === "pecas" && !relatorio && <PecasEstoque linhas={linhas} porDept={porDept} margemIdeal={margemIdeal} deptName={deptName} passagens={resumo.pass} mes={mes} tot={tot} dec={dec} />}
         {tab === "metas" && !relatorio && <Tabs defaultValue="geral" className="min-w-0 gap-3">
           <TabsList className="grid h-auto w-full grid-cols-2 gap-1 xl:grid-cols-4">

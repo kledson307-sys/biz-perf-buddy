@@ -119,6 +119,9 @@ function lerProspeccao(raw: unknown[][]): NpsItem[] {
   return out;
 }
 
+/** Período pela data de recebimento da pesquisa (fallback fechamento). `prefixo` = "AAAA-MM" (mês) ou "AAAA" (ano até o mês). */
+export const filtrarPeriodo = (l: NpsItem[], prefixo: string) => l.filter((x) => (x.recebimento || x.fechamento).startsWith(prefixo));
+
 export type Classe = "promotor" | "neutro" | "detrator";
 /** BMW: 1–6 detrator, 7–8 neutro, 9–10 promotor. */
 export const classe = (n: number): Classe => (n >= 9 ? "promotor" : n >= 7 ? "neutro" : "detrator");
