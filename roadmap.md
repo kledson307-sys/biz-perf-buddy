@@ -1,30 +1,25 @@
-# Roadmap
+# Roadmap — pendências
 
-## Pacote aprovado — novembro
-- [x] Metas: quatro sub-abas, técnicos visíveis, edição em lote e cópia do mês anterior
-- [x] Técnicos: cadastrar novembro e continuidade segura de equipe/metas sem copiar faturamento
-- [x] Acessos: corrigir Marcos/Delmir/Tunap e disponibilizar papéis na Equipe
-- [x] Blindagem: remover Jadna, proteger importação técnica em mês fechado e revogar funções anônimas
-- [x] Validar regras, dados e fluxo de metas com sessão real
+## Bloco 1 — Esteira inteligente (prioridade)
+- [ ] Uma planilha alimenta todas as abas que puder (multi-distribuição), sem descartar dados
+- [ ] "O.S. Fechadas/Faturamento de Serviços": M.O. e peças por técnico (Produtivo), alerta "Sem Apontamento"
+- [ ] Faturamento diário de consultores: juntar serviços + peças sem um apagar o outro
+- [ ] Prévia mostrando, por arquivo, cada aba que será atualizada
 
-- [x] Consultores: tabela executiva com ritmo, projeção e necessidade separadas, detalhes laterais e leitura mobile
-- [x] Central de Gestão, Consultores e Peças iguais às fotos (16:9 sem rolar)
-- [x] Agregados: aproveitamento em un/passagem de revisão; Metas centraliza departamentos/consultores
-- [ ] Ordens de Serviço, NPS e Importações: refino visual no padrão de 3 linhas
-- [x] Acesso Geraldo (Tunap) — tunap@tunap.com.br
-- [x] Acesso Marcos (controlador de quadro) — marcos@hausmotors.com.br
-- [x] Acesso Delmir no layout do Marcos + recursos de chefia
-- [ ] Bloco 3: faturamento diário por data real, comparação com mês anterior, retrabalho por chassi 30–60 dias
-- [x] Carga histórica 01–09/2026 gravada (917 registros diários; NPS via importador corrigido)
-- [ ] Corrigir reconhecimento por conteúdo: faturamento geral, O.S. abertas e NPS não reconhecidos
-- [ ] Cartão Agendamento D+1 no Dashboard (Carros/Motos por tipo + acumulado mensal)
-- [ ] Aba Agendamentos (D+1/testador, D0, fechamento D+1×D0, agendados×passantes, penetração, faltas/fantasmas)
-- [x] Reconhecimento por conteúdo: NPS (2 formatos), O.S. abertas e faturamento em linhas na esteira única
-- [x] Aba Agendamentos + cartão D+1 no Dashboard + metas diárias de agendamento
-- [x] Andressa: tema rosa, aba Dashboard própria com seus dados + agendamentos dela (sem teste visual com o login dela)
-- [x] Relatório Executivo PDF no Dashboard (4 páginas, BMW)
-- [x] Sininho de Marcos/Delmir com alertas de agendamento/testador
-- [x] PDF no layout do modelo enviado (capa, KPIs, análise por aba, resumo da gestão)
-- [x] Novo ícone do app (emblema BMW Pós-Venda)
-- [x] Contador no ícone e avisos no aparelho pelo sininho
-- [x] Guia de primeiro acesso por perfil + novidades por versão
+## Bloco 2 — Recuperar dados de novembro
+- [ ] Reimportar serviços dos consultores (Wesley, Renan, Pedro, Gilberto)
+- [ ] Gravar faturamento dos técnicos (Flavio, Victor, Matheus Felix)
+- [ ] Conferir totais contra a DMS (R$ 33.473,48)
+
+## Bloco 3 — Cockpit de Técnicos compacto (Opção A)
+- [ ] Anéis menores sem sobrepor valores; grade 4+3 sem rolagem
+
+## Bloco 4 — Virada de mês
+- [ ] Copiar metas de consultores/agregados do mês anterior
+- [ ] Checklist de virada de mês
+- [ ] Alerta de consultor novo não cadastrado
+
+## Bloco 5 — Extras aprovados
+- [ ] Régua NPS D-13
+- [ ] Exportação mensal consolidada em Excel
+- [ ] Conferir na tela o seletor NPS Mês/Ano
