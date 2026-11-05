@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { uni } from "@/components/painel-ui";
-import { carregarAgendamentos, contar, type AgendRow, type Contagem } from "@/lib/agendamentos-data";
+import { carregarAgendamentos, contar, dataRadarD1, hojeLocal, type AgendRow, type Contagem } from "@/lib/agendamentos-data";
 
 const CAT = { revisao: "Revisão", diagnostico: "Diagnóstico", recall: "Recall" } as const;
 const SEGMENTOS: readonly [string, string, "carro" | "moto", string][] = [
@@ -33,10 +33,8 @@ export function CartaoAgendamento({ mes }: { mes: string }) {
   const [rows, setRows] = useState<AgendRow[] | null>(null);
   useEffect(() => { void carregarAgendamentos(mes).then(setRows).catch(() => setRows([])); }, [mes]);
 
-  const hoje = new Date().toISOString().slice(0, 10);
   const d1all = (rows ?? []).filter((r) => r.tipo === "d1");
-  const datas = [...new Set(d1all.map((r) => r.data))].sort();
-  const dataD1 = datas.find((d) => d >= hoje) ?? datas.at(-1) ?? "";
+  const dataD1 = dataRadarD1(d1all.map((r) => r.data), hojeLocal());
   const d1 = d1all.filter((r) => r.data === dataD1);
   const radar = contar(d1);
   const acum = contar(d1all);

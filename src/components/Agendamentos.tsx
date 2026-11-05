@@ -4,7 +4,7 @@ import { Ghost, UserX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ImportadorUnificado } from "@/components/ImportadorUnificado";
 import { Box, Tabela, uni } from "@/components/painel-ui";
-import { carregarAgendamentos, carregarFollowups, aceitarFollowup, confirmarFollowup, contar, separarPassantes, fechamentoDoDia, faltasDoMes, situacaoCapacidade, picosPorHora, linkResgate, type AgendRow, type Contagem, type Followup } from "@/lib/agendamentos-data";
+import { carregarAgendamentos, carregarFollowups, aceitarFollowup, confirmarFollowup, contar, separarPassantes, fechamentoDoDia, faltasDoMes, situacaoCapacidade, picosPorHora, linkResgate, hojeLocal, dataRadarD1, type AgendRow, type Contagem, type Followup } from "@/lib/agendamentos-data";
 import { classe, type NpsItem } from "@/lib/nps";
 
 const CAT_LABEL = { revisao: "Revisão", diagnostico: "Diagnóstico", recall: "Recall" } as const;
@@ -84,12 +84,14 @@ export function Agendamentos({ mes }: { mes: string }) {
   };
   useEffect(() => { void load(); }, [mes]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = hojeLocal();
+  const [dataEscolhida, setDataEscolhida] = useState("");
   const amanha = useMemo(() => {
     const d1 = rows.filter((r) => r.tipo === "d1");
     const datas = [...new Set(d1.map((r) => r.data))].sort();
-    return { data: datas.find((d) => d >= hoje) ?? datas.at(-1) ?? "", itens: d1 };
-  }, [rows, hoje]);
+    const padrao = dataRadarD1(datas, hoje);
+    return { data: datas.includes(dataEscolhida) ? dataEscolhida : padrao, datas, itens: d1 };
+  }, [rows, hoje, dataEscolhida]);
   const d1Todos = amanha.itens.filter((r) => r.data === amanha.data);
   const consultoresD1 = [...new Set(d1Todos.map((r) => (r.consultor || "").trim().toUpperCase()).filter(Boolean))].sort();
   const d1 = filtroCons ? d1Todos.filter((r) => (r.consultor || "").trim().toUpperCase() === filtroCons) : d1Todos;
@@ -148,6 +150,10 @@ export function Agendamentos({ mes }: { mes: string }) {
           <select value={filtroCons} onChange={(e) => setFiltroCons(e.target.value)} className="rounded-md border border-border bg-background px-2 py-1">
             <option value="">Todos</option>
             {consultoresD1.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <span className="ml-2 text-muted-foreground">Data:</span>
+          <select value={amanha.data} onChange={(e) => setDataEscolhida(e.target.value)} className="rounded-md border border-border bg-background px-2 py-1">
+            {[...amanha.datas].reverse().map((d) => <option key={d} value={d}>{dBR(d)}</option>)}
           </select>
         </div>
         <div className="grid gap-2 p-3 sm:grid-cols-2">

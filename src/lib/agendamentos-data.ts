@@ -20,6 +20,16 @@ export const mesSeguinte = (mes: string) => {
   return `${m === 12 ? a! + 1 : a}-${String(m === 12 ? 1 : m! + 1).padStart(2, "0")}-01`;
 };
 
+/** Data de hoje no fuso local (AAAA-MM-DD). */
+export const hojeLocal = (d = new Date()) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+/** Data do radar D+1: primeira agenda posterior a hoje; senão a mais recente importada. */
+export const dataRadarD1 = (datas: string[], hoje: string) => {
+  const s = [...new Set(datas)].sort();
+  return s.find((d) => d > hoje) ?? s.at(-1) ?? "";
+};
+
 export async function carregarAgendamentos(mes: string): Promise<AgendRow[]> {
   const { data, error } = await supabase.from("agendamentos").select("*").gte("data", `${mes}-01`).lt("data", mesSeguinte(mes)).order("data").order("hora");
   if (error) throw new Error("Erro ao carregar agendamentos: " + error.message);
