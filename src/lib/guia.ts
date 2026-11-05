@@ -49,6 +49,14 @@ export function perfilGuia(papel: string | null | undefined): string {
 export type Novidade = { versao: number; data: string; itens: { titulo: string; oque: string; como: string }[] };
 export const NOVIDADES: Novidade[] = [
   {
+    versao: 3, data: "05/11/2026",
+    itens: [
+      { titulo: "Importação mais inteligente", oque: "Cada planilha agora alimenta todas as abas que pode — a de O.S. Fechadas atualiza consultores, técnicos, passagens e Controle O.S. de uma vez.", como: "Solte os arquivos em Importações e confira a lista de destinos antes de salvar." },
+      { titulo: "Técnicos em uma tela", oque: "O painel dos técnicos ficou compacto: todos aparecem sem rolar, com meta, % e projeção.", como: "Abra Oficina & Técnicos e escolha Carro ou Moto." },
+      { titulo: "Virada de mês e Excel", oque: "Lista do que falta preparar no mês, cópia de metas do mês anterior e exportação do mês em Excel.", como: "Metas & Planejamento › Acompanhamento & Geral." },
+    ],
+  },
+  {
     versao: 2, data: "01/11/2026",
     itens: [
       { titulo: "Metas organizadas", oque: "Metas & Planejamento agora separa acompanhamento, consultores, técnicos e agregados/agenda.", como: "Abra Metas & Planejamento e escolha a sub-aba Técnicos para editar individualmente, aplicar em lote ou copiar metas anteriores." },

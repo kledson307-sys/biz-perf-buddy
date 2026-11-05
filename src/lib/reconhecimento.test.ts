@@ -63,7 +63,7 @@ describe("Faturamento em linhas (histórico diário)", () => {
       { login: "RENAN.O", dia: "2026-01-16", servicos: 100, pecas: 0, margem: 0 },
       { login: "RENAN.O", dia: "2026-01-16", servicos: 0, pecas: 50, margem: 10 },
       { login: "DESCONHECIDO", dia: "2026-01-16", servicos: 5, pecas: 0, margem: 0 },
-    ], meses: ["2026-01"], ignorados: new Map() };
+    ], meses: ["2026-01"], ignorados: new Map(), fonte: "s" as const };
     const { rows, ignorados } = consolidarFat(fat, [{ id: "abc", nome: "RENAN.O" }]);
     expect(rows).toEqual([{ consultant_id: "abc", dia: "2026-01-16", servicos: 100, pecas: 50, margem_pecas: 10 }]);
     expect(ignorados).toEqual(["DESCONHECIDO"]);

@@ -14,3 +14,4 @@
 - Sininho/avisos: `src/lib/aviso-aparelho.ts` sets the app badge and native notifications without a service worker, deduping ids in localStorage.
 - First-access guide and release notes live in `src/lib/guia.ts` (bump `NOVIDADES` version per release); seen state is per email in localStorage.
 - Working days use `src/lib/dias-uteis.ts` (Sat 0.5, national holidays 0) stored in month_params `*_dec` columns (int columns are rounded copies read by restricted RPCs); edits save only via the explicit button and daily auto-advance adds only new days to preserve manual adjustments.
+- Unified importer distributes one file to every tab it can feed (`destinos` preview); "O.S. Fechadas" yields technician M.O./peças via `tecnicosDoFatServicos` (no Produtivo = "sem apontamento", matching DMS) and must never be classified as O.S. Abertas (closed-date check in `ehOsAbertas`); daily sales merge by source with `mesclarFat` so services and parts imports never erase each other.

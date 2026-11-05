@@ -4,7 +4,7 @@ import { TIPOS_INTERNOS } from "@/lib/mecanicos";
 
 /** Linha diária de faturamento por consultor (login já com apelidos aplicados). */
 export type FatDia = { login: string; dia: string; servicos: number; pecas: number; margem: number };
-export type FatHistorico = { linhas: FatDia[]; meses: string[]; ignorados: Map<string, number> };
+export type FatHistorico = { linhas: FatDia[]; meses: string[]; ignorados: Map<string, number>; fonte: "s" | "p" };
 
 const txt = (v: unknown) => String(v ?? "").trim();
 const low = (v: unknown) => norm(txt(v)).toLowerCase();
@@ -50,7 +50,7 @@ export function lerFatServicos(raw: unknown[][]): FatHistorico | null {
     if (!s) continue;
     linhas.push({ login, dia, servicos: s, pecas: 0, margem: 0 });
   }
-  return finalizar(linhas, ignorados);
+  return finalizar(linhas, ignorados, "s");
 }
 
 /** Lê o faturamento de peças: valor líquido e margem (líquido − contábil × qtd) por vendedor no dia da venda, sem O.S. internas nem devolvidas. */
@@ -70,12 +70,29 @@ export function lerFatPecas(raw: unknown[][]): FatHistorico | null {
     const margem = cCont >= 0 ? liq - num(r[cCont]) * num(r[cQtd]) : 0;
     linhas.push({ login, dia, servicos: 0, pecas: liq, margem });
   }
-  return finalizar(linhas, ignorados);
+  return finalizar(linhas, ignorados, "p");
 }
 
-function finalizar(linhas: FatDia[], ignorados: Map<string, number>): FatHistorico {
+function finalizar(linhas: FatDia[], ignorados: Map<string, number>, fonte: "s" | "p"): FatHistorico {
   const meses = [...new Set(linhas.map((l) => l.dia.slice(0, 7)))].sort();
-  return { linhas, meses, ignorados };
+  return { linhas, meses, ignorados, fonte };
+}
+
+type DiaRow = { consultant_id: string; dia: string; servicos: number; pecas: number; margem_pecas: number };
+/** Junta o relatório novo com o que já existe no mês: serviços só trocam serviços; peças só trocam peças/margem. Um relatório nunca apaga o outro. */
+export function mesclarFat(existentes: DiaRow[], novos: DiaRow[], fonte: "s" | "p"): DiaRow[] {
+  const acc = new Map<string, DiaRow>();
+  for (const e of existentes) {
+    const k = `${e.consultant_id}|${e.dia}`; const cur = acc.get(k) ?? { consultant_id: e.consultant_id, dia: e.dia, servicos: 0, pecas: 0, margem_pecas: 0 };
+    if (fonte === "s") { cur.pecas += Number(e.pecas) || 0; cur.margem_pecas += Number(e.margem_pecas) || 0; } else cur.servicos += Number(e.servicos) || 0;
+    acc.set(k, cur);
+  }
+  for (const n of novos) {
+    const k = `${n.consultant_id}|${n.dia}`; const cur = acc.get(k) ?? { consultant_id: n.consultant_id, dia: n.dia, servicos: 0, pecas: 0, margem_pecas: 0 };
+    if (fonte === "s") cur.servicos += n.servicos; else { cur.pecas += n.pecas; cur.margem_pecas += n.margem_pecas; }
+    acc.set(k, cur);
+  }
+  return [...acc.values()].filter((r) => r.servicos || r.pecas || r.margem_pecas);
 }
 
 /** Consolida por consultor (id) e dia; devolve logins sem cadastro em `ignorados`. */

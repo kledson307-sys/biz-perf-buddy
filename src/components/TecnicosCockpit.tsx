@@ -14,8 +14,8 @@ function Anel({ x, size = 64 }: { x: MecX; size?: number }) {
         <circle cx="32" cy="32" r={r} fill="none" strokeWidth="6" stroke="currentColor" strokeLinecap="round" strokeDasharray={`${c * f} ${c}`} />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
-        <span className="text-sm font-bold tabular-nums text-foreground">{x.meta > 0 ? pc(x.perf) : "—"}</span>
-        <span className="text-[9px] text-muted-foreground">da meta</span>
+        <span className={`${size >= 56 ? "text-sm" : "text-[10px]"} font-bold tabular-nums text-foreground`}>{x.meta > 0 ? pc(x.perf) : "—"}</span>
+        {size >= 56 && <span className="text-[9px] text-muted-foreground">da meta</span>}
       </div>
     </div>
   );
@@ -40,6 +40,20 @@ function Modulo({ icon, titulo, real, meta, proj, x, grande }: { icon: React.Rea
   );
 }
 
+function Linha({ icon, titulo, real, meta, proj, x }: { icon: React.ReactNode; titulo: string; real: string; meta: string; proj: string; x?: MecX }) {
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-2 py-1.5">
+      <span className="shrink-0 text-primary">{icon}</span>
+      <div className="min-w-0 flex-1 leading-tight">
+        <p className="flex items-baseline justify-between gap-1 text-[11px] text-muted-foreground"><span>{titulo}</span><span className="truncate">{meta}</span></p>
+        <p className="text-sm font-bold tabular-nums">{real}</p>
+        <p className="truncate text-[10px] text-muted-foreground">Proj. <b className="text-primary">{proj}</b></p>
+      </div>
+      {x && <Anel x={x} size={42} />}
+    </div>
+  );
+}
+
 function frase(s: MecX, p: MecX, pos: number) {
   if (s.meta <= 0 && p.meta <= 0) return { t: "Meta ainda não definida para este mês.", ok: false };
   if (s.perf >= 1 && p.perf >= 1) return { t: pos === 1 ? "Líder de produção no mês! Metas batidas." : "Metas de serviços e peças superadas!", ok: true };
@@ -48,11 +62,11 @@ function frase(s: MecX, p: MecX, pos: number) {
   return { t: `Faltam ${brl(p.meta - p.real)} de peças para a meta.`, ok: false };
 }
 
-function Rodape({ texto, ok }: { texto: string; ok: boolean }) {
+function Rodape({ texto, ok, compacto }: { texto: string; ok: boolean; compacto?: boolean }) {
   return (
-    <div className="flex items-center gap-2 border-t border-border px-3 py-2 text-xs">
+    <div className={`flex items-center gap-2 border-t border-border px-3 ${compacto ? "py-1 text-[11px]" : "py-2 text-xs"}`} title={texto}>
       <Trophy className={`size-4 shrink-0 ${ok ? "text-success" : "text-primary"}`} />
-      <span className="min-w-0 flex-1">{texto}</span>
+      <span className={`min-w-0 flex-1 ${compacto ? "truncate" : ""}`}>{texto}</span>
       <span className="flex shrink-0 gap-0.5" aria-hidden><i className="h-3 w-1.5 -skew-x-12 bg-primary/60" /><i className="h-3 w-1.5 -skew-x-12 bg-primary" /><i className="h-3 w-1.5 -skew-x-12 bg-destructive" /></span>
     </div>
   );
@@ -72,15 +86,15 @@ export function TecnicosCockpit({ bloco, ocultar, rotulo, dec, tot }: { bloco: M
           <h3 className="text-sm font-bold">★ Total geral da oficina · {rotulo} <span className="font-normal text-muted-foreground">({uni(lista.length)} técnicos)</span></h3>
           <span className="text-xs text-muted-foreground">Haus Salvador</span>
         </div>
-        <div className="grid gap-3 p-3 md:grid-cols-3">
-          <Modulo grande icon={<Car className="size-5" />} titulo="Serviços" real={brl(bloco.S.real)} meta={`Meta: ${brl(bloco.S.meta)}`} proj={brl(bloco.S.proj)} x={bloco.S} />
-          <Modulo grande icon={<Cog className="size-5" />} titulo="Peças" real={brl(bloco.P.real)} meta={`Meta: ${brl(bloco.P.meta)}`} proj={brl(bloco.P.proj)} x={bloco.P} />
-          <Modulo grande icon={<Handshake className="size-5" />} titulo="Passagens" real={uni(bloco.pass)} meta="Realizadas · sem meta cadastrada" proj={`${uni(projPass(bloco.pass, bloco.S))} passagens`} />
+        <div className="grid gap-2 p-2.5 md:grid-cols-3">
+          <Modulo icon={<Car className="size-4" />} titulo="Serviços" real={brl(bloco.S.real)} meta={`Meta: ${brl(bloco.S.meta)}`} proj={brl(bloco.S.proj)} x={bloco.S} />
+          <Modulo icon={<Cog className="size-4" />} titulo="Peças" real={brl(bloco.P.real)} meta={`Meta: ${brl(bloco.P.meta)}`} proj={brl(bloco.P.proj)} x={bloco.P} />
+          <Modulo icon={<Handshake className="size-4" />} titulo="Passagens" real={uni(bloco.pass)} meta="Realizadas · sem meta cadastrada" proj={`${uni(projPass(bloco.pass, bloco.S))} passagens`} />
         </div>
         <Rodape texto={tf.t} ok={tf.ok} />
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3 xl:max-h-[calc(100vh-520px)] xl:overflow-y-auto xl:pr-1">
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
         {lista.map((c, i) => {
           const f = frase(c.s, c.p, i + 1);
           return (
@@ -89,12 +103,12 @@ export function TecnicosCockpit({ bloco, ocultar, rotulo, dec, tot }: { bloco: M
                 <h4 className="truncate text-sm font-bold">{medalha(i + 1)} {i + 1}. {c.r.nome}</h4>
                 <span className="shrink-0 text-[11px] text-muted-foreground">{uni(c.r.passagens)} pass.</span>
               </div>
-              <div className="grid grid-cols-1 gap-2 p-2.5 sm:grid-cols-3">
-                <Modulo icon={<Car className="size-4" />} titulo="Serviços" real={brl(c.s.real)} meta={`Meta: ${brl(c.s.meta)}`} proj={brl(c.s.proj)} x={c.s} />
-                <Modulo icon={<Cog className="size-4" />} titulo="Peças" real={brl(c.p.real)} meta={`Meta: ${brl(c.p.meta)}`} proj={brl(c.p.proj)} x={c.p} />
-                <Modulo icon={<Handshake className="size-4" />} titulo="Passagens" real={uni(c.r.passagens)} meta="Realizadas" proj={`${uni(projPass(c.r.passagens, c.t))}`} />
+              <div className="grid gap-1.5 p-2">
+                <Linha icon={<Car className="size-3.5" />} titulo="Serviços" real={brl(c.s.real)} meta={`Meta ${brl(c.s.meta)}`} proj={brl(c.s.proj)} x={c.s} />
+                <Linha icon={<Cog className="size-3.5" />} titulo="Peças" real={brl(c.p.real)} meta={`Meta ${brl(c.p.meta)}`} proj={brl(c.p.proj)} x={c.p} />
+                <p className="flex items-center gap-1.5 px-1 text-[11px] text-muted-foreground"><Handshake className="size-3.5 text-primary" />Passagens <b className="text-foreground">{uni(c.r.passagens)}</b><span className="ml-auto">Proj. <b className="text-primary">{uni(projPass(c.r.passagens, c.t))}</b></span></p>
               </div>
-              <Rodape texto={f.t} ok={f.ok} />
+              <Rodape texto={f.t} ok={f.ok} compacto />
             </article>
           );
         })}

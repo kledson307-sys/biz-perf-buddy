@@ -240,3 +240,27 @@ export function classificarConsultor(linhas: { os: string; tipo: string; cod: st
   if (moto) return { bsi: [], rev: [...rev], gar: de(t => t === "NG"), rep: de(t => ["N7", "N5", "NF"].includes(t)).filter(o => !rev.has(o)) };
   return { bsi: de(t => t === "BS"), rev: [...rev], gar: de(t => C4_T.has(t)), rep: de(t => t === "C7").filter(o => !rev.has(o)) };
 }
+
+export type FatTecnicos = { rows: { nome: string; servicos: number; pecas: number }[]; semApontamento: { servicos: number; pecas: number } };
+
+/** Do relatório analítico "O.S. Fechadas" (Produtivo | Tipo | Serv. Líquido | Itens Líquido): M.O. e peças por técnico, sem O.S. internas.
+ *  Linhas sem Produtivo ficam em "Sem apontamento" (igual ao "Faturamento Líquido dos Produtivos" da DMS). */
+export function tecnicosDoFatServicos(raw: unknown[][]): FatTecnicos | null {
+  const low = (x: unknown) => norm(String(x ?? "").trim()).replace(/\s+/g, " ");
+  const hi = raw.findIndex(r => { const h = r.map(low); return h.includes("produtivo") && h.some(x => /^serv\.? liq/.test(x)) && h.some(x => /^itens liq/.test(x)); });
+  if (hi < 0) return null;
+  const h = raw[hi]!.map(low);
+  const cP = h.indexOf("produtivo"), cS = h.findIndex(x => /^serv\.? liq/.test(x)), cI = h.findIndex(x => /^itens liq/.test(x)), cT = h.indexOf("tipo");
+  const map = new Map<string, { nome: string; servicos: number; pecas: number }>(); const sem = { servicos: 0, pecas: 0 };
+  for (const r of raw.slice(hi + 1)) {
+    if (cT >= 0 && TIPOS_INTERNOS.has(String(r[cT] ?? "").trim().toUpperCase())) continue;
+    const s = money(r[cS]), p = money(r[cI]);
+    if (!s && !p) continue;
+    const nome = String(r[cP] ?? "").trim();
+    if (!nome) { sem.servicos += s; sem.pecas += p; continue; }
+    const k = low(nome); const cur = map.get(k) ?? { nome: nome.toUpperCase(), servicos: 0, pecas: 0 };
+    cur.servicos += s; cur.pecas += p; map.set(k, cur);
+  }
+  const rows = [...map.values()].map(x => ({ ...x, servicos: Math.round(x.servicos * 100) / 100, pecas: Math.round(x.pecas * 100) / 100 }));
+  return rows.length ? { rows, semApontamento: sem } : null;
+}

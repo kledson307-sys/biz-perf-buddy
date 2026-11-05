@@ -1,4 +1,5 @@
 import { GuiaAcesso } from "@/components/GuiaAcesso";
+import { ViradaMes } from "@/components/ViradaMes";
 import { Devolucoes } from "@/components/Devolucoes";
 import { TecnicosMetas } from "@/components/TecnicosMetas";
 import { createFileRoute } from "@tanstack/react-router";
@@ -637,6 +638,7 @@ function Painel({ email }: { email: string }) {
             <TabsTrigger value="agregados" className="whitespace-normal">Agregados & Agenda</TabsTrigger>
           </TabsList>
           <TabsContent value="geral" className="space-y-3 xl:max-h-[calc(100vh-350px)] xl:overflow-y-auto">
+            <ViradaMes mes={mes} onChanged={load} />
             <MetasExecutivo linhas={linhas} deptName={deptName} />
             <Config parte="geral" params={form} salvarParams={salvarParams} confirmar={() => void confirmarParams()} pendente={!!rascunho} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} />
           </TabsContent>

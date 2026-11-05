@@ -19,9 +19,16 @@ export const TIPOS_OK = new Set(["ac", "bs", "c4", "c7", "cf", "c5", "mc", "mf",
 export type OsLinha = { nome: string; servicos: number; pecas: number };
 
 /** Reconhece o relatório "O.S. Abertas" em tabela (Número, Tipo, Recep., Serv. Líquido, Itens Líquido…). */
-export const ehOsAbertas = (raw: unknown[][]) =>
-  raw.slice(0, 20).some((r) => r.some((c) => norm(String(c)).trim() === "tipo") && r.some((c) => norm(String(c)).startsWith("recep")))
-  || raw.slice(0, 10).some((r) => r.some((c) => norm(String(c ?? "")) === "numero"));
+/** O.S. Fechadas/faturadas também têm Tipo e Recepcionista; tem coluna "Encerrada" ou título "Fechadas" e nunca é O.S. aberta. */
+const ehFechadas = (raw: unknown[][]) => {
+  if (raw.slice(0, 5).some((r) => r.some((c) => /^o\.?s\.? fechadas/.test(norm(String(c ?? "")).trim())))) return true;
+  const hi = raw.slice(0, 20).findIndex((r) => r.some((c) => norm(String(c ?? "")).trim() === "encerrada"));
+  if (hi < 0) return false;
+  const c = raw[hi]!.findIndex((x) => norm(String(x ?? "")).trim() === "encerrada");
+  return raw.slice(hi + 1).some((r) => { const v = r[c]; return v instanceof Date || /\d{2}\/\d{2}\/\d{4}/.test(String(v ?? "")); });
+};
+export const ehOsAbertas = (raw: unknown[][]) => !ehFechadas(raw) && (raw.slice(0, 20).some((r) => r.some((c) => norm(String(c)).trim() === "tipo") && r.some((c) => norm(String(c)).startsWith("recep")))
+  || raw.slice(0, 10).some((r) => r.some((c) => norm(String(c ?? "")) === "numero")));
 
 // Relatório "O.S. Abertas" em tabela (Número, Tipo, Recep., Serv. Líquido, Itens Líquido…).
 export function lerOsTabela(raw: unknown[][]): OsLinha[] | null {

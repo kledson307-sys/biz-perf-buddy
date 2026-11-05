@@ -3,15 +3,15 @@ import { Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lerAbaNps, daLoja, type NpsItem } from "@/lib/nps";
 import { ehFaturamentoPecas, lerItensPecas, type ItemPeca } from "@/lib/pecas-itens";
-import { ehRelatorioPassagens, lerPassagens, type PassReport } from "@/lib/mecanicos";
-import { salvarPassagens } from "@/lib/passagens-save";
+import { ehRelatorioPassagens, lerPassagens, tecnicosDoFatServicos, type PassReport, type FatTecnicos } from "@/lib/mecanicos";
+import { salvarPassagens, salvarFatTecnicos } from "@/lib/passagens-save";
 import { mesTravado } from "@/lib/month-lock";
 import { pecasPorDia, osDasPassagens, servicosPorDia, retornosPorChassi } from "@/lib/diario-retorno";
 import { salvarOficinaMes } from "@/lib/oficina-mes";
 import { lerAgendamento, salvarAgendamento, resumoAgenda, type AgendReport } from "@/lib/agendamento";
 import { ehOsAbertas, lerOsTabela, lerOsSistema, consolidarOs } from "@/lib/os-abertas";
 import { saveOpenOrders } from "@/lib/open-orders.functions";
-import { ehFatServicos, ehFatPecas, lerFatServicos, lerFatPecas, consolidarFat, type FatHistorico } from "@/lib/faturamento-historico";
+import { ehFatServicos, ehFatPecas, lerFatServicos, lerFatPecas, consolidarFat, mesclarFat, type FatHistorico } from "@/lib/faturamento-historico";
 import { mesSeguinte } from "@/lib/agendamentos-data";
 import { registrarUpdate } from "@/lib/update-log";
 
@@ -19,7 +19,7 @@ type Achado = {
   arquivo: string; resumo: string; raw?: unknown[][];
   tipo: "nps" | "pecas" | "passagens" | "d1" | "d0" | "os" | "outro";
   agenda?: AgendReport; nps?: NpsItem[]; pecas?: ItemPeca[]; pass?: PassReport;
-  fat?: FatHistorico | undefined; osLinhas?: { nome: string; servicos: number; pecas: number }[];
+  fat?: FatHistorico | undefined; tec?: FatTecnicos | null; destinos?: string[]; osLinhas?: { nome: string; servicos: number; pecas: number }[];
 };
 const ROTULO = { nps: "NPS da montadora", pecas: "Faturamento de Peças", passagens: "Faturamento de Serviços / Passagens", d1: "Agendamento D+1", d0: "Agendamento do dia", os: "O.S. Abertas", outro: "Não reconhecido" } as const;
 const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -49,13 +49,19 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
       if (p) {
         const it = lerItensPecas(p.raw);
         const fat = ehFatPecas(p.raw) ? lerFatPecas(p.raw) : null;
-        out.push({ arquivo: f.name, tipo: "pecas", pecas: it, fat: fat ?? undefined, raw: p.raw, resumo: `${it.length} itens · ${brl(it.reduce((a, i) => a + i.valor, 0))} (sem O.S. internas)${fat ? ` · histórico diário de ${fat.meses.length} mês(es)` : ""}` }); continue;
+        const destinos = ["Peças & Estoque: itens", "Oficina: peças por dia"];
+        if (fat) destinos.unshift(`Consultores: peças por dia ${brl(fat.linhas.reduce((a, l) => a + l.pecas, 0))} (serviços já gravados são mantidos)`);
+        out.push({ arquivo: f.name, tipo: "pecas", pecas: it, fat: fat ?? undefined, destinos, raw: p.raw, resumo: `${it.length} itens · ${brl(it.reduce((a, i) => a + i.valor, 0))} (sem O.S. internas)${fat ? ` · histórico diário de ${fat.meses.length} mês(es)` : ""}` }); continue;
       }
       const pa = abas.find((a) => ehRelatorioPassagens(a.raw));
       if (pa) {
         const r = lerPassagens(pa.raw); const ret = retornosPorChassi(osDasPassagens(pa.raw)).length;
         const fat = ehFatServicos(pa.raw) ? lerFatServicos(pa.raw) : null;
-        out.push({ arquivo: f.name, tipo: "passagens", pass: r, fat: fat ?? undefined, raw: pa.raw, resumo: `${r.mecanicos.length} técnicos · ${r.consultores.length} consultores · ${r.mecanicos.reduce((n, m) => n + m.passagens, 0)} passagens (O.S. únicas, sem internas) · ${ret} retornos por chassi${fat ? ` · histórico diário de ${fat.meses.length} mês(es)` : ""}` }); continue;
+        const tec = tecnicosDoFatServicos(pa.raw);
+        const destinos = ["Técnicos: passagens e mix", "Consultores: passagens e mix", "Oficina: serviços por dia e retornos", "Controle O.S.: baixa das faturadas"];
+        if (tec) destinos.unshift(`Técnicos: M.O. ${brl(tec.rows.reduce((a, x) => a + x.servicos, 0))} e peças ${brl(tec.rows.reduce((a, x) => a + x.pecas, 0))}${tec.semApontamento.servicos + tec.semApontamento.pecas > 0 ? ` · ${brl(tec.semApontamento.servicos + tec.semApontamento.pecas)} sem técnico` : ""}`);
+        if (fat) destinos.unshift(`Consultores: serviços por dia ${brl(fat.linhas.reduce((a, l) => a + l.servicos, 0))} (peças já gravadas são mantidas)`);
+        out.push({ arquivo: f.name, tipo: "passagens", pass: r, fat: fat ?? undefined, tec, destinos, raw: pa.raw, resumo: `${r.mecanicos.length} técnicos · ${r.consultores.length} consultores · ${r.mecanicos.reduce((n, m) => n + m.passagens, 0)} passagens (O.S. únicas, sem internas) · ${ret} retornos por chassi${fat ? ` · histórico diário de ${fat.meses.length} mês(es)` : ""}` }); continue;
       }
       out.push({ arquivo: f.name, tipo: "outro", resumo: "Cabeçalhos não reconhecidos. Use o bloco específico abaixo." });
     }
@@ -70,7 +76,9 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
     const meses = [...new Set(rows.map((r) => r.dia.slice(0, 7)))];
     for (const m of meses) {
       if (await mesTravado(m)) throw new Error(`Mês ${m} fechado: desbloqueie para importar.`);
-      const doMes = rows.filter((r) => r.dia.startsWith(m));
+      const { data: exist, error: e0 } = await supabase.from("daily_sales").select("consultant_id,dia,servicos,pecas,margem_pecas").gte("dia", `${m}-01`).lt("dia", mesSeguinte(m));
+      if (e0) throw e0;
+      const doMes = mesclarFat(exist ?? [], rows.filter((r) => r.dia.startsWith(m)), fat.fonte);
       const { error: e1 } = await supabase.from("daily_sales").delete().gte("dia", `${m}-01`).lt("dia", mesSeguinte(m));
       if (e1) throw e1;
       const { error: e2 } = await supabase.from("daily_sales").insert(doMes);
@@ -108,7 +116,8 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
           if (a.raw) { await salvarOficinaMes(mes, { diario: pecasPorDia(a.raw, mes), fonte: "p" }); feitos.push("Peças por dia"); }
         }
         if (a.tipo === "passagens" && a.pass) { await salvarPassagens(a.pass, mes); feitos.push("Passagens (técnicos, mix e consultores)");
-          if (a.raw) { const oss = osDasPassagens(a.raw); await salvarOficinaMes(mes, { diario: servicosPorDia(oss, mes), fonte: "s", retornos: retornosPorChassi(oss) }); feitos.push("Serviços por dia e retornos por chassi"); } }
+          if (a.raw) { const oss = osDasPassagens(a.raw); await salvarOficinaMes(mes, { diario: servicosPorDia(oss, mes), fonte: "s", retornos: retornosPorChassi(oss) }); feitos.push("Serviços por dia e retornos por chassi"); }
+          if (a.tec) feitos.push(await salvarFatTecnicos(a.tec, mes)); }
         if (a.fat) feitos.push(await salvarFat(a.fat));
       }
       setMsg(feitos.length ? `✅ Salvo: ${feitos.join(", ")}. Importações anteriores substituídas.` : "Nada para salvar aqui.");
@@ -127,7 +136,7 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
         <input type="file" multiple accept=".xlsx,.xls" className="hidden" onChange={(e) => { const fs = e.target.files ? Array.from(e.target.files) : []; e.target.value = ""; if (fs.length) void ler(fs).catch((err) => setMsg("❌ Não consegui ler o arquivo: " + (err instanceof Error ? err.message : String(err)))); }} />
       </label>
       {achados.length > 0 && <>
-        <ul className="space-y-1 text-sm">{achados.map((a) => <li key={a.arquivo} className="rounded border border-border p-2">{a.tipo === "outro" ? "❌" : "✅"} <b>{ROTULO[a.tipo]}</b> · {a.arquivo}<p className="text-xs text-muted-foreground">{a.resumo}</p></li>)}</ul>
+        <ul className="space-y-1 text-sm">{achados.map((a) => <li key={a.arquivo} className="rounded border border-border p-2">{a.tipo === "outro" ? "❌" : "✅"} <b>{ROTULO[a.tipo]}</b> · {a.arquivo}<p className="text-xs text-muted-foreground">{a.resumo}</p>{a.destinos && <ul className="mt-1 grid gap-0.5 text-xs">{a.destinos.map((d) => <li key={d}>→ {d}</li>)}</ul>}</li>)}</ul>
         <button type="button" disabled={busy} onClick={() => void salvar()} className="h-9 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground">{busy ? "Salvando…" : "Conferido · salvar"}</button>
       </>}
       {msg && <p className="text-sm">{msg}</p>}

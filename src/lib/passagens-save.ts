@@ -68,3 +68,24 @@ export async function salvarPassagens(r: PassReport, mes: string): Promise<strin
   window.dispatchEvent(new Event("tecnicos-atualizados"));
   return `Passagens importadas: ${r.mecanicos.length} técnicos e ${vRows.length} consultores (O.S. repetidas contadas uma única vez).${ignorados ? ` ${ignorados} consultores não cadastrados foram ignorados.` : ""} Totais do mês substituídos, sem somar.${baixadas > 0 ? ` ${baixadas} O.S. faturada(s) encerrada(s) automaticamente no Controle de O.S.` : baixadas < 0 ? " Não foi possível fazer a baixa automática no Controle de O.S." : ""}`;
 }
+
+/** Grava M.O. e peças por técnico vindas do "O.S. Fechadas". O relatório é do mês até hoje: substitui o mês (técnicos fora dele ficam zerados), nunca soma. */
+export async function salvarFatTecnicos(ft: import("@/lib/mecanicos").FatTecnicos, mes: string): Promise<string> {
+  if (await mesTravado(mes)) throw new Error(msgTravado(mes));
+  await inicializarTecnicosMes(mes);
+  const { data: atuais, error: e0 } = await supabase.from("mech_month").select("nome,grupo,servicos,pecas,passagens,meta_servicos,meta_pecas").eq("mes", mes);
+  if (e0) throw e0;
+  const porNome = new Map(ft.rows.map((r) => [norm(r.nome).replace(/\s+/g, " "), r]));
+  const vistos = new Set<string>();
+  const rows = (atuais ?? []).map((a) => {
+    const k = norm(a.nome).replace(/\s+/g, " "); const n = porNome.get(k); if (n) vistos.add(k);
+    return { ...a, servicos: n?.servicos ?? 0, pecas: n?.pecas ?? 0, mes, updated_at: new Date().toISOString() };
+  });
+  for (const [k, n] of porNome) if (!vistos.has(k)) rows.push({ nome: n.nome, grupo: grupoDe(n.nome), servicos: n.servicos, pecas: n.pecas, passagens: 0, meta_servicos: 0, meta_pecas: 0, mes, updated_at: new Date().toISOString() });
+  const { error } = await supabase.from("mech_month").upsert(rows, { onConflict: "user_id,mes,nome" });
+  if (error) throw new Error("Erro ao salvar faturamento dos técnicos: " + error.message);
+  await registrarUpdate("Técnicos (importação)", mes);
+  window.dispatchEvent(new Event("tecnicos-atualizados"));
+  const s = ft.semApontamento; const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  return `Faturamento de ${ft.rows.length} técnico(s)${s.servicos + s.pecas > 0 ? ` · ⚠️ ${brl(s.servicos + s.pecas)} sem técnico apontado na DMS` : ""}`;
+}
