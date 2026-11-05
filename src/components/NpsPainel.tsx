@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { pct, uni } from "@/components/painel-ui";
 import {
-  LOJA_PADRAO, META_PROMOTOR, daLoja, acaoFollowUp, baseNps, classe, filaFollowUp, historicoDetratores, lerAbaNps, resumir,
+  LOJA_PADRAO, META_PROMOTOR, daLoja, acaoFollowUp, baseNps, classe, filaFollowUp, filtrarPeriodo, historicoDetratores, lerAbaNps, resumir,
   type NpsItem, type Segmento,
 } from "@/lib/nps";
 
@@ -15,8 +15,11 @@ const sNps = (n: number) => (n > 0 ? "+" : "") + (n * 100).toLocaleString("pt-BR
 const wa = (tel: string, msg: string) => `https://wa.me/55${tel.replace(/^55/, "")}?text=${encodeURIComponent(msg)}`;
 
 /** Painel NPS & Satisfação (gestão). `itens` vem do último import compartilhado. */
-export function NpsPainel() {
-  const [itens, setItens] = useState<NpsItem[] | null>(null);
+export function NpsPainel({ mes = new Date().toISOString().slice(0, 7) }: { mes?: string }) {
+  const [periodo, setPeriodo] = useState<"mes" | "ano">("mes");
+  const [todosItens, setItens] = useState<NpsItem[] | null>(null);
+  const itens = useMemo(() => todosItens && filtrarPeriodo(todosItens, periodo === "mes" ? mes : mes.slice(0, 4)), [todosItens, periodo, mes]);
+  const mesLabel = mes.split("-").reverse().join("/");
   const [info, setInfo] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
@@ -71,13 +74,15 @@ export function NpsPainel() {
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-card px-3 py-2">
         <div><h2 className="font-semibold">NPS & Satisfação · {LOJA_PADRAO}</h2><p className="text-xs text-muted-foreground">{info || "Aguardando a primeira importação da planilha de pesquisa da montadora."} {pjs ? `· ${pjs} clientes CNPJ fora da base (não são pesquisados)` : ""}</p></div>
         <div className="flex flex-wrap items-center gap-2">
+          {(["mes", "ano"] as const).map((p) => <Button key={p} size="sm" variant={periodo === p ? "default" : "outline"} onClick={() => setPeriodo(p)}>{p === "mes" ? `Acumulado mês (${mesLabel})` : `Acumulado ano (${mes.slice(0, 4)})`}</Button>)}
+          <span className="mx-1 h-6 w-px bg-border" />
           {(["todos", "carro", "moto"] as const).map((s) => <Button key={s} size="sm" variant={seg === s ? "default" : "outline"} onClick={() => setSeg(s)}>{s === "todos" ? "Geral" : s === "carro" ? "Carro (meta 85%)" : "Moto (meta 88%)"}</Button>)}
           <label className="cursor-pointer"><span className="inline-flex h-9 items-center rounded-md border border-input px-3 text-sm">{busy ? "Importando…" : "Importar planilha NPS"}</span>
             <input type="file" accept=".xlsx,.xls" className="hidden" disabled={busy} onChange={(e) => { void importar(e.target.files?.[0]); e.target.value = ""; }} /></label>
         </div>
       </div>
       {msg && <p className="text-sm text-muted-foreground">{msg}</p>}
-      {itens && !loja.length ? <p className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">Nenhuma pesquisa importada ainda.</p> : <>
+      {itens && !loja.length ? <p className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">{todosItens?.length ? "Nenhuma pesquisa recebida neste período." : "Nenhuma pesquisa importada ainda."}</p> : <>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
           <Card l="NPS" v={sNps(r.nps)} cls={corNps(r.nps)} s={`${uni(r.avaliados)} avaliados`} />
           <Card l="% Promotores" v={pct(r.pctProm)} cls={corProm(r.pctProm, metaSeg)} s={seg === "todos" ? `Carro ${pct(rc.pctProm)} · Moto ${pct(rm.pctProm)}` : `meta ${pct(metaSeg)}`} />

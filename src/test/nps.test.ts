@@ -46,3 +46,14 @@ describe("NPS Salvador sem vendedores externos", () => {
     expect(daLoja(l).map((x) => x.consultor)).toEqual(["WESLEY.F"]);
   });
 });
+
+import { filtrarPeriodo as fp } from "@/lib/nps";
+describe("filtrarPeriodo", () => {
+  const it0 = (recebimento: string, fechamento = "") => ({ recebimento, fechamento } as never);
+  it("mês e ano pela data de recebimento", () => {
+    const l = [it0("2026-10-03", "2026-09-19"), it0("2026-11-02"), it0("2025-12-01")];
+    expect(fp(l, "2026-11")).toHaveLength(1);
+    expect(fp(l, "2026-10")).toHaveLength(1);
+    expect(fp(l, "2026")).toHaveLength(2);
+  });
+});
