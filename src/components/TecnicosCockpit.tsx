@@ -60,10 +60,10 @@ function Rodape({ texto, ok }: { texto: string; ok: boolean }) {
 
 const medalha = (i: number) => (i === 1 ? "🥇" : i === 2 ? "🥈" : i === 3 ? "🥉" : "");
 
-export function TecnicosCockpit({ bloco, ocultar, rotulo }: { bloco: MecBloco; ocultar: (nome: string) => boolean; rotulo: string }) {
+export function TecnicosCockpit({ bloco, ocultar, rotulo, dec, tot }: { bloco: MecBloco; ocultar: (nome: string) => boolean; rotulo: string; dec: number; tot: number }) {
   const lista = bloco.calcs.filter(c => !ocultar(c.r.nome));
   if (!bloco.n) return null;
-  const projPass = (real: number, x: MecX) => (x.dia > 0 ? Math.round(real * (x.proj / Math.max(x.real, 1))) : real);
+  const projPass = (real: number, _x?: MecX) => (dec > 0 ? Math.round((real / dec) * tot) : real);
   const tf = frase(bloco.S, bloco.P, 0);
   return (
     <section className="space-y-3">
