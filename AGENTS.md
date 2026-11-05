@@ -20,7 +20,7 @@
 - Reuse `src/components/painel-ui.tsx` for dashboard formatters/UI and `src/lib/performance.ts` for main consultant, department, total and report calculations to keep tested math shared.
 - Agregados data lives in its own tables (`agg_sales`, `agg_goals`, `agg_visits`) and its own component; never mix it into `daily_sales`/`goals` totals — the user tracks it separately.
 - AI calls go through Lovable AI Gateway from server-only helpers in `src/lib/ai/*.server.ts`, invoked by auth-protected `createServerFn`s in `src/lib/*.functions.ts`; the browser sends computed stats, never the key.
-- Daily imports live in the Importações tab via each component's `modo="importar"`; Agendamentos and Agregados also offer the same importer in a collapsed <details> inside their tab (no alternate import logic); Controle O.S. keeps its own weekly import.
+- Imports live in Importações (`modo="importar"`); Agendamentos/Agregados reuse the same importer in a collapsed <details>; Controle O.S. keeps its weekly import.
 - Derive tab freshness from month-scoped update_log records using shared update-status helpers (sourceStatus also flags updates made today, shown as ✅/❌ per Importações block); sales views share their source, Projeção + OS requires both sales and open orders, and Controle O.S. uses its weekly cadence.
 - Cumulative main-sales reports use the authenticated SECURITY INVOKER `import_sales_period` RPC to replace included consultants' period atomically and store totals on the final day; period totals cannot reconstruct daily sales.
 - Brand primary and performance colors use independent semantic tokens so changing the brand never changes success/warning thresholds.
