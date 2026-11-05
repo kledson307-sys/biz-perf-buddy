@@ -20,13 +20,11 @@ export const segmentoProduto = (p: string): "carro" | "moto" => /SERIE [FGRKC]\b
 export function classificar(obs: string): Categoria {
   const t = norm(obs).replace(/\s+/g, " ")
     .replace(/[A-Z/ ]{2,40}:\s*(N|NA|NAO)( POSSUI)?(?=\s|$)/g, " ").replace(/PREFERENCIA DO CONSULTOR\/TECNICO:[^:]*?(?=[A-Z ]{3,}:|$)/g, " ");
-  // Códigos de serviço têm prioridade: 0000105 revisão carro, 0000111 revisão moto, DIAG diagnóstico, MEC troca de peça/recall.
+  // Precedência: revisão (mesmo com outros termos) > recall > diagnóstico.
   const cru = norm(obs);
-  if (/\b0000105|\b0000111/.test(cru)) return "revisao";
-  if (/\bDIAG/.test(t)) return "diagnostico";
-  if (/\bMEC\b|\bMEC\d/.test(t)) return "recall";
-  if (/RECALL|ATUALIZACAO DE SOFTWARE|CAMPANHA ATUALIZA|CAMPANHA TECNICA:\s*(SIM|\d)/.test(t)) return "recall";
-  if (/ALEGACOES:\s*(?!N\b|NAO)\S|ALEGA|BARULHO|RUIDO|MENSAGEM|LUZ |FALHA|DEFEITO|VAZAMENTO|DIAGNOS|NAO LIGA|NAO FUNCIONA/.test(t)) return "diagnostico";
+  if (/\b0000105|\b0000111/.test(cru) || /MANUTENC|REVISAO|OLEO|PASTILHA|FLUIDO/.test(t)) return "revisao";
+  if (/TROCA DE PECA|CAMPANHA TECNICA:\s*(SIM|\d)|\bMEC\b|\bMEC\d|RECALL|ATUALIZACAO DE SOFTWARE|CAMPANHA ATUALIZA/.test(t)) return "recall";
+  if (/\bDIAG|CLIENTE ALEGA|ALEGACOES:\s*(?!N\b|NAO)\S|BARULHO|\bLUZ|SUSPENSAO|RUIDO|LIQUIDO|BAIXO|QUEBRAD|SOLT[OA]|FALHA|DEFEITO|VAZAMENTO/.test(t)) return "diagnostico";
   return "revisao";
 }
 
@@ -48,7 +46,7 @@ export function lerAgendamento(raw: unknown[][]): AgendReport | null {
     const r = raw[i]!; const ag = g(r, "AGENDADA");
     if (/^\d{2}\/\d{2} \d{2}:\d{2}/.test(ag)) {
       const produto = g(r, "PRODUTO");
-      itens.push({ hora: ag.slice(6), status: g(r, "STATUS"), cliente: g(r, "CLIENTE"), os: g(r, "NR O.S"), celular: g(r, "CELULAR"), consultor: g(r, "TECNICO"), produto, placa: g(r, "PLACA").toUpperCase(), segmento: segmentoProduto(produto), categoria: "revisao", obs: obsCol >= 0 ? txt(r[obsCol]) : "" });
+      itens.push({ hora: ag.slice(6), status: g(r, "STATUS"), cliente: g(r, "CLIENTE"), os: g(r, "NR O.S"), celular: g(r, "CELULAR"), consultor: g(r, "AGENTE") || g(r, "TECNICO") || g(r, "CONSULTOR"), produto, placa: g(r, "PLACA").toUpperCase(), segmento: segmentoProduto(produto), categoria: "revisao", obs: obsCol >= 0 ? txt(r[obsCol]) : "" });
     } else if (itens.length && obsCol >= 0 && txt(r[obsCol]) && !/^(PAGINA|DATA DE IMPRESSAO|OBSERVACOES E|RECLAMACOES)/.test(norm(txt(r[obsCol])))) {
       itens[itens.length - 1]!.obs += "\n" + txt(r[obsCol]);
     }

@@ -10,7 +10,7 @@ export type AgendRow = {
 export type Followup = { id: string; agendamento_id: string; aceito_por: string; aceito_em: string | null; confirmacao: "sim" | "nao" | "faltou" | null; confirmado_por: string; confirmado_em: string | null };
 
 /** Consultores cujos clientes entram como "passantes" na agenda do dia. */
-export const CONS_PASSANTES = /\b(WESLEY|RENAN|JADNA|ANDRESSA|PEDRO|GILBERTO)\b/i;
+export const CONS_PASSANTES = /\b(ANDRESSA|WESLEY|P\.?\s?BENIGNO|BENIGNO|PEDRO|GILBERTO|LUIS|LU[IÍ]S|JADNA|RENAN)\b/i;
 /** Status que marcam o veículo como atendido no fechamento do dia. */
 export const STATUS_ATENDIDO = /EFETIVAD|ENCERRAD|FINALIZAD/i;
 

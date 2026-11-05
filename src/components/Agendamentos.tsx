@@ -241,7 +241,7 @@ export function Agendamentos({ mes }: { mes: string }) {
         {d0.length > 0 && (
           <div className="p-3">
             <div className="grid gap-2 sm:grid-cols-2">
-              {[{ t: "Passantes (Wesley, Renan, Jadna, Andressa, Pedro, Gilberto)", m: mixPass, n: passantes.length }, { t: "Agendados demais consultores", m: mixAg, n: agendados.length }].map((g) => (
+              {[{ t: "Passantes (Andressa, Wesley, Pedro, Gilberto, Luis, Jadna, Renan)", m: mixPass, n: passantes.length }, { t: "Agendados demais consultores", m: mixAg, n: agendados.length }].map((g) => (
                 <div key={g.t} className="rounded-lg bg-background/60 p-3">
                   <p className="text-xs text-muted-foreground">{g.t}</p>
                   <p className="text-xl font-bold">{uni(g.n)}</p>
