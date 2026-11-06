@@ -14,12 +14,15 @@ import { saveOpenOrders } from "@/lib/open-orders.functions";
 import { ehFatServicos, ehFatPecas, lerFatServicos, lerFatPecas, consolidarFat, mesclarFat, type FatHistorico } from "@/lib/faturamento-historico";
 import { mesSeguinte } from "@/lib/agendamentos-data";
 import { registrarUpdate } from "@/lib/update-log";
+import { agregadosDoFatServicos } from "@/lib/agregados-os";
+import { splitCods } from "@/lib/agregados";
+import { norm } from "@/components/painel-ui";
 
 type Achado = {
   arquivo: string; resumo: string; raw?: unknown[][];
   tipo: "nps" | "pecas" | "passagens" | "d1" | "d0" | "os" | "outro";
   agenda?: AgendReport; nps?: NpsItem[]; pecas?: ItemPeca[]; pass?: PassReport;
-  fat?: FatHistorico | undefined; tec?: FatTecnicos | null; destinos?: string[]; osLinhas?: { nome: string; servicos: number; pecas: number }[];
+  fat?: FatHistorico | undefined; tec?: FatTecnicos | null; agg?: ReturnType<typeof agregadosDoFatServicos>; destinos?: string[]; osLinhas?: { nome: string; servicos: number; pecas: number }[];
 };
 const ROTULO = { nps: "NPS da montadora", pecas: "Faturamento de Peças", passagens: "Faturamento de Serviços / Passagens", d1: "Agendamento D+1", d0: "Agendamento do dia", os: "O.S. Abertas", outro: "Não reconhecido" } as const;
 const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -58,10 +61,13 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
         const r = lerPassagens(pa.raw); const ret = retornosPorChassi(osDasPassagens(pa.raw)).length;
         const fat = ehFatServicos(pa.raw) ? lerFatServicos(pa.raw) : null;
         const tec = tecnicosDoFatServicos(pa.raw);
+        const { data: cods } = await supabase.from("agg_codes").select("item,codigos");
+        const agg = agregadosDoFatServicos(pa.raw, cods?.length ? Object.fromEntries(cods.map((c) => [c.item, splitCods(c.codigos)])) : undefined);
         const destinos = ["Técnicos: passagens e mix", "Consultores: passagens e mix", "Oficina: serviços por dia e retornos", "Controle O.S.: baixa das faturadas"];
         if (tec) destinos.unshift(`Técnicos: M.O. ${brl(tec.rows.reduce((a, x) => a + x.servicos, 0))} e peças ${brl(tec.rows.reduce((a, x) => a + x.pecas, 0))}${tec.semApontamento.servicos + tec.semApontamento.pecas > 0 ? ` · ${brl(tec.semApontamento.servicos + tec.semApontamento.pecas)} sem técnico` : ""}`);
+        if (agg) destinos.unshift(`Agregados: ${agg.registros.reduce((a, r) => a + r.qtd, 0)} serviços (${[...new Set(agg.registros.map((r) => r.nome))].join(", ")})`);
         if (fat) destinos.unshift(`Consultores: serviços por dia ${brl(fat.linhas.reduce((a, l) => a + l.servicos, 0))} (peças já gravadas são mantidas)`);
-        out.push({ arquivo: f.name, tipo: "passagens", pass: r, fat: fat ?? undefined, tec, destinos, raw: pa.raw, resumo: `${r.mecanicos.length} técnicos · ${r.consultores.length} consultores · ${r.mecanicos.reduce((n, m) => n + m.passagens, 0)} passagens (O.S. únicas, sem internas) · ${ret} retornos por chassi${fat ? ` · histórico diário de ${fat.meses.length} mês(es)` : ""}` }); continue;
+        out.push({ arquivo: f.name, tipo: "passagens", pass: r, fat: fat ?? undefined, tec, agg, destinos, raw: pa.raw, resumo: `${r.mecanicos.length} técnicos · ${r.consultores.length} consultores · ${r.mecanicos.reduce((n, m) => n + m.passagens, 0)} passagens (O.S. únicas, sem internas) · ${ret} retornos por chassi${fat ? ` · histórico diário de ${fat.meses.length} mês(es)` : ""}` }); continue;
       }
       out.push({ arquivo: f.name, tipo: "outro", resumo: "Cabeçalhos não reconhecidos. Use o bloco específico abaixo." });
     }
@@ -86,6 +92,22 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
       await registrarUpdate("Faturamento (histórico diário)", m);
     }
     return `Faturamento diário salvo em ${meses.length} mês(es) (${rows.length} dias de consultores)${ignorados.length ? ` · fora da equipe: ${ignorados.join(", ")}` : ""}`;
+  };
+
+  /** Agregados de serviço das O.S. Fechadas: relatório vai do 1º dia do mês até hoje, então substitui esses itens no período. */
+  const salvarAgg = async (agg: NonNullable<Achado["agg"]>) => {
+    const { data: cons, error } = await supabase.from("consultants").select("id,nome");
+    if (error) throw error;
+    const mapa = new Map((cons ?? []).map((c) => [norm(c.nome), c.id]));
+    const rows = agg.registros.filter((r) => mapa.has(norm(r.nome))).map((r) => ({ consultant_id: mapa.get(norm(r.nome))!, dia: r.dia!, item: r.item, codigo: r.codigo ?? "", qtd: r.qtd, valor: r.valor }));
+    const fora = [...new Set(agg.registros.filter((r) => !mapa.has(norm(r.nome))).map((r) => r.nome))];
+    const ini = agg.ini.slice(0, 8) + "01";
+    if (await mesTravado(ini.slice(0, 7))) throw new Error(`Mês ${ini.slice(0, 7)} fechado: desbloqueie para importar.`);
+    const del = await supabase.from("agg_sales").delete().in("item", agg.itens).gte("dia", ini).lte("dia", agg.fim);
+    if (del.error) throw del.error;
+    if (rows.length) { const up = await supabase.from("agg_sales").upsert(rows, { onConflict: "consultant_id,dia,item,codigo" }); if (up.error) throw up.error; }
+    await registrarUpdate("Agregados (importação)", ini.slice(0, 7));
+    return `Agregados (${rows.reduce((a, r) => a + r.qtd, 0)} serviços)${fora.length ? ` · fora da equipe: ${fora.join(", ")}` : ""}`;
   };
 
   const salvar = async () => {
@@ -117,7 +139,8 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
         }
         if (a.tipo === "passagens" && a.pass) { await salvarPassagens(a.pass, mes); feitos.push("Passagens (técnicos, mix e consultores)");
           if (a.raw) { const oss = osDasPassagens(a.raw); await salvarOficinaMes(mes, { diario: servicosPorDia(oss, mes), fonte: "s", retornos: retornosPorChassi(oss) }); feitos.push("Serviços por dia e retornos por chassi"); }
-          if (a.tec) feitos.push(await salvarFatTecnicos(a.tec, mes)); }
+          if (a.tec) feitos.push(await salvarFatTecnicos(a.tec, mes));
+          if (a.agg) feitos.push(await salvarAgg(a.agg)); }
         if (a.fat) feitos.push(await salvarFat(a.fat));
       }
       setMsg(feitos.length ? `✅ Salvo: ${feitos.join(", ")}. Importações anteriores substituídas.` : "Nada para salvar aqui.");
