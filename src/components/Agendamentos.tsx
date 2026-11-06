@@ -4,7 +4,7 @@ import { Ghost, UserX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ImportadorUnificado } from "@/components/ImportadorUnificado";
 import { Box, Tabela, uni } from "@/components/painel-ui";
-import { carregarAgendamentos, carregarFollowups, aceitarFollowup, confirmarFollowup, contar, separarPassantes, fechamentoDoDia, faltasDoMes, situacaoCapacidade, picosPorHora, linkResgate, hojeLocal, dataRadarD1, type AgendRow, type Contagem, type Followup } from "@/lib/agendamentos-data";
+import { carregarAgendamentos, carregarD1Seguinte, carregarFollowups, aceitarFollowup, confirmarFollowup, contar, separarPassantes, fechamentoDoDia, faltasDoMes, situacaoCapacidade, picosPorHora, linkResgate, hojeLocal, dataRadarD1, type AgendRow, type Contagem, type Followup } from "@/lib/agendamentos-data";
 import { classe, type NpsItem } from "@/lib/nps";
 
 const CAT_LABEL = { revisao: "Revisão", diagnostico: "Diagnóstico", recall: "Recall" } as const;
@@ -75,11 +75,13 @@ export function Agendamentos({ mes }: { mes: string }) {
     void supabase.from("agenda_metas").select("segmento,categoria,qtd_diaria").eq("mes", mes).then(({ data }) => setMetas(data ?? []));
   }, [mes]);
 
+  const [prox, setProx] = useState<AgendRow[]>([]);
   const load = async () => {
     try {
       const r = await carregarAgendamentos(mes);
-      setRows(r);
-      setFollows(await carregarFollowups(r.map((x) => x.id)));
+      const px = await carregarD1Seguinte(mes);
+      setRows(r); setProx(px);
+      setFollows(await carregarFollowups([...r, ...px].map((x) => x.id)));
     } catch (e) { setMsg((e as Error).message); }
   };
   useEffect(() => { void load(); }, [mes]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -87,11 +89,11 @@ export function Agendamentos({ mes }: { mes: string }) {
   const hoje = hojeLocal();
   const [dataEscolhida, setDataEscolhida] = useState("");
   const amanha = useMemo(() => {
-    const d1 = rows.filter((r) => r.tipo === "d1");
+    const d1 = [...rows.filter((r) => r.tipo === "d1"), ...prox];
     const datas = [...new Set(d1.map((r) => r.data))].sort();
     const padrao = dataRadarD1(datas, hoje);
     return { data: datas.includes(dataEscolhida) ? dataEscolhida : padrao, datas, itens: d1 };
-  }, [rows, hoje, dataEscolhida]);
+  }, [rows, prox, hoje, dataEscolhida]);
   const d1Todos = amanha.itens.filter((r) => r.data === amanha.data);
   const consultoresD1 = [...new Set(d1Todos.map((r) => (r.consultor || "").trim().toUpperCase()).filter(Boolean))].sort();
   const d1 = filtroCons ? d1Todos.filter((r) => (r.consultor || "").trim().toUpperCase() === filtroCons) : d1Todos;

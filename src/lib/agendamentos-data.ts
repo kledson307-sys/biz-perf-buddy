@@ -88,13 +88,21 @@ export function fechamentoDoDia(d1: AgendRow[], d0: AgendRow[]): LinhaFechamento
 }
 
 /** Clientes que agendaram e não compareceram (D0 com status de falta ou D1 sem par no D0). */
-export function faltasDoMes(rows: AgendRow[]): Falta[] {
-  const d1 = rows.filter((r) => r.tipo === "d1");
+/** D+1 do primeiro dia do mês seguinte (radar no último dia do mês). */
+export async function carregarD1Seguinte(mes: string): Promise<AgendRow[]> {
+  const { data, error } = await supabase.from("agendamentos").select("*").eq("tipo", "d1").eq("data", mesSeguinte(mes)).order("hora");
+  if (error) return [];
+  return (data ?? []) as AgendRow[];
+}
+export function faltasDoMes(rows: AgendRow[], hoje = hojeLocal()): Falta[] {
+  // Agenda futura ainda não aconteceu: não é falta.
+  const d1 = rows.filter((r) => r.tipo === "d1" && r.data <= hoje);
+  const datasD0 = new Set(rows.filter((r) => r.tipo === "d0").map((r) => r.data));
   const d0porDataPlaca = new Map(rows.filter((r) => r.tipo === "d0").map((r) => [`${r.data}|${r.placa}`, r]));
   const faltas = new Map<string, Falta>();
   for (const a of d1) {
     const real = d0porDataPlaca.get(`${a.data}|${a.placa}`);
-    const faltou = real ? /NAO COMPAREC|FALTOU|FALTA/i.test(real.status) || !STATUS_ATENDIDO.test(real.status) : true;
+    const faltou = real ? /NAO COMPAREC|FALTOU|FALTA/i.test(real.status) || !STATUS_ATENDIDO.test(real.status) : a.data < hoje || datasD0.has(a.data);
     if (!faltou) continue;
     const k = a.placa || a.cliente;
     const e = faltas.get(k) ?? { placa: a.placa, cliente: a.cliente, celular: a.celular, faltas: 0, datas: [] };

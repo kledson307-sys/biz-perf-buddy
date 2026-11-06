@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { uni } from "@/components/painel-ui";
-import { carregarAgendamentos, contar, dataRadarD1, hojeLocal, type AgendRow, type Contagem } from "@/lib/agendamentos-data";
+import { carregarAgendamentos, carregarD1Seguinte, contar, dataRadarD1, hojeLocal, type AgendRow, type Contagem } from "@/lib/agendamentos-data";
 
 const CAT = { revisao: "Revisão", diagnostico: "Diagnóstico", recall: "Recall" } as const;
 const SEGMENTOS: readonly [string, string, "carro" | "moto", string][] = [
@@ -31,11 +31,13 @@ function LinhaSegmento({ icone, nome, seg, cor, m }: { icone: string; nome: stri
 /** Conteúdo do cartão do Dashboard: radar do agendamento D+1 (amanhã) + acumulado do mês. */
 export function CartaoAgendamento({ mes }: { mes: string }) {
   const [rows, setRows] = useState<AgendRow[] | null>(null);
-  useEffect(() => { void carregarAgendamentos(mes).then(setRows).catch(() => setRows([])); }, [mes]);
+  const [prox, setProx] = useState<AgendRow[]>([]);
+  useEffect(() => { void carregarAgendamentos(mes).then(setRows).catch(() => setRows([])); void carregarD1Seguinte(mes).then(setProx); }, [mes]);
 
   const d1all = (rows ?? []).filter((r) => r.tipo === "d1");
-  const dataD1 = dataRadarD1(d1all.map((r) => r.data), hojeLocal());
-  const d1 = d1all.filter((r) => r.data === dataD1);
+  const radarRows = [...d1all, ...prox];
+  const dataD1 = dataRadarD1(radarRows.map((r) => r.data), hojeLocal());
+  const d1 = radarRows.filter((r) => r.data === dataD1);
   const radar = contar(d1);
   const acum = contar(d1all);
   const atendidos = (rows ?? []).filter((r) => r.tipo === "d0" && /EFETIVAD|ENCERRAD|FINALIZAD/i.test(r.status)).length;
