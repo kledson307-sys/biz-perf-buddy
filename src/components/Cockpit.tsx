@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { daLoja, resumir, type NpsItem } from "@/lib/nps";
+import { daLoja, filtrarPeriodo, resumir, type NpsItem } from "@/lib/nps";
 import { useResumoMes } from "@/hooks/use-resumo-mes";
 import { AlertTriangle, ArrowRight, CalendarDays, ClipboardList, MapPin, Package, Star, Target, TrendingUp, Trophy, Wrench } from "lucide-react";
 import { ITENS } from "@/lib/agregados";
@@ -54,7 +54,8 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
   const resumo = useResumoMes(mes);
   const { os, pass, agg, mec, fluxo, parados, amarelos } = resumo;
   const [nps, setNps] = useState<ReturnType<typeof resumir> | null>(null);
-  useEffect(() => { void supabase.from("nps_imports").select("itens").order("at", { ascending: false }).limit(1).maybeSingle().then(({ data }) => { const l = daLoja((data?.itens as unknown as NpsItem[]) ?? []); setNps(l.length ? resumir(l) : null); }); }, []);
+  const [npsAno, setNpsAno] = useState(false);
+  useEffect(() => { void supabase.from("nps_imports").select("itens").order("at", { ascending: false }).limit(1).maybeSingle().then(({ data }) => { const l = filtrarPeriodo(daLoja((data?.itens as unknown as NpsItem[]) ?? []), npsAno ? mes.slice(0, 4) : mes.slice(0, 7)); setNps(l.length ? resumir(l) : null); }); }, [mes, npsAno]);
 
   // Faturamento por data real (planilhas Peças/Passagens), quando importado.
   const [real, setReal] = useState<Diario>({});
@@ -261,8 +262,9 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
       <Bloco titulo="Agendamentos de amanhã (D+1)" icon={<CalendarDays className="size-4 text-primary" />} ir={() => setTab("agendamentos")} className="lg:col-span-3">
         <CartaoAgendamento mes={mes} />
       </Bloco>
-      <Bloco titulo="NPS / qualidade" icon={<Star className="size-4 text-primary" />} ir={() => setTab("nps")} className="lg:col-span-2">
-        {!nps ? <p className="text-sm text-muted-foreground">Aguardando planilha NPS.</p> :
+      <Bloco titulo={`NPS / qualidade · ${npsAno ? "ano" : "mês"}`} icon={<Star className="size-4 text-primary" />} ir={() => setTab("nps")} className="lg:col-span-2"
+        right={<button type="button" className="text-[10px] text-primary hover:underline" onClick={(e) => { e.stopPropagation(); setNpsAno(!npsAno); }}>{npsAno ? "Ver mês" : "Ver ano"}</button>}>
+        {!nps ? <p className="text-sm text-muted-foreground">Sem pesquisas NPS neste período.</p> :
           <div className="grid grid-cols-4 gap-1 text-center">{([["NPS", `${(nps.nps * 100).toFixed(1).replace(".", ",")}`, nps.nps >= 0.7], ["Promot.", pct(nps.pctProm), nps.pctProm >= 0.85], ["Detrat.", uni(nps.det), nps.det === 0], ["RAC", uni(nps.racs), nps.racs === 0]] as [string, string, boolean][]).map(([n, v, ok]) => (
             <div key={n} className="rounded-lg border border-border bg-background/40 py-1"><p className="text-[10px] text-muted-foreground">{n}</p><p className={`text-sm font-bold ${ok ? "text-success" : "text-warning"}`}>{v}</p></div>))}</div>}
       </Bloco>
