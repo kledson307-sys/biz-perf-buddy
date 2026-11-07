@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ehEncerrado } from "@/lib/os-controle";
 import {
-  CANAIS, CHASE, DEPTO_DMS, MARGEM_IDEAL, SEGMENTOS, STATUS_LABEL, estagnada, folhaComissao, statusConciliado,
+  CANAIS, CHASE, DEPTO_DMS, MARGEM_IDEAL, SEGMENTOS, STATUS_LABEL, estagnada, folhaComissao, parseRvd, statusConciliado, type LinhaRvd,
   type Depto, type StatusVenda, type VendaC,
 } from "@/lib/acessorios-estetica";
 
@@ -177,8 +177,36 @@ function MatrizRvd({ mes, vendas, vends, vols, reload }: { mes: string; vendas: 
     const { error } = await supabase.from("rvd_volumes_mes").upsert({ mes, vendedor, veiculos: atual?.veiculos ?? 0, target: atual?.target ?? 0, ...(campo === "veiculos" ? { veiculos: valor } : { target: valor }), atualizado_por: u.user?.email ?? "", updated_at: new Date().toISOString() }, { onConflict: "user_id,mes,vendedor" });
     if (error) toast.error(error.message); else { toast.success("Atualizado"); reload(); }
   };
+  const [prev, setPrev] = useState<LinhaRvd[] | null>(null);
+  const ler = async (file: File) => {
+    const XLSX = await import("xlsx");
+    const wb = XLSX.read(await file.arrayBuffer());
+    const nomes = [...wb.SheetNames].sort((a, b) => Number(/SSA|HAUS/i.test(b)) - Number(/SSA|HAUS/i.test(a)));
+    for (const n of nomes) {
+      const r = parseRvd(XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[n]!, { header: 1, raw: true }));
+      if (r.length) { setPrev(r); toast.info(`Aba "${n}": ${r.length} vendedor(es) encontrados`); return; }
+    }
+    toast.error("Não encontrei os blocos NOVO/SEMINOVO/OFICINA nesta planilha");
+  };
+  const importar = async () => {
+    if (!prev) return;
+    const { data: u } = await supabase.auth.getUser(); const email = u.user?.email ?? "";
+    const e1 = await supabase.from("vendedores_showroom").upsert(prev.map((l) => ({ nome: l.vendedor, canal: l.canal, segmento: l.segmento })), { onConflict: "user_id,nome" });
+    const e2 = await supabase.from("rvd_volumes_mes").upsert(prev.map((l) => ({ mes, vendedor: l.vendedor, veiculos: l.veiculos, target: l.target, atualizado_por: email, updated_at: new Date().toISOString() })), { onConflict: "user_id,mes,vendedor" });
+    await supabase.from("vendas_complementares").delete().eq("mes", mes).eq("departamento", "ACESSORIOS").eq("produto", "IMPORTAÇÃO RVD");
+    const dia = `${mes}-01`;
+    const linhas = prev.flatMap((l) => [[l.faturado, "FATURADO"], [l.aFaturar, "A_FATURAR"]].filter(([v]) => Number(v) > 0).map(([v, st]) => ({ mes, dia, departamento: "ACESSORIOS", cliente: "CONSOLIDADO RVD", vendedor: l.vendedor, canal: l.canal, segmento: l.segmento, produto: "IMPORTAÇÃO RVD", valor: Number(v), status: String(st), criado_por: email })));
+    const e3 = linhas.length ? await supabase.from("vendas_complementares").insert(linhas) : { error: null };
+    const err = e1.error ?? e2.error ?? e3.error;
+    if (err) toast.error(err.message); else { toast.success("Planilha RVD importada (substitui a importação anterior do mês)"); setPrev(null); reload(); }
+  };
   const grupos = CANAIS.flatMap((c) => SEGMENTOS.map((s) => [c, s] as const));
   return <div className="grid gap-3 xl:grid-cols-2">
+    <div className="lux-card flex flex-wrap items-center gap-2 px-3 py-2 text-xs xl:col-span-2">
+      <b>Importar planilha RVD</b>
+      <input type="file" accept=".xlsx,.xls" onChange={(e) => e.target.files?.[0] && ler(e.target.files[0])} />
+      {prev && <><span>{prev.length} vendedores · faturado {brl(prev.reduce((a, l) => a + l.faturado, 0))} · a faturar {brl(prev.reduce((a, l) => a + l.aFaturar, 0))} · {uni(prev.reduce((a, l) => a + l.veiculos, 0))} veículos/passagens</span><Button size="sm" onClick={importar}>Confirmar importação</Button><Button size="sm" variant="ghost" onClick={() => setPrev(null)}>Cancelar</Button></>}
+    </div>
     {grupos.map(([c, s]) => {
       const lista = vends.filter((v) => v.ativo && v.canal === c && v.segmento === s);
       if (!lista.length) return null;

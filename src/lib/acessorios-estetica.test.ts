@@ -43,3 +43,22 @@ describe("conciliação", () => {
     expect(estagnada({ status: "A_FATURAR", dia: "2026-11-01" }, "2026-11-15")).toBe(false);
   });
 });
+
+import { parseRvd } from "./acessorios-estetica";
+describe("importador RVD", () => {
+  const rows = [
+    [null, "NOVO (CARRO)", null, null, null, null, null, null, null, null, 6478.8, null, 8375],
+    [null, "VENDEDOR", "VENDA TOTAL", "AC FATURADOS", "A FATURAR", "V.FATURADOS", "V. A FAT.", "TOTAL DE V.", "TICKET GERAL"],
+    [null, "RICK NASCIMENTO SANTOS", 25524, 25524, 0, 3, 0, 3, 8508],
+    [null, "TOTAL", 25524, 25524, 0, 3, 0, 3],
+    [null, "OFICINA (CARRO)", null, null, null, 100],
+    [null, "VENDEDOR", "FATURADO", "A FATURAR", "TICKET GERAL", "TARGET", "PASSAGNES"],
+    [null, "WESLEY DE JESUS FERREIRA", 3380, 350, null, null, 125],
+  ];
+  it("lê blocos, veículos e target", () => {
+    const r = parseRvd(rows);
+    expect(r[0]).toEqual({ vendedor: "RICK NASCIMENTO SANTOS", canal: "NOVO", segmento: "CARRO", faturado: 25524, aFaturar: 0, veiculos: 3, target: 8375 });
+    expect(r[1]).toMatchObject({ canal: "OFICINA", faturado: 3380, aFaturar: 350, veiculos: 125, target: 100 });
+    expect(r).toHaveLength(2);
+  });
+});

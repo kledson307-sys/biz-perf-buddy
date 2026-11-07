@@ -95,3 +95,35 @@ export function estagnada(v: Pick<VendaC, "status" | "dia">, hoje: string): bool
   if (v.status !== "A_FATURAR" || !v.dia) return false;
   return (Date.parse(hoje) - Date.parse(v.dia)) / 86400000 > 15;
 }
+
+export type LinhaRvd = { vendedor: string; canal: Canal; segmento: Segmento; faturado: number; aFaturar: number; veiculos: number; target: number };
+const numv = (x: unknown) => (typeof x === "number" ? x : Number(String(x ?? "").replace(/\./g, "").replace(",", ".")) || 0);
+/** Lê a planilha RVD (aba da loja) por conteúdo: blocos "NOVO (CARRO)", "SEMINOVO (MOTO)", "OFICINA (CARRO)"… */
+export function parseRvd(rows: unknown[][]): LinhaRvd[] {
+  const out: LinhaRvd[] = [];
+  let bloco: { canal: Canal; segmento: Segmento; target: number } | null = null;
+  let cols: Record<string, number> = {};
+  for (const r of rows) {
+    const cel = r.map((c) => String(c ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase());
+    const ti = cel.findIndex((c) => /^(NOVO|SEMINOVO|OFICINA) \((CARRO|MOTO)\)$/.test(c));
+    if (ti >= 0) {
+      const m = cel[ti]!.match(/^(\w+) \((\w+)\)$/)!;
+      const nums = r.slice(ti + 1).map(numv).filter((n) => n > 0);
+      bloco = { canal: m[1] as Canal, segmento: m[2] as Segmento, target: nums.length ? nums[nums.length - 1]! : 0 };
+      cols = {}; continue;
+    }
+    const vi = cel.indexOf("VENDEDOR");
+    if (vi >= 0 && bloco) {
+      const f = (re: RegExp) => cel.findIndex((c, i) => i > vi && re.test(c));
+      cols = { nome: vi, fat: f(/FATURADO/), af: f(/^A FATURAR/), vf: f(/^V\.? ?FATURADOS/), va: f(/^V\.? ?A FAT/), tv: f(/^TOTAL DE V/), pass: f(/^PASSAG/) };
+      continue;
+    }
+    if (!bloco || cols["nome"] === undefined) continue;
+    const nome = cel[cols["nome"]] ?? "";
+    if (!nome || nome === "TOTAL") { if (nome === "TOTAL") cols = {}; continue; }
+    const g = (k: string) => (cols[k]! >= 0 ? numv(r[cols[k]!]) : 0);
+    const veiculos = bloco.canal === "OFICINA" ? g("pass") : cols["tv"]! >= 0 ? g("tv") : g("vf") + g("va");
+    out.push({ vendedor: String(r[cols["nome"]]).trim().toUpperCase().replace(/\s+/g, " "), canal: bloco.canal, segmento: bloco.segmento, faturado: g("fat"), aFaturar: g("af"), veiculos: Math.round(veiculos), target: bloco.target });
+  }
+  return out;
+}

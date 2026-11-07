@@ -12,4 +12,4 @@
 
 - [x] Aba Acessórios & Estética (vendas, conciliação, matriz RVD, comissões RH, consolidado)
 - [ ] Logins restritos de Geovana e Marcela — aguardando e-mails delas
-- [ ] Importador da planilha RVD — aguardando decisão de uso
+- [x] Importador da planilha RVD
