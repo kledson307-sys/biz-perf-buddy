@@ -37,3 +37,31 @@ export function curvaAbc(itens: ItemPeca[]): ItemAbc[] {
     return { ...i, pct: i.valor / tot, acum: acc, classe: antes < 0.8 ? "A" : antes < 0.95 ? "B" : "C" };
   });
 }
+
+const FAMILIAS: [string, RegExp][] = [
+  ["Químicos (Tunap & Brazzo)", /tunap|brazzo|quimic/],
+  ["Pneus & Rodas", /pneu|roda|aro |camara/],
+  ["Filtros & Revisão", /filtro|vela|palheta|elemento|correia/],
+  ["Lubrificantes & Fluidos", /oleo|lubrif|fluido|aditivo|graxa|twinpower|advantec|arrefec.*liq|liquido/],
+  ["Freios & Desgaste", /freio|pastilha|disco|pinca|lona/],
+  ["Suspensão & Direção", /amortec|bucha|braco|bieleta|coxim|suspens|direcao|terminal|pivo|mola/],
+  ["Baterias & Elétrica", /bateria|alternador|lampada|chicote|sensor|modulo|fusivel|rele|motor de arranque/],
+  ["Carroceria & Iluminação", /farol|lanterna|para-?choque|vidro|retrovisor|porta|capo|paralama|grade|emblema|friso/],
+  ["Motor & Arrefecimento", /bomba|radiador|termostat|junta|retentor|pistao|valvula|mangueira|turbo/],
+];
+
+/** Família funcional pela descrição/grupo (substitui o "Grupo Interno" cru do DMS). */
+export function familiaPeca(i: Pick<ItemPeca, "desc" | "grupo">): string {
+  const t = n(`${i.grupo} ${i.desc}`);
+  for (const [f, re] of FAMILIAS) if (re.test(t)) return f;
+  return "Outras peças";
+}
+
+/** Faixas executivas de giro pela curva ABC. */
+export function faixasGiro(curva: ItemAbc[]) {
+  const tot = curva.reduce((a, i) => a + i.valor, 0) || 1;
+  return (["A", "B", "C"] as const).map((c) => {
+    const l = curva.filter((i) => i.classe === c), v = l.reduce((a, i) => a + i.valor, 0);
+    return { classe: c, itens: l.length, valor: v, pct: v / tot, pctItens: curva.length ? l.length / curva.length : 0 };
+  });
+}

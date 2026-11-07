@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Box, brl, div, pct, tone, uni } from "@/components/painel-ui";
-import { curvaAbc, type ItemPeca } from "@/lib/pecas-itens";
+import { curvaAbc, faixasGiro, familiaPeca, type ItemPeca } from "@/lib/pecas-itens";
 import { Bloco, Linha } from "@/components/Cockpit";
 import { CabecalhoTela, KpiCard } from "@/components/TelasGestor";
 import { BarChart3, Package, PieChart, RefreshCw, Trophy, Users } from "lucide-react";
@@ -20,9 +20,10 @@ export function PecasEstoque({ linhas, porDept, margemIdeal, deptName, passagens
   useEffect(() => { void supabase.from("parts_items").select("itens").eq("mes", mes).maybeSingle().then(({ data }) => setItens((data?.itens as unknown as ItemPeca[]) ?? [])); }, [mes]);
   const curva = curvaAbc(itens ?? []);
   const totItens = curva.reduce((a, i) => a + i.valor, 0);
-  const cats = Object.entries(curva.reduce<Record<string, number>>((a, i) => { const k = i.grupo || "Outros"; a[k] = (a[k] ?? 0) + i.valor; return a; }, {})).sort((a, b) => b[1] - a[1]);
+  const cats = Object.entries(curva.reduce<Record<string, number>>((a, i) => { const k = familiaPeca(i); a[k] = (a[k] ?? 0) + i.valor; return a; }, {})).sort((a, b) => b[1] - a[1]);
   const catTop = cats.length > 5 ? [...cats.slice(0, 5), ["Outros", cats.slice(5).reduce((n, c) => n + c[1], 0)] as [string, number]] : cats;
-  const giro = Object.entries(curva.reduce<Record<string, number>>((a, i) => { const k = i.giro || "Sem giro"; a[k] = (a[k] ?? 0) + i.valor; return a; }, {})).sort((a, b) => b[1] - a[1]);
+  const faixas = faixasGiro(curva);
+  const FX = { A: ["Alto giro", "bg-success", "text-success", "Estoque de segurança — nunca pode faltar"], B: ["Médio giro", "bg-warning", "text-warning", "Reposição programada"], C: ["Baixo giro / eventual", "bg-coral", "text-coral", "Comprar só sob pedido"] } as const;
   const comOs = curva.filter((i) => i.os > 0).reduce((a, i) => a + i.valor, 0);
   const tp = porDept.reduce((a, d) => a + d.pecas, 0);
   const tm = porDept.reduce((a, d) => a + d.mP, 0);
@@ -82,13 +83,12 @@ export function PecasEstoque({ linhas, porDept, margemIdeal, deptName, passagens
             {curva.length > 0 && <p className="mt-1 text-[11px] text-muted-foreground">Em O.S. <b className="text-foreground">{pct(div(comOs, totItens))}</b> · Balcão/venda direta <b className="text-foreground">{pct(div(totItens - comOs, totItens))}</b></p>}
           </div>
         </Bloco>
-        <Bloco titulo="Giro de estoque" icon={<RefreshCw className="size-4 text-primary" />}>
-          {!curva.length ? semItens : <div className="grid h-full grid-cols-[auto_1fr] gap-3">
-            <div className="flex flex-col justify-around gap-1 text-xs">
-              <p className="text-muted-foreground">Itens vendidos<b className="block text-xl text-foreground">{uni(curva.length)}</b></p>
-              <p className="text-muted-foreground">Itens classe A<b className="block text-xl text-primary">{uni(curva.filter((i) => i.classe === "A").length)}</b></p>
-            </div>
-            <ul className="space-y-1 text-xs">{giro.slice(0, 5).map(([g, v]) => <li key={g}><div className="flex justify-between"><span className="truncate">{g}</span><span className="tabular-nums">{brl(v)} · {pct(div(v, totItens))}</span></div><Linha p={div(v, totItens)} cor="bg-primary" /></li>)}</ul>
+        <Bloco titulo="Giro de estoque · curva ABC" icon={<RefreshCw className="size-4 text-primary" />}>
+          {!curva.length ? semItens : <div className="flex h-full flex-col gap-1.5 text-xs">
+            {faixas.map((f) => { const [nome, bg, tx, dica] = FX[f.classe]; return (
+              <div key={f.classe}><div className="flex items-baseline justify-between gap-2"><span className={`font-semibold ${tx}`}>{nome} · Classe {f.classe}</span><span className="tabular-nums"><b>{brl(f.valor)}</b> · {pct(f.pct)} · {uni(f.itens)} itens</span></div>
+                <Linha p={f.pct} cor={bg} /><p className="text-[10px] text-muted-foreground">{dica}</p></div>); })}
+            <p className="mt-auto text-[11px] text-muted-foreground">Apenas <b className="text-foreground">{uni(faixas[0]!.itens)} itens</b> ({pct(faixas[0]!.pctItens)} dos códigos vendidos) geram {pct(faixas[0]!.pct)} do faturamento de peças.</p>
           </div>}
         </Bloco>
 
