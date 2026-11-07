@@ -402,10 +402,7 @@ function Painel({ email }: { email: string }) {
         { label: "Meta total", value: brl(meta), sub: `Projeção ${brl(t.proj)} (${pct(t.projPct)})`, p: t.projPct, cls: pctMeta(t.proj, meta) },
         { label: "Ritmo diário necessário", value: brl(t.nec), sub: `${rest} dia(s) restantes · ${linhas.filter((l) => l.meta === 0).length} sem meta` },
       ]} />;
-      case "agregados": return <AbaTopo titulo="Agregados" sub="Módulo independente · não soma nos totais da loja" icon={Gem} kpis={ITENS.map((it) => {
-        const a = resumo.agg[it.k] ?? { q: 0, v: 0, mq: 0 }; const ritmo = dec ? div(div(a.q, dec) * tot, a.mq) : 0;
-        return { label: it.nome, value: `${uni(a.q)} un`, sub: `${a.mq ? `Meta ${uni(a.mq)} · ritmo ${pct(ritmo)} · ` : ""}${brl(a.v)}${resumo.pass ? ` · ${pct(div(a.q, resumo.pass))} das passagens` : ""}`, p: a.mq ? ritmo : undefined, cls: a.mq ? tone(ritmo) : "" };
-      })} />;
+      case "agregados": return <AbaTopo titulo="Agregados" sub="Módulo independente · não soma nos totais da loja" icon={Gem} kpis={[]} />;
       case "mecanicos": return <AbaTopo titulo="Oficina & Técnicos" sub="Produtividade da oficina, passagens por tipo e metas dos técnicos" icon={Wrench} kpis={[]} />;
       case "controle-os": return <AbaTopo titulo="Ordens de Serviço" sub={`Status das O.S. em aberto e tempo na oficina · ${uni(resumo.abertas)} abertas · ${uni(resumo.parados)} acima de 30 dias`} icon={Car} kpis={[]} />;
       case "agendamentos": return <AbaTopo titulo="Agendamentos" sub="Radar D+1, follow-up do testador, passantes × agendados, fechamento do dia e faltas" icon={CalendarClock} kpis={[]} />;
