@@ -23,6 +23,7 @@ export function Simulado({ mes }: { mes: string }) {
   const [regs, setRegs] = useState<Reg[]>([]);
   const [vista, setVista] = useState<Vista>("LOJA");
   const [lendo, setLendo] = useState("");
+  const [pend, setPend] = useState<{ tipo: string; m: string; arquivo: string; dados: unknown; resumo: string }[]>([]);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase.from("simulado_imports").select("tipo,mes,arquivo,dados,updated_at").in("mes", [mes, ano]);
@@ -48,6 +49,7 @@ export function Simulado({ mes }: { mes: string }) {
   async function importar(files: FileList | null) {
     if (!files?.length) return;
     const XLSX = await import("xlsx");
+    const out: typeof pend = [];
     for (const f of Array.from(files)) {
       try {
         setLendo(`Lendo ${f.name}…`);
@@ -61,28 +63,33 @@ export function Simulado({ mes }: { mes: string }) {
           const deptos: SimuladoDados["deptos"] = {};
           for (const d of DEPTOS) { const x = lerSimuladoAba(rows(d)); if (x) deptos[d] = x; }
           if (!Object.keys(deptos).length) throw new Error("Bloco BMW HAUS SSA não encontrado no Simulador");
-          await salvar("simulado", m, f.name, { mes: m, deptos });
-          toast.success(`Simulado ${m.split("-").reverse().join("/")} importado (HAUS SSA)`);
+          const vb = Object.values(deptos).reduce((a, x) => a + (((x as unknown as { venda?: number }).venda) ?? 0), 0);
+          out.push({ tipo: "simulado", m, arquivo: f.name, dados: { mes: m, deptos }, resumo: `Simulador ${m.split("-").reverse().join("/")} · HAUS SSA · departamentos ${Object.keys(deptos).join(", ")}${vb ? ` · venda ${brl(vb)}` : ""}` });
         } else if (tem("EFETIVO") && Object.values(EFETIVO_ABA).every(tem)) {
           const wb = XLSX.read(buf, { sheets: Object.values(EFETIVO_ABA) });
           const deptos: EfetivoDados["deptos"] = {};
           for (const d of DEPTOS) { const x = lerEfetivoAba(XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[EFETIVO_ABA[d]]!, { header: 1, raw: true, defval: null })); if (x) deptos[d] = x; }
           const a = Number(f.name.match(/20\d\d/)?.[0] ?? ano);
-          await salvar("efetivo", String(a), f.name, { ano: a, deptos });
-          toast.success(`Efetivo ${a} importado`);
+          out.push({ tipo: "efetivo", m: String(a), arquivo: f.name, dados: { ano: a, deptos }, resumo: `Efetivo ${a} · departamentos ${Object.keys(deptos).join(", ")}` });
         } else {
           const wb = XLSX.read(buf);
           const objs = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[wb.SheetNames[0]!]!, { defval: null });
           const g = lerGnc(objs);
           if (!g) throw new Error("não reconheci como Simulador, Efetivo ou GNC SYS");
           const m = g.mes || mes;
-          await salvar("gnc", m, f.name, g);
-          toast.success(`GNC SYS ${m.split("-").reverse().join("/")}: ${g.lancamentos.length} lançamentos dos departamentos marcados`);
+          out.push({ tipo: "gnc", m, arquivo: f.name, dados: g, resumo: `GNC SYS ${m.split("-").reverse().join("/")} · ${g.lancamentos.length} lançamentos dos centros marcados` });
         }
       } catch (e) { toast.error(`${f.name}: ${(e as Error).message}`); }
     }
     setLendo("");
-    await load();
+    setPend(out);
+  }
+
+  async function confirmar() {
+    for (const p of pend) {
+      try { await salvar(p.tipo, p.m, p.arquivo, p.dados); toast.success(`${p.arquivo} importado`); } catch (e) { toast.error(`${p.arquivo}: ${(e as Error).message}`); }
+    }
+    setPend([]); await load();
   }
 
   const loja = calc.reduce((s, d) => ({ venda: s.venda + d.venda, lbr: s.lbr + d.lbr, db: s.db + d.despBase, da: s.da + d.despAjustada }), { venda: 0, lbr: 0, db: 0, da: 0 });
@@ -102,6 +109,11 @@ export function Simulado({ mes }: { mes: string }) {
         </label>
       </div>
 
+      {pend.length > 0 && <div className="lux-card space-y-1 border-primary p-3 text-xs">
+        <b>Confira antes de importar</b>
+        {pend.map((p) => <p key={p.arquivo}>📄 {p.arquivo} → {p.resumo}</p>)}
+        <div className="flex gap-2 pt-1"><Button size="sm" onClick={() => void confirmar()}>Confirmar importação</Button><Button size="sm" variant="ghost" onClick={() => setPend([])}>Cancelar</Button></div>
+      </div>}
       <div className="grid gap-2 sm:grid-cols-3">
         {([["simulado", "Simulador (toda segunda)"], ["gnc", "GNC SYS – despesas (toda segunda)"], ["efetivo", `Efetivo ${ano} (mensal)`]] as const).map(([t, l]) => {
           const r = reg(t);

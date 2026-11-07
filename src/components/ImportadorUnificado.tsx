@@ -52,7 +52,7 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
       if (p) {
         const it = lerItensPecas(p.raw);
         const fat = ehFatPecas(p.raw) ? lerFatPecas(p.raw) : null;
-        const destinos = ["Peças & Estoque: itens", "Oficina: peças por dia"];
+        const destinos = ["Peças & Estoque: itens", "Oficina: peças por dia", "Acessórios & Estética: faturado DMS e baixa das vendas a faturar"];
         if (fat) destinos.unshift(`Consultores: peças por dia ${brl(fat.linhas.reduce((a, l) => a + l.pecas, 0))} (serviços já gravados são mantidos)`);
         out.push({ arquivo: f.name, tipo: "pecas", pecas: it, fat: fat ?? undefined, destinos, raw: p.raw, resumo: `${it.length} itens · ${brl(it.reduce((a, i) => a + i.valor, 0))} (sem O.S. internas)${fat ? ` · histórico diário de ${fat.meses.length} mês(es)` : ""}` }); continue;
       }
@@ -63,7 +63,7 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
         const tec = tecnicosDoFatServicos(pa.raw);
         const { data: cods } = await supabase.from("agg_codes").select("item,codigos");
         const agg = agregadosDoFatServicos(pa.raw, cods?.length ? Object.fromEntries(cods.map((c) => [c.item, splitCods(c.codigos)])) : undefined);
-        const destinos = ["Técnicos: passagens e mix", "Consultores: passagens e mix", "Oficina: serviços por dia e retornos", "Controle O.S.: baixa das faturadas"];
+        const destinos = ["Técnicos: passagens e mix", "Consultores: passagens e mix", "Oficina: serviços por dia e retornos", "Controle O.S.: baixa das faturadas", "Acessórios & Estética: faturado DMS e baixa das vendas a faturar"];
         if (tec) destinos.unshift(`Técnicos: M.O. ${brl(tec.rows.reduce((a, x) => a + x.servicos, 0))} e peças ${brl(tec.rows.reduce((a, x) => a + x.pecas, 0))}${tec.semApontamento.servicos + tec.semApontamento.pecas > 0 ? ` · ${brl(tec.semApontamento.servicos + tec.semApontamento.pecas)} sem técnico` : ""}`);
         if (agg) destinos.unshift(`Agregados: ${agg.registros.reduce((a, r) => a + r.qtd, 0)} serviços (${[...new Set(agg.registros.map((r) => r.nome))].join(", ")})`);
         if (fat) destinos.unshift(`Consultores: serviços por dia ${brl(fat.linhas.reduce((a, l) => a + l.servicos, 0))} (peças já gravadas são mantidas)`);

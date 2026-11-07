@@ -149,3 +149,28 @@ export function diferencaRvd(l: LinhaRvd, vendas: VendaC[]) {
   const mAf = man.filter((v) => v.status !== "FATURADO").reduce((s, v) => s + v.valor, 0);
   return { mFat, mAf, fat: Math.max(0, round2(l.faturado - mFat)), af: Math.max(0, round2(l.aFaturar - mAf)) };
 }
+
+/** Dicionário de vendedores: casa o nome lido na planilha com o cadastro (sem acento/caixa, abreviações e nome+sobrenome). */
+export function casarVendedor(nome: string, cadastro: string[]): string {
+  const n = nk(nome).replace(/[.]/g, " ").replace(/\s+/g, " ").trim();
+  const exato = cadastro.find((c) => nk(c) === nk(nome));
+  if (exato) return exato;
+  const tk = n.split(" ");
+  const cands = cadastro.filter((c) => {
+    const ct = nk(c).replace(/[.]/g, " ").split(/\s+/);
+    if (ct[0] !== tk[0]) return false;
+    if (tk.length === 1 || ct.length === 1) return true;
+    const ult = tk[tk.length - 1]!;
+    return ct.slice(1).some((p) => p === ult || p.startsWith(ult) || ult.startsWith(p));
+  });
+  return cands.length === 1 ? cands[0]! : String(nome).trim().toUpperCase().replace(/\s+/g, " ");
+}
+
+/** Radar do dia: lançamentos de venda (por criação) e volumes atualizados hoje. */
+export function radarDia(vendas: { created_at?: string; criado_por?: string }[], vols: { updated_at?: string }[], hoje: string) {
+  const dia = (s?: string) => (s ? new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(s)) : "");
+  const vh = vendas.filter((v) => dia(v.created_at) === hoje);
+  const volH = vols.filter((v) => dia(v.updated_at) === hoje);
+  const todas = [...vendas.map((v) => v.created_at), ...vols.map((v) => v.updated_at)].filter(Boolean).sort() as string[];
+  return { vendasHoje: vh.length, volumesHoje: volH.length, ultima: todas[todas.length - 1], ok: vh.length + volH.length > 0 };
+}

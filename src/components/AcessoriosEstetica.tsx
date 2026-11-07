@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ehEncerrado } from "@/lib/os-controle";
 import {
-  CANAIS, CHASE, DEPTO_DMS, MARGEM_IDEAL, SEGMENTOS, STATUS_LABEL, diferencaRvd, estagnada, folhaComissao, parseRvd, possiveisDuplicadas, chaveDuplicada, statusConciliado, type LinhaRvd,
+  CANAIS, CHASE, DEPTO_DMS, MARGEM_IDEAL, SEGMENTOS, STATUS_LABEL, diferencaRvd, estagnada, folhaComissao, parseRvd, possiveisDuplicadas, chaveDuplicada, statusConciliado, casarVendedor, radarDia, type LinhaRvd,
   type Depto, type StatusVenda, type VendaC,
 } from "@/lib/acessorios-estetica";
 
-type Venda = VendaC & { id: string; cliente: string; placa: string; produto: string; os_n: string; dia: string; mes: string };
+type Venda = VendaC & { id: string; cliente: string; placa: string; produto: string; os_n: string; dia: string; mes: string; created_at?: string; criado_por?: string };
 type Vend = { id: string; nome: string; segmento: string; canal: string; ativo: boolean };
 type Vol = { vendedor: string; veiculos: number; target: number; atualizado_por: string; updated_at: string };
 type Dms = Record<Depto, { fat: number; margem: number; meta: number }>;
@@ -48,6 +48,7 @@ export function AcessoriosEstetica({ mes, tot, dec, restrito }: { mes: string; t
   const subs: [typeof sub, string][] = [["ACESSORIOS", "Acessórios · Geovana"], ["ESTETICA", "Estética · Marcela"], ["CONSOLIDADO", "Consolidado"]];
   return (
     <div className="space-y-3">
+      {!restrito && <Radar vendas={vendas} vols={vols} />}
       {!restrito && <div className="flex flex-wrap gap-1">
         {subs.map(([k, l]) => <button key={k} type="button" onClick={() => setSub(k)} className={`rounded-md border px-3 py-1.5 text-xs font-semibold ${sub === k ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>{l}</button>)}
       </div>}
@@ -173,7 +174,7 @@ function MatrizRvd({ mes, vendas, vends, vols, reload }: { mes: string; vendas: 
     const nomes = [...wb.SheetNames].sort((a, b) => Number(/SSA|HAUS/i.test(b)) - Number(/SSA|HAUS/i.test(a)));
     for (const n of nomes) {
       const r = parseRvd(XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[n]!, { header: 1, raw: true }));
-      if (r.length) { setPrev(r); toast.info(`Aba "${n}": ${r.length} vendedor(es) encontrados`); return; }
+      if (r.length) { const cad = vends.map((v) => v.nome); setPrev(r.map((l) => ({ ...l, vendedor: casarVendedor(l.vendedor, cad) }))); toast.info(`Aba "${n}": ${r.length} vendedor(es) encontrados`); return; }
     }
     toast.error("Não encontrei os blocos NOVO/SEMINOVO/OFICINA nesta planilha");
   };
@@ -280,4 +281,19 @@ function Consolidado({ vendas, dms, tot, dec }: { vendas: Venda[]; dms: Dms; tot
         <tr className="border-t border-border font-bold"><td className="py-1.5">Total</td><td className="text-right">{brl(soma.fat)}</td><td className="text-right">{brl(soma.af)}</td><td className="text-right">{brl(soma.proj)}</td><td className="text-right">{brl(soma.meta)}</td><td className={`text-right ${tone(div(soma.proj, soma.meta))}`}>{soma.meta ? pct(div(soma.proj, soma.meta)) : "—"}</td><td className="text-right">{brl(soma.com)}</td></tr></tbody></table>
     <p className="mt-2 text-[11px] text-muted-foreground">Visão extra da gestão. As comissões de cada frente continuam em relatórios separados para o RH.</p>
   </Box>;
+}
+
+/** Radar do dia: mostra à gestão se Geovana (Acessórios) e Marcela (Estética) lançaram vendas/volumes hoje. */
+function Radar({ vendas, vols }: { vendas: Venda[]; vols: Vol[] }) {
+  const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
+  const hora = (s?: string) => (s ? new Date(s).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—");
+  const itens: [Depto, string][] = [["ACESSORIOS", "Geovana · Acessórios"], ["ESTETICA", "Marcela · Estética"]];
+  return <div className="grid gap-2 sm:grid-cols-2">{itens.map(([d, l]) => {
+    const vs = vendas.filter((v) => v.departamento === d && v.produto !== "IMPORTAÇÃO RVD");
+    const r = radarDia(vs, d === "ACESSORIOS" ? vols : [], hoje);
+    return <div key={d} className={`lux-card flex items-center justify-between gap-2 px-3 py-2 text-xs ${r.ok ? "" : "border-destructive"}`}>
+      <b>{l}</b>
+      <span className={r.ok ? "text-success" : "text-destructive"}>{r.ok ? `✅ Atualizado hoje · ${r.vendasHoje} venda(s)${r.volumesHoje ? ` · ${r.volumesHoje} volume(s)` : ""}` : "❌ Nada lançado hoje"} <span className="text-muted-foreground">· último {hora(r.ultima)}</span></span>
+    </div>;
+  })}</div>;
 }

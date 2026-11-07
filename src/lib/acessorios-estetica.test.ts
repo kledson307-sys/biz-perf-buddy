@@ -77,3 +77,21 @@ describe("revisor de duplicadas", () => {
     expect(d.fat).toBe(20524);
   });
 });
+
+import { casarVendedor as cv, radarDia as rd } from "./acessorios-estetica";
+describe("dicionário de vendedores RVD", () => {
+  it("casa abreviação e acento com o cadastro", () => {
+    expect(cv("joão s.", ["JOAO SILVA", "MARIA LIMA"])).toBe("JOAO SILVA");
+    expect(cv("MARIA", ["JOAO SILVA", "MARIA LIMA"])).toBe("MARIA LIMA");
+  });
+  it("não casa quando há ambiguidade", () => {
+    expect(cv("JOAO", ["JOAO SILVA", "JOAO SOUZA"])).toBe("JOAO");
+  });
+});
+describe("radar do dia", () => {
+  it("só conta lançamentos de hoje", () => {
+    const r = rd([{ created_at: "2026-11-07T15:00:00Z" }, { created_at: "2026-11-05T15:00:00Z" }], [], "2026-11-07");
+    expect(r.vendasHoje).toBe(1); expect(r.ok).toBe(true);
+    expect(rd([{ created_at: "2026-11-05T15:00:00Z" }], [], "2026-11-07").ok).toBe(false);
+  });
+});
