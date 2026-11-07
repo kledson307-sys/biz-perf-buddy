@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ehEncerrado } from "@/lib/os-controle";
 import {
-  CANAIS, CHASE, DEPTO_DMS, MARGEM_IDEAL, SEGMENTOS, STATUS_LABEL, estagnada, folhaComissao, parseRvd, statusConciliado, type LinhaRvd,
+  CANAIS, CHASE, DEPTO_DMS, MARGEM_IDEAL, SEGMENTOS, STATUS_LABEL, diferencaRvd, estagnada, folhaComissao, parseRvd, possiveisDuplicadas, chaveDuplicada, statusConciliado, type LinhaRvd,
   type Depto, type StatusVenda, type VendaC,
 } from "@/lib/acessorios-estetica";
 
@@ -17,46 +17,30 @@ type Dms = Record<Depto, { fat: number; margem: number; meta: number }>;
 const sel = "h-8 rounded-md border border-border bg-background px-2 text-xs";
 const hojeBahia = () => new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10);
 
-export function AcessoriosEstetica({ mes, tot, dec }: { mes: string; tot: number; dec: number }) {
-  const [sub, setSub] = useState<Depto | "CONSOLIDADO">("ACESSORIOS");
+export function AcessoriosEstetica({ mes, tot, dec, restrito }: { mes: string; tot: number; dec: number; restrito?: Depto }) {
+  const [sub, setSub] = useState<Depto | "CONSOLIDADO">(restrito ?? "ACESSORIOS");
   const [vendas, setVendas] = useState<Venda[]>([]);
   const [vends, setVends] = useState<Vend[]>([]);
   const [vols, setVols] = useState<Vol[]>([]);
   const [dms, setDms] = useState<Dms>({ ACESSORIOS: { fat: 0, margem: 0, meta: 0 }, ESTETICA: { fat: 0, margem: 0, meta: 0 } });
 
   const load = useCallback(async () => {
-    const ini = `${mes}-01`; const [y, m] = mes.split("-").map(Number); const fim = new Date(y!, m!, 0).toISOString().slice(0, 10);
-    const [v, s, vo, deps, snap, ac] = await Promise.all([
+    const [v, s, vo, rp] = await Promise.all([
       supabase.from("vendas_complementares").select("*").eq("mes", mes).order("dia", { ascending: false }),
       supabase.from("vendedores_showroom").select("*").order("nome"),
       supabase.from("rvd_volumes_mes").select("*").eq("mes", mes),
-      supabase.from("departments").select("id,nome"),
-      supabase.from("os_imports").select("itens").order("at", { ascending: false }).limit(1),
-      supabase.from("os_acompanhamento").select("os_n,acoes"),
+      supabase.rpc("dep_painel", { p_mes: mes }),
     ]);
+    const P = (rp.data ?? {}) as { dms?: Partial<Dms>; abertas?: string[]; faturadas?: string[] };
     let lista = (v.data ?? []) as unknown as Venda[];
     // Conciliação automática com Controle O.S.
-    const abertas = ((snap.data?.[0]?.itens ?? []) as { n: string }[]).map((i) => i.n);
-    const faturadas = (ac.data ?? []).filter((a) => ehEncerrado(a.acoes)).map((a) => a.os_n);
+    const abertas = P.abertas ?? [], faturadas = P.faturadas ?? [];
     const mudar = lista.map((x) => ({ x, novo: statusConciliado(x, abertas, faturadas) })).filter(({ x, novo }) => novo !== x.status);
     for (const { x, novo } of mudar) await supabase.from("vendas_complementares").update({ status: novo }).eq("id", x.id);
     if (mudar.length) lista = lista.map((x) => ({ ...x, status: mudar.find((c) => c.x.id === x.id)?.novo ?? x.status }));
     setVendas(lista); setVends((s.data ?? []) as Vend[]); setVols((vo.data ?? []) as Vol[]);
-    // Faturamento oficial (DMS) dos departamentos
-    const out: Dms = { ACESSORIOS: { fat: 0, margem: 0, meta: 0 }, ESTETICA: { fat: 0, margem: 0, meta: 0 } };
-    const norm = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-    for (const d of ["ACESSORIOS", "ESTETICA"] as Depto[]) {
-      const ids = (deps.data ?? []).filter((x) => norm(x.nome).includes(d)).map((x) => x.id);
-      if (!ids.length) continue;
-      const { data: cs } = await supabase.from("consultants").select("id").in("department_id", ids);
-      const cids = (cs ?? []).map((c) => c.id); if (!cids.length) continue;
-      const [ds, gs] = await Promise.all([
-        supabase.from("daily_sales").select("servicos,pecas,margem_pecas").in("consultant_id", cids).gte("dia", ini).lte("dia", fim),
-        supabase.from("goals").select("servicos,pecas").in("consultant_id", cids).eq("mes", mes),
-      ]);
-      for (const r of ds.data ?? []) { out[d].fat += Number(r.servicos) + Number(r.pecas); out[d].margem += Number(r.margem_pecas); }
-      for (const g of gs.data ?? []) out[d].meta += Number(g.servicos) + Number(g.pecas);
-    }
+    const z = { fat: 0, margem: 0, meta: 0 };
+    const out: Dms = { ACESSORIOS: { ...z, ...P.dms?.ACESSORIOS }, ESTETICA: { ...z, ...P.dms?.ESTETICA } };
     setDms(out);
   }, [mes]);
   useEffect(() => { void load(); }, [load]);
@@ -64,9 +48,9 @@ export function AcessoriosEstetica({ mes, tot, dec }: { mes: string; tot: number
   const subs: [typeof sub, string][] = [["ACESSORIOS", "Acessórios · Geovana"], ["ESTETICA", "Estética · Marcela"], ["CONSOLIDADO", "Consolidado"]];
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-1">
+      {!restrito && <div className="flex flex-wrap gap-1">
         {subs.map(([k, l]) => <button key={k} type="button" onClick={() => setSub(k)} className={`rounded-md border px-3 py-1.5 text-xs font-semibold ${sub === k ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>{l}</button>)}
-      </div>
+      </div>}
       {sub === "CONSOLIDADO"
         ? <Consolidado vendas={vendas} dms={dms} tot={tot} dec={dec} />
         : <Departamento key={sub} depto={sub} mes={mes} tot={tot} dec={dec} vendas={vendas.filter((v) => v.departamento === sub)} vends={vends} vols={vols} dms={dms[sub]} reload={load} />}
@@ -110,6 +94,9 @@ function Departamento({ depto, mes, tot, dec, vendas, vends, vols, dms, reload }
   const salvar = async () => {
     const valor = parseNum(f.valor);
     if (!f.cliente.trim() || !f.vendedor || !valor) { toast.error("Informe cliente, vendedor e valor"); return; }
+    const nova = { departamento: depto, cliente: f.cliente, vendedor: f.vendedor, valor, os_n: f.os_n, produto: f.produto, canal: f.canal, segmento: f.segmento, premiacao: 0, devolucao: 0, obsoleto: false, status: "A_FATURAR" } as VendaC;
+    const dup = vendas.find((x) => x.status !== "CANCELADO" && chaveDuplicada(nova, x));
+    if (dup && !confirm(`Possível venda duplicada: ${dup.cliente} · ${dup.vendedor} · ${brl(dup.valor)} lançada em ${dup.dia.slice(8, 10)}/${dup.dia.slice(5, 7)}${dup.os_n ? ` (O.S. ${dup.os_n})` : ""}.\n\nLançar mesmo assim?`)) return;
     const { data: u } = await supabase.auth.getUser();
     const { error } = await supabase.from("vendas_complementares").insert({
       mes, dia: f.dia, departamento: depto, cliente: f.cliente.trim().toUpperCase(), placa: f.placa.trim().toUpperCase(), vendedor: f.vendedor,
@@ -124,9 +111,11 @@ function Departamento({ depto, mes, tot, dec, vendas, vends, vols, dms, reload }
 
   const abas: [typeof aba, string][] = [["vendas", "Vendas & carteira"], ["rvd", "Matriz RVD"], ["comissao", est ? "Premiação RH" : "Comissão RH"], ["vendedores", "Vendedores"]];
   const paradas = vendas.filter((v) => estagnada(v, hoje)).length;
+  const dups = useMemo(() => possiveisDuplicadas(vendas), [vendas]);
 
   return <div className="space-y-3">
     <Faixa depto={depto} d={dms} vendas={vendas} tot={tot} dec={dec} />
+    {dups.size > 0 && <p className="rounded-md border border-destructive px-3 py-1.5 text-xs text-destructive">🔎 Revisor: {dups.size} venda(s) parecem duplicadas (mesmo cliente, vendedor e valor, ou mesma O.S.). Estão marcadas na carteira; cancele a repetida.</p>}
     {paradas > 0 && <p className="rounded-md border border-warning px-3 py-1.5 text-xs text-warning">⚠️ {paradas} venda(s) a faturar há mais de 15 dias sem O.S. aberta.</p>}
     <div className="flex flex-wrap gap-1">{abas.map(([k, l]) => <button key={k} type="button" onClick={() => setAba(k)} className={`rounded-md px-2.5 py-1 text-xs ${aba === k ? "bg-muted font-semibold" : "text-muted-foreground hover:bg-muted"}`}>{l}</button>)}</div>
 
@@ -154,7 +143,7 @@ function Departamento({ depto, mes, tot, dec, vendas, vends, vols, dms, reload }
         <div className="overflow-x-auto"><table className="w-full text-xs">
           <thead><tr className="text-left text-muted-foreground"><th className="py-1">Data</th><th>Cliente</th><th>Vendedor</th><th>Canal</th><th>{est ? "Produto" : "Itens"}</th><th className="text-right">Valor</th><th>O.S.</th><th>Status</th><th /></tr></thead>
           <tbody>{vendas.map((v) => <tr key={v.id} className={`border-t border-border ${estagnada(v, hoje) ? "text-warning" : ""}`}>
-            <td className="py-1">{v.dia.slice(8, 10)}/{v.dia.slice(5, 7)}</td><td>{v.cliente}</td><td>{v.vendedor}</td><td>{v.canal} · {v.segmento}</td><td>{v.produto}{v.obsoleto ? " (obsoleto)" : ""}</td>
+            <td className="py-1">{v.dia.slice(8, 10)}/{v.dia.slice(5, 7)}</td><td>{dups.has(v.id) && <span title="Possível duplicada" className="mr-1 text-destructive">⚠</span>}{v.cliente}</td><td>{v.vendedor}</td><td>{v.canal} · {v.segmento}</td><td>{v.produto}{v.obsoleto ? " (obsoleto)" : ""}</td>
             <td className="text-right">{brl(v.valor)}</td>
             <td><input className="h-6 w-16 rounded border border-border bg-background px-1" defaultValue={v.os_n} onBlur={(e) => e.target.value !== v.os_n && atualizar(v.id, { os_n: e.target.value.trim() })} /></td>
             <td><select className="h-6 rounded border border-border bg-background text-xs" value={v.status} onChange={(e) => atualizar(v.id, { status: e.target.value })}>{(Object.keys(STATUS_LABEL) as StatusVenda[]).map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}</select></td>
@@ -195,7 +184,7 @@ function MatrizRvd({ mes, vendas, vends, vols, reload }: { mes: string; vendas: 
     const e2 = await supabase.from("rvd_volumes_mes").upsert(prev.map((l) => ({ mes, vendedor: l.vendedor, veiculos: l.veiculos, target: l.target, atualizado_por: email, updated_at: new Date().toISOString() })), { onConflict: "user_id,mes,vendedor" });
     await supabase.from("vendas_complementares").delete().eq("mes", mes).eq("departamento", "ACESSORIOS").eq("produto", "IMPORTAÇÃO RVD");
     const dia = `${mes}-01`;
-    const linhas = prev.flatMap((l) => [[l.faturado, "FATURADO"], [l.aFaturar, "A_FATURAR"]].filter(([v]) => Number(v) > 0).map(([v, st]) => ({ mes, dia, departamento: "ACESSORIOS", cliente: "CONSOLIDADO RVD", vendedor: l.vendedor, canal: l.canal, segmento: l.segmento, produto: "IMPORTAÇÃO RVD", valor: Number(v), status: String(st), criado_por: email })));
+    const linhas = prev.flatMap((l) => { const d = diferencaRvd(l, vendas); return ([[d.fat, "FATURADO"], [d.af, "A_FATURAR"]] as const).filter(([v]) => v > 0).map(([v, st]) => ({ mes, dia, departamento: "ACESSORIOS", cliente: "CONSOLIDADO RVD", vendedor: l.vendedor, canal: l.canal, segmento: l.segmento, produto: "IMPORTAÇÃO RVD", valor: v, status: st, criado_por: email })); });
     const e3 = linhas.length ? await supabase.from("vendas_complementares").insert(linhas) : { error: null };
     const err = e1.error ?? e2.error ?? e3.error;
     if (err) toast.error(err.message); else { toast.success("Planilha RVD importada (substitui a importação anterior do mês)"); setPrev(null); reload(); }
@@ -205,7 +194,8 @@ function MatrizRvd({ mes, vendas, vends, vols, reload }: { mes: string; vendas: 
     <div className="lux-card flex flex-wrap items-center gap-2 px-3 py-2 text-xs xl:col-span-2">
       <b>Importar planilha RVD</b>
       <input type="file" accept=".xlsx,.xls" onChange={(e) => e.target.files?.[0] && ler(e.target.files[0])} />
-      {prev && <><span>{prev.length} vendedores · faturado {brl(prev.reduce((a, l) => a + l.faturado, 0))} · a faturar {brl(prev.reduce((a, l) => a + l.aFaturar, 0))} · {uni(prev.reduce((a, l) => a + l.veiculos, 0))} veículos/passagens</span><Button size="sm" onClick={importar}>Confirmar importação</Button><Button size="sm" variant="ghost" onClick={() => setPrev(null)}>Cancelar</Button></>}
+      {prev && <><span>{prev.length} vendedores · faturado {brl(prev.reduce((a, l) => a + l.faturado, 0))} · a faturar {brl(prev.reduce((a, l) => a + l.aFaturar, 0))} · {uni(prev.reduce((a, l) => a + l.veiculos, 0))} veículos/passagens</span><Button size="sm" onClick={importar}>Confirmar importação</Button>
+        {prev.map((l) => ({ l, d: diferencaRvd(l, vendas) })).filter(({ d }) => d.mFat + d.mAf > 0).map(({ l, d }) => <span key={l.vendedor} className="basis-full text-warning">🔎 {l.vendedor}: já tem {brl(d.mFat + d.mAf)} lançado à mão — a planilha soma {brl(l.faturado + l.aFaturar)}, importo só a diferença ({brl(d.fat + d.af)}) para não duplicar.</span>)}<Button size="sm" variant="ghost" onClick={() => setPrev(null)}>Cancelar</Button></>}
     </div>
     {grupos.map(([c, s]) => {
       const lista = vends.filter((v) => v.ativo && v.canal === c && v.segmento === s);

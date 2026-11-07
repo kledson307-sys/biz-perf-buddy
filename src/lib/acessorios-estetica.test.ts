@@ -62,3 +62,18 @@ describe("importador RVD", () => {
     expect(r).toHaveLength(2);
   });
 });
+
+import { diferencaRvd, possiveisDuplicadas } from "./acessorios-estetica";
+describe("revisor de duplicadas", () => {
+  it("mesmo cliente, vendedor e valor é possível duplicada", () => {
+    const a = v({ id: "1", cliente: "João Silva", valor: 2790 }), b = v({ id: "2", cliente: "JOAO  SILVA", valor: 2790.5 }), c = v({ id: "3", cliente: "Maria", valor: 2790 });
+    expect([...possiveisDuplicadas([a, b, c])].sort()).toEqual(["1", "2"]);
+  });
+  it("cancelada não conta", () => {
+    expect(possiveisDuplicadas([v({ id: "1", cliente: "A", valor: 10 }), v({ id: "2", cliente: "A", valor: 10, status: "CANCELADO" })]).size).toBe(0);
+  });
+  it("RVD importa só a diferença do que foi lançado à mão", () => {
+    const d = diferencaRvd({ vendedor: "RICK", canal: "NOVO", segmento: "CARRO", faturado: 25524, aFaturar: 0, veiculos: 3, target: 0 }, [v({ vendedor: "Rick", valor: 5000 })]);
+    expect(d.fat).toBe(20524);
+  });
+});

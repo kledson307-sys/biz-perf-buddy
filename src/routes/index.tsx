@@ -19,6 +19,7 @@ import { Equipe } from "@/components/Equipe";
 import { MinhaPerformance } from "@/components/MinhaPerformance";
 import { CockpitOficina } from "@/components/CockpitOficina";
 import { AcessoTunap } from "@/components/AcessoTunap";
+import { AcessoDepartamento } from "@/components/AcessoDepartamento";
 import { MeuDesempenhoTecnico } from "@/components/MeuDesempenhoTecnico";
 import { RankingAgregados, RankingTecnicos } from "@/components/RankingExtra";
 import { MetasExecutivo } from "@/components/MetasExecutivo";
@@ -81,14 +82,14 @@ function Index() {
   }, []);
   const [papel, setPapel] = useState<string | null | undefined>(undefined);
   const email = session?.user.email ?? "";
-  useAccessPresence(Boolean(session) && papel !== undefined && papel !== "vendedor" && papel !== "tunap");
+  useAccessPresence(Boolean(session) && papel !== undefined && papel !== "vendedor" && papel !== "tunap" && papel !== "acessorios" && papel !== "estetica");
   useEffect(() => {
     if (!session) { setPapel(undefined); return; }
     supabase.from("team_members").select("papel").ilike("email", email).maybeSingle().then(({ data }) => setPapel(data?.papel ?? null));
   }, [session, email]);
   if (!ready || (session && papel === undefined)) return <div className="p-10 text-center text-muted-foreground">Carregando…</div>;
   if (!session) return <Login />;
-  const tela = papel === "tecnico" ? <MeuDesempenhoTecnico /> : papel === "chefe_oficina" ? <CockpitOficina chefe /> : papel === "controlador" ? <CockpitOficina chefe={false} /> : papel === "tunap" ? <AcessoTunap /> : papel === "vendedor" ? <MinhaPerformance /> : <Painel email={email} />;
+  const tela = papel === "tecnico" ? <MeuDesempenhoTecnico /> : papel === "chefe_oficina" ? <CockpitOficina chefe /> : papel === "controlador" ? <CockpitOficina chefe={false} /> : papel === "tunap" ? <AcessoTunap /> : papel === "acessorios" ? <AcessoDepartamento depto="ACESSORIOS" /> : papel === "estetica" ? <AcessoDepartamento depto="ESTETICA" /> : papel === "vendedor" ? <MinhaPerformance /> : <Painel email={email} />;
   return <>{tela}<GuiaAcesso email={email} papel={papel} /></>;
 }
 

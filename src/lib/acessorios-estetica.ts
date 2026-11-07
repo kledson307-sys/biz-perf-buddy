@@ -127,3 +127,25 @@ export function parseRvd(rows: unknown[][]): LinhaRvd[] {
   }
   return out;
 }
+
+const nk = (s?: string) => String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/\s+/g, " ").trim();
+/** Revisor: mesma O.S., ou mesmo cliente + vendedor + valor (±R$1) no mês. Ignora canceladas e linhas importadas da RVD. */
+export function chaveDuplicada(a: VendaC, b: VendaC): boolean {
+  if (a.departamento !== b.departamento) return false;
+  const os = (v: VendaC) => String(v.os_n ?? "").replace(/\D/g, "").replace(/^0+/, "");
+  if (os(a) && os(a) === os(b) && nk(a.produto) === nk(b.produto)) return true;
+  return !!nk(a.cliente) && nk(a.cliente) === nk(b.cliente) && nk(a.vendedor) === nk(b.vendedor) && Math.abs(a.valor - b.valor) <= 1;
+}
+const valida = (v: VendaC) => v.status !== "CANCELADO" && v.produto !== "IMPORTAÇÃO RVD";
+export function possiveisDuplicadas(vendas: VendaC[]): Set<string> {
+  const out = new Set<string>(); const vs = vendas.filter(valida);
+  vs.forEach((a, i) => vs.slice(i + 1).forEach((b) => { if (chaveDuplicada(a, b)) { out.add(a.id!); out.add(b.id!); } }));
+  return out;
+}
+/** RVD é o total do vendedor no mês: importa só o que falta além do que já foi lançado à mão. */
+export function diferencaRvd(l: LinhaRvd, vendas: VendaC[]) {
+  const man = vendas.filter((v) => valida(v) && v.departamento === "ACESSORIOS" && nk(v.vendedor) === nk(l.vendedor));
+  const mFat = man.filter((v) => v.status === "FATURADO").reduce((s, v) => s + v.valor, 0);
+  const mAf = man.filter((v) => v.status !== "FATURADO").reduce((s, v) => s + v.valor, 0);
+  return { mFat, mAf, fat: Math.max(0, round2(l.faturado - mFat)), af: Math.max(0, round2(l.aFaturar - mAf)) };
+}

@@ -7,7 +7,7 @@ import { redefinirSenhaUsuario } from "@/lib/usuarios.functions";
 
 type M = { id: string; email: string; papel: string; consultant_id: string | null };
 type C = { id: string; nome: string };
-const PAPEIS: Record<string, string> = { vendedor: "Vendedor", tecnico: "Técnico", editor: "Editor", viewer: "Visualizador" };
+const PAPEIS: Record<string, string> = { vendedor: "Vendedor", tecnico: "Técnico", editor: "Editor", viewer: "Visualizador", acessorios: "Acessórios (Geovana)", estetica: "Estética (Marcela)" };
 
 export function UsuariosAdmin({ lista, cons, onChange }: { lista: M[]; cons: C[]; onChange: () => void }) {
   const [busca, setBusca] = useState("");
