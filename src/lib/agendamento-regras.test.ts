@@ -13,6 +13,11 @@ describe("classificação de agendamentos", () => {
   it("frase negada é ignorada", () => expect(classificar("Cliente não quer revisão, alega ruído no freio")).toBe("diagnostico"));
   it("manutenção sim é revisão", () => expect(classificar("MANUTENÇÃO: SIM\nCAMPANHA TÉCNICA: SIM")).toBe("revisao"));
   it("campanha sim sem manutenção é recall", () => expect(classificar("MANUTENÇÃO: NÃO, CAMPANHA TÉCNICA: SIM")).toBe("recall"));
+  it("campos na mesma linha: manutenção sim + campanha sim é revisão", () => expect(classificar("MANUTENÇÃO: SIM CAMPANHA TÉCNICA: SIM")).toBe("revisao"));
+  it("campos na mesma linha: manutenção sim + alegações é revisão", () => expect(classificar("MANUTENÇÃO: SIM ALEGAÇÕES: BARULHO NA SUSPENSÃO")).toBe("revisao"));
+  it("campos na mesma linha: manutenção não + campanha sim é recall", () => expect(classificar("MANUTENÇÃO: NÃO CAMPANHA TÉCNICA: SIM")).toBe("recall"));
+  it("campos na mesma linha: manutenção não + alegação é diagnóstico", () => expect(classificar("MANUTENÇÃO: NÃO ALEGAÇÕES: CLIENTE ALEGA RUÍDO")).toBe("diagnostico"));
+  it("campos na mesma linha: valor livre antes do rótulo", () => expect(classificar("MANUTENÇÃO: TROCA DE ÓLEO CAMPANHA TÉCNICA: NÃO")).toBe("revisao"));
   it("passantes oficiais", () => {
     for (const a of ["ANDRESSA.O", "WESLEY.F", "P.BENIGNO", "GILBERTO.S", "LUIS.S", "JADNA.S", "RENAN.O"]) expect(CONS_PASSANTES.test(a)).toBe(true);
     expect(CONS_PASSANTES.test("MARCELA.S")).toBe(false);

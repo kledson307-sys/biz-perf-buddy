@@ -34,19 +34,35 @@ export function classificar(obs: string): Categoria {
   let rev = false, rec = false, diag = false;
   const livre: string[] = [];
   const PREF = /PREFERENCIA|CONSULTOR|TECNICO|PRODUTIVO|TELEFONE|CONTATO|EMAIL/;
+  // Rótulos conhecidos do DMS (inclui compostos como "CAMPANHA TECNICA").
+  const ROTULOS = /^(MANUTENC\w*|REVISA\w*|CAMPANHA( TECNICA)?|RECALL|ALEGA\w*|RECLAMA\w*|OBSERVAC\w*|BSI|PREFERENCIA\w*|CONSULTOR\w*|TECNICO\w*|PRODUTIVO\w*|TELEFONE|CONTATO|EMAIL)$/;
   // Separa em campos "RÓTULO: valor" (vários por linha são aceitos).
+  const campos: Array<[string, string]> = [];
   for (const linha of cru.split(/\n|;/)) {
     const partes = linha.split(/([A-Z][A-Z/ .]{1,40}):/);
     if (partes[0]?.trim()) livre.push(partes[0]);
     for (let i = 1; i < partes.length; i += 2) {
-      const rot = partes[i]!.trim(), val = (partes[i + 1] ?? "").trim();
-      if (NEG.test(val) || PREF.test(rot)) continue;
-      if (/CAMPANHA|RECALL/.test(rot)) { if (/^(SIM|S\b|\d)/.test(val) || RECALL.test(val)) rec = true; else livre.push(val); continue; }
-      if (/MANUTENC|REVISA/.test(rot)) { if (/^(SIM|S\b)/.test(val)) rev = true; livre.push(val); continue; }
-      if (/ALEGA|RECLAMA/.test(rot)) { diag = true; livre.push(val); continue; }
-      if (/^BSI$/.test(rot)) { if (/^(SIM|S\b)/.test(val)) rev = true; continue; }
-      livre.push(val);
+      let rot = partes[i]!.trim();
+      const val = (partes[i + 1] ?? "").trim();
+      // Quando vários campos vêm na mesma linha só com espaços ("MANUTENÇÃO: SIM CAMPANHA TÉCNICA: SIM"),
+      // o valor do campo anterior é engolido pelo rótulo seguinte; devolve as palavras iniciais ao campo anterior.
+      while (rot.includes(" ") && !ROTULOS.test(rot)) {
+        const sp = rot.indexOf(" ");
+        const w = rot.slice(0, sp);
+        rot = rot.slice(sp + 1).trim();
+        if (campos.length) campos[campos.length - 1]![1] = (campos[campos.length - 1]![1] + " " + w).trim();
+        else livre.push(w);
+      }
+      campos.push([rot, val]);
     }
+  }
+  for (const [rot, val] of campos) {
+    if (NEG.test(val) || PREF.test(rot)) continue;
+    if (/CAMPANHA|RECALL/.test(rot)) { if (/^(SIM|S\b|\d)/.test(val) || RECALL.test(val)) rec = true; else livre.push(val); continue; }
+    if (/MANUTENC|REVISA/.test(rot)) { if (/^(SIM|S\b)/.test(val)) rev = true; livre.push(val); continue; }
+    if (/ALEGA|RECLAMA/.test(rot)) { diag = true; livre.push(val); continue; }
+    if (/^BSI$/.test(rot)) { if (/^(SIM|S\b)/.test(val)) rev = true; continue; }
+    livre.push(val);
   }
   // Remove frases negadas antes de buscar termos.
   const t = livre.join(" ").replace(/\s+/g, " ")
