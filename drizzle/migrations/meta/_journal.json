@@ -274,6 +274,13 @@
       "when": 1794077744324,
       "tag": "0038_acessos_acessorios_estetica",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1794084864477,
+      "tag": "0039_simulado_imports",
+      "breakpoints": true
     }
   ]
 }

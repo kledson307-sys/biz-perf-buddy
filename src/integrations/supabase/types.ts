@@ -835,6 +835,36 @@ export type Database = {
         }
         Relationships: []
       }
+      simulado_imports: {
+        Row: {
+          arquivo: string
+          dados: Json
+          id: string
+          mes: string
+          tipo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          arquivo?: string
+          dados?: Json
+          id?: string
+          mes: string
+          tipo: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          arquivo?: string
+          dados?: Json
+          id?: string
+          mes?: string
+          tipo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       supervisor_day: {
         Row: {
           consultant_id: string

@@ -31,7 +31,7 @@ import { CentralGestao, ConsultoresTela } from "@/components/TelasGestor";
 import { CadeadoMes } from "@/components/CadeadoMes";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, CalendarClock, Car, ChevronDown, ClipboardList, Download, Gauge, Gem, LayoutDashboard, LogOut, Menu, Package, Sparkles, Settings, Star, Target, TrendingUp, Upload, Users, Wrench, X } from "lucide-react";
+import { AlertTriangle, Calculator, CalendarClock, Car, ChevronDown, ClipboardList, Download, Gauge, Gem, LayoutDashboard, LogOut, Menu, Package, Sparkles, Settings, Star, Target, TrendingUp, Upload, Users, Wrench, X } from "lucide-react";
 import bmwLogo from "@/assets/bmw-logo.asset.json";
 import carroSilhueta from "@/assets/carro-silhueta.jpg";
 import { localDay, sourceLabels, sourceStatus, tabUpdateStatus, UPDATE_EVENT, type UpdateRecord, type UpdateSource } from "@/lib/update-status";
@@ -40,6 +40,8 @@ import { useAccessPresence } from "@/hooks/use-access-presence";
 import { useResumoMes } from "@/hooks/use-resumo-mes";
 import { AbaTopo, type TopoKpi } from "@/components/AbaTopo";
 import { AcessoriosEstetica } from "@/components/AcessoriosEstetica";
+import { Simulado } from "@/components/Simulado";
+import { MASTER_EMAIL } from "@/lib/month-lock";
 import { ImportadorUnificado } from "@/components/ImportadorUnificado";
 import { diasUteis } from "@/lib/dias-uteis";
 import { toast } from "sonner";
@@ -317,6 +319,7 @@ function Painel({ email }: { email: string }) {
     ["nps", "NPS & Satisfação", Star, []],
     ["metas", "Metas & Planejamento", Target, []],
     ["importacoes", "Importações & Config.", Upload, ["config"]],
+    ...(email.toLowerCase() === MASTER_EMAIL ? [["simulado", "Simulado", Calculator, []] as [string, string, typeof Gauge, string[]]] : []),
   ];
   const subLabels: Record<string, [string, typeof Gauge]> = { painel: ["Visão geral", LayoutDashboard], proj: ["Projeções", TrendingUp], os: ["Projeção + O.S.", ClipboardList], importacoes: ["Importações", Upload], config: ["Configurações", Settings] };
   const grupo = tabs.find(([k, , , subs]) => k === tab || subs.includes(tab));
@@ -409,6 +412,7 @@ function Painel({ email }: { email: string }) {
       case "mecanicos": return <AbaTopo titulo="Oficina & Técnicos" sub="Produtividade da oficina, passagens por tipo e metas dos técnicos" icon={Wrench} kpis={[]} />;
       case "controle-os": return <AbaTopo titulo="Ordens de Serviço" sub={`Status das O.S. em aberto e tempo na oficina · ${uni(resumo.abertas)} abertas · ${uni(resumo.parados)} acima de 30 dias`} icon={Car} kpis={[]} />;
       case "agendamentos": return <AbaTopo titulo="Agendamentos" sub="Radar D+1, follow-up do testador, passantes × agendados, fechamento do dia e faltas" icon={CalendarClock} kpis={[]} />;
+      case "simulado": return <AbaTopo titulo="Simulado" sub="L.O. orçado × despesas realistas (Efetivo 5 meses e GNC SYS) · exclusivo do gestor" icon={Calculator} kpis={[]} />;
       case "acessorios": return <AbaTopo titulo="Acessórios & Estética" sub="Geovana e Marcela · faturado + a faturar, matriz RVD e comissões para o RH" icon={Sparkles} kpis={[]} />;
       case "pecas": return <AbaTopo titulo="Peças & Estoque" sub="Faturamento de peças por canal, margem e ranking" icon={Package} kpis={[]} />;
       case "nps": return <AbaTopo titulo="NPS & Satisfação" sub="Qualidade e pesquisa da montadora · aguardando planilha de pesquisas" icon={Star} kpis={[]} />;
@@ -609,6 +613,7 @@ function Painel({ email }: { email: string }) {
         {tab === "controle-os" && <ControleOS />}
         {tab === "agendamentos" && !relatorio && <Agendamentos mes={mes} />}
         {tab === "acessorios" && !relatorio && <AcessoriosEstetica mes={mes} tot={tot} dec={dec} />}
+        {tab === "simulado" && !relatorio && email.toLowerCase() === MASTER_EMAIL && <Simulado mes={mes} />}
         {tab === "importacoes" && !relatorio && <div className="space-y-3 print:hidden">
           <div>
             <h2 className="text-sm font-semibold">Central de importações · {mes}</h2>
