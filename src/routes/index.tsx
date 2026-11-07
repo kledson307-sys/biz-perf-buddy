@@ -30,7 +30,7 @@ import { CentralGestao, ConsultoresTela } from "@/components/TelasGestor";
 import { CadeadoMes } from "@/components/CadeadoMes";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, CalendarClock, Car, ChevronDown, ClipboardList, Download, Gauge, Gem, LayoutDashboard, LogOut, Menu, Package, Settings, Star, Target, TrendingUp, Upload, Users, Wrench, X } from "lucide-react";
+import { AlertTriangle, CalendarClock, Car, ChevronDown, ClipboardList, Download, Gauge, Gem, LayoutDashboard, LogOut, Menu, Package, Sparkles, Settings, Star, Target, TrendingUp, Upload, Users, Wrench, X } from "lucide-react";
 import bmwLogo from "@/assets/bmw-logo.asset.json";
 import carroSilhueta from "@/assets/carro-silhueta.jpg";
 import { localDay, sourceLabels, sourceStatus, tabUpdateStatus, UPDATE_EVENT, type UpdateRecord, type UpdateSource } from "@/lib/update-status";
@@ -38,6 +38,7 @@ import { calcPerformance } from "@/lib/performance";
 import { useAccessPresence } from "@/hooks/use-access-presence";
 import { useResumoMes } from "@/hooks/use-resumo-mes";
 import { AbaTopo, type TopoKpi } from "@/components/AbaTopo";
+import { AcessoriosEstetica } from "@/components/AcessoriosEstetica";
 import { ImportadorUnificado } from "@/components/ImportadorUnificado";
 import { diasUteis } from "@/lib/dias-uteis";
 import { toast } from "sonner";
@@ -309,6 +310,7 @@ function Painel({ email }: { email: string }) {
     ["agregados", "Agregados", Gem, []],
     ["mecanicos", "Oficina & Técnicos", Wrench, []],
     ["pecas", "Peças & Estoque", Package, []],
+    ["acessorios", "Acessórios & Estética", Sparkles, []],
     ["controle-os", "Ordens de Serviço", Car, []],
     ["agendamentos", "Agendamentos", CalendarClock, []],
     ["nps", "NPS & Satisfação", Star, []],
@@ -406,6 +408,7 @@ function Painel({ email }: { email: string }) {
       case "mecanicos": return <AbaTopo titulo="Oficina & Técnicos" sub="Produtividade da oficina, passagens por tipo e metas dos técnicos" icon={Wrench} kpis={[]} />;
       case "controle-os": return <AbaTopo titulo="Ordens de Serviço" sub={`Status das O.S. em aberto e tempo na oficina · ${uni(resumo.abertas)} abertas · ${uni(resumo.parados)} acima de 30 dias`} icon={Car} kpis={[]} />;
       case "agendamentos": return <AbaTopo titulo="Agendamentos" sub="Radar D+1, follow-up do testador, passantes × agendados, fechamento do dia e faltas" icon={CalendarClock} kpis={[]} />;
+      case "acessorios": return <AbaTopo titulo="Acessórios & Estética" sub="Geovana e Marcela · faturado + a faturar, matriz RVD e comissões para o RH" icon={Sparkles} kpis={[]} />;
       case "pecas": return <AbaTopo titulo="Peças & Estoque" sub="Faturamento de peças por canal, margem e ranking" icon={Package} kpis={[]} />;
       case "nps": return <AbaTopo titulo="NPS & Satisfação" sub="Qualidade e pesquisa da montadora · aguardando planilha de pesquisas" icon={Star} kpis={[]} />;
       case "importacoes": case "config": return <AbaTopo titulo="Importações & Configurações" sub="Atualização diária das fontes e ajustes do painel" icon={Upload} kpis={(Object.keys(sourceLabels) as UpdateSource[]).map((source) => ({ source, ...sourceStatus(source, mes, updates, clock) })).map(({ source, record, fresh }) => ({
@@ -604,6 +607,7 @@ function Painel({ email }: { email: string }) {
         {show("mecanicos") && <Secao relatorio={relatorio} titulo="Técnicos"><Mecanicos mes={mes} tot={tot} dec={dec} lado={relatorio ? undefined : (f) => <RetrabalhoOficina mes={mes} segmento={f} />} />{!relatorio && <><div className="grid items-start gap-3"><details className="group lux-card"><summary className="flex cursor-pointer list-none items-center justify-between px-4 py-2 text-sm font-semibold">Ranking dos técnicos · Serviços, Peças e Total · {mesExtenso}<span className="text-xs text-primary">Abrir/fechar</span></summary><RankingTecnicos mes={mes} tot={tot} dec={dec} /></details></div></>}</Secao>}
         {tab === "controle-os" && <ControleOS />}
         {tab === "agendamentos" && !relatorio && <Agendamentos mes={mes} />}
+        {tab === "acessorios" && !relatorio && <AcessoriosEstetica mes={mes} tot={tot} dec={dec} />}
         {tab === "importacoes" && !relatorio && <div className="space-y-3 print:hidden">
           <div>
             <h2 className="text-sm font-semibold">Central de importações · {mes}</h2>

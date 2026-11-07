@@ -802,6 +802,39 @@ export type Database = {
         }
         Relationships: []
       }
+      rvd_volumes_mes: {
+        Row: {
+          atualizado_por: string
+          id: string
+          mes: string
+          target: number
+          updated_at: string
+          user_id: string
+          veiculos: number
+          vendedor: string
+        }
+        Insert: {
+          atualizado_por?: string
+          id?: string
+          mes: string
+          target?: number
+          updated_at?: string
+          user_id?: string
+          veiculos?: number
+          vendedor: string
+        }
+        Update: {
+          atualizado_por?: string
+          id?: string
+          mes?: string
+          target?: number
+          updated_at?: string
+          user_id?: string
+          veiculos?: number
+          vendedor?: string
+        }
+        Relationships: []
+      }
       supervisor_day: {
         Row: {
           consultant_id: string
@@ -910,6 +943,102 @@ export type Database = {
           mes?: string | null
           nome?: string
           origem?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vendas_complementares: {
+        Row: {
+          canal: string
+          cliente: string
+          created_at: string
+          criado_por: string
+          departamento: string
+          devolucao: number
+          dia: string
+          id: string
+          mes: string
+          obsoleto: boolean
+          os_n: string
+          placa: string
+          premiacao: number
+          produto: string
+          segmento: string
+          status: string
+          user_id: string
+          valor: number
+          vendedor: string
+        }
+        Insert: {
+          canal?: string
+          cliente?: string
+          created_at?: string
+          criado_por?: string
+          departamento: string
+          devolucao?: number
+          dia?: string
+          id?: string
+          mes: string
+          obsoleto?: boolean
+          os_n?: string
+          placa?: string
+          premiacao?: number
+          produto?: string
+          segmento?: string
+          status?: string
+          user_id?: string
+          valor?: number
+          vendedor?: string
+        }
+        Update: {
+          canal?: string
+          cliente?: string
+          created_at?: string
+          criado_por?: string
+          departamento?: string
+          devolucao?: number
+          dia?: string
+          id?: string
+          mes?: string
+          obsoleto?: boolean
+          os_n?: string
+          placa?: string
+          premiacao?: number
+          produto?: string
+          segmento?: string
+          status?: string
+          user_id?: string
+          valor?: number
+          vendedor?: string
+        }
+        Relationships: []
+      }
+      vendedores_showroom: {
+        Row: {
+          ativo: boolean
+          canal: string
+          created_at: string
+          id: string
+          nome: string
+          segmento: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          canal?: string
+          created_at?: string
+          id?: string
+          nome: string
+          segmento?: string
+          user_id?: string
+        }
+        Update: {
+          ativo?: boolean
+          canal?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          segmento?: string
           user_id?: string
         }
         Relationships: []

@@ -9,3 +9,7 @@
 
 ## Aberto
 - [ ] Reimportar O.S. Abertas de novembro (a gravação anterior foi sobrescrita pela planilha de O.S. Fechadas) — precisa do arquivo do usuário
+
+- [x] Aba Acessórios & Estética (vendas, conciliação, matriz RVD, comissões RH, consolidado)
+- [ ] Logins restritos de Geovana e Marcela — aguardando e-mails delas
+- [ ] Importador da planilha RVD — aguardando decisão de uso

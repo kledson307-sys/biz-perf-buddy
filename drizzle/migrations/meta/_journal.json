@@ -260,6 +260,13 @@
       "when": 1793754903650,
       "tag": "0036_month_params_meio_dia",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1794076850462,
+      "tag": "0037_acessorios_estetica",
+      "breakpoints": true
     }
   ]
 }
