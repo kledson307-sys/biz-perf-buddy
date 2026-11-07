@@ -17,14 +17,46 @@ export function ehAgendamento(raw: unknown[][]) {
 export const segmentoProduto = (p: string): "carro" | "moto" => /SERIE [FGRKC]\b|MOTO/.test(norm(p)) ? "moto" : "carro";
 
 /** Classifica pela descrição: linhas negativas ("NÃO", "NÃO POSSUI") são ignoradas. */
+const NEG = /^\s*(N|NA|NAO|NENHUM[A]?|SEM|-|0|NAO POSSUI|NAO HA|NAO TEM)\b|^\s*$/;
+const REV = /MANUTENC|REVISA|OLEO|PASTILHA|FLUIDO|FILTRO|PREVENTIV|\bBSI\b/;
+const RECALL = /TROCA DE PECA|\bMEC\b|\bMEC\d|RECALL|CAMPANHA|ATUALIZACAO DE SOFTWARE/;
+const DIAG = /\bDIAG|ALEGA|BARULHO|\bLUZ|SUSPENSAO|RUIDO|LIQUIDO|BAIXO|QUEBRAD|SOLT[OA]|FALHA|DEFEITO|VAZAMENTO|NAO (LIGA|PEGA|FUNCIONA)|TRAVAND|VIBRA|AQUEC|ESQUENT|BATID/;
+
+/**
+ * Leitura contextual de "Observações e Reclamações": campos "RÓTULO: valor" contam pelo
+ * sentido do rótulo só quando o valor é positivo (ex.: "MANUTENÇÃO: NÃO" é ignorado), e
+ * frases negadas ("não quer revisão", "sem manutenção") são descartadas.
+ * Precedência: revisão (mesmo com outros serviços) > recall > diagnóstico.
+ */
 export function classificar(obs: string): Categoria {
-  const t = norm(obs).replace(/\s+/g, " ")
-    .replace(/[A-Z/ ]{2,40}:\s*(N|NA|NAO)( POSSUI)?(?=\s|$)/g, " ").replace(/PREFERENCIA DO CONSULTOR\/TECNICO:[^:]*?(?=[A-Z ]{3,}:|$)/g, " ");
-  // Precedência: revisão (mesmo com outros termos) > recall > diagnóstico.
   const cru = norm(obs);
-  if (/\b0000105|\b0000111/.test(cru) || /MANUTENC|REVISAO|OLEO|PASTILHA|FLUIDO/.test(t)) return "revisao";
-  if (/TROCA DE PECA|CAMPANHA TECNICA:\s*(SIM|\d)|\bMEC\b|\bMEC\d|RECALL|ATUALIZACAO DE SOFTWARE|CAMPANHA ATUALIZA/.test(t)) return "recall";
-  if (/\bDIAG|CLIENTE ALEGA|ALEGACOES:\s*(?!N\b|NAO)\S|BARULHO|\bLUZ|SUSPENSAO|RUIDO|LIQUIDO|BAIXO|QUEBRAD|SOLT[OA]|FALHA|DEFEITO|VAZAMENTO/.test(t)) return "diagnostico";
+  if (/\b0000105|\b0000111/.test(cru)) return "revisao";
+  let rev = false, rec = false, diag = false;
+  const livre: string[] = [];
+  const PREF = /PREFERENCIA|CONSULTOR|TECNICO|PRODUTIVO|TELEFONE|CONTATO|EMAIL/;
+  // Separa em campos "RÓTULO: valor" (vários por linha são aceitos).
+  for (const linha of cru.split(/\n|;/)) {
+    const partes = linha.split(/([A-Z][A-Z/ .]{1,40}):/);
+    if (partes[0]?.trim()) livre.push(partes[0]);
+    for (let i = 1; i < partes.length; i += 2) {
+      const rot = partes[i]!.trim(), val = (partes[i + 1] ?? "").trim();
+      if (NEG.test(val) || PREF.test(rot)) continue;
+      if (/CAMPANHA|RECALL/.test(rot)) { if (/^(SIM|S\b|\d)/.test(val) || RECALL.test(val)) rec = true; else livre.push(val); continue; }
+      if (/MANUTENC|REVISA/.test(rot)) { if (/^(SIM|S\b)/.test(val)) rev = true; livre.push(val); continue; }
+      if (/ALEGA|RECLAMA/.test(rot)) { diag = true; livre.push(val); continue; }
+      if (/^BSI$/.test(rot)) { if (/^(SIM|S\b)/.test(val)) rev = true; continue; }
+      livre.push(val);
+    }
+  }
+  // Remove frases negadas antes de buscar termos.
+  const t = livre.join(" ").replace(/\s+/g, " ")
+    .replace(/\b(NAO|SEM|NEM)\s+(\w+\s+){0,3}?(MANUTENC\w*|REVISA\w*|OLEO|PASTILHA\w*|FLUIDO|FILTRO\w*|CAMPANHA\w*|RECALL|BARULHO\w*|RUIDO\w*|VAZAMENTO\w*|DEFEITO\w*|FALHA\w*|LUZ\w*)/g, " ");
+  if (REV.test(t)) rev = true;
+  if (RECALL.test(t)) rec = true;
+  if (DIAG.test(t)) diag = true;
+  if (rev) return "revisao";
+  if (rec) return "recall";
+  if (diag) return "diagnostico";
   return "revisao";
 }
 
