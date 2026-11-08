@@ -6,7 +6,7 @@ import { ehFaturamentoPecas, lerItensPecas, type ItemPeca } from "@/lib/pecas-it
 import { ehRelatorioPassagens, lerPassagens, tecnicosDoFatServicos, type PassReport, type FatTecnicos } from "@/lib/mecanicos";
 import { salvarPassagens, salvarFatTecnicos } from "@/lib/passagens-save";
 import { mesTravado } from "@/lib/month-lock";
-import { pecasPorDia, osDasPassagens, servicosPorDia, retornosPorChassi } from "@/lib/diario-retorno";
+import { pecasPorDia, osDasPassagens, servicosPorDia, retornosPorChassi, tecnicoPorChassi } from "@/lib/diario-retorno";
 import { salvarOficinaMes } from "@/lib/oficina-mes";
 import { lerAgendamento, salvarAgendamento, resumoAgenda, type AgendReport } from "@/lib/agendamento";
 import { ehOsAbertas, lerOsTabela, lerOsSistema, consolidarOs } from "@/lib/os-abertas";
@@ -143,7 +143,8 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
           if (a.raw) { await salvarOficinaMes(mes, { diario: pecasPorDia(a.raw, mes), fonte: "p" }); feitos.push("Peças por dia"); }
         }
         if (a.tipo === "passagens" && a.pass) { await salvarPassagens(a.pass, mes); feitos.push("Passagens (técnicos, mix e consultores)");
-          if (a.raw) { const oss = osDasPassagens(a.raw); await salvarOficinaMes(mes, { diario: servicosPorDia(oss, mes), fonte: "s", retornos: retornosPorChassi(oss) }); feitos.push("Serviços por dia e retornos por chassi"); }
+          if (a.raw) { const oss = osDasPassagens(a.raw); await salvarOficinaMes(mes, { diario: servicosPorDia(oss, mes), fonte: "s", retornos: retornosPorChassi(oss) }); feitos.push("Serviços por dia e retornos por chassi");
+            await supabase.from("oficina_mes").upsert({ mes: `tecchassi-${mes}`, diario: tecnicoPorChassi(oss) as never, retornos: [] as never, updated_at: new Date().toISOString() }, { onConflict: "user_id,mes" }); }
           if (a.tec) feitos.push(await salvarFatTecnicos(a.tec, mes));
           if (a.agg) feitos.push(await salvarAgg(a.agg)); }
         if (a.fat) feitos.push(await salvarFat(a.fat));

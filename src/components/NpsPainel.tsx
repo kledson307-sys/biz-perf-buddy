@@ -36,6 +36,8 @@ export function NpsPainel({ mes = new Date().toISOString().slice(0, 7) }: { mes?
     const { error } = await supabase.from("os_acompanhamento").upsert({ os_n: k, acoes: { __nps: reg } as never, updated_at: reg.at }, { onConflict: "user_id,os_n" });
     if (error) setMsg("Erro ao salvar tratativa: " + error.message);
   };
+  const [tecCh, setTecCh] = useState<Record<string, string>>({});
+  useEffect(() => { void supabase.from("oficina_mes").select("mes,diario").like("mes", "tecchassi-%").order("mes").then(({ data }) => setTecCh(Object.assign({}, ...(data ?? []).map((x) => (x.diario as Record<string, string>) ?? {})))); }, []);
   const load = async () => {
     const { data } = await supabase.from("nps_imports").select("itens, at, nome").order("at", { ascending: false }).limit(1).maybeSingle();
     setItens((data?.itens as unknown as NpsItem[]) ?? []);
@@ -133,6 +135,7 @@ export function NpsPainel({ mes = new Date().toISOString().slice(0, 7) }: { mes?
                 <div key={d.item.chassi + d.item.cliente} className="rounded-lg border border-border p-2 text-xs">
                   <div className="flex justify-between gap-2"><b>{d.item.cliente}</b><span className="text-destructive">{d.detr} de {d.passagens} passagens detratadas</span></div>
                   <p className="text-muted-foreground">{d.item.consultor} · {d.item.veiculo} · {d.item.motivo || "sem RAC"}</p>
+                  <p className="text-muted-foreground">Técnico: <b className="text-foreground">{tecCh[d.item.chassi.toUpperCase()] ?? "— (importe as Passagens)"}</b></p>
                   <p className="mt-1"><b>Ação:</b> {d.acao}</p>
                   {(() => { const k = `nps:${d.item.chassi || d.item.cliente}`; const t = trat[k] ?? { st: "pendente" as TratativaSt, nota: "", at: "", por: "" }; return <div className="mt-1 flex flex-wrap items-center gap-1">
                     <select aria-label={`Tratativa de ${d.item.cliente}`} value={t.st} onChange={(e) => void salvarTrat(k, { st: e.target.value as TratativaSt, nota: t.nota })} className={`h-6 rounded border border-border bg-background px-1 ${t.st === "resolvido" ? "text-success" : t.st === "contato" ? "text-warning" : "text-destructive"}`}>

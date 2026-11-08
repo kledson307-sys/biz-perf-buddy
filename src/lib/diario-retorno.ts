@@ -85,6 +85,13 @@ export function retornosPorChassi(oss: OsLinha[], janela = 60): Retorno[] {
   return out.sort((x, y) => y.data.localeCompare(x.data));
 }
 
+/** Técnico(s) da O.S. mais recente de cada chassi (para vincular a pesquisa NPS a quem executou o serviço). */
+export function tecnicoPorChassi(oss: OsLinha[]): Record<string, string> {
+  const out: Record<string, [string, string]> = {};
+  for (const o of oss) if (o.chassi.length >= 6 && o.prods.size && (!out[o.chassi] || o.data >= out[o.chassi]![0])) out[o.chassi] = [o.data, [...o.prods].join(", ")];
+  return Object.fromEntries(Object.entries(out).map(([k, v]) => [k, v[1]]));
+}
+
 /** Junta diários de fontes diferentes (peças e serviços). */
 export const juntarDiario = (a: Diario, b: Diario): Diario => {
   const o: Diario = JSON.parse(JSON.stringify(a));

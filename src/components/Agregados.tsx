@@ -128,6 +128,16 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
             : <p className="text-muted-foreground">Nenhum serviço Limpar vendido no mês.</p>}
         </section>;
       })()}
+      {!relatorio && sub === "servicos" && (() => {
+        const ks = ITENS.filter((i) => i.g === "servicos").map((i) => i.k);
+        const l = consAgg.map((c) => { const s = stat([c.id], ks); return { c, pass: s.pass, branco: Math.max(s.pass - s.qtd, 0), pen: div(s.qtd, s.pass) }; }).filter((x) => x.pass > 0).sort((a, b) => b.branco - a.branco);
+        const tp = l.reduce((n, x) => n + x.pass, 0), tb = l.reduce((n, x) => n + x.branco, 0);
+        return <section className="lux-card px-3 py-2 text-xs">
+          <h3 className="text-sm font-semibold">Passagens em branco · serviços agregados <span className="font-normal text-muted-foreground">— no mínimo {uni(tb)} de {uni(tp)} passagens sem nenhum agregado vendido</span></h3>
+          {l.length ? <div className="mt-1 flex flex-wrap gap-2">{l.map((x, i) => <span key={x.c.id} className={`rounded-full border px-2 py-0.5 ${x.pen >= 0.3 ? "border-success/50" : x.pen >= 0.15 ? "border-warning/50" : "border-destructive/50"}`}>{i === l.length - 1 && l.length > 1 ? "🏆 " : ""}<b>{x.c.nome}</b> · {uni(x.branco)} em branco · penetração <b>{pct(x.pen)}</b></span>)}</div>
+            : <p className="text-muted-foreground">Importe as Passagens para ver este quadro.</p>}
+        </section>;
+      })()}
       {sub === "ia" && <AgregadosIA mes={mes} cons={consAgg} tot={tot} dec={dec} stat={stat} deptName={deptName} />}
       {sub === "metas" && <Metas cons={consAgg} goals={goals} mes={mes} deptName={deptName} onSaved={load} />}
     </div>

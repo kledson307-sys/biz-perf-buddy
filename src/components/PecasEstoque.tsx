@@ -112,8 +112,8 @@ export function PecasEstoque({ linhas, porDept, margemIdeal, deptName, passagens
         </Bloco>
       </div>
       {abc && <Box title="Curva ABC completa">
-        <div className="max-h-96 overflow-y-auto"><table className="w-full text-xs"><thead className="sticky top-0 bg-card text-muted-foreground"><tr><th className="px-2 text-left">Classe</th><th className="text-left">Item</th><th>Qtd</th><th>Faturamento</th><th>Margem</th><th>% acum.</th></tr></thead>
-          <tbody>{curva.map((i) => <tr key={i.cod} className="border-t border-border"><td className="px-2 font-bold">{i.classe}</td><td>{i.cod} · {i.desc}</td><td className="text-center">{uni(i.qtd)}</td><td className="text-right">{brl(i.valor)}</td><td className="text-right">{pct(div(i.margem, i.valor))}</td><td className="text-right">{pct(i.acum)}</td></tr>)}</tbody></table></div>
+        <div className="max-h-96 overflow-y-auto"><table className="w-full text-xs"><thead className="sticky top-0 bg-card text-muted-foreground"><tr><th className="px-2 text-left">Classe</th><th className="text-left">Item</th><th>Qtd</th><th>Faturamento</th><th>Margem</th><th title="Desconto médio sobre a tabela">Desc.</th><th>% acum.</th></tr></thead>
+          <tbody>{curva.map((i) => { const [t, d] = Object.values(i.desc$ ?? {}).reduce((x, y) => [x[0] + y[0], x[1] + y[1]], [0, 0]); return <tr key={i.cod} className="border-t border-border"><td className="px-2 font-bold">{i.classe}</td><td>{i.cod} · {i.desc}</td><td className="text-center">{uni(i.qtd)}</td><td className="text-right">{brl(i.valor)}</td><td className="text-right">{pct(div(i.margem, i.valor))}</td><td className={`text-right font-bold ${t ? toneDesconto(div(d, t)) : ""}`} title={t ? `${brl(d)} concedidos` : ""}>{t ? pct(div(d, t)) : "—"}</td><td className="text-right">{pct(i.acum)}</td></tr>; })}</tbody></table></div>
       </Box>}
     </section>
   );
