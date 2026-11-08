@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Box, brl, div, pct, tone, uni } from "@/components/painel-ui";
-import { curvaAbc, faixasGiro, familiaPeca, ehPneu, pneusPorVendedor, type ItemPeca } from "@/lib/pecas-itens";
+import { curvaAbc, faixasGiro, familiaPeca, ehPneu, pneusPorVendedor, descontoPorVendedor, toneDesconto, type ItemPeca } from "@/lib/pecas-itens";
 import { Bloco, Linha } from "@/components/Cockpit";
 import { CabecalhoTela, KpiCard } from "@/components/TelasGestor";
 import { BarChart3, Package, PieChart, RefreshCw, Trophy, Users } from "lucide-react";
@@ -19,6 +19,7 @@ export function PecasEstoque({ linhas, porDept, margemIdeal, deptName, passagens
   const [abc, setAbc] = useState(false);
   useEffect(() => { void supabase.from("parts_items").select("itens").eq("mes", mes).maybeSingle().then(({ data }) => setItens((data?.itens as unknown as ItemPeca[]) ?? [])); }, [mes]);
   const curva = curvaAbc(itens ?? []);
+  const descs = descontoPorVendedor(itens ?? []);
   const totItens = curva.reduce((a, i) => a + i.valor, 0);
   const cats = Object.entries(curva.reduce<Record<string, number>>((a, i) => { const k = familiaPeca(i); a[k] = (a[k] ?? 0) + i.valor; return a; }, {})).sort((a, b) => b[1] - a[1]);
   const catTop = cats.length > 5 ? [...cats.slice(0, 5), ["Outros", cats.slice(5).reduce((n, c) => n + c[1], 0)] as [string, number]] : cats;
@@ -93,11 +94,12 @@ export function PecasEstoque({ linhas, porDept, margemIdeal, deptName, passagens
         </Bloco>
 
         <Bloco titulo="Peças por consultor" icon={<Users className="size-4 text-primary" />}>
-          <table className="w-full text-xs tabular-nums"><thead className="sticky top-0 bg-card text-muted-foreground"><tr><th className="w-6 text-left font-normal">#</th><th className="text-left font-normal">Consultor</th><th className="text-right font-normal">Peças</th><th className="text-right font-normal">Meta</th><th className="text-right font-normal">%</th><th className="text-right font-normal">Margem</th></tr></thead>
-            <tbody>{rank.map((l, i) => { const ideal = margemIdeal(deptName(l.c.department_id)); const m = div(l.margem, l.pecas); return (
+          <table className="w-full text-xs tabular-nums"><thead className="sticky top-0 bg-card text-muted-foreground"><tr><th className="w-6 text-left font-normal">#</th><th className="text-left font-normal">Consultor</th><th className="text-right font-normal">Peças</th><th className="text-right font-normal">Meta</th><th className="text-right font-normal">%</th><th className="text-right font-normal">Margem</th><th className="text-right font-normal" title="Desconto médio sobre o preço de tabela">Desc.</th></tr></thead>
+            <tbody>{rank.map((l, i) => { const ideal = margemIdeal(deptName(l.c.department_id)); const m = div(l.margem, l.pecas); const ds = descs[l.c.nome.toUpperCase()]; return (
               <tr key={l.c.id} className="border-t border-border/50"><td className="py-1">{i + 1}</td><td className="font-medium">{l.c.nome}</td><td className="text-right">{brl(l.pecas)}</td><td className="text-right text-muted-foreground">{brl(l.mP)}</td>
-                <td className={`text-right font-bold ${tone(l.perfP)}`}>{l.mP ? pct(l.perfP) : "—"}</td><td className={`text-right ${mTone(m, ideal)}`}>{l.pecas && l.margem ? pct(m) : "—"}</td></tr>); })}
-              {!rank.length && <tr><td colSpan={6} className="py-4 text-center text-muted-foreground">Sem vendas de peças no mês.</td></tr>}</tbody></table>
+                <td className={`text-right font-bold ${tone(l.perfP)}`}>{l.mP ? pct(l.perfP) : "—"}</td><td className={`text-right ${mTone(m, ideal)}`}>{l.pecas && l.margem ? pct(m) : "—"}</td>
+                <td className={`text-right font-bold ${ds ? toneDesconto(ds.pct) : ""}`} title={ds ? `${brl(ds.desconto)} concedidos` : "Reimporte o Faturamento de Peças"}>{ds ? pct(ds.pct) : "—"}</td></tr>); })}
+              {!rank.length && <tr><td colSpan={7} className="py-4 text-center text-muted-foreground">Sem vendas de peças no mês.</td></tr>}</tbody></table>
         </Bloco>
         {(() => { const pn = (itens ?? []).filter(ehPneu); if (!pn.length) return null; const q = pn.reduce((a, i) => a + i.qtd, 0), v = pn.reduce((a, i) => a + i.valor, 0); const pv = Object.entries(pneusPorVendedor(itens ?? [])).sort((a, b) => b[1] - a[1]);
           return <Bloco titulo="Radar de pneus" icon={<Package className="size-4 text-neon" />}>
