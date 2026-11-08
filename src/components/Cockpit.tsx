@@ -252,7 +252,6 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
       <Bloco titulo="Desempenho por departamento" icon={<Target className="size-4 text-primary" />} ir={() => setTab("painel")} className="lg:col-span-3">
         <div className="flex flex-wrap justify-around gap-1">{porDept.slice(0, 5).map((d) => <Anel key={d.nome} p={d.projPct} rot={d.nome} />)}</div>
         <p className="mt-1 text-[11px] text-muted-foreground">Faturamento total <b className="ml-1 text-sm text-foreground">{brl(t.s + t.p)}</b></p>
-        {diario.length > 1 && <div className="mt-1 flex h-10 items-end gap-0.5" aria-label="Faturamento por dia">{diario.map(([d, v]) => <div key={d} title={`Dia ${d}: ${brl(v)}`} className="flex-1 rounded-t bg-primary" style={{ height: `${Math.max(div(v, maxDia) * 100, 4)}%` }} />)}</div>}
       </Bloco>
 
       {/* Linha 3 */}
@@ -288,17 +287,13 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
       <Bloco titulo="Agendamentos de amanhã (D+1)" icon={<CalendarDays className="size-4 text-primary" />} ir={() => setTab("agendamentos")} className="lg:col-span-3">
         <CartaoAgendamento mes={mes} />
       </Bloco>
-      <Bloco titulo={`NPS / qualidade · ${npsAno ? "ano" : "mês"}`} icon={<Star className="size-4 text-primary" />} ir={() => setTab("nps")} className="lg:col-span-2"
+      <Bloco titulo={`NPS / qualidade · ${npsAno ? "ano" : "mês"}`} icon={<Star className="size-4 text-primary" />} ir={() => setTab("nps")} className="lg:col-span-5"
         right={<button type="button" className="text-[10px] text-primary hover:underline" onClick={(e) => { e.stopPropagation(); setNpsAno(!npsAno); }}>{npsAno ? "Ver mês" : "Ver ano"}</button>}>
         {!nps ? <p className="text-sm text-muted-foreground">Sem pesquisas NPS neste período.</p> :
           <div className="grid grid-cols-4 gap-1 text-center">{([["NPS", `${(nps.nps * 100).toFixed(1).replace(".", ",")}`, nps.nps >= 0.7], ["Promot.", pct(nps.pctProm), nps.pctProm >= 0.85], ["Detrat.", uni(nps.det), nps.det === 0], ["RAC", uni(nps.racs), nps.racs === 0]] as [string, string, boolean][]).map(([n, v, ok]) => (
             <div key={n} className="rounded-lg border border-border bg-background/40 py-1"><p className="text-[10px] text-muted-foreground">{n}</p><p className={`text-sm font-bold ${ok ? "text-success" : "text-warning"}`}>{v}</p></div>))}</div>}
         <p className="mt-1 flex flex-wrap gap-1 text-[10px]" title="Premiações liberadas quando o departamento bate o NPS mínimo do mês">Premiação:{(["carro", "moto"] as const).map((sg) => { const v = trava[sg]; const ok = fatorNps(sg, v) === 1;
           return <span key={sg} className={`rounded-full px-1.5 font-semibold ${v == null ? "bg-muted text-muted-foreground" : ok ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive"}`}>{sg === "carro" ? "Carro" : "Moto"} {v == null ? "s/ pesquisa" : `${pct(v)} ${ok ? "✓" : "✗"}`}</span>; })}</p>
-      </Bloco>
-      <Bloco titulo="Metas" icon={<Target className="size-4 text-primary" />} ir={() => setTab("metas")} className="lg:col-span-3">
-        <table className="w-full text-[10px] [&_td]:px-0.5"><thead className="text-muted-foreground"><tr><th className="text-left font-normal">Mensal</th><th className="text-right font-normal">Meta</th><th className="text-right font-normal">Realizado</th><th className="text-right font-normal">Ating.</th><th className="text-right font-normal">Gap</th></tr></thead>
-          <tbody>{res3.map(([n, r, m]) => <tr key={n}><td>{n}</td><td className="text-right">{brl(m)}</td><td className="text-right">{brl(r)}</td><td className={`text-right font-semibold ${tone(div(r, m))}`}>{pct(div(r, m))}</td><td className="text-right text-destructive">{brl(Math.min(r - m, 0))}</td></tr>)}</tbody></table>
       </Bloco>
     </div>
   );

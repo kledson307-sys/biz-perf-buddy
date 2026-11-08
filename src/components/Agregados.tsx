@@ -1,7 +1,7 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Barra, Box, Kpi, Tabela, brl, div, norm, parseNum, pct, tone, uni } from "./painel-ui";
-import { GRUPO_NOME, ITENS, naoVende, naoVendeAgregado, splitCods, type Grupo } from "@/lib/agregados";
+import { GRUPO_NOME, ITENS, naoVende, naoVendeAgregado, splitCods, bonusLimpar, BONUS_LIMPAR_UN, type Grupo } from "@/lib/agregados";
 import { AgregadosImport } from "./AgregadosImport";
 import { AgregadosIA } from "./AgregadosIA";
 import { registrarUpdate } from "@/lib/update-log";
@@ -119,6 +119,15 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
       </>) : (sub === "servicos" || sub === "pecas") && (
         <GrupoView g={sub} stat={stat} ranking={ranking} ids={consAgg.map((c) => c.id)} deptName={deptName} rest={rest} sales={sales} />
       )}
+      {!relatorio && sub === "servicos" && (() => {
+        const l = consAgg.map((c) => ({ c, q: bonusLimpar(sales.filter((x) => x.consultant_id === c.id)) })).filter((x) => x.q.qtd > 0).sort((a, b) => b.q.bonus - a.q.bonus);
+        return <section className="lux-card px-3 py-2 text-xs">
+          <h3 className="text-sm font-semibold">Bonificação Limpar · R$ {BONUS_LIMPAR_UN.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} por serviço <span className="font-normal text-muted-foreground">— paga pela Limpar direto ao consultor, fora da folha, além da comissão do serviço</span></h3>
+          {l.length ? <div className="mt-1 flex flex-wrap gap-2">{l.map(({ c, q }) => <span key={c.id} className="rounded-full border border-success/50 bg-success/10 px-2 py-0.5"><b>{c.nome}</b> · {uni(q.qtd)} serv. = <b className="text-success">{brl(q.bonus)}</b></span>)}
+            <span className="rounded-full border border-primary px-2 py-0.5 font-semibold">Total: {brl(l.reduce((n, x) => n + x.q.bonus, 0))}</span></div>
+            : <p className="text-muted-foreground">Nenhum serviço Limpar vendido no mês.</p>}
+        </section>;
+      })()}
       {sub === "ia" && <AgregadosIA mes={mes} cons={consAgg} tot={tot} dec={dec} stat={stat} deptName={deptName} />}
       {sub === "metas" && <Metas cons={consAgg} goals={goals} mes={mes} deptName={deptName} onSaved={load} />}
     </div>

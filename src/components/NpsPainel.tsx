@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { pct, uni } from "@/components/painel-ui";
 import {
-  LOJA_PADRAO, META_PROMOTOR, daLoja, acaoFollowUp, baseNps, classe, filaFollowUp, filtrarPeriodo, historicoDetratores, lerAbaNps, resumir,
+  LOJA_PADRAO, META_PROMOTOR, daLoja, acaoFollowUp, baseNps, classe, filaFollowUp, filtrarPeriodo, historicoDetratores, lerAbaNps, resumir, faltamPromotores, TRATATIVA_LABEL, type TratativaSt,
   type NpsItem, type Segmento,
 } from "@/lib/nps";
 
@@ -27,6 +27,15 @@ export function NpsPainel({ mes = new Date().toISOString().slice(0, 7) }: { mes?
   const [filtro, setFiltro] = useState<"todos" | "detrator" | "neutro" | "promotor" | "rac">("detrator");
   const [busca, setBusca] = useState("");
 
+  const [trat, setTrat] = useState<Record<string, { st: TratativaSt; nota: string; at: string; por: string }>>({});
+  useEffect(() => { void supabase.from("os_acompanhamento").select("os_n,acoes").like("os_n", "nps:%").then(({ data }) => setTrat(Object.fromEntries((data ?? []).map((x) => [x.os_n, (x.acoes as { __nps?: never })?.__nps ?? { st: "pendente", nota: "", at: "", por: "" }])))); }, []);
+  const salvarTrat = async (k: string, v: { st: TratativaSt; nota: string }) => {
+    const { data: u } = await supabase.auth.getUser();
+    const reg = { ...v, at: new Date().toISOString(), por: u.user?.email?.split("@")[0] ?? "" };
+    setTrat((p) => ({ ...p, [k]: reg }));
+    const { error } = await supabase.from("os_acompanhamento").upsert({ os_n: k, acoes: { __nps: reg } as never, updated_at: reg.at }, { onConflict: "user_id,os_n" });
+    if (error) setMsg("Erro ao salvar tratativa: " + error.message);
+  };
   const load = async () => {
     const { data } = await supabase.from("nps_imports").select("itens, at, nome").order("at", { ascending: false }).limit(1).maybeSingle();
     setItens((data?.itens as unknown as NpsItem[]) ?? []);
@@ -91,6 +100,12 @@ export function NpsPainel({ mes = new Date().toISOString().slice(0, 7) }: { mes?
           <Card l="RACs abertas" v={uni(r.racs)} s={motivos[0] ? `principal: ${motivos[0][0].toLowerCase()}` : ""} />
         </div>
 
+        <div className="grid gap-2 sm:grid-cols-2">{([["Carro", rc, META_PROMOTOR.carro], ["Moto", rm, META_PROMOTOR.moto]] as const).filter(([, x]) => x.avaliados > 0).map(([n, x, m]) => {
+          const f = faltamPromotores(x.prom, x.avaliados, m);
+          return <div key={n} className={`rounded-lg border px-3 py-2 text-xs ${f ? "border-warning/50 bg-warning/10" : "border-success/50 bg-success/10"}`}>
+            <b>Resgate da trava · {n}</b> — {pct(x.pctProm)} (meta {pct(m)}). {f ? <>Faltam <b className="text-sm">{uni(f)}</b> pesquisas com nota 9/10 seguidas para liberar as premiações.</> : <>Trava liberada: departamento elegível às premiações.</>}
+          </div>; })}</div>
+
         <div className="grid gap-3 lg:grid-cols-2">
           <section className="lux-card px-4 py-3">
             <h3 className="font-semibold">Follow-up D-2 · pesquisa chega em até 2 dias</h3>
@@ -119,6 +134,14 @@ export function NpsPainel({ mes = new Date().toISOString().slice(0, 7) }: { mes?
                   <div className="flex justify-between gap-2"><b>{d.item.cliente}</b><span className="text-destructive">{d.detr} de {d.passagens} passagens detratadas</span></div>
                   <p className="text-muted-foreground">{d.item.consultor} · {d.item.veiculo} · {d.item.motivo || "sem RAC"}</p>
                   <p className="mt-1"><b>Ação:</b> {d.acao}</p>
+                  {(() => { const k = `nps:${d.item.chassi || d.item.cliente}`; const t = trat[k] ?? { st: "pendente" as TratativaSt, nota: "", at: "", por: "" }; return <div className="mt-1 flex flex-wrap items-center gap-1">
+                    <select aria-label={`Tratativa de ${d.item.cliente}`} value={t.st} onChange={(e) => void salvarTrat(k, { st: e.target.value as TratativaSt, nota: t.nota })} className={`h-6 rounded border border-border bg-background px-1 ${t.st === "resolvido" ? "text-success" : t.st === "contato" ? "text-warning" : "text-destructive"}`}>
+                      {(Object.keys(TRATATIVA_LABEL) as TratativaSt[]).map((s2) => <option key={s2} value={s2}>{TRATATIVA_LABEL[s2]}</option>)}
+                    </select>
+                    <input key={t.nota} defaultValue={t.nota} placeholder="Resumo da ação (quem ligou, o que foi acordado)" aria-label="Resumo da tratativa" onBlur={(e) => { if (e.target.value !== t.nota) void salvarTrat(k, { st: t.st === "pendente" && e.target.value.trim() ? "contato" : t.st, nota: e.target.value }); }} className="h-6 min-w-40 flex-1 rounded border border-border bg-background px-1" />
+                    {d.item.telefone && <a className="text-primary underline" target="_blank" rel="noreferrer" href={wa(d.item.telefone, `Olá ${d.item.cliente.split(" ")[0]}, sou Kledson Souza, gestor de pós-vendas da Haus Motors. Recebi sua avaliação sobre a última passagem pela nossa oficina e fiz questão de entrar em contato pessoalmente para entender o ocorrido e garantir que seu ${d.item.veiculo || "veículo"} esteja 100%. Podemos conversar?`)}>Acolher via WhatsApp</a>}
+                    {t.at && <span className="w-full text-[10px] text-muted-foreground">{t.por} · {new Date(t.at).toLocaleString("pt-BR")}</span>}
+                  </div>; })()}
                 </div>
               ))}
               {!detr.length && <p className="py-6 text-center text-sm text-muted-foreground">Nenhum detrator.</p>}

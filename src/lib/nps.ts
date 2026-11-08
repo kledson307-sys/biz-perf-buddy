@@ -180,3 +180,12 @@ export function historicoDetratores(l: NpsItem[]) {
   return [...m.values()].filter((e) => e.detr > 0).map((e) => ({ ...e, acao: acaoReversao(e.textos.join(" ") + " " + e.item.motivo) }))
     .sort((a, b) => b.detr - a.detr);
 }
+
+/** Quantas pesquisas 9/10 seguidas faltam para o % de promotores atingir a meta (0 se já bateu). */
+export function faltamPromotores(prom: number, avaliados: number, meta: number): number {
+  if (avaliados > 0 && prom / avaliados >= meta) return 0;
+  if (meta >= 1) return Infinity;
+  return Math.max(0, Math.ceil((meta * avaliados - prom) / (1 - meta) - 1e-9));
+}
+export type TratativaSt = "pendente" | "contato" | "resolvido";
+export const TRATATIVA_LABEL: Record<TratativaSt, string> = { pendente: "Pendente", contato: "Em contato", resolvido: "Revertido / Resolvido" };

@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Bell, ChevronDown, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { brl, Box, Pizza, Tabela } from "@/components/painel-ui";
-import { analisar, normalizar, comJudicial, ehJudicial, JUDICIAL_KEY, ENCERRADO_KEY, ehEncerrado, PODE_ENCERRAR, fmt, hoje, diasEntre, retornoDevido, lerRelatorio, STATUS, type Analise, type OsImport, type OsItem, type Status } from "@/lib/os-controle";
+import { brl, Box, Pizza, Tabela, norm } from "@/components/painel-ui";
+import { analisar, normalizar, comJudicial, ehJudicial, JUDICIAL_KEY, ENCERRADO_KEY, ehEncerrado, PODE_ENCERRAR, fmt, hoje, diasEntre, retornoDevido, lerRelatorio, STATUS, STATUS_KEY, STATUS_MANUAL, comStatusManual, type StatusManual, type Analise, type OsImport, type OsItem, type Status } from "@/lib/os-controle";
 import { registrarUpdate } from "@/lib/update-log";
 import { NOTIFICATIONS_EVENT } from "@/components/Notificacoes";
 
@@ -18,6 +18,9 @@ export function ControleOS() {
   const [aba, setAba] = useState<Status>("pronto");
   const [filtroDias, setFiltroDias] = useState<0 | 20 | 30>(0);
   const [filtroCons, setFiltroCons] = useState("");
+  const [busca, setBusca] = useState("");
+  const [quem, setQuem] = useState("");
+  useEffect(() => { void supabase.auth.getUser().then(r => setQuem(r.data.user?.email?.split("@")[0] ?? "")); }, []);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [aberto, setAberto] = useState<string | null>(null);
@@ -49,7 +52,7 @@ export function ControleOS() {
   const atual = imps[sel];
   const anterior = imps[sel + 1];
   const ref = atual ? (sel === 0 ? hoje() : atual.at.slice(0, 10)) : hoje();
-  const lista = useMemo<Analise[]>(() => (atual?.itens ?? []).map(i0 => ({ ...i0, dias: i0.dias + Math.max(0, diasEntre(atual!.at.slice(0, 10), ref)) })).map(i => analisar(ehEncerrado(acomp[i.n]?.acoes) ? { ...i, st: "encerrado" } : comJudicial(i, ehJudicial(acomp[i.n]?.acoes)), anterior, ref, acomp[i.n]?.prev_manual)), [atual, anterior, ref, acomp]);
+  const lista = useMemo<Analise[]>(() => (atual?.itens ?? []).map(i0 => ({ ...i0, dias: i0.dias + Math.max(0, diasEntre(atual!.at.slice(0, 10), ref)) })).map(i => analisar(ehEncerrado(acomp[i.n]?.acoes) ? { ...i, st: "encerrado" } : comJudicial(comStatusManual(i, acomp[i.n]?.acoes, atual!.at), ehJudicial(acomp[i.n]?.acoes)), anterior, ref, acomp[i.n]?.prev_manual)), [atual, anterior, ref, acomp]);
   const lembretes = lista.filter(a => (a.item.st === "diag" && a.diasStatus >= 7) || a.contatoHoje || (a.semMudanca && a.item.st === "pronto") || (a.item.st === "pecas" && a.diasStatus > 30));
   const novos = rets.filter(r => !r.visto);
   const atrasados = sel === 0 ? lista.map(a => ({ a, due: retornoDevido(a.item, ref) })).filter(x => x.due && !rets.some(r => r.os_n === x.a.item.n && r.data_ref >= x.due!)) : [];
@@ -80,7 +83,8 @@ export function ControleOS() {
   };
 
   const consultoresOS = [...new Set(lista.map(a => a.item.cons))].filter(Boolean).sort();
-  const doStatus = lista.filter(a => a.item.st === aba && a.item.dias > filtroDias && (!filtroCons || a.item.cons === filtroCons));
+  const q = norm(busca);
+  const doStatus = lista.filter(a => (q ? [a.item.n, a.item.placa, a.item.cli, a.item.mod].some(v => norm(v).includes(q)) : a.item.st === aba) && a.item.dias > filtroDias && (!filtroCons || a.item.cons === filtroCons));
   const porCons = [...new Set(doStatus.map(a => a.item.cons))].sort().map(c => ({ c, l: doStatus.filter(a => a.item.cons === c).sort((x, y) => y.diasStatus - x.diasStatus) }));
   const ranking = useMemo(() => STATUS.map(s => {
     const l = lista.filter(a => a.item.st === s.k);
@@ -104,7 +108,7 @@ export function ControleOS() {
       {msg && <p role="status" className="text-sm text-muted-foreground">{msg}</p>}
 
       {atual && <>
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-8">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-5 lg:grid-cols-9">
           {STATUS.map(s => {
             const l = lista.filter(a => a.item.st === s.k);
             const al = l.filter(a => a.alertas.some(x => x.nivel === "alto")).length;
@@ -183,6 +187,8 @@ export function ControleOS() {
               {n} ({lista.filter(a => a.item.st !== "encerrado" && a.item.dias > d).length})
             </button>
           ))}
+          <input type="search" value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar O.S., placa, cliente…" aria-label="Busca rápida de O.S." className="h-6 w-48 rounded border border-border bg-background px-2 text-xs text-foreground" />
+          {(() => { const p = lista.filter(a => a.item.st !== "encerrado" && a.item.st !== "judicial" && a.item.dias > 30); return <span className="rounded-full border border-destructive/50 bg-destructive/10 px-2 py-0.5 text-xs font-semibold text-destructive" title="Valor das O.S. há mais de 30 dias na oficina">Capital parado &gt;30d: {brl(p.reduce((n, a) => n + a.item.valor, 0))} ({p.length})</span>; })()}
           <label className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">Consultor:
             <select aria-label="Filtrar por consultor" value={filtroCons} onChange={e => setFiltroCons(e.target.value)} className="h-6 rounded border border-border bg-background px-1 text-xs text-foreground">
               <option value="">Todos</option>
@@ -191,7 +197,7 @@ export function ControleOS() {
           </label>
         </div>
 
-        <Box title={`${STATUS.find(s => s.k === aba)?.nome} — por consultor`} right={<span className="text-xs">clique na O.S. para tratativas</span>} fit="xl:max-h-[calc(100vh-545px)] xl:min-h-[240px]">
+        <Box title={q ? `Resultado da busca "${busca}"` : `${STATUS.find(s => s.k === aba)?.nome} — por consultor`} right={<span className="text-xs">clique na O.S. para tratativas</span>} fit="xl:max-h-[calc(100vh-545px)] xl:min-h-[240px]">
           {porCons.length === 0 && <p className="p-5 text-sm text-muted-foreground">Nenhuma O.S. neste status.</p>}
           {porCons.map(({ c, l }) => <div key={c} className="border-t border-border first:border-t-0">
             <div className="flex flex-wrap justify-between gap-2 bg-muted px-5 py-2 text-sm font-semibold">
@@ -200,7 +206,7 @@ export function ControleOS() {
             </div>
             <Tabela head={["O.S.", "Cliente / Modelo", "Valor", "Na oficina", "No status", aba === "pecas" ? "Previsão / contato" : "Situação", "Alertas", ""]}>
               {l.map(a => <FragmentRow key={a.item.n} podeEncerrar={podeEncerrar} a={a} aba={aba} aberto={aberto === a.item.n} toggle={() => setAberto(aberto === a.item.n ? null : a.item.n)}
-                ac={acomp[a.item.n] ?? { acoes: {}, prev_manual: null }} hist={rets.filter(r => r.os_n === a.item.n)} salvar={v => void salvarAcomp(a.item.n, v)} />)}
+                ac={acomp[a.item.n] ?? { acoes: {}, prev_manual: null }} hist={rets.filter(r => r.os_n === a.item.n)} salvar={v => void salvarAcomp(a.item.n, v)} quem={quem} />)}
             </Tabela>
           </div>)}
         </Box>
@@ -258,7 +264,7 @@ function CartaoPizza({ titulo, sub, dados, fmt, onClick }: {
   );
 }
 
-function FragmentRow({ a, aba, aberto, toggle, ac, salvar, hist, podeEncerrar }: { podeEncerrar: boolean; hist: Retorno[]; a: Analise; aba: Status; aberto: boolean; toggle: () => void; ac: Acomp; salvar: (v: Acomp) => void }) {
+function FragmentRow({ a, aba, aberto, toggle, ac, salvar, hist, podeEncerrar, quem }: { quem: string; podeEncerrar: boolean; hist: Retorno[]; a: Analise; aba: Status; aberto: boolean; toggle: () => void; ac: Acomp; salvar: (v: Acomp) => void }) {
   const feitas = a.acoes.filter(x => ac.acoes[x]?.feito).length;
   const alto = a.alertas.some(x => x.nivel === "alto");
   return <>
@@ -279,12 +285,13 @@ function FragmentRow({ a, aba, aberto, toggle, ac, salvar, hist, podeEncerrar }:
       <td className="px-3 py-2"><Button size="sm" variant={alto ? "default" : "ghost"} onClick={toggle}>Ações{feitas > 0 && ` (${feitas}/${a.acoes.length})`}<ChevronDown className={aberto ? "rotate-180" : ""} /></Button></td>
     </tr>
     {aberto && <tr className="bg-muted/40"><td colSpan={8} className="px-5 py-3 text-sm">
+      <MudarStatus a={a} ac={ac} salvar={salvar} quem={quem} />
       {podeEncerrar && <label className="mb-3 flex items-start gap-2 rounded border border-success/40 bg-success/5 p-2 text-xs"><input type="checkbox" className="mt-0.5" checked={ehEncerrado(ac.acoes)} onChange={e => { if (e.target.checked && !confirm(`Encerrar a O.S. ${a.item.n}?`)) return; salvar({ ...ac, acoes: { ...ac.acoes, [ENCERRADO_KEY]: { feito: e.target.checked, nota: "", at: new Date().toISOString() } } }); }} />
         <span><b>Encerrar lead — veículo tratado e liberado.</b> A O.S. vai para "Encerrados", sai dos alertas e do sino, e o vendedor deixa de receber cobrança. Desmarque para reabrir.</span></label>}
       <label className="mb-3 flex items-start gap-2 rounded border border-destructive/40 bg-destructive/5 p-2 text-xs"><input type="checkbox" className="mt-0.5" checked={ehJudicial(ac.acoes)} onChange={e => salvar({ ...ac, acoes: { ...ac.acoes, [JUDICIAL_KEY]: { feito: e.target.checked, nota: "", at: new Date().toISOString() } } })} />
         <span><b>Processo judicial — pausar alertas.</b> A O.S. vai para "Processos judiciais", sai do aviso do Painel e do sino, e o vendedor deixa de receber cobrança de retorno. Cuidados: veículo coberto e protegido, bateria no mantenedor, fotos mensais do estado do carro, nada de desmontar sem autorização e alinhar cada passo com o jurídico.</span></label>
       {aba === "pecas" && <p className="mb-2 text-xs text-muted-foreground">Cronograma de contato semanal: {Array.from({ length: 4 }, (_, k) => fmt(new Date(Date.parse(a.proxContato ?? a.item.desde) + k * 7 * 86400e3).toISOString().slice(0, 10))).join(" · ")}</p>}
-      <ul className="space-y-3">{a.acoes.filter(x => x !== JUDICIAL_KEY && x !== ENCERRADO_KEY).map(x => {
+      <ul className="space-y-3">{a.acoes.filter(x => x !== JUDICIAL_KEY && x !== ENCERRADO_KEY && x !== STATUS_KEY).map(x => {
         const r = ac.acoes[x] ?? { feito: false, nota: "" };
         const set = (v: Partial<typeof r>) => salvar({ ...ac, acoes: { ...ac.acoes, [x]: { ...r, ...v, at: new Date().toISOString() } } });
         return <li key={x} className="space-y-1">
@@ -301,4 +308,30 @@ function FragmentRow({ a, aba, aberto, toggle, ac, salvar, hist, podeEncerrar }:
       <p className="mt-2 text-xs text-muted-foreground">Observação: {a.item.obs || "—"}</p>
     </td></tr>}
   </>;
+}
+
+function MudarStatus({ a, ac, salvar, quem }: { a: Analise; ac: Acomp; salvar: (v: Acomp) => void; quem: string }) {
+  const m = (ac.acoes as Record<string, StatusManual>)[STATUS_KEY];
+  const [novo, setNovo] = useState<Status>(a.item.st === "encerrado" || a.item.st === "judicial" ? "servico" : a.item.st);
+  const [nota, setNota] = useState("");
+  const aplicar = () => {
+    if (!nota.trim()) { alert("Descreva o motivo da mudança (ex.: cliente autorizou, peça chegou)."); return; }
+    const at = new Date().toISOString();
+    const hist = [{ st: novo, nota: nota.trim(), at, por: quem }, ...(m?.hist ?? [])].slice(0, 30);
+    salvar({ ...ac, acoes: { ...ac.acoes, [STATUS_KEY]: { feito: true, nota: nota.trim(), at, st: novo, hist } as never } });
+    setNota("");
+  };
+  const nome = (k: Status) => STATUS.find(s => s.k === k)?.nome ?? k;
+  return <div className="mb-3 rounded border border-primary/40 bg-primary/5 p-2 text-xs">
+    <div className="flex flex-wrap items-center gap-2">
+      <b>Mudar status:</b>
+      <select aria-label={`Novo status da O.S. ${a.item.n}`} value={novo} onChange={e => setNovo(e.target.value as Status)} className="h-7 rounded border border-border bg-background px-1 text-foreground">
+        {STATUS_MANUAL.map(k => <option key={k} value={k}>{nome(k)}</option>)}
+      </select>
+      <input value={nota} onChange={e => setNota(e.target.value)} placeholder="Motivo (ex.: cliente autorizou pelo WhatsApp)" aria-label="Motivo da mudança" className="h-7 min-w-56 flex-1 rounded border border-border bg-background px-2 text-foreground" />
+      <Button size="sm" onClick={aplicar}>Aplicar</Button>
+    </div>
+    <p className="mt-1 text-muted-foreground">Vale até a próxima planilha semanal; se a nova planilha trouxer a O.S. faturada, ela é encerrada automaticamente.</p>
+    {!!m?.hist?.length && <ul className="mt-2 space-y-0.5">{m.hist.map((h, i) => <li key={i}>{new Date(h.at).toLocaleString("pt-BR")} · <b>{h.por || "—"}</b> → {nome(h.st)}: {h.nota}</li>)}</ul>}
+  </div>;
 }

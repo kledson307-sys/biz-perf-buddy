@@ -11,6 +11,7 @@ import { Barra, Box, Cmp, Kpi, Num, Posicao, Secao, Tabela, bg, brl, dataHora, d
 import { Agregados } from "@/components/Agregados";
 import { SalesImport } from "@/components/SalesImport";
 import { EnvioWhatsapp } from "@/components/EnvioWhatsapp";
+import { HubLideranca } from "@/components/HubLideranca";
 import { OsAbertas } from "@/components/OsAbertas";
 import { ControleOS } from "@/components/ControleOS";
 import { Notificacoes } from "@/components/Notificacoes";
@@ -500,6 +501,7 @@ function Painel({ email }: { email: string }) {
         {subBar}
         {show("os") && <Secao relatorio={relatorio} titulo="Projeção + Ordens de Serviço abertas"><OsAbertas linhas={linhas} mes={mes} soPecas={soPecas} tot={tot} dec={dec} deptName={deptName} semServicos={semServicos} /></Secao>}
         {tab === "painel" && !relatorio && <CentralGestao linhas={linhas} porDept={porDept} total={total} sales={sales} mes={mes} tot={tot} dec={dec} setTab={setTab} exportar={exportar} whats={<button type="button" onClick={() => setAbrirWhats(!abrirWhats)} className="rounded-md border border-border px-2.5 py-1 hover:bg-muted">{abrirWhats ? "Ocultar WhatsApp" : "WhatsApp da equipe"}</button>} />}
+        {tab === "painel" && !relatorio && <HubLideranca linhas={linhas} mes={mes} tot={tot} dec={dec} />}
         {tab === "painel" && abrirWhats && !relatorio && <EnvioWhatsapp linhas={linhas} lider={lider} liderServ={liderServ} liderPec={liderPec} mes={mes} dec={dec} tot={tot} reload={load} />}
 
         {tab === "proj" && !relatorio && (
@@ -649,7 +651,7 @@ function Painel({ email }: { email: string }) {
           {email.toLowerCase() === MASTER_EMAIL && <TabsContent value="comissoes" className="xl:max-h-[calc(100vh-350px)] xl:overflow-y-auto"><EspelhoComissoes mes={mes} tot={tot} dec={dec} linhas={cons.map((c) => { const ss = sales.filter((s) => s.consultant_id === c.id); return { nome: c.nome, servicos: ss.reduce((a, s) => a + s.servicos, 0), pecas: ss.reduce((a, s) => a + s.pecas, 0), margem: ss.reduce((a, s) => a + s.margem_pecas, 0) }; })} /></TabsContent>}
           <TabsContent value="geral" className="space-y-3 xl:max-h-[calc(100vh-350px)] xl:overflow-y-auto">
             <ViradaMes mes={mes} onChanged={load} />
-            <MetasExecutivo linhas={linhas} deptName={deptName} />
+            <MetasExecutivo linhas={linhas} deptName={deptName} tot={tot} dec={dec} />
             <Config parte="geral" params={form} salvarParams={salvarParams} confirmar={() => void confirmarParams()} pendente={!!rascunho} depts={depts} cons={cons} goals={goals} mes={mes} reload={load} deptName={deptName} irPara={setMes} />
           </TabsContent>
           <TabsContent value="consultores" className="xl:max-h-[calc(100vh-350px)] xl:overflow-y-auto">

@@ -1,7 +1,7 @@
 import { norm } from "@/components/painel-ui";
 
 /** "faturar" is legacy: merged into "pronto" (Prontos / Faturar). */
-export type Status = "pronto" | "pecas" | "judicial" | "diag" | "faturar" | "garantia" | "autorizacao" | "outros" | "encerrado";
+export type Status = "pronto" | "pecas" | "judicial" | "diag" | "faturar" | "garantia" | "autorizacao" | "outros" | "encerrado" | "servico";
 export type OsItem = {
   n: string; cons: string; cli: string; mod: string; placa: string; emi: string;
   pec: number; serv: number; valor: number; dias: number; obs: string; st: Status; desde: string;
@@ -10,6 +10,7 @@ export type OsImport = { id: string; at: string; nome: string; arquivo: string; 
 
 export const STATUS: { k: Status; nome: string }[] = [
   { k: "pronto", nome: "Prontos / Faturar" },
+  { k: "servico", nome: "Em serviço / Fila" },
   { k: "pecas", nome: "Aguardando peças" },
   { k: "judicial", nome: "Processos judiciais" },
   { k: "diag", nome: "Em diagnóstico" },
@@ -167,3 +168,15 @@ export function osFaturadasAtivas(itens: Pick<OsItem, "n">[], acoes: Record<stri
   const fat = new Set(faturadas.map(k).filter(Boolean));
   return [...new Set(itens.map(i => i.n))].filter(n => fat.has(k(n)) && !ehEncerrado(acoes[n]));
 }
+
+/** Mudança manual de status entre importações semanais (gravada em os_acompanhamento.acoes.__status). */
+export const STATUS_KEY = "__status";
+export type MudancaStatus = { st: Status; nota: string; at: string; por: string };
+export type StatusManual = { feito: boolean; nota: string; at?: string; st?: Status; hist?: MudancaStatus[] };
+/** Aplica o status manual quando ele é mais recente que a importação; O.S. encerrada/judicial e faturada continuam prevalecendo. */
+export function comStatusManual(i: OsItem, acoes: unknown, importAt: string): OsItem {
+  const m = (acoes as Record<string, StatusManual> | null)?.[STATUS_KEY];
+  if (!m?.feito || !m.st || !m.at || m.at < importAt) return i;
+  return m.st === i.st ? i : { ...i, st: m.st, desde: m.at.slice(0, 10) };
+}
+export const STATUS_MANUAL: Status[] = ["servico", "pecas", "autorizacao", "diag", "pronto", "garantia", "outros"];

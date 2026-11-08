@@ -154,3 +154,10 @@ export function distribuir(rel: Relatorio, codigos: Record<string, string[]>) {
   for (const l of [...acc.values(), ...reg.values()]) l.valor = Math.round(l.valor * 100) / 100;
   return { linhas: [...acc.values()], registros: [...reg.values()], usados };
 }
+
+/** Bonificação Limpar: R$ 10 por serviço vendido, paga pela Limpar direto ao consultor (fora da folha), além da comissão do serviço. */
+export const BONUS_LIMPAR_UN = 10;
+export function bonusLimpar(vendas: { item: string; qtd: number }[]): { qtd: number; bonus: number } {
+  const qtd = Math.round(vendas.filter((v) => v.item === "limpar").reduce((n, v) => n + v.qtd, 0));
+  return { qtd, bonus: qtd * BONUS_LIMPAR_UN };
+}

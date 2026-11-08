@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Box, brl, div, pct, tone, uni } from "@/components/painel-ui";
-import { curvaAbc, faixasGiro, familiaPeca, type ItemPeca } from "@/lib/pecas-itens";
+import { curvaAbc, faixasGiro, familiaPeca, ehPneu, pneusPorVendedor, type ItemPeca } from "@/lib/pecas-itens";
 import { Bloco, Linha } from "@/components/Cockpit";
 import { CabecalhoTela, KpiCard } from "@/components/TelasGestor";
 import { BarChart3, Package, PieChart, RefreshCw, Trophy, Users } from "lucide-react";
@@ -99,6 +99,11 @@ export function PecasEstoque({ linhas, porDept, margemIdeal, deptName, passagens
                 <td className={`text-right font-bold ${tone(l.perfP)}`}>{l.mP ? pct(l.perfP) : "—"}</td><td className={`text-right ${mTone(m, ideal)}`}>{l.pecas && l.margem ? pct(m) : "—"}</td></tr>); })}
               {!rank.length && <tr><td colSpan={6} className="py-4 text-center text-muted-foreground">Sem vendas de peças no mês.</td></tr>}</tbody></table>
         </Bloco>
+        {(() => { const pn = (itens ?? []).filter(ehPneu); if (!pn.length) return null; const q = pn.reduce((a, i) => a + i.qtd, 0), v = pn.reduce((a, i) => a + i.valor, 0); const pv = Object.entries(pneusPorVendedor(itens ?? [])).sort((a, b) => b[1] - a[1]);
+          return <Bloco titulo="Radar de pneus" icon={<Package className="size-4 text-neon" />}>
+            <p className="text-xs"><b className="text-lg text-neon">{uni(q)}</b> pneus · <b>{brl(v)}</b> no mês</p>
+            <ul className="mt-1 space-y-0.5 text-xs">{pv.map(([lg, n]) => <li key={lg} className="flex justify-between border-b border-border/50"><span>{lg}</span><b>{uni(n)} un.{/ANDRESSA/.test(lg) && <span className={n >= 50 ? " text-success" : " text-warning"}> · meta 50 ({n >= 50 ? "R$ 400 ✓" : `faltam ${uni(50 - n)}`})</span>}</b></li>)}</ul>
+          </Bloco>; })()}
         <Bloco titulo="Top 5 itens de maior faturamento" icon={<Trophy className="size-4 text-warning" />} right={curva.length ? <button type="button" className="text-[11px] text-primary hover:underline" onClick={() => setAbc(!abc)}>{abc ? "Fechar Curva ABC" : "Curva ABC"}</button> : undefined}>
           {!curva.length ? semItens : <table className="w-full text-xs"><thead className="text-muted-foreground"><tr><th className="text-left font-normal">Item</th><th className="text-right font-normal">Qtd</th><th className="text-right font-normal">Faturamento</th></tr></thead>
             <tbody>{curva.slice(0, 5).map((i) => <tr key={i.cod} className="border-t border-border/50"><td className="max-w-0 truncate py-1">{i.desc || i.cod}</td><td className="text-right">{uni(i.qtd)}</td><td className="text-right font-bold tabular-nums">{brl(i.valor)}</td></tr>)}</tbody></table>}

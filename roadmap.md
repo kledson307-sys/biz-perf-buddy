@@ -1,15 +1,23 @@
-# Roadmap — pendências
+# Roadmap — melhorias aprovadas na varredura das 10 abas
 
-## Feito
-- [x] Bloco 1 — Importação mais inteligente: uma planilha alimenta várias abas; prévia mostra o destino de cada dado; "O.S. Fechadas" já não é confundida com "O.S. Abertas"
-- [x] Bloco 2 — Novembro recuperado (técnicos e serviços dos consultores conferidos com a DMS)
-- [x] Bloco 3 — Painel dos técnicos compacto (7 cabem em 1440×900)
-- [x] Bloco 4 — Virada de mês: lista de conferência + copiar metas de consultores/agregados
-- [x] Bloco 5 — Exportar mês em Excel; régua NPS (fila de follow-up) já existia
+## Bloco 1 · Operação (O.S. e NPS)
+- [x] Controle O.S.: mudança manual de status + status "Em serviço" + histórico (quem/quando/motivo)
+- [x] Controle O.S.: busca rápida, filtro SG/SC, capital parado >30d
+- [x] NPS: calculadora "quantos 9/10 faltam" para a trava
+- [x] NPS: tratativa de detratores/neutros (Pendente → Em contato → Resolvido) + WhatsApp de acolhimento
 
-## Aberto
-- [ ] Reimportar O.S. Abertas de novembro (a gravação anterior foi sobrescrita pela planilha de O.S. Fechadas) — precisa do arquivo do usuário
+## Bloco 2 · Metas e Comissões
+- [x] Metas: ritmo R$/dia útil
+- [ ] Metas: conciliação loja vs equipe, replicar metas com %
+- [x] Agregados/Consultores: bonificação Limpar R$10/serviço (fora da folha, além da comissão)
 
-- [x] Aba Acessórios & Estética (vendas, conciliação, matriz RVD, comissões RH, consolidado)
-- [ ] Logins restritos de Geovana e Marcela — aguardando e-mails delas
-- [x] Importador da planilha RVD
+## Bloco 3 · Dashboard e Central
+- [x] Dashboard: remover card Metas duplicado, NPS 3 colunas, limpar card Departamentos
+- [x] Central de Gestão: gargalos em R$, pauta matinal, WhatsApp Hub (incl. Marcela/Geovana/Delmir/Marcos)
+
+## Bloco 4 · Consultores, Técnicos, Peças, Importações
+- [ ] Consultores: filtro segmento, ticket peças, badge pneus
+- [ ] Técnicos: retornos no card, O.S. sem apontamento
+- [x] Peças: radar de pneus
+- [ ] Peças: desconto por consultor
+- [ ] Importações: recibo de importação/desfazer, envio de acesso por WhatsApp
