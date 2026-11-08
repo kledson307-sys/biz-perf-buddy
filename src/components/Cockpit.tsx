@@ -10,6 +10,7 @@ import type { Diario } from "@/lib/diario-retorno";
 import farois from "@/assets/hero-farois.jpg";
 import { CartaoAgendamento } from "@/components/CartaoAgendamento";
 import { RelatorioExecutivo } from "@/components/RelatorioExecutivo";
+import { fatorNps, npsPorMarca } from "@/lib/comissoes";
 
 type L = { c: { id: string; nome: string; department_id: string | null }; servicos: number; pecas: number; mS: number; mP: number; perf: number; projPct: number };
 type D = { nome: string; servicos: number; pecas: number; meta: number; projPct: number };
@@ -55,7 +56,23 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
   const { os, pass, agg, mec, fluxo, parados, amarelos } = resumo;
   const [nps, setNps] = useState<ReturnType<typeof resumir> | null>(null);
   const [npsAno, setNpsAno] = useState(false);
-  useEffect(() => { void supabase.from("nps_imports").select("itens").order("at", { ascending: false }).limit(1).maybeSingle().then(({ data }) => { const l = filtrarPeriodo(daLoja((data?.itens as unknown as NpsItem[]) ?? []), npsAno ? mes.slice(0, 4) : mes.slice(0, 7)); setNps(l.length ? resumir(l) : null); }); }, [mes, npsAno]);
+  const [trava, setTrava] = useState<{ carro: number | null; moto: number | null }>({ carro: null, moto: null });
+  useEffect(() => { void supabase.from("nps_imports").select("itens").order("at", { ascending: false }).limit(1).maybeSingle().then(({ data }) => { const it = (data?.itens as unknown as NpsItem[]) ?? []; const l = filtrarPeriodo(daLoja(it), npsAno ? mes.slice(0, 4) : mes.slice(0, 7)); setNps(l.length ? resumir(l) : null);
+    const m = npsPorMarca(it as never, mes.slice(0, 7)); setTrava({ carro: m.carro, moto: m.moto }); }); }, [mes, npsAno]);
+  // Margem de peças e Acessórios & Estética do mês.
+  const [marg, setMarg] = useState<{ m: number; p: number } | null>(null);
+  const [comp, setComp] = useState<{ fat: number; aFat: number; nAFat: number; parados: number }>({ fat: 0, aFat: 0, nAFat: 0, parados: 0 });
+  useEffect(() => {
+    const m7 = mes.slice(0, 7); const [a, mm2] = m7.split("-").map(Number); const fim = `${m7}-${String(new Date(a!, mm2!, 0).getDate()).padStart(2, "0")}`;
+    const ids = linhas.map((l) => l.c.id);
+    if (ids.length) void supabase.from("daily_sales").select("pecas,margem_pecas").gte("dia", `${m7}-01`).lte("dia", fim).in("consultant_id", ids).then(({ data }) => {
+      const r = (data ?? []).reduce((x, d) => ({ m: x.m + (+d.margem_pecas || 0), p: x.p + (+d.pecas || 0) }), { m: 0, p: 0 }); setMarg(r.p ? r : null); });
+    void supabase.from("vendas_complementares").select("valor,devolucao,status,dia,os_n,obsoleto").gte("dia", `${m7}-01`).lte("dia", fim).then(({ data }) => {
+      const lim = Date.now() - 15 * 864e5; const o = { fat: 0, aFat: 0, nAFat: 0, parados: 0 };
+      for (const v of data ?? []) { if (v.obsoleto) continue; const liq = (+v.valor || 0) - (+v.devolucao || 0);
+        if (v.status === "FATURADO") o.fat += liq; else { o.aFat += liq; o.nAFat++; if (!v.os_n && new Date(v.dia).getTime() < lim) o.parados++; } }
+      setComp(o); });
+  }, [mes, linhas]);
 
   // Faturamento por data real (planilhas Peças/Passagens), quando importado.
   const [real, setReal] = useState<Diario>({});
@@ -116,6 +133,7 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
   if (deptFraco && deptFraco.projPct < 1) acoes.push({ cor: "bg-warning", txt: `Foco em ${deptFraco.nome} (${pct(deptFraco.projPct)} da meta).`, ir: "painel" });
   if (t.s && ratio < 0.8) acoes.push({ cor: "bg-warning", txt: `Peças abaixo do esperado: ${ratio.toFixed(2).replace(".", ",")} de peça por R$ 1 de serviço.`, ir: "pecas" });
 
+  if (comp.parados) acoes.push({ cor: "bg-warning", txt: `${comp.parados} venda(s) de Acessórios/Estética "a faturar" há mais de 15 dias sem O.S.`, ir: "acessorios" });
   if (nps && nps.pctProm < 0.85) acoes.push({ cor: "bg-warning", txt: `NPS: ${pct(nps.pctProm)} de promotores, abaixo da meta de 85%. Ver detratores e follow-up D-2.`, ir: "nps" });
   const resultado: [string, number, number, typeof Wrench, string][] = [
     ["Serviços", t.s, t.ms, Wrench, "bg-neon"], ["Peças", t.p, t.mp, Package, "bg-coral"], ["Faturamento total", t.s + t.p, metaT, TrendingUp, "bg-primary"],
@@ -166,7 +184,7 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
             <p className="flex items-center gap-2 text-xs font-semibold uppercase"><span className="flex size-6 items-center justify-center rounded-full bg-primary/20"><I className="size-3.5 text-primary" /></span>{n}</p>
             <div className="text-[11px] text-muted-foreground"><span>Realizado<b className="block text-base text-foreground">{brl(r)}</b></span><span>Meta <b className="font-normal text-foreground/80">{brl(m)}</b></span>
               {(() => { const base = ant ? (n === "Serviços" ? ant.s : n === "Peças" ? ant.p : ant.s + ant.p) : 0; if (!base) return <span className="block">vs mês anterior: —</span>; const v = r / base - 1;
-                return <span className="block">vs mês ant. (até dia {diaCorte}): <b className={v >= 0 ? "text-success" : "text-destructive"}>{v >= 0 ? "▲" : "▼"} {pct(Math.abs(v))}</b> <span className="opacity-70">({brl(base)})</span></span>; })()}</div>
+                return <span className="mt-0.5 flex items-center gap-1" title={`Mês anterior até dia ${diaCorte}: ${brl(base)}`}><span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${v >= 0 ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive"}`}>{v >= 0 ? "+" : "−"}{pct(Math.abs(v))} {v >= 0 ? "▲" : "▼"}</span><span className="opacity-70">vs mês ant.</span></span>; })()}</div>
             <div className="flex items-center gap-2"><Linha p={div(r, m)} /><b className={`text-xs ${tone(div(r, m))}`}>{pct(div(r, m))}</b></div>
           </div>))}</div>
       </Bloco>
@@ -192,16 +210,16 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
       </Bloco>
 
       {/* Linha 2 */}
-      <Bloco titulo="Onde devo atuar hoje?" icon={<AlertTriangle className="size-4 text-destructive" />} className="border-destructive/50 lg:col-span-3">
+      <Bloco titulo="Radar de ação diário" icon={<AlertTriangle className="size-4 text-destructive" />} className="border-destructive/50 lg:col-span-3">
         {deptFraco && deptFraco.projPct < 1 ? (
           <div className="rounded-lg border-l-4 border-destructive bg-destructive/10 p-2 text-xs">
             <div className="flex items-center justify-between"><b className="uppercase">{deptFraco.nome}</b><span className="rounded bg-destructive px-1.5 py-0.5 text-[10px] font-bold text-destructive-foreground">{deptFraco.projPct < 0.85 ? "CRÍTICO" : "ATENÇÃO"}</span></div>
             <div className="mt-1 grid grid-cols-2 gap-1"><span className="text-muted-foreground">Gap atual<b className="block text-sm text-destructive">{brl(Math.max(deptFraco.meta - deptFraco.servicos - deptFraco.pecas, 0))}</b></span>
               <span className="text-muted-foreground">Necessário por dia<b className="block text-sm text-foreground">{brl(rest ? Math.max(deptFraco.meta - deptFraco.servicos - deptFraco.pecas, 0) / rest : 0)}</b></span></div>
           </div>) : <p className="text-sm text-success">✅ Todos os departamentos no ritmo.</p>}
-        <ul className="mt-1.5 space-y-1">{acoes.slice(0, 3).map((a, i) => (
+        <ul className="mt-1.5 space-y-1">{acoes.slice(0, 5).map((a, i) => (
           <li key={i}><button type="button" onClick={() => setTab(a.ir)} className="flex w-full items-start gap-2 rounded bg-background/40 px-2 py-1 text-left text-[11px] hover:bg-muted">
-            <span className={`mt-1 size-2 shrink-0 rounded-full ${a.cor}`} /><span className="flex-1">{a.txt}</span><ArrowRight className="size-3.5 shrink-0 text-primary" />
+            <span className={`mt-1 size-2 shrink-0 rounded-full ${a.cor}`} /><span className="flex-1">{a.txt}</span><span className="shrink-0 text-[10px] text-muted-foreground">{resp[a.ir] ?? "Gestão"}</span><ArrowRight className="size-3.5 shrink-0 text-primary" />
           </button></li>))}</ul>
       </Bloco>
       <Bloco titulo="Evolução do mês" icon={<TrendingUp className="size-4 text-primary" />} ir={() => setTab("painel")} className="lg:col-span-3">
@@ -247,10 +265,12 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
         <ul className="space-y-0.5 text-xs">{destaques.map(([n, v]) => <li key={n} className="flex justify-between border-b border-border/50 py-0.5"><span className="text-muted-foreground">{n}</span><b>{v}</b></li>)}
           {lider && <li className="flex justify-between py-0.5"><span className="text-muted-foreground">Líder do ranking</span><b className="text-warning">{lider.c.nome}</b></li>}</ul>
       </Bloco>
-      <Bloco titulo="Próximas ações" icon={<ClipboardList className="size-4 text-primary" />} className="lg:col-span-4">
-        {acoes.length === 0 ? <p className="text-sm text-success">Nenhuma ação pendente.</p> :
-          <table className="w-full text-[11px]"><thead className="text-left text-muted-foreground"><tr><th className="font-normal">Ação</th><th className="font-normal">Responsável</th><th className="font-normal">Prazo</th><th className="font-normal">Status</th></tr></thead>
-            <tbody>{acoes.map((a, i) => <tr key={i} className="cursor-pointer hover:bg-muted" onClick={() => setTab(a.ir)}><td className="max-w-[12rem] truncate py-0.5"><span className={`mr-1 inline-block size-2 rounded-full ${a.cor}`} />{a.txt}</td><td>{resp[a.ir] ?? "Gestão"}</td><td>Hoje</td><td className="text-destructive">Pendente</td></tr>)}</tbody></table>}
+      <Bloco titulo="Margem de peças & Acessórios" icon={<Package className="size-4 text-primary" />} ir={() => setTab("pecas")} className="lg:col-span-4">
+        {(() => { const mp = marg ? marg.m / marg.p : null; const ideal = 0.31; const c = mp == null ? "text-muted-foreground" : mp >= ideal ? "text-success" : mp >= ideal * 0.85 ? "text-warning" : "text-destructive";
+          return <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="rounded-lg border border-border bg-background/40 p-2"><p className="text-[10px] uppercase text-muted-foreground">Margem real de peças</p><p className={`text-xl font-bold ${c}`}>{mp == null ? "—" : pct(mp)}</p><p className="text-[10px] text-muted-foreground">ideal loja {pct(ideal)}{marg ? ` · ${brl(marg.m)}` : ""}</p></div>
+            <button type="button" onClick={() => setTab("acessorios")} className="rounded-lg border border-border bg-background/40 p-2 text-left hover:bg-muted"><p className="text-[10px] uppercase text-muted-foreground">Acessórios & Estética</p><p className="text-xl font-bold">{brl(comp.fat)}</p><p className="text-[10px] text-muted-foreground">a faturar {brl(comp.aFat)} ({uni(comp.nAFat)}){comp.parados ? <b className="ml-1 text-warning">· {comp.parados} &gt;15d</b> : null}</p></button>
+          </div>; })()}
       </Bloco>
 
       {/* Linha 4 */}
@@ -267,6 +287,8 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
         {!nps ? <p className="text-sm text-muted-foreground">Sem pesquisas NPS neste período.</p> :
           <div className="grid grid-cols-4 gap-1 text-center">{([["NPS", `${(nps.nps * 100).toFixed(1).replace(".", ",")}`, nps.nps >= 0.7], ["Promot.", pct(nps.pctProm), nps.pctProm >= 0.85], ["Detrat.", uni(nps.det), nps.det === 0], ["RAC", uni(nps.racs), nps.racs === 0]] as [string, string, boolean][]).map(([n, v, ok]) => (
             <div key={n} className="rounded-lg border border-border bg-background/40 py-1"><p className="text-[10px] text-muted-foreground">{n}</p><p className={`text-sm font-bold ${ok ? "text-success" : "text-warning"}`}>{v}</p></div>))}</div>}
+        <p className="mt-1 flex flex-wrap gap-1 text-[10px]" title="Premiações liberadas quando o departamento bate o NPS mínimo do mês">Premiação:{(["carro", "moto"] as const).map((sg) => { const v = trava[sg]; const ok = fatorNps(sg, v) === 1;
+          return <span key={sg} className={`rounded-full px-1.5 font-semibold ${v == null ? "bg-muted text-muted-foreground" : ok ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive"}`}>{sg === "carro" ? "Carro" : "Moto"} {v == null ? "s/ pesquisa" : `${pct(v)} ${ok ? "✓" : "✗"}`}</span>; })}</p>
       </Bloco>
       <Bloco titulo="Metas" icon={<Target className="size-4 text-primary" />} ir={() => setTab("metas")} className="lg:col-span-3">
         <table className="w-full text-[10px] [&_td]:px-0.5"><thead className="text-muted-foreground"><tr><th className="text-left font-normal">Mensal</th><th className="text-right font-normal">Meta</th><th className="text-right font-normal">Realizado</th><th className="text-right font-normal">Ating.</th><th className="text-right font-normal">Gap</th></tr></thead>
