@@ -18,7 +18,7 @@ type S = { consultant_id: string; dia: string; servicos: number; pecas: number }
 
 export function Bloco({ titulo, icon, ir, children, right, className = "" }: { titulo: string; icon?: ReactNode; ir?: () => void; children: ReactNode; right?: ReactNode; className?: string }) {
   return (
-    <section className={`lux-card flex min-h-0 flex-col p-3 ${className}`}>
+    <section id={`ck-${titulo.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "-").toLowerCase()}`} className={`lux-card flex min-h-0 scroll-mt-16 flex-col p-3 ${className}`}>
       <div className="mb-1.5 flex shrink-0 items-center justify-between gap-2">
         <h2 className="flex min-w-0 items-center gap-2 truncate whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">{icon}{titulo}</h2>
         <div className="flex items-center gap-2">{right}{ir && <button type="button" onClick={ir} className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[11px] font-medium text-primary hover:underline">Ver <ArrowRight className="size-3" /></button>}</div>
@@ -163,6 +163,12 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
 
   return (
     <div className="space-y-2 lg:grid lg:h-[calc(100dvh-7rem)] lg:min-h-[640px] lg:grid-cols-12 lg:grid-rows-[auto_minmax(0,1.05fr)_minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,0.8fr)] lg:gap-2 lg:space-y-0">
+      {/* Atalhos no celular */}
+      <nav aria-label="Atalhos do painel" className="sticky top-0 z-20 -mx-1 flex gap-1.5 overflow-x-auto bg-background/90 px-1 py-1.5 backdrop-blur lg:hidden">
+        {([["Geral", "resultado-do-mes"], ["Financeiro", "margem-de-pecas-acessorios"], ["Oficina", "ordens-de-servico"], ["Qualidade", "destaques-do-mes"], ["Ação", "radar-de-acao-diario"]] as const).map(([n, id]) => (
+          <button key={id} type="button" onClick={() => document.getElementById(`ck-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })} className="shrink-0 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium">{n}</button>
+        ))}
+      </nav>
       {/* Cabeçalho com faróis BMW */}
       <section className="relative flex flex-wrap items-center justify-between gap-2 overflow-hidden rounded-xl border border-border px-4 py-2 lg:col-span-12">
         <img src={farois} alt="" aria-hidden className="pointer-events-none absolute inset-y-0 right-0 h-full w-3/5 object-cover opacity-40 [mask-image:linear-gradient(to_left,black_40%,transparent)]" />

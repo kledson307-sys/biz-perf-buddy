@@ -17,6 +17,7 @@ export function ControleOS() {
   const [sel, setSel] = useState(0);
   const [aba, setAba] = useState<Status>("pronto");
   const [filtroDias, setFiltroDias] = useState<0 | 20 | 30>(0);
+  const [filtroCons, setFiltroCons] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [aberto, setAberto] = useState<string | null>(null);
@@ -78,7 +79,8 @@ export function ControleOS() {
     if (error) setMsg(error.message); else { setSel(0); await load(); }
   };
 
-  const doStatus = lista.filter(a => a.item.st === aba && a.item.dias > filtroDias);
+  const consultoresOS = [...new Set(lista.map(a => a.item.cons))].filter(Boolean).sort();
+  const doStatus = lista.filter(a => a.item.st === aba && a.item.dias > filtroDias && (!filtroCons || a.item.cons === filtroCons));
   const porCons = [...new Set(doStatus.map(a => a.item.cons))].sort().map(c => ({ c, l: doStatus.filter(a => a.item.cons === c).sort((x, y) => y.diasStatus - x.diasStatus) }));
   const ranking = useMemo(() => STATUS.map(s => {
     const l = lista.filter(a => a.item.st === s.k);
@@ -181,6 +183,12 @@ export function ControleOS() {
               {n} ({lista.filter(a => a.item.st !== "encerrado" && a.item.dias > d).length})
             </button>
           ))}
+          <label className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">Consultor:
+            <select aria-label="Filtrar por consultor" value={filtroCons} onChange={e => setFiltroCons(e.target.value)} className="h-6 rounded border border-border bg-background px-1 text-xs text-foreground">
+              <option value="">Todos</option>
+              {consultoresOS.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </label>
         </div>
 
         <Box title={`${STATUS.find(s => s.k === aba)?.nome} — por consultor`} right={<span className="text-xs">clique na O.S. para tratativas</span>} fit="xl:max-h-[calc(100vh-545px)] xl:min-h-[240px]">

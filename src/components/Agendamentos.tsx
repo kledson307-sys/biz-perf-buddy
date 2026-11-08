@@ -146,7 +146,7 @@ export function Agendamentos({ mes }: { mes: string }) {
         <div className="mt-2"><ImportadorUnificado mes={mes} onDone={() => void load()} /></div>
       </details>
       <Box title={`Agenda de amanhã (D+1) · ${amanha.data ? dBR(amanha.data) : "—"}`}
-        right={<p className="text-xs text-muted-foreground">Acumulado do mês: 🚗 {uni(acumD1.carro)} carros · 🏍 {uni(acumD1.moto)} motos · {uni(atendidosMes)} atendidos</p>}>
+        right={<p className="text-xs text-muted-foreground">Acumulado do mês: 🚗 {uni(acumD1.carro)} carros · 🏍 {uni(acumD1.moto)} motos · {uni(atendidosMes)} atendidos{(() => { const f = faltas.reduce((n, x) => n + x.faltas, 0), t = atendidosMes + f; if (!t) return null; const r = atendidosMes / t; return <> · comparecimento <b className={r >= 0.9 ? "text-success" : r >= 0.8 ? "text-warning" : "text-destructive"}>{(r * 100).toFixed(1).replace(".", ",")}%</b> ({uni(f)} faltas)</>; })()}</p>}>
         <div className="flex flex-wrap items-center gap-2 px-3 pt-3 text-xs">
           <span className="text-muted-foreground">Consultor:</span>
           <select value={filtroCons} onChange={(e) => setFiltroCons(e.target.value)} className="rounded-md border border-border bg-background px-2 py-1">
