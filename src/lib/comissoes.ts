@@ -38,18 +38,17 @@ export function escada(valor: number | null | undefined, degraus: Degrau[]) {
 
 /**
  * Trava punitiva do NPS (% promotores): não soma, só valida premiações.
- * Carro: 50% BMW + 50% MINI (meta 85%); marca sem pesquisa conta como atingida. Moto: 100% Motorrad (88%).
+ * NPS não paga valor: se o departamento (Carro ≥85% / Moto ≥88%) atingir, 100% das premiações; abaixo, zero.
  */
-export function fatorNps(seg: "carro" | "moto", bmw: number | null, mini: number | null = null): number {
-  if (seg === "moto") return bmw == null ? 1 : bmw >= 0.88 ? 1 : 0;
-  const ok = (v: number | null) => (v == null || v >= 0.85 ? 0.5 : 0);
-  return ok(bmw) + ok(mini);
+export function fatorNps(seg: "carro" | "moto", nps: number | null, _mini: number | null = null): number {
+  // Tudo ou nada pelo NPS do departamento (Carro ≥85%, Moto ≥88%); sem pesquisa no mês = elegível.
+  return nps == null || nps >= (seg === "moto" ? 0.88 : 0.85) ? 1 : 0;
 }
 
 export type Metricas = {
   mo?: number; pecas?: number; margemPct?: number | null; acessorios?: number; ppf?: number;
   ticket?: number | null; volume?: number; fastRepair?: number; limparOk?: boolean | null;
-  metaOficinaOk?: boolean | null; npsBmw?: number | null; npsMini?: number | null;
+  metaOficinaOk?: boolean | null; pneus?: number | null; npsBmw?: number | null; npsMini?: number | null;
 };
 export type Premio =
   | { id: string; rotulo: string; tipo: "escada"; metrica: keyof Metricas; degraus: Degrau[]; fmt?: "brl" | "pct" }
@@ -66,7 +65,7 @@ const MARGEM_MOTO: Degrau[] = [[0.31, 300], [0.33, 400], [0.35, 600]];
 const MO_MOTO: Degrau[] = [[55000, 300], [66000, 400], [79200, 600]];
 const PECAS_TEC: Degrau[] = [[230000, 200], [253000, 300], [276000, 400], [300000, 500]];
 
-const consultor = (chave: string, nome: string, seg: "carro" | "moto", voc: number, extra: Premio[]): Perfil => ({
+const consultor = (chave: string, nome: string, seg: "carro" | "moto", _voc: number, extra: Premio[]): Perfil => ({
   chave, nome, cargo: seg === "moto" ? "Consultor SG Moto" : "Consultor SG Carro", segmento: seg, fixo: 0, travaNps: true, dsrSobreComissao: true,
   comissoes: seg === "moto"
     ? [{ rotulo: "Mão de obra", base: "mo", pct: 0.04 }, { rotulo: "Peças", base: "pecas", pct: 0.01 }]
@@ -74,7 +73,6 @@ const consultor = (chave: string, nome: string, seg: "carro" | "moto", voc: numb
   premios: [
     { id: "margem", rotulo: "Margem de peças", tipo: "escada", metrica: "margemPct", degraus: seg === "moto" ? MARGEM_MOTO : MARGEM_SG, fmt: "pct" },
     ...(seg === "moto" ? [{ id: "mo", rotulo: "Escada de M.O. moto", tipo: "escada", metrica: "mo", degraus: MO_MOTO, fmt: "brl" } as Premio] : []),
-    { id: "voc", rotulo: "VOC / NPS", tipo: "gatilho", valor: voc },
     ...extra,
   ],
 });
@@ -83,7 +81,7 @@ const consultor = (chave: string, nome: string, seg: "carro" | "moto", voc: numb
 export const PERFIS: Record<string, Perfil> = {
   "ANDRESSA.O": consultor("ANDRESSA.O", "Andressa", "carro", 900, [
     { id: "pac", rotulo: "Objetivos PAC (Excellence)", tipo: "gatilho", valor: 1000 },
-    { id: "pneus", rotulo: "Venda de pneus (meta 50)", tipo: "gatilho", valor: 400 },
+    { id: "pneus", rotulo: "Venda de pneus (meta 50)", tipo: "escada", metrica: "pneus", degraus: [[50, 400]] },
     { id: "limpar", rotulo: "Agregado Limpar (meta)", tipo: "auto", metrica: "limparOk", valor: 500 },
   ]),
   "WESLEY.F": consultor("WESLEY.F", "Wesley", "carro", 650, [
@@ -100,7 +98,6 @@ export const PERFIS: Record<string, Perfil> = {
       { id: "fast", rotulo: "Fast Repair particular", tipo: "escada", metrica: "fastRepair", degraus: [[20000, 400], [30000, 600]], fmt: "brl" },
       { id: "videos", rotulo: "Share vídeos / cliente conectado", tipo: "gatilho", valor: 500 },
       { id: "notas", rotulo: "Notas lançadas em até 7 dias", tipo: "gatilho", valor: 500 },
-      { id: "voc", rotulo: "VOC / NPS", tipo: "gatilho", valor: 900 },
     ],
   },
   NAILTON: {
@@ -221,7 +218,7 @@ export function npsPorMarca(itens: { consultor: string; nota: number | null; pj:
   const pp = (arr: typeof l) => (arr.length ? arr.filter((x) => (x.nota ?? 0) >= 9).length / arr.length : null);
   const mini = l.filter((x) => /MINI/i.test(x.veiculo));
   const bmw = l.filter((x) => !/MINI/i.test(x.veiculo));
-  return { bmw: pp(bmw), mini: pp(mini), carro: pp(l.filter((x) => x.segmento === "carro")), avaliados: l.length, promotores: l.filter((x) => (x.nota ?? 0) >= 9).length };
+  return { bmw: pp(bmw), mini: pp(mini), carro: pp(l.filter((x) => x.segmento === "carro")), moto: pp(l.filter((x) => x.segmento === "moto")), avaliados: l.length, promotores: l.filter((x) => (x.nota ?? 0) >= 9).length };
 }
 
 /** Promotores extras necessários para atingir a meta de % promotores. */

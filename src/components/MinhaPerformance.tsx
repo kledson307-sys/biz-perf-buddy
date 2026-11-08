@@ -71,7 +71,7 @@ export function MinhaPerformance() {
   const perfis = perfisDoLogin(d?.nome ?? "");
   const nps = npsPorMarca(npsItens, mes);
   const limpar = d?.agregados.find((a) => a.item === "limpar");
-  const met: Metricas = { mo: sv, pecas: pc, margemPct: pc ? margem : null, limparOk: limpar && +limpar.meta_qtd > 0 ? +limpar.qtd >= +limpar.meta_qtd : null, npsBmw: nps.bmw, npsMini: nps.mini };
+  const met: Metricas = { mo: sv, pecas: pc, margemPct: pc ? margem : null, limparOk: limpar && +limpar.meta_qtd > 0 ? +limpar.qtd >= +limpar.meta_qtd : null, npsBmw: perfis[0]?.segmento === "moto" ? nps.moto : nps.carro, npsMini: null };
   const metProj: Metricas = { ...met, mo: proj(sv), pecas: proj(pc) };
   const dsr = dsrComissao(mes);
   const metaNps = perfis[0]?.segmento === "moto" ? 0.88 : 0.85;
@@ -111,7 +111,7 @@ export function MinhaPerformance() {
         {aba === "comissao" && d && (perfis.length === 0
           ? <p className="lux-card p-4 text-sm text-muted-foreground">Sua ficha de comissão ainda não está cadastrada. Fale com a gestão.</p>
           : perfis.map((pf) => <div key={pf.chave} className="space-y-2">{perfis.length > 1 && <h2 className="font-semibold">{pf.nome}</h2>}
-            <ExtratoComissao atual={calcularComissao(pf, met, dsr)} proj={calcularComissao(pf, metProj, dsr)} nps={pf.travaNps ? { rotulo: `NPS (${pct(nps.bmw ?? 0)} · meta ${pct(metaNps)})`, faltam: promotoresFaltando(nps.avaliados, nps.promotores, metaNps) } : null} /></div>))}
+            <ExtratoComissao atual={calcularComissao(pf, met, dsr)} proj={calcularComissao(pf, metProj, dsr)} nps={pf.travaNps ? { rotulo: `NPS do departamento (${pct((pf.segmento === "moto" ? nps.moto : nps.carro) ?? 0)} · meta ${pct(metaNps)})`, faltam: promotoresFaltando(nps.avaliados, nps.promotores, metaNps) } : null} /></div>))}
         {aba === "detalhes" && <RetornosVendedor />}
         {aba === "detalhes" && <NpsResumoRestrito titulo="Meu NPS & clientes para encantar" />}
         {erro && <p className="text-sm text-destructive">{erro}</p>}

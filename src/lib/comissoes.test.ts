@@ -32,18 +32,17 @@ describe("comissões", () => {
     expect(e.dsr).toBe(0);
     expect(calcularComissao(PERFIS["DELMIR"]!, { metaOficinaOk: false, npsBmw: 0.8 }, 0.2, { videos: false }).total).toBe(7000);
   });
-  it("NPS punitivo: carro 50% BMW + 50% MINI; moto 100% Motorrad 88%", () => {
-    expect(fatorNps("carro", 0.9, 0.9)).toBe(1);
-    expect(fatorNps("carro", 0.9, 0.8)).toBe(0.5);
-    expect(fatorNps("carro", 0.8, 0.8)).toBe(0);
+  it("NPS punitivo do departamento: carro 85%, moto 88%", () => {
+    expect(fatorNps("carro", 0.9)).toBe(1);
+    expect(fatorNps("carro", 0.8)).toBe(0);
     expect(fatorNps("moto", 0.87)).toBe(0);
     expect(fatorNps("moto", 0.88)).toBe(1);
   });
   it("corte do NPS só atinge premiações; comissão e DSR ficam", () => {
-    const e = calcularComissao(PERFIS["ANDRESSA.O"]!, { mo: 50000, pecas: 100000, margemPct: 0.36, npsBmw: 0.9, npsMini: 0.5 }, 0.2, { pac: true });
+    const e = calcularComissao(PERFIS["ANDRESSA.O"]!, { mo: 50000, pecas: 100000, margemPct: 0.36, npsBmw: 0.8 }, 0.2, { pac: true });
     expect(e.comissao).toBeCloseTo(1500, 2);
     expect(e.dsr).toBeCloseTo(300, 2);
-    expect(e.premiosValidos).toBeCloseTo(e.premiosBrutos * 0.5, 2);
+    expect(e.premiosValidos).toBe(0);
   });
   it("técnico: 10% M.O. + escada de peças; Victor 1.600 + 6%", () => {
     expect(calcularComissao(perfilTecnico("Flavio Pinheiro", "carro"), { mo: 50000, pecas: 253000 }, 0).total).toBe(5300);
@@ -72,5 +71,28 @@ describe("vendas de Acessórios & Estética nas comissões", () => {
   it("Geovana: 3% sobre R$ 151.201,63 faturados em outubro", () => {
     const e = calcularComissao(PERFIS["GEOVANA.M"]!, { volume: 151201.63 }, 0);
     expect(e.comissao).toBeCloseTo(4536.05, 2);
+  });
+});
+
+describe("NPS como trava e pneus", () => {
+  it("NPS não gera premiação em dinheiro para consultores", async () => {
+    const { PERFIS } = await import("@/lib/comissoes");
+    for (const k of ["ANDRESSA.O", "WESLEY.F", "RENAN.O", "P.BENIGNO", "GILBERTO.S"]) expect(PERFIS[k]!.premios.some((p) => p.id === "voc")).toBe(false);
+  });
+  it("departamento Carro abaixo de 85% zera premiações; 85% libera 100%", async () => {
+    const { fatorNps } = await import("@/lib/comissoes");
+    expect(fatorNps("carro", 0.84)).toBe(0); expect(fatorNps("carro", 0.85)).toBe(1);
+    expect(fatorNps("moto", 0.87)).toBe(0); expect(fatorNps("moto", 0.88)).toBe(1);
+  });
+  it("pneus de Andressa: 50 unidades pagam R$ 400", async () => {
+    const { PERFIS, calcularComissao } = await import("@/lib/comissoes");
+    const e = calcularComissao(PERFIS["ANDRESSA.O"]!, { pneus: 50, npsBmw: 0.9 }, 0);
+    expect(e.premios.find((p) => p.id === "pneus")!.valor).toBe(400);
+    expect(calcularComissao(PERFIS["ANDRESSA.O"]!, { pneus: 49 }, 0).premios.find((p) => p.id === "pneus")!.valor).toBe(0);
+  });
+  it("conta pneus por vendedor no faturamento de peças", async () => {
+    const { lerItensPecas, pneusPorVendedor } = await import("@/lib/pecas-itens");
+    const raw = [["Cód. Item", "Descrição", "Quantidade", "Preço Final", "Vendedor", "Tipo Os"], ["P1", "PNEU 245/45 R18", "4", "4000", "ANDRESSA.O", "NC"], ["F1", "FILTRO OLEO", "1", "100", "ANDRESSA.O", "NC"], ["P1", "PNEU 245/45 R18", "2", "2000", "ANDRESSA.O", "IO"]];
+    expect(pneusPorVendedor(lerItensPecas(raw))["ANDRESSA.O"]).toBe(4);
   });
 });

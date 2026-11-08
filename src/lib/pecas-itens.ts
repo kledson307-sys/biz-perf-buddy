@@ -1,7 +1,8 @@
 import { TIPOS_INTERNOS } from "@/lib/mecanicos";
+import { nomeVendedor } from "@/lib/sales-report";
 
 /** Item de peça agregado no mês (relatório "Faturamento de peças"). */
-export type ItemPeca = { cod: string; desc: string; qtd: number; valor: number; margem: number; giro: string; grupo: string; os: number };
+export type ItemPeca = { cod: string; desc: string; qtd: number; valor: number; margem: number; giro: string; grupo: string; os: number; vend?: Record<string, number> };
 export type ItemAbc = ItemPeca & { pct: number; acum: number; classe: "A" | "B" | "C" };
 
 const n = (s: unknown) => String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
@@ -15,13 +16,14 @@ export function lerItensPecas(raw: unknown[][]): ItemPeca[] {
   const hi = raw.findIndex((r) => { const h = r.map(n); return h.includes("cod. item") && h.includes("preco final"); });
   if (hi < 0) return [];
   const h = raw[hi]!.map(n); const c = (x: string) => h.indexOf(x);
-  const k = { cod: c("cod. item"), desc: c("descricao"), qtd: c("quantidade"), val: c("preco final"), mg: c("marg. liq."), giro: c("giro"), grupo: c("grupo interno"), tipo: c("tipo os"), os: c("o.s.") };
+  const k = { cod: c("cod. item"), desc: c("descricao"), qtd: c("quantidade"), val: c("preco final"), mg: c("marg. liq."), giro: c("giro"), grupo: c("grupo interno"), tipo: c("tipo os"), os: c("o.s."), vend: c("vendedor") };
   const m = new Map<string, ItemPeca & { oss: Set<string> }>();
   for (const r of raw.slice(hi + 1)) {
     const cod = String(r[k.cod] ?? "").trim(); if (!cod) continue;
     if (k.tipo >= 0 && TIPOS_INTERNOS.has(String(r[k.tipo] ?? "").trim().toUpperCase())) continue;
     const it = m.get(cod) ?? { cod, desc: String(r[k.desc] ?? "").trim(), qtd: 0, valor: 0, margem: 0, giro: String(r[k.giro] ?? "").trim(), grupo: String(r[k.grupo] ?? "").trim(), os: 0, oss: new Set<string>() };
     it.qtd += num(r[k.qtd]); it.valor += num(r[k.val]); it.margem += k.mg >= 0 ? num(r[k.mg]) : 0;
+    if (k.vend >= 0) { const lg = nomeVendedor(String(r[k.vend] ?? "").trim()); if (lg) { it.vend ??= {}; it.vend[lg] = (it.vend[lg] ?? 0) + num(r[k.qtd]); } }
     const os = k.os >= 0 ? String(r[k.os] ?? "").trim() : ""; if (os && os !== "0") it.oss.add(os);
     m.set(cod, it);
   }
@@ -64,4 +66,12 @@ export function faixasGiro(curva: ItemAbc[]) {
     const l = curva.filter((i) => i.classe === c), v = l.reduce((a, i) => a + i.valor, 0);
     return { classe: c, itens: l.length, valor: v, pct: v / tot, pctItens: curva.length ? l.length / curva.length : 0 };
   });
+}
+
+/** Pneus vendidos (unidades) por login do vendedor, pela descrição do item. */
+export const ehPneu = (i: Pick<ItemPeca, "desc">) => /\bpneu/.test(n(i.desc));
+export function pneusPorVendedor(itens: ItemPeca[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const i of itens) if (ehPneu(i)) for (const [lg, q] of Object.entries(i.vend ?? {})) out[lg] = (out[lg] ?? 0) + q;
+  return out;
 }
