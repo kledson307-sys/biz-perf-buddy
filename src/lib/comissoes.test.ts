@@ -57,3 +57,20 @@ describe("comissões", () => {
     expect(promotoresFaltando(10, 9, 0.85)).toBe(0);
   });
 });
+
+import { somaComplementares as soma2 } from "./comissoes";
+describe("vendas de Acessórios & Estética nas comissões", () => {
+  it("soma só faturado, líquido de devolução, por vendedor e departamento", () => {
+    const c = soma2([
+      { departamento: "ACESSORIOS", vendedor: "wesley.f", valor: 3380, devolucao: 0, status: "FATURADO" },
+      { departamento: "ACESSORIOS", vendedor: "WESLEY.F", valor: 350, status: "A_FATURAR" },
+      { departamento: "ESTETICA", vendedor: "WESLEY.F", valor: 1000, devolucao: 100, status: "FATURADO" },
+    ]);
+    expect(c.porVendedor["WESLEY.F"]).toEqual({ ACESSORIOS: 3380, ESTETICA: 900 });
+    expect(c.total).toEqual({ ACESSORIOS: 3380, ESTETICA: 900 });
+  });
+  it("Geovana: 3% sobre R$ 151.201,63 faturados em outubro", () => {
+    const e = calcularComissao(PERFIS["GEOVANA.M"]!, { volume: 151201.63 }, 0);
+    expect(e.comissao).toBeCloseTo(4536.05, 2);
+  });
+});

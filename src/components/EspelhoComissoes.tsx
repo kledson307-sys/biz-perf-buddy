@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Box, brl, pct } from "@/components/painel-ui";
 import { Button } from "@/components/ui/button";
 import { ExtratoComissao } from "@/components/ExtratoComissao";
-import { PERFIS, calcularComissao, dsrComissao, npsPorMarca, perfilTecnico, perfisDoLogin, type Extrato, type Metricas, type Perfil } from "@/lib/comissoes";
+import { PERFIS, calcularComissao, dsrComissao, npsPorMarca, perfilTecnico, perfisDoLogin, somaComplementares, type Complementares, type Extrato, type Metricas, type Perfil } from "@/lib/comissoes";
 import type { NpsItem } from "@/lib/nps";
 import { toast } from "sonner";
 
@@ -21,7 +21,10 @@ export function EspelhoComissoes({ mes, linhas }: { mes: string; tot: number; de
   const [gat, setGat] = useState<Gat>({});
   const [fechado, setFechado] = useState<{ at: string; linhas: { nome: string; cargo: string; fixo: number; comissao: number; dsr: number; premios: number; corte: number; total: number }[] } | null>(null);
   const [sel, setSel] = useState<string | null>(null);
+  const [comp, setComp] = useState<Complementares>({ porVendedor: {}, total: { ACESSORIOS: 0, ESTETICA: 0 } });
   const load = useCallback(async () => {
+    const vc = await supabase.from("vendas_complementares").select("departamento,vendedor,valor,devolucao,status").eq("mes", mes).eq("status", "FATURADO");
+    setComp(somaComplementares(vc.data ?? []));
     const [t, n, v, g] = await Promise.all([
       supabase.from("mech_month").select("nome,grupo,servicos,pecas,meta_servicos,meta_pecas").eq("mes", mes),
       supabase.from("nps_imports").select("itens").order("at", { ascending: false }).limit(1).maybeSingle(),
@@ -41,8 +44,11 @@ export function EspelhoComissoes({ mes, linhas }: { mes: string; tot: number; de
     const out: Linha[] = [];
     for (const l of linhas) for (const pf of perfisDoLogin(l.nome)) {
       const n = npsPorMarca(nps, mes, l.nome);
-      const vol = l.servicos + l.pecas;
-      const met: Metricas = { mo: l.servicos, pecas: l.pecas, margemPct: l.pecas ? l.margem / l.pecas : null, npsBmw: n.bmw, npsMini: n.mini, volume: vol, ticket: veic ? vol / veic : null };
+      const dep = pf.chave === "GEOVANA.M" ? "ACESSORIOS" : pf.chave === "MARCELA.S" ? "ESTETICA" : null;
+      // Geovana/Marcela: base = total faturado do departamento (Acessórios & Estética); sem lançamentos, usa o DMS.
+      const vol = dep ? (comp.total[dep] || l.servicos + l.pecas) : l.servicos + l.pecas;
+      const cv = comp.porVendedor[pf.chave] ?? { ACESSORIOS: 0, ESTETICA: 0 };
+      const met: Metricas = { mo: l.servicos, pecas: l.pecas, margemPct: l.pecas ? l.margem / l.pecas : null, npsBmw: n.bmw, npsMini: n.mini, volume: vol, ticket: veic ? vol / veic : null, acessorios: dep ? 0 : cv.ACESSORIOS, ppf: dep ? 0 : cv.ESTETICA };
       out.push({ perfil: pf, met, ext: calcularComissao(pf, met, dsr, gat[pf.chave]) });
     }
     const carro = tec.filter((t) => t.grupo === "carro");
@@ -54,7 +60,7 @@ export function EspelhoComissoes({ mes, linhas }: { mes: string; tot: number; de
     const met: Metricas = { metaOficinaOk: meta ? fat >= meta : null, npsBmw: npsPorMarca(nps.filter((x) => x.loja_padrao === "1"), mes).carro };
     out.push({ perfil: PERFIS["DELMIR"]!, met, ext: calcularComissao(PERFIS["DELMIR"]!, met, 0, gat["DELMIR"]) });
     return out;
-  }, [linhas, tec, nps, veic, gat, dsr, mes]);
+  }, [linhas, tec, nps, veic, gat, dsr, mes, comp]);
 
   const salvarGat = async (chave: string, id: string, v: boolean | undefined) => {
     if (fechado) { toast.error("Mês congelado. Reabra para alterar."); return; }

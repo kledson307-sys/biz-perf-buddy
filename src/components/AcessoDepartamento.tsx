@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { AcessoriosEstetica } from "@/components/AcessoriosEstetica";
 import { ExtratoComissao } from "@/components/ExtratoComissao";
-import { PERFIS, calcularComissao, dsrComissao, type Metricas } from "@/lib/comissoes";
+import { PERFIS, calcularComissao, dsrComissao, somaComplementares, type Metricas } from "@/lib/comissoes";
 import type { Depto } from "@/lib/acessorios-estetica";
 
 type Dms = Record<string, { fat: number; margem: number; meta: number }>;
@@ -17,6 +17,7 @@ export function AcessoDepartamento({ depto }: { depto: Depto }) {
   const [aba, setAba] = useState<"painel" | "comissao">("painel");
   const [dms, setDms] = useState<Dms>({});
   const [veiculos, setVeiculos] = useState(0);
+  const [comp, setComp] = useState(0);
   useEffect(() => {
     void supabase.rpc("dep_painel", { p_mes: mes }).then(({ data }) => {
       const r = data as { dms?: Dms; params?: { du_totais: number; du_decorridos: number; dc_totais: number; dc_decorridos: number; base: string } | null } | null;
@@ -26,11 +27,15 @@ export function AcessoDepartamento({ depto }: { depto: Depto }) {
       setDias({ dec, tot: Math.max(dec, (u ? p?.du_totais : p?.dc_totais) ?? 22) });
       setDms(r?.dms ?? {});
     });
+    void supabase.from("vendas_complementares").select("departamento,vendedor,valor,devolucao,status").eq("mes", mes).eq("status", "FATURADO")
+      .then(({ data }) => setComp(somaComplementares(data ?? []).total[depto]));
     void supabase.from("rvd_volumes_mes").select("veiculos").eq("mes", mes).then(({ data }) => setVeiculos((data ?? []).reduce((s, x) => s + (+x.veiculos || 0), 0)));
   }, [mes]);
-  const d = dms[depto] ?? { fat: 0, margem: 0, meta: 0 };
+  const d0 = dms[depto] ?? { fat: 0, margem: 0, meta: 0 };
+  // Base da comissão: faturado lançado em Acessórios & Estética; sem lançamentos, usa o DMS.
+  const d = { ...d0, fat: comp || d0.fat };
   const pf = PERFIS[depto === "ACESSORIOS" ? "GEOVANA.M" : "MARCELA.S"]!;
-  const met = (fat: number): Metricas => ({ volume: fat, margemPct: d.fat ? d.margem / d.fat : null, ticket: veiculos ? fat / veiculos : null });
+  const met = (fat: number): Metricas => ({ volume: fat, margemPct: d0.fat ? d0.margem / d0.fat : null, ticket: veiculos ? fat / veiculos : null });
   const proj = (d.fat / dias.dec) * dias.tot;
   return <div className="min-h-screen bg-background p-3 md:p-6"><div className="mx-auto max-w-[1500px] space-y-3">
     <header className="lux-card flex flex-wrap items-center justify-between gap-2 p-3">

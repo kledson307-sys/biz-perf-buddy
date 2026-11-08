@@ -646,7 +646,7 @@ function Painel({ email }: { email: string }) {
             <TabsTrigger value="agregados" className="whitespace-normal">Agregados & Agenda</TabsTrigger>
             {email.toLowerCase() === MASTER_EMAIL && <TabsTrigger value="comissoes">Comissões</TabsTrigger>}
           </TabsList>
-          {email.toLowerCase() === MASTER_EMAIL && <TabsContent value="comissoes" className="xl:max-h-[calc(100vh-350px)] xl:overflow-y-auto"><EspelhoComissoes mes={mes} tot={tot} dec={dec} linhas={linhas.map((l) => ({ nome: l.c.nome, servicos: l.servicos, pecas: l.pecas, margem: l.margem }))} /></TabsContent>}
+          {email.toLowerCase() === MASTER_EMAIL && <TabsContent value="comissoes" className="xl:max-h-[calc(100vh-350px)] xl:overflow-y-auto"><EspelhoComissoes mes={mes} tot={tot} dec={dec} linhas={cons.map((c) => { const ss = sales.filter((s) => s.consultant_id === c.id); return { nome: c.nome, servicos: ss.reduce((a, s) => a + s.servicos, 0), pecas: ss.reduce((a, s) => a + s.pecas, 0), margem: ss.reduce((a, s) => a + s.margem_pecas, 0) }; })} /></TabsContent>}
           <TabsContent value="geral" className="space-y-3 xl:max-h-[calc(100vh-350px)] xl:overflow-y-auto">
             <ViradaMes mes={mes} onChanged={load} />
             <MetasExecutivo linhas={linhas} deptName={deptName} />

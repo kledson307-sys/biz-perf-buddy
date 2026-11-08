@@ -155,6 +155,21 @@ export function perfilTecnico(nome: string, grupo: string): Perfil {
   return { ...base, cargo: "Técnico", fixo: 0, comissoes: [{ rotulo: "Mão de obra produzida", base: "mo", pct: 0.1 }], premios: seg === "carro" ? [{ id: "pecas", rotulo: "Peças aplicadas", tipo: "escada", metrica: "pecas", degraus: PECAS_TEC, fmt: "brl" }] : [] };
 }
 
+/** Vendas faturadas de Acessórios & Estética somadas por vendedor (login do consultor) e por departamento. */
+export type Complementares = { porVendedor: Record<string, { ACESSORIOS: number; ESTETICA: number }>; total: { ACESSORIOS: number; ESTETICA: number } };
+export function somaComplementares(vendas: { departamento: string; vendedor: string; valor: number | string; devolucao?: number | string | null; status: string }[]): Complementares {
+  const out: Complementares = { porVendedor: {}, total: { ACESSORIOS: 0, ESTETICA: 0 } };
+  for (const v of vendas) {
+    if (v.status !== "FATURADO" || (v.departamento !== "ACESSORIOS" && v.departamento !== "ESTETICA")) continue;
+    const d = v.departamento as "ACESSORIOS" | "ESTETICA";
+    const liq = (+v.valor || 0) - (+(v.devolucao ?? 0) || 0);
+    const k = sa(v.vendedor);
+    const p = (out.porVendedor[k] ??= { ACESSORIOS: 0, ESTETICA: 0 });
+    p[d] += liq; out.total[d] += liq;
+  }
+  return out;
+}
+
 /** Resolve a ficha de um login de consultor (balcão compartilhado vira duas fichas). */
 export function perfisDoLogin(login: string): Perfil[] {
   const k = sa(login);
