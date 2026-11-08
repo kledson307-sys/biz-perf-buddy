@@ -11,6 +11,12 @@ import { AcessosUsuarios } from "@/components/AcessosUsuarios";
 type M = { id: string; email: string; papel: string; owner_id: string; consultant_id: string | null };
 type C = { id: string; nome: string };
 
+const LINK_APP = "https://biz-perf-buddy.lovable.app";
+const msgAcesso = (nome: string, email: string) => `Olá ${nome}! Seu acesso ao Painel de Performance Haus Motors está pronto.\nLink: ${LINK_APP}\nLogin: ${email}\nSenha: a que combinamos (se não lembrar, use "Esqueci a senha" na tela de entrada).\nAo entrar, o guia rápido mostra como usar cada tela.`;
+function EnviarAcesso({ nome, email }: { nome: string; email: string }) {
+  return <a target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(msgAcesso(nome, email))}`} className="inline-flex h-8 items-center rounded-md border border-success px-2 text-xs font-medium text-success">Enviar acesso</a>;
+}
+
 export function Equipe() {
   const [lista, setLista] = useState<M[]>([]);
   const [meu, setMeu] = useState<M | null>(null);
@@ -104,7 +110,8 @@ export function Equipe() {
             {vendedores.map((m) => (
               <li key={m.id} className="flex items-center justify-between gap-2 py-2">
                 <span><b>{nomeCons(m.consultant_id)}</b> · {m.email}</span>
-                <Button size="sm" variant="outline" onClick={async () => { await supabase.from("team_members").delete().eq("id", m.id); void load(); }}>Remover acesso</Button>
+                <span className="flex gap-2"><EnviarAcesso nome={nomeCons(m.consultant_id)} email={m.email} />
+                <Button size="sm" variant="outline" onClick={async () => { await supabase.from("team_members").delete().eq("id", m.id); void load(); }}>Remover acesso</Button></span>
               </li>
             ))}
             {!vendedores.length && <li className="py-2 text-muted-foreground">Nenhum vendedor com acesso ainda.</li>}
@@ -135,6 +142,7 @@ export function Equipe() {
               <li key={m.id} className="flex items-center justify-between gap-2 py-2">
                 <span>{m.email}</span>
                 <span className="flex items-center gap-2">
+                  <EnviarAcesso nome={m.email.split("@")[0] ?? ""} email={m.email} />
                   <select className="h-8 rounded-md border bg-background px-2" value={m.papel} onChange={async (e) => { await supabase.from("team_members").update({ papel: e.target.value }).eq("id", m.id); void load(); }}>
                     <option value="viewer">Visualizador</option>
                     <option value="editor">Editor</option>

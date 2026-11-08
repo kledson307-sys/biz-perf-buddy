@@ -33,6 +33,9 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [over, setOver] = useState(false);
+  type Desfazer = { vendas: Record<string, { consultant_id: string; dia: string; servicos: number; pecas: number; margem_pecas: number }[]>; npsIds: string[]; pecas: { mes: string; itens: unknown; nome: string; at: string } | null | undefined };
+  const [recibo, setRecibo] = useState<{ at: string; por: string; arquivos: string[]; itens: string[]; undo: Desfazer } | null>(null);
+  let undo: Desfazer = { vendas: {}, npsIds: [], pecas: undefined };
 
   const ler = async (files: FileList | File[]) => {
     setMsg(""); const XLSX = await import("xlsx"); const out: Achado[] = [];
@@ -84,6 +87,7 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
       if (await mesTravado(m)) throw new Error(`Mês ${m} fechado: desbloqueie para importar.`);
       const { data: exist, error: e0 } = await supabase.from("daily_sales").select("consultant_id,dia,servicos,pecas,margem_pecas").gte("dia", `${m}-01`).lt("dia", mesSeguinte(m));
       if (e0) throw e0;
+      undo.vendas[m] ??= (exist ?? []).map((x) => ({ ...x, servicos: +x.servicos, pecas: +x.pecas, margem_pecas: +x.margem_pecas }));
       const doMes = mesclarFat(exist ?? [], rows.filter((r) => r.dia.startsWith(m)), fat.fonte);
       const { error: e1 } = await supabase.from("daily_sales").delete().gte("dia", `${m}-01`).lt("dia", mesSeguinte(m));
       if (e1) throw e1;
@@ -112,14 +116,14 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
 
   const salvar = async () => {
     if (await mesTravado(mes)) { setMsg("Mês fechado: desbloqueie para importar."); return; }
-    setBusy(true);
+    setBusy(true); undo = { vendas: {}, npsIds: [], pecas: undefined };
     try {
       const { data: u } = await supabase.auth.getUser(); const nome = u.user?.email?.split("@")[0] ?? "";
       const feitos: string[] = [];
       for (const a of achados) {
         if (a.tipo === "nps" && a.nps) {
-          const { error } = await supabase.from("nps_imports").insert({ itens: a.nps as never, arquivo: a.arquivo, nome });
-          if (error) throw error;
+          const { data: ins, error } = await supabase.from("nps_imports").insert({ itens: a.nps as never, arquivo: a.arquivo, nome }).select("id").single();
+          if (error) throw error; undo.npsIds.push(ins.id);
           await supabase.from("update_log").insert({ nome, origem: "NPS", mes }); feitos.push("NPS");
         }
         if (a.agenda) { await salvarAgendamento(a.agenda, a.arquivo, nome); feitos.push(ROTULO[a.agenda.tipo]); }
@@ -133,6 +137,7 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
           feitos.push(`O.S. abertas (${Object.keys(valores).length} consultores)${fora.length ? ` · ignorados: ${[...new Set(fora)].join(", ")}` : ""}`);
         }
         if (a.tipo === "pecas" && a.pecas) {
+          if (undo.pecas === undefined) { const { data: pv } = await supabase.from("parts_items").select("mes,itens,nome,at").eq("mes", mes).maybeSingle(); undo.pecas = pv ?? null; }
           const { error } = await supabase.from("parts_items").upsert({ mes, itens: a.pecas as never, nome, at: new Date().toISOString() }, { onConflict: "user_id,mes" });
           if (error) throw error; feitos.push("Peças por item");
           if (a.raw) { await salvarOficinaMes(mes, { diario: pecasPorDia(a.raw, mes), fonte: "p" }); feitos.push("Peças por dia"); }
@@ -143,13 +148,38 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
           if (a.agg) feitos.push(await salvarAgg(a.agg)); }
         if (a.fat) feitos.push(await salvarFat(a.fat));
       }
-      setMsg(feitos.length ? `✅ Salvo: ${feitos.join(", ")}. Importações anteriores substituídas.` : "Nada para salvar aqui.");
+      setMsg(feitos.length ? "" : "Nada para salvar aqui.");
+      if (feitos.length) setRecibo({ at: new Date().toISOString(), por: nome, arquivos: achados.map((a) => a.arquivo), itens: [...achados.filter((a) => a.tipo !== "outro").map((a) => `${ROTULO[a.tipo]}: ${a.resumo}`), ...feitos], undo });
       setAchados([]); onDone?.();
     } catch (e) { setMsg("Erro: " + (e as Error).message); } finally { setBusy(false); }
   };
 
+  const desfazer = async () => {
+    if (!recibo || !confirm("Desfazer esta importação? Faturamento diário, NPS e peças por item voltam ao que eram antes. Técnicos, agregados, agenda e O.S. abertas se corrigem reimportando o arquivo certo.")) return;
+    setBusy(true);
+    try {
+      const u = recibo.undo;
+      for (const [m, rows] of Object.entries(u.vendas)) {
+        const d = await supabase.from("daily_sales").delete().gte("dia", `${m}-01`).lt("dia", mesSeguinte(m)); if (d.error) throw d.error;
+        if (rows.length) { const i = await supabase.from("daily_sales").insert(rows); if (i.error) throw i.error; }
+      }
+      if (u.npsIds.length) { const d = await supabase.from("nps_imports").delete().in("id", u.npsIds); if (d.error) throw d.error; }
+      if (u.pecas !== undefined) {
+        const r = u.pecas ? await supabase.from("parts_items").upsert({ ...u.pecas, itens: u.pecas.itens as never }, { onConflict: "user_id,mes" }) : await supabase.from("parts_items").delete().eq("mes", mes);
+        if (r.error) throw r.error;
+      }
+      setMsg("↩️ Importação desfeita."); setRecibo(null); onDone?.();
+    } catch (e) { setMsg("Erro ao desfazer: " + (e as Error).message); } finally { setBusy(false); }
+  };
+
   return (
     <section className="lux-card space-y-3 p-4">
+      {recibo && <div className="rounded-lg border border-success/50 bg-success/10 p-3 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2"><b className="text-sm text-success">✅ Recibo da importação</b><span className="text-muted-foreground">{recibo.por} · {new Date(recibo.at).toLocaleString("pt-BR")}</span></div>
+        <p className="mt-1 text-muted-foreground">Arquivos: {recibo.arquivos.join(", ")}</p>
+        <ul className="mt-1 list-disc space-y-0.5 pl-4">{recibo.itens.map((t, i) => <li key={i}>{t}</li>)}</ul>
+        <div className="mt-2 flex gap-2"><button type="button" disabled={busy} onClick={() => void desfazer()} className="rounded-md border border-destructive px-2 py-1 font-medium text-destructive">Desfazer importação</button><button type="button" onClick={() => setRecibo(null)} className="rounded-md border border-border px-2 py-1">Fechar</button></div>
+      </div>}
       <h3 className="font-semibold">Esteira única · arraste os arquivos</h3>
       <label onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
         onDrop={(e) => { e.preventDefault(); setOver(false); void ler(e.dataTransfer.files); }}

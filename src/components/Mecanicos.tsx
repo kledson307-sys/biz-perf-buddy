@@ -160,7 +160,7 @@ export function Mecanicos({ mes, tot, dec, modo = "ver", lado }: { mes: string; 
         <Kpi label="Projeção Serviços / Peças" value={brl(EQUIPE.S.proj)} sub={<>peças {brl(EQUIPE.P.proj)} · {pct(EQUIPE.S.projP)} / {pct(EQUIPE.P.projP)}</>} cls={tone(EQUIPE.S.projP)} />
         <Kpi label="Necessidade diária" value={brl(EQUIPE.T.nec) + "/dia"} sub={<>serviços {brl(EQUIPE.S.nec)}/dia · peças {brl(EQUIPE.P.nec)}/dia</>} />
       </div>}
-      <TecnicosCockpit dec={dec} tot={tot} ocultar={ocultoDaLista} rotulo={filtro === "todos" ? "Carro e Moto" : filtro === "carro" ? "Carro" : "Moto"}
+      <TecnicosCockpit mes={mes} dec={dec} tot={tot} ocultar={ocultoDaLista} rotulo={filtro === "todos" ? "Carro e Moto" : filtro === "carro" ? "Carro" : "Moto"}
         bloco={filtro === "todos" ? EQUIPE : G[filtro]} />
       <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
 

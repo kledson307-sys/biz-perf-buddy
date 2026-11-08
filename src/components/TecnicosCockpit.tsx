@@ -1,4 +1,8 @@
-import { Car, Cog, Handshake, TrendingUp, Trophy } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertTriangle, Car, Cog, Handshake, RotateCcw, TrendingUp, Trophy } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { lerOficinaMes } from "@/lib/oficina-mes";
+import { norm } from "@/components/painel-ui";
 import { brl, uni } from "@/components/painel-ui";
 import type { MecBloco, MecX } from "@/lib/mecanicos";
 
@@ -74,8 +78,16 @@ function Rodape({ texto, ok, compacto }: { texto: string; ok: boolean; compacto?
 
 const medalha = (i: number) => (i === 1 ? "🥇" : i === 2 ? "🥈" : i === 3 ? "🥉" : "");
 
-export function TecnicosCockpit({ bloco, ocultar, rotulo, dec, tot }: { bloco: MecBloco; ocultar: (nome: string) => boolean; rotulo: string; dec: number; tot: number }) {
+export function TecnicosCockpit({ bloco, ocultar, rotulo, dec, tot, mes }: { bloco: MecBloco; ocultar: (nome: string) => boolean; rotulo: string; dec: number; tot: number; mes?: string }) {
   const lista = bloco.calcs.filter(c => !ocultar(c.r.nome));
+  const [rets, setRets] = useState<Record<string, number>>({});
+  const [semAp, setSemAp] = useState<{ servicos: number; pecas: number } | null>(null);
+  useEffect(() => {
+    if (!mes) return;
+    void lerOficinaMes(mes).then((x) => { const m: Record<string, number> = {}; for (const r of x.retornos) for (const t of (r.tecnicoAnterior || "").split(", ").filter(Boolean)) m[norm(t).trim()] = (m[norm(t).trim()] ?? 0) + 1; setRets(m); });
+    void supabase.from("oficina_mes").select("diario").eq("mes", `semapont-${mes}`).maybeSingle().then(({ data }) => setSemAp((data?.diario as { servicos: number; pecas: number } | null) ?? null));
+  }, [mes]);
+  const retDe = (nome: string) => rets[norm(nome).trim()] ?? 0;
   if (!bloco.n) return null;
   const projPass = (real: number, _x?: MecX) => (dec > 0 ? Math.round((real / dec) * tot) : real);
   const tf = frase(bloco.S, bloco.P, 0);
@@ -92,6 +104,7 @@ export function TecnicosCockpit({ bloco, ocultar, rotulo, dec, tot }: { bloco: M
           <Modulo icon={<Handshake className="size-4" />} titulo="Passagens" real={uni(bloco.pass)} meta="Realizadas · sem meta cadastrada" proj={`${uni(projPass(bloco.pass, bloco.S))} passagens`} />
         </div>
         <Rodape texto={tf.t} ok={tf.ok} />
+        {semAp && semAp.servicos + semAp.pecas > 0 && <p className="flex items-center gap-1.5 border-t border-warning/40 bg-warning/10 px-4 py-1.5 text-xs text-warning"><AlertTriangle className="size-3.5" />Faturamento sem técnico apontado na DMS: <b>{brl(semAp.servicos + semAp.pecas)}</b> (serviços {brl(semAp.servicos)} · peças {brl(semAp.pecas)}) — apontar o produtivo nas O.S.</p>}
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
@@ -101,7 +114,7 @@ export function TecnicosCockpit({ bloco, ocultar, rotulo, dec, tot }: { bloco: M
             <article key={c.r.nome} className="lux-card overflow-hidden">
               <div className="flex items-center justify-between gap-2 px-3 pt-2.5">
                 <h4 className="truncate text-sm font-bold">{medalha(i + 1)} {i + 1}. {c.r.nome}</h4>
-                <span className="shrink-0 text-[11px] text-muted-foreground">{uni(c.r.passagens)} pass.</span>
+                <span className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">{(() => { const n = retDe(c.r.nome); return mes ? <span title="Retornos em até 60 dias atribuídos a este técnico" className={`inline-flex items-center gap-0.5 rounded px-1 font-semibold ${n ? "bg-destructive/15 text-destructive" : "bg-success/15 text-success"}`}><RotateCcw className="size-3" />{uni(n)}</span> : null; })()}{c.s.real > 0 && (() => { const r = c.p.real / c.s.real; return <span title="Peças por R$ 1 de M.O." className={`rounded px-1 font-semibold ${r >= 2.5 ? "text-success" : r >= 2 ? "text-warning" : "text-destructive"}`}>{r.toFixed(2).replace(".", ",")}</span>; })()}{uni(c.r.passagens)} pass.</span>
               </div>
               <div className="grid gap-1.5 p-2">
                 <Linha icon={<Car className="size-3.5" />} titulo="Serviços" real={brl(c.s.real)} meta={`Meta ${brl(c.s.meta)}`} proj={brl(c.s.proj)} x={c.s} />

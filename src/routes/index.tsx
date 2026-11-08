@@ -735,6 +735,7 @@ function Config({ parte, params, salvarParams, confirmar, pendente, depts, cons,
       </section>}
       {parte === "metas" && <section className="space-y-3 rounded-xl border border-border bg-card p-6 lg:col-span-2">
         <h2 className="text-lg font-semibold">Consultores e metas de {mes}</h2>
+        <ReplicarMetas mes={mes} atual={goals} onDone={reload} />
         <div className="flex flex-wrap gap-2">
           <input value={novoCons} onChange={(e) => setNovoCons(e.target.value)} placeholder="Nome do consultor" className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm" />
           <select value={consDept} onChange={(e) => setConsDept(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm">
@@ -776,4 +777,32 @@ function Config({ parte, params, salvarParams, confirmar, pendente, depts, cons,
 
     </div>
   );
+}
+
+/** Copia as metas do mês anterior para todos os consultores, com reajuste linear opcional. */
+function ReplicarMetas({ mes, atual, onDone }: { mes: string; atual: Goal[]; onDone: () => void }) {
+  const [aj, setAj] = useState(0);
+  const [info, setInfo] = useState("");
+  const [y, m] = mes.split("-").map(Number);
+  const ant = new Date(Date.UTC(y!, m! - 2, 1)).toISOString().slice(0, 7);
+  const replicar = async () => {
+    const lk = await import("@/lib/month-lock");
+    if (await lk.mesTravado(mes)) { setInfo(lk.msgTravado(mes)); return; }
+    const { data, error } = await supabase.from("goals").select("consultant_id,servicos,pecas").eq("mes", ant);
+    if (error || !data?.length) { setInfo(error?.message ?? `Nenhuma meta em ${ant}.`); return; }
+    const f = 1 + aj / 100;
+    const T = data.reduce((a, g) => a + (+g.servicos + +g.pecas) * f, 0), A = atual.reduce((a, g) => a + g.servicos + g.pecas, 0);
+    if (!confirm(`Aplicar as metas de ${ant}${aj ? ` com ${aj > 0 ? "+" : ""}${aj}%` : ""} para ${data.length} consultores?\nNovo total: ${brl(T)} (hoje: ${brl(A)}). As metas atuais deste mês serão substituídas.`)) return;
+    const rows = data.map((g) => ({ consultant_id: g.consultant_id, mes, servicos: Math.round(+g.servicos * f), pecas: Math.round(+g.pecas * f) }));
+    const r = await supabase.from("goals").upsert(rows, { onConflict: "consultant_id,mes" });
+    setInfo(r.error ? r.error.message : `✅ ${rows.length} metas replicadas de ${ant}.`); onDone();
+  };
+  return <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 text-xs">
+    <b>Replicar metas de {ant}</b>
+    <select aria-label="Reajuste" value={aj} onChange={(e) => setAj(+e.target.value)} className="h-7 rounded border border-border bg-background px-1">
+      {[-5, 0, 3, 5, 10, 15].map((v) => <option key={v} value={v}>{v === 0 ? "sem reajuste" : `${v > 0 ? "+" : ""}${v}%`}</option>)}
+    </select>
+    <Button size="sm" onClick={() => void replicar()}>Replicar</Button>
+    {info && <span className="text-muted-foreground">{info}</span>}
+  </div>;
 }

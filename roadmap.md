@@ -8,7 +8,7 @@
 
 ## Bloco 2 · Metas e Comissões
 - [x] Metas: ritmo R$/dia útil
-- [ ] Metas: conciliação loja vs equipe, replicar metas com %
+- [x] Metas: replicar metas do mês anterior com % (meta da loja = soma da equipe)
 - [x] Agregados/Consultores: bonificação Limpar R$10/serviço (fora da folha, além da comissão)
 
 ## Bloco 3 · Dashboard e Central
@@ -16,8 +16,8 @@
 - [x] Central de Gestão: gargalos em R$, pauta matinal, WhatsApp Hub (incl. Marcela/Geovana/Delmir/Marcos)
 
 ## Bloco 4 · Consultores, Técnicos, Peças, Importações
-- [ ] Consultores: filtro segmento, ticket peças, badge pneus
-- [ ] Técnicos: retornos no card, O.S. sem apontamento
+- [x] Consultores: filtro segmento, ticket peças, badge pneus
+- [x] Técnicos: retornos no card, O.S. sem apontamento
 - [x] Peças: radar de pneus
-- [ ] Peças: desconto por consultor
-- [ ] Importações: recibo de importação/desfazer, envio de acesso por WhatsApp
+- [ ] Peças: desconto por consultor — aguardando relatório da DMS com coluna de desconto
+- [x] Importações: recibo de importação/desfazer, envio de acesso por WhatsApp

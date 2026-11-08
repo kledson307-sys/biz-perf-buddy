@@ -86,6 +86,8 @@ export async function salvarFatTecnicos(ft: import("@/lib/mecanicos").FatTecnico
   if (error) throw new Error("Erro ao salvar faturamento dos técnicos: " + error.message);
   await registrarUpdate("Técnicos (importação)", mes);
   window.dispatchEvent(new Event("tecnicos-atualizados"));
-  const s = ft.semApontamento; const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const s = ft.semApontamento;
+  await supabase.from("oficina_mes").upsert({ mes: `semapont-${mes}`, diario: { servicos: s.servicos, pecas: s.pecas } as never, retornos: [] as never, updated_at: new Date().toISOString() }, { onConflict: "user_id,mes" });
+  const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   return `Faturamento de ${ft.rows.length} técnico(s)${s.servicos + s.pecas > 0 ? ` · ⚠️ ${brl(s.servicos + s.pecas)} sem técnico apontado na DMS` : ""}`;
 }

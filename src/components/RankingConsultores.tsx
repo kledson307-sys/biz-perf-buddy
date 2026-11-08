@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { MixConsultores } from "@/components/MixConsultores";
 import { bg, brl, div, pct, tone, uni } from "@/components/painel-ui";
 import { calcPerformance } from "@/lib/performance";
+import { pneusPorVendedor } from "@/lib/pecas-itens";
 
 type Consultant = { c: { id: string; nome: string }; servicos: number; pecas: number; mS: number; mP: number; meta: number; real: number; perf: number };
 type Props = { linhas: Consultant[]; pass: Record<string, number>; mes: string; dec: number; tot: number; soPecas: (nome: string) => boolean; evolution: (consultor: Consultant) => ReactNode };
@@ -28,7 +29,13 @@ function LinhaLabel({ pecas }: { pecas: boolean }) {
   return <span className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium ${pecas ? "border-neon/30 bg-neon/5 text-neon" : "border-primary/30 bg-primary/5 text-primary"}`}><Icon className="size-3" />{pecas ? "Peças" : "Serviços"}</span>;
 }
 
-export function RankingConsultores({ linhas, pass, mes, dec, tot, soPecas, evolution }: Props) {
+export function RankingConsultores({ linhas: todas, pass, mes, dec, tot, soPecas, evolution }: Props) {
+  const [seg, setSeg] = useState<"todos" | "carro" | "moto" | "balcao">("todos");
+  const segDe = (nome: string) => soPecas(nome) ? "balcao" : /PEDRO|GILBERTO/i.test(nome) ? "moto" : "carro";
+  const linhas = seg === "todos" ? todas : todas.filter((l) => segDe(l.c.nome) === seg);
+  const [pneus, setPneus] = useState<Record<string, number>>({});
+  useEffect(() => { void supabase.from("parts_items").select("itens").eq("mes", mes.slice(0, 7)).maybeSingle().then(({ data }) => setPneus(data ? pneusPorVendedor((data.itens ?? []) as never) : {})); }, [mes]);
+  const pneuSelo = (nome: string) => { if (!/ANDRESSA/i.test(nome)) return null; const n = Object.entries(pneus).filter(([k]) => /ANDRESSA/i.test(k)).reduce((a, [, v]) => a + v, 0); return <span title="Premiação de pneus: 50 un. = R$ 400" className={`ml-1 inline-block rounded px-1 text-[9px] font-bold ${n >= 50 ? "bg-success/15 text-success" : "bg-warning/15 text-warning"}`}>Pneus {uni(n)}/50</span>; };
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [trava, setTrava] = useState<{ carro: number | null; moto: number | null }>({ carro: null, moto: null });
   useEffect(() => { void supabase.from("nps_imports").select("itens").order("at", { ascending: false }).limit(1).maybeSingle().then(({ data }) => { const m = npsPorMarca(((data?.itens ?? []) as never), mes.slice(0, 7)); setTrava({ carro: m.carro, moto: m.moto }); }); }, [mes]);
@@ -43,6 +50,7 @@ export function RankingConsultores({ linhas, pass, mes, dec, tot, soPecas, evolu
   const badge = (i: number) => <span className={`inline-flex size-6 items-center justify-center rounded-full text-[10px] font-bold ${i === 0 ? "bg-warning/15 text-warning" : i === 1 ? "bg-muted text-foreground" : i === 2 ? "bg-coral/15 text-coral" : "text-muted-foreground"}`}>{i < 3 ? <Trophy className="size-3.5" aria-label={`${i + 1}º lugar`} /> : i + 1}</span>;
 
   return <>
+    <div className="mb-2 flex flex-wrap gap-1" role="group" aria-label="Filtrar por segmento">{([["todos", "Todos"], ["carro", "Carro"], ["moto", "Moto"], ["balcao", "Balcão / só peças"]] as const).map(([k, n]) => <button key={k} type="button" aria-pressed={seg === k} onClick={() => setSeg(k)} className={`rounded-full border px-2.5 py-0.5 text-xs ${seg === k ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground"}`}>{n} ({k === "todos" ? todas.length : todas.filter((l) => segDe(l.c.nome) === k).length})</button>)}</div>
     <div className="hidden lg:block">
       <table className="w-full text-[11px] tabular-nums">
         <thead className="sticky top-0 z-10 bg-card text-muted-foreground"><tr className="text-right">
@@ -53,11 +61,11 @@ export function RankingConsultores({ linhas, pass, mes, dec, tot, soPecas, evolu
           return <Fragment key={l.c.id}>{(onlyParts ? [true] : [false, true]).map((parts, idx) => {
             const goal = parts ? l.mP : l.mS, real = parts ? l.pecas : l.servicos, projection = parts ? calc.projP : calc.projS, perf = parts ? calc.perfP : calc.perfS, projected = parts ? calc.projPctP : calc.projPctS;
             return <tr key={parts ? "pecas" : "servicos"} className={`text-right ${idx === 0 ? "border-t border-border" : "border-t border-border/20"}`}>
-              {idx === 0 && <><td rowSpan={onlyParts ? 1 : 2} className="text-left align-middle">{badge(i)}</td><td rowSpan={onlyParts ? 1 : 2} className="text-left align-middle"><Button variant="ghost" size="sm" className="h-auto max-w-36 justify-start whitespace-normal px-1 py-1 text-left text-xs font-semibold" onClick={() => setSelectedId(l.c.id)} aria-label={`Ver detalhes de ${l.c.nome}`}>{l.c.nome}<ArrowUpRight className="size-3 shrink-0 text-primary" /></Button><p className="px-1 text-[10px] text-muted-foreground">Total {brl(l.real)} · <span className={l.meta ? tone(l.perf) : ""}>{l.meta ? pct(l.perf) : "Sem meta"}</span>{selo(l.c.nome)}</p></td></>}
+              {idx === 0 && <><td rowSpan={onlyParts ? 1 : 2} className="text-left align-middle">{badge(i)}</td><td rowSpan={onlyParts ? 1 : 2} className="text-left align-middle"><Button variant="ghost" size="sm" className="h-auto max-w-36 justify-start whitespace-normal px-1 py-1 text-left text-xs font-semibold" onClick={() => setSelectedId(l.c.id)} aria-label={`Ver detalhes de ${l.c.nome}`}>{l.c.nome}<ArrowUpRight className="size-3 shrink-0 text-primary" /></Button><p className="px-1 text-[10px] text-muted-foreground">Total {brl(l.real)} · <span className={l.meta ? tone(l.perf) : ""}>{l.meta ? pct(l.perf) : "Sem meta"}</span>{selo(l.c.nome)}{pneuSelo(l.c.nome)}</p></td></>}
               <td className="py-1 text-left"><LinhaLabel pecas={parts} /></td><td className="px-2 text-muted-foreground">{brl(goal)}</td><td className="px-2 font-semibold">{brl(real)}</td><td className={`px-2 ${goal ? tone(perf) : "text-muted-foreground"}`}>{goal ? pct(perf) : "—"}</td>
               <td className="px-2 py-1"><div className="flex items-center justify-end gap-2"><span className="whitespace-nowrap font-semibold">{dec ? brl(projection) : "—"}</span><Ritmo compact realizado={perf} projetado={projected} dec={dec} tot={tot} meta={goal} /></div></td>
               <td className="px-2"><span className={`inline-block rounded border px-1.5 py-0.5 ${goal && real < goal ? "border-warning/25 bg-warning/5 text-warning" : "border-border text-muted-foreground"}`}>{daily(parts ? calc.necP : calc.necS, goal, real)}</span></td>
-              {idx === 0 && <><td rowSpan={onlyParts ? 1 : 2} className="px-2 align-middle">{!onlyParts && visits ? brl(div(l.servicos, visits)) : "—"}</td><td rowSpan={onlyParts ? 1 : 2} className="px-2 align-middle">{uni(visits)}</td><td rowSpan={onlyParts ? 1 : 2} className={`align-middle font-semibold ${!onlyParts && l.servicos > 0 ? corPm(div(l.pecas, l.servicos)) : "text-muted-foreground"}`}>{!onlyParts && l.servicos > 0 ? div(l.pecas, l.servicos).toFixed(2).replace(".", ",") : "—"}</td></>}
+              {idx === 0 && <><td rowSpan={onlyParts ? 1 : 2} className="px-2 align-middle">{!onlyParts && visits ? brl(div(l.servicos, visits)) : "—"}{visits > 0 && l.pecas > 0 && <span className="block text-[10px] text-neon" title="Ticket médio de peças por passagem">peças {brl(div(l.pecas, visits))}</span>}</td><td rowSpan={onlyParts ? 1 : 2} className="px-2 align-middle">{uni(visits)}</td><td rowSpan={onlyParts ? 1 : 2} className={`align-middle font-semibold ${!onlyParts && l.servicos > 0 ? corPm(div(l.pecas, l.servicos)) : "text-muted-foreground"}`}>{!onlyParts && l.servicos > 0 ? div(l.pecas, l.servicos).toFixed(2).replace(".", ",") : "—"}</td></>}
             </tr>;
           })}</Fragment>;
         })}</tbody>
