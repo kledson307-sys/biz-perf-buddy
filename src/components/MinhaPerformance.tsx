@@ -9,6 +9,9 @@ import { ITENS } from "@/lib/agregados";
 import { Button } from "@/components/ui/button";
 import { AcessoTopo } from "@/components/AcessoTopo";
 import { Anel } from "@/components/Cockpit";
+import { ExtratoComissao } from "@/components/ExtratoComissao";
+import { calcularComissao, dsrComissao, npsPorMarca, perfisDoLogin, promotoresFaltando, type Metricas } from "@/lib/comissoes";
+import type { NpsItem } from "@/lib/nps";
 
 type Agg = { item: string; qtd: number; valor: number; meta_qtd: number; codigos?: { codigo: string; qtd: number; valor: number }[] };
 type Dados = {
@@ -29,7 +32,9 @@ export function MinhaPerformance() {
   const [d, setD] = useState<Dados | null>(null);
   const [aberto, setAberto] = useState<string | null>(null);
   const [erro, setErro] = useState("");
-  const [aba, setAba] = useState<"dash" | "detalhes">("dash");
+  const [aba, setAba] = useState<"dash" | "detalhes" | "comissao">("dash");
+  const [npsItens, setNpsItens] = useState<NpsItem[]>([]);
+  useEffect(() => { void supabase.rpc("meu_nps").then(({ data }) => setNpsItens(((data as { itens?: NpsItem[] } | null)?.itens) ?? [])); }, []);
   const [agenda, setAgenda] = useState<Agend[]>([]);
   const latestMonth = useRef(mes);
   latestMonth.current = mes;
@@ -63,6 +68,13 @@ export function MinhaPerformance() {
   const ideal = IDEAL[semAcento(d?.departamento ?? "")] ?? 0.31;
   const margem = div(+(d?.margem ?? 0), pc);
 
+  const perfis = perfisDoLogin(d?.nome ?? "");
+  const nps = npsPorMarca(npsItens, mes);
+  const limpar = d?.agregados.find((a) => a.item === "limpar");
+  const met: Metricas = { mo: sv, pecas: pc, margemPct: pc ? margem : null, limparOk: limpar && +limpar.meta_qtd > 0 ? +limpar.qtd >= +limpar.meta_qtd : null, npsBmw: nps.bmw, npsMini: nps.mini };
+  const metProj: Metricas = { ...met, mo: proj(sv), pecas: proj(pc) };
+  const dsr = dsrComissao(mes);
+  const metaNps = perfis[0]?.segmento === "moto" ? 0.88 : 0.85;
   const rosa = (d?.nome ?? "").toUpperCase().startsWith("ANDRESSA");
   const hoje = new Date().toISOString().slice(0, 10);
   const amanha = new Date(Date.now() + 864e5).toISOString().slice(0, 10);
@@ -75,7 +87,7 @@ export function MinhaPerformance() {
         <AcessoTopo titulo="Minha performance" sub={`${d?.nome ?? ""}${d?.departamento ? ` · ${d.departamento}` : ""}`} mes={mes} setMes={setMes}
           extra={<Notificacoes vendedor abrir={() => document.getElementById("retornos-vendedor")?.scrollIntoView({ behavior: "smooth", block: "start" })} />} />
         <div className="flex gap-2" role="tablist" aria-label="Visões">
-          {([["dash", "Dashboard"], ["detalhes", "Detalhes"]] as const).map(([k, rot]) => (
+          {([["dash", "Dashboard"], ["detalhes", "Detalhes"], ["comissao", "Comissão"]] as const).map(([k, rot]) => (
             <button key={k} role="tab" aria-selected={aba === k} onClick={() => setAba(k)}
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${aba === k ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>{rot}</button>
           ))}
@@ -96,6 +108,10 @@ export function MinhaPerformance() {
           {presenceStatus === "pending" && <span className="text-muted-foreground">Confirmando presença…</span>}
           {presenceStatus === "error" && <><span className="text-destructive">Presença não confirmada. Tentaremos novamente.</span><Button size="sm" variant="outline" onClick={() => { void register(); }}>Tentar novamente</Button></>}
         </div>
+        {aba === "comissao" && d && (perfis.length === 0
+          ? <p className="lux-card p-4 text-sm text-muted-foreground">Sua ficha de comissão ainda não está cadastrada. Fale com a gestão.</p>
+          : perfis.map((pf) => <div key={pf.chave} className="space-y-2">{perfis.length > 1 && <h2 className="font-semibold">{pf.nome}</h2>}
+            <ExtratoComissao atual={calcularComissao(pf, met, dsr)} proj={calcularComissao(pf, metProj, dsr)} nps={pf.travaNps ? { rotulo: `NPS (${pct(nps.bmw ?? 0)} · meta ${pct(metaNps)})`, faltam: promotoresFaltando(nps.avaliados, nps.promotores, metaNps) } : null} /></div>))}
         {aba === "detalhes" && <RetornosVendedor />}
         {aba === "detalhes" && <NpsResumoRestrito titulo="Meu NPS & clientes para encantar" />}
         {erro && <p className="text-sm text-destructive">{erro}</p>}

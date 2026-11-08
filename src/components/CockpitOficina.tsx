@@ -12,6 +12,8 @@ import { analisar, fmt, hoje, type OsImport, type OsItem } from "@/lib/os-contro
 import type { Composicao } from "@/lib/mecanicos";
 import { dicaTecnico, ratioFaixa, ritmo } from "@/lib/oficina";
 import type { Retorno } from "@/lib/diario-retorno";
+import { ExtratoComissao } from "@/components/ExtratoComissao";
+import { PERFIS, calcularComissao, npsPorMarca, type Metricas } from "@/lib/comissoes";
 
 type T = { nome: string; servicos: number; pecas: number; passagens: number; meta_servicos: number; meta_pecas: number; composicao?: Composicao };
 type Params = { du_totais: number; du_decorridos: number; dc_totais: number; dc_decorridos: number; base: string } | null;
@@ -68,7 +70,10 @@ export function CockpitOficina({ chefe }: { chefe: boolean }) {
   const pecasHoje = por("pecas").filter((a) => a.prev && a.prev <= ref);
 
   const V = pn?.vendas ?? { servicos: 0, pecas: 0 }, M = pn?.metas ?? { servicos: 0, pecas: 0 };
-  const abas: [string, string][] = [["resumo", "Resumo"], ["patio", "Pátio & O.S."], ["tecnicos", "Técnicos & Boxes"], ["qualidade", "Qualidade & Retorno"], ...(chefe ? [["dossie", "Dossiê técnico"] as [string, string]] : [])];
+  const abas: [string, string][] = [["resumo", "Resumo"], ["patio", "Pátio & O.S."], ["tecnicos", "Técnicos & Boxes"], ["qualidade", "Qualidade & Retorno"], ...(chefe ? [["dossie", "Dossiê técnico"] as [string, string], ["comissao", "Minha remuneração"] as [string, string]] : [])];
+  const vend = (+(pn?.vendas.servicos ?? 0)) + (+(pn?.vendas.pecas ?? 0)), metaOf = (+(pn?.metas.servicos ?? 0)) + (+(pn?.metas.pecas ?? 0));
+  const npsCarro = npsPorMarca(nps, mes).carro;
+  const metDel = (v: number): Metricas => ({ metaOficinaOk: metaOf > 0 ? v >= metaOf : null, npsBmw: npsCarro });
 
   const retTec = new Map<string, number>();
   for (const r of ret) for (const t of (r.tecnicoAnterior || "SEM TÉCNICO").split(", ")) retTec.set(norm(t), (retTec.get(norm(t)) ?? 0) + 1);
@@ -143,6 +148,14 @@ export function CockpitOficina({ chefe }: { chefe: boolean }) {
           </Box>
         </div>}
 
+        {aba === "comissao" && chefe && <div className="mx-auto w-full max-w-4xl space-y-3">
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[["Meta oficina carro", metaOf ? vend / metaOf : null], ["NPS carro (meta 85%)", npsCarro == null ? null : npsCarro / 0.85], ["Vídeos visualizados", null]].map(([r, v]) => (
+              <div key={r as string} className="lux-card p-3 text-center"><p className="text-xs text-muted-foreground">{r as string} · R$ 500</p>
+                <p className={`text-2xl font-bold ${v == null ? "text-warning" : tone(v as number)}`}>{v == null ? "Pendente" : (v as number) >= 1 ? "✅ Garantido" : pct(v as number)}</p></div>))}
+          </div>
+          <ExtratoComissao atual={calcularComissao(PERFIS["DELMIR"]!, metDel(vend), 0)} proj={calcularComissao(PERFIS["DELMIR"]!, metDel((vend / dec) * tot), 0)} />
+        </div>}
         {aba === "dossie" && chefe && <Box title="Dossiê técnico do mês">
           <div className="overflow-x-auto"><table className="w-full text-sm">
             <thead><tr className="text-xs text-muted-foreground"><th className="px-3 py-2 text-left">Técnico</th><th>BSI</th><th>Revisão C7</th><th>C7 pagos</th><th>Garantia</th><th>Funilaria</th><th>Ticket</th><th>Ratio P/M.O.</th><th>Retornos</th><th>Atingimento</th></tr></thead>

@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Kpi, brl, div, pct, tone, uni } from "@/components/painel-ui";
 import { AcessoTopo } from "@/components/AcessoTopo";
 import { Anel } from "@/components/Cockpit";
+import { ExtratoComissao } from "@/components/ExtratoComissao";
+import { calcularComissao, dsrComissao, perfilTecnico } from "@/lib/comissoes";
 
 type Dados = {
   nome: string; grupo: string; servicos: number; pecas: number; passagens: number;
@@ -32,6 +34,8 @@ export function MeuDesempenhoTecnico() {
   const proj = (v: number) => (v / dec) * tot;
   const sv = +(d?.servicos ?? 0), pc = +(d?.pecas ?? 0), ms = +(d?.meta_servicos ?? 0), mp = +(d?.meta_pecas ?? 0);
   const perf = div(sv + pc, ms + mp);
+  const [aba, setAba] = useState<"dash" | "comissao">("dash");
+  const pf = d ? perfilTecnico(d.nome, d.grupo) : null;
   const linha = (v: number, m: number) => (
     <span>Meta {brl(m)} · <b className={tone(div(v, m))}>{pct(div(v, m))}</b><br />Projeção {brl(proj(v))} ({pct(div(proj(v), m))})<br />Precisa por dia {brl(Math.max(0, m - v) / rest)}</span>
   );
@@ -42,7 +46,10 @@ export function MeuDesempenhoTecnico() {
         <AcessoTopo titulo="Meu desempenho" sub={`${d?.nome ?? ""}${d?.grupo && GRUPO[d.grupo] ? ` · Técnico ${GRUPO[d.grupo]}` : ""}`} mes={mes} setMes={setMes} />
         {erro && <p className="text-sm text-destructive">{erro}</p>}
         {!erro && !d && <p className="text-sm text-muted-foreground">Ainda não há dados seus neste mês.</p>}
-        {d && (
+        {d && <div className="flex gap-2" role="tablist">{([["dash", "Dashboard"], ["comissao", "Comissão"]] as const).map(([k, r]) => (
+          <button key={k} role="tab" aria-selected={aba === k} onClick={() => setAba(k)} className={`rounded-full px-4 py-1.5 text-sm font-medium ${aba === k ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{r}</button>))}</div>}
+        {d && pf && aba === "comissao" && <ExtratoComissao atual={calcularComissao(pf, { mo: sv, pecas: pc }, dsrComissao(mes))} proj={calcularComissao(pf, { mo: proj(sv), pecas: proj(pc) }, dsrComissao(mes))} />}
+        {d && aba === "dash" && (
           <section className="lux-card flex flex-wrap items-center justify-around gap-4 p-4">
             <Anel p={perf} rot="Performance" />
             {ms > 0 && <Anel p={div(proj(sv), ms)} rot="Projeção serviços" />}
@@ -53,7 +60,7 @@ export function MeuDesempenhoTecnico() {
             </div>
           </section>
         )}
-        {d && (
+        {d && aba === "dash" && (
           <div className="grid gap-3 sm:grid-cols-2">
             <Kpi label="Serviços" value={brl(sv)} sub={linha(sv, ms)} />
             <Kpi label="Peças" value={brl(pc)} sub={linha(pc, mp)} />
@@ -61,7 +68,7 @@ export function MeuDesempenhoTecnico() {
             <Kpi label="Posição no grupo" value={d.posicao ? `${d.posicao}º de ${d.participantes}` : "—"} sub={<span>Sua performance <b className={tone(perf)}>{pct(perf)}</b>{d.perf_lider ? <> · líder {pct(+d.perf_lider)}{d.posicao !== 1 ? ` (faltam ${pct(Math.max(0, +d.perf_lider - perf))})` : " — você é o líder!"}</> : null}</span>} />
           </div>
         )}
-        {d && (
+        {d && aba === "dash" && (
           <section className="lux-card p-4 text-sm">
             <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Necessidade diária · {uni(rest)} dias restantes</h2>
             {ms > 0 && <p className="flex justify-between border-b border-border/50 py-1"><span>Mão de obra (serviços)</span><b>{ms - sv > 0 ? `${brl((ms - sv) / rest)} / dia` : "Meta batida ✅"}</b></p>}

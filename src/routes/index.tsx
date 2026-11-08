@@ -18,6 +18,7 @@ import { Mecanicos } from "@/components/Mecanicos";
 import { Equipe } from "@/components/Equipe";
 import { MinhaPerformance } from "@/components/MinhaPerformance";
 import { CockpitOficina } from "@/components/CockpitOficina";
+import { EspelhoComissoes } from "@/components/EspelhoComissoes";
 import { AcessoTunap } from "@/components/AcessoTunap";
 import { AcessoDepartamento } from "@/components/AcessoDepartamento";
 import { MeuDesempenhoTecnico } from "@/components/MeuDesempenhoTecnico";
@@ -638,12 +639,14 @@ function Painel({ email }: { email: string }) {
         {tab === "nps" && !relatorio && <NpsPainel mes={mes} />}
         {tab === "pecas" && !relatorio && <PecasEstoque linhas={linhas} porDept={porDept} margemIdeal={margemIdeal} deptName={deptName} passagens={resumo.pass} mes={mes} tot={tot} dec={dec} />}
         {tab === "metas" && !relatorio && <Tabs defaultValue="geral" className="min-w-0 gap-3">
-          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 xl:grid-cols-4">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 xl:grid-cols-5">
             <TabsTrigger value="geral" className="whitespace-normal">Acompanhamento & Geral</TabsTrigger>
             <TabsTrigger value="consultores">Consultores</TabsTrigger>
             <TabsTrigger value="tecnicos">Técnicos</TabsTrigger>
             <TabsTrigger value="agregados" className="whitespace-normal">Agregados & Agenda</TabsTrigger>
+            {email.toLowerCase() === MASTER_EMAIL && <TabsTrigger value="comissoes">Comissões</TabsTrigger>}
           </TabsList>
+          {email.toLowerCase() === MASTER_EMAIL && <TabsContent value="comissoes" className="xl:max-h-[calc(100vh-350px)] xl:overflow-y-auto"><EspelhoComissoes mes={mes} tot={tot} dec={dec} linhas={linhas.map((l) => ({ nome: l.c.nome, servicos: l.servicos, pecas: l.pecas, margem: l.margem }))} /></TabsContent>}
           <TabsContent value="geral" className="space-y-3 xl:max-h-[calc(100vh-350px)] xl:overflow-y-auto">
             <ViradaMes mes={mes} onChanged={load} />
             <MetasExecutivo linhas={linhas} deptName={deptName} />
