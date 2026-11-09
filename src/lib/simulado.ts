@@ -246,3 +246,25 @@ export function pontosGerenciais(calc: DeptoCalc[], efet?: EfetivoDados, mesAlvo
   p.unshift({ nivel: tot < 0 ? "alerta" : tot < totO ? "atencao" : "ok", depto: "LOJA", texto: `Pós-venda HAUS SSA: L.O. orçado ${brl(totO)} → ajustado ${brl(tot)} (${brl(tot - totO)}).` });
   return p;
 }
+
+/** Consolidado da loja: margem bruta, L.O. e ponto de equilíbrio (venda que zera o L.O. ajustado). */
+export function resumoLoja(calc: DeptoCalc[]) {
+  const venda = calc.reduce((s, d) => s + d.venda, 0);
+  const lbr = calc.reduce((s, d) => s + d.lbr, 0);
+  const despBase = calc.reduce((s, d) => s + d.despBase, 0);
+  const despAjustada = calc.reduce((s, d) => s + d.despAjustada, 0);
+  const margem = venda > 0 ? lbr / venda : 0;
+  const lo = lbr - despAjustada;
+  return { venda, lbr, despBase, despAjustada, estouro: despAjustada - despBase, margem, lo, margemLo: venda > 0 ? lo / venda : 0, breakEven: margem > 0 ? despAjustada / margem : 0 };
+}
+
+/** Contas que mais sobem a despesa acima do simulado/orçado (maior estouro primeiro). */
+export function viloes(calc: DeptoCalc[], n = 5) {
+  return calc.flatMap((d) => d.grupos.filter((g) => g.ajustado > g.base).map((g) => ({ depto: d.depto, grupo: g.grupo, nome: GRUPO_NOME[g.grupo], origem: g.origem, excesso: g.ajustado - g.base })))
+    .sort((a, b) => b.excesso - a.excesso).slice(0, n);
+}
+
+/** Dias desde a última atualização (Simulador e GNC SYS devem ser semanais). */
+export function diasDesde(iso: string | undefined, agora = new Date()) {
+  return iso ? Math.floor((agora.getTime() - new Date(iso).getTime()) / 86400000) : null;
+}

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Calculator, Upload, Lock, AlertTriangle, CheckCircle2, Lightbulb, Info } from "lucide-react";
+import { Printer, Calculator, Upload, Lock, AlertTriangle, CheckCircle2, Lightbulb, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { brl, dataHora } from "@/components/painel-ui";
 import { Button } from "@/components/ui/button";
 import {
   DEPTOS, DEPTO_NOME, DEPTO_EQUIPE, EFETIVO_ABA, GRUPO_NOME, MESES,
-  calcularDepto, lerEfetivoAba, lerGnc, lerSimuladoAba, pontosGerenciais, serialParaMes,
+  calcularDepto, resumoLoja, viloes, diasDesde, lerEfetivoAba, lerGnc, lerSimuladoAba, pontosGerenciais, serialParaMes,
   type Depto, type EfetivoDados, type GncDados, type SimuladoDados, type DeptoCalc,
 } from "@/lib/simulado";
 
@@ -94,6 +94,9 @@ export function Simulado({ mes }: { mes: string }) {
 
   const loja = calc.reduce((s, d) => ({ venda: s.venda + d.venda, lbr: s.lbr + d.lbr, db: s.db + d.despBase, da: s.da + d.despAjustada }), { venda: 0, lbr: 0, db: 0, da: 0 });
   const atual = calc.find((c) => c.depto === vista);
+  const rl = resumoLoja(calc);
+  const vil = viloes(calc);
+  const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
 
   return (
     <div className="space-y-3">
@@ -107,6 +110,7 @@ export function Simulado({ mes }: { mes: string }) {
           <Upload className="h-4 w-4" /> {lendo || "Importar planilhas"}
           <input type="file" multiple accept=".xlsx,.xlsm,.xlsb,.xls" className="hidden" disabled={!!lendo} onChange={(e) => { void importar(e.target.files); e.target.value = ""; }} />
         </label>
+        {sim && <Button size="sm" variant="outline" className="print:hidden" onClick={() => window.print()}><Printer className="mr-1 h-4 w-4" /> Imprimir / PDF</Button>}
       </div>
 
       {pend.length > 0 && <div className="lux-card space-y-1 border-primary p-3 text-xs">
@@ -117,10 +121,14 @@ export function Simulado({ mes }: { mes: string }) {
       <div className="grid gap-2 sm:grid-cols-3">
         {([["simulado", "Simulador (toda segunda)"], ["gnc", "GNC SYS – despesas (toda segunda)"], ["efetivo", `Efetivo ${ano} (mensal)`]] as const).map(([t, l]) => {
           const r = reg(t);
+          const dias = diasDesde(r?.updated_at);
+          const lim = t === "efetivo" ? 35 : 7;
+          const velho = dias !== null && dias > lim;
           return (
             <div key={t} className="lux-card flex items-center gap-2 p-2 text-xs">
-              {r ? <CheckCircle2 className="h-4 w-4 text-success" /> : <AlertTriangle className="h-4 w-4 text-warning" />}
-              <div className="min-w-0"><div className="font-semibold">{l}</div><div className="truncate text-muted-foreground">{r ? `${r.arquivo} · ${dataHora(r.updated_at)}` : "Ainda não importado"}</div></div>
+              {r && !velho ? <CheckCircle2 className="h-4 w-4 text-success" /> : <AlertTriangle className={`h-4 w-4 ${velho ? "text-destructive" : "text-warning"}`} />}
+              <div className="min-w-0"><div className="font-semibold">{l}</div><div className="truncate text-muted-foreground">{r ? `${r.arquivo} · ${dataHora(r.updated_at)}` : "Ainda não importado"}</div>
+                {r && <div className={velho ? "font-semibold text-destructive" : "text-success"}>{velho ? `⚠️ Desatualizado há ${dias} dias` : `✓ Atualizado há ${dias} dia(s)`}</div>}</div>
             </div>
           );
         })}
@@ -130,7 +138,24 @@ export function Simulado({ mes }: { mes: string }) {
         <div className="lux-card p-6 text-center text-sm text-muted-foreground">Importe o Simulador do mês para montar a visão. O Efetivo e o GNC SYS refinam as despesas.</div>
       ) : (
         <>
-          <div className="flex flex-wrap gap-1">
+          <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-5">
+            {([
+              ["Venda bruta", brl(rl.venda), "loja pós-venda", ""],
+              ["L.B. + rendas", brl(rl.lbr), `margem ${pct(rl.margem)}`, ""],
+              ["Despesas ajustadas", brl(rl.despAjustada), rl.estouro > 0 ? `+${brl(rl.estouro)} acima do simulado` : "dentro do simulado", rl.estouro > 0 ? "text-destructive" : "text-success"],
+              ["L.O. ajustado", brl(rl.lo), `margem op. ${pct(rl.margemLo)}`, rl.lo < 0 ? "text-destructive" : "text-success"],
+              ["Ponto de equilíbrio", brl(rl.breakEven), rl.venda >= rl.breakEven ? `folga ${brl(rl.venda - rl.breakEven)}` : `faltam ${brl(rl.breakEven - rl.venda)}`, rl.venda >= rl.breakEven ? "text-success" : "text-destructive"],
+            ] as const).map(([l, v, sub, c]) => (
+              <div key={l} className="lux-card p-3"><div className="text-[11px] uppercase text-muted-foreground">{l}</div><div className={`text-lg font-bold ${c}`}>{v}</div><div className={`text-[11px] ${c || "text-muted-foreground"}`}>{sub}</div></div>
+            ))}
+          </div>
+          {vil.length > 0 && <div className="lux-card p-3 text-xs">
+            <h3 className="mb-1 flex items-center gap-1 text-sm font-semibold"><AlertTriangle className="h-4 w-4 text-destructive" /> Contas que mais puxam a despesa</h3>
+            <div className="grid gap-1 sm:grid-cols-2 xl:grid-cols-5">
+              {vil.map((v, i) => <div key={i} className="rounded-md bg-muted/30 p-2"><b>{v.depto} · {v.nome}</b><div className="text-destructive">+{brl(v.excesso)}</div><div className="text-muted-foreground">pela {ORIGEM[v.origem]?.[0] ?? v.origem}</div></div>)}
+            </div>
+          </div>}
+          <div className="flex flex-wrap gap-1 print:hidden">
             {(["LOJA", ...DEPTOS] as Vista[]).map((v) => (
               <Button key={v} size="sm" variant={vista === v ? "default" : "outline"} onClick={() => setVista(v)}>{v === "LOJA" ? "LOJA (consolidado)" : v}</Button>
             ))}
