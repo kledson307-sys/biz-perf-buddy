@@ -19,5 +19,11 @@
 - [x] Consultores: filtro segmento, ticket peças, badge pneus
 - [x] Técnicos: retornos no card, O.S. sem apontamento
 - [x] Peças: radar de pneus
-- [ ] Peças: desconto por consultor — aguardando relatório da DMS com coluna de desconto
+- [x] Peças: desconto por consultor
 - [x] Importações: recibo de importação/desfazer, envio de acesso por WhatsApp
+
+## Bloco 5 · Itens restantes da varredura
+- [x] Metas: alocação (quem vende sem meta), termo de metas para assinatura, simulador de reta final
+- [x] NPS: técnico responsável pelo chassi (lido das Passagens)
+- [x] Agregados: passagens em branco + penetração por consultor
+- [x] Peças: desconto médio na Curva ABC
