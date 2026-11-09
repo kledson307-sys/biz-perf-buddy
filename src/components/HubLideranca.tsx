@@ -13,6 +13,7 @@ const wa = (t: string) => `https://wa.me/?text=${encodeURIComponent(t)}`;
 export function HubLideranca({ linhas, mes, tot, dec }: { linhas: L[]; mes: string; tot: number; dec: number }) {
   const [os, setOs] = useState<{ itens: OsItem[]; at: string } | null>(null);
   const [vendas, setVendas] = useState<V[]>([]);
+  const [aba, setAba] = useState<"lideranca" | "consultores">("lideranca");
   useEffect(() => {
     void supabase.from("os_imports").select("itens,at").order("at", { ascending: false }).limit(1).maybeSingle()
       .then(({ data }) => setOs(data ? { itens: normalizar(data.itens as unknown as OsItem[]), at: data.at } : null));
@@ -57,11 +58,18 @@ export function HubLideranca({ linhas, mes, tot, dec }: { linhas: L[]; mes: stri
   }, [linhas, dec, tot, rest, mais30.q, mais30.v, gargalos]);
 
   const lideres = [
+    { n: "Victor Hugo · Supervisor de Pós-Vendas", a: `${gargalos[0]!.q} aguardando autorização · ${gargalos[3]!.q} prontas p/ faturar`, t: `Olá Victor Hugo! Pós-vendas no mês: ${brl(linhas.reduce((a, l) => a + l.real, 0))} de ${brl(linhas.reduce((a, l) => a + l.meta, 0))} (${pct(linhas.reduce((a, l) => a + l.meta, 0) ? linhas.reduce((a, l) => a + l.real, 0) / linhas.reduce((a, l) => a + l.meta, 0) : 0)}), dia útil ${dec} de ${tot}. Pátio: ${mais30.q} O.S. >30d (${brl(mais30.v)}) e ${gargalos[3]!.q} prontas para faturar (${brl(gargalos[3]!.v)}). Foco: cobrar a aprovação dos ${gargalos[0]!.q} orçamentos pendentes com os consultores e liberar o faturamento imediato.` },
     { n: "Marcela · Estética", a: est.parados ? `${est.parados} venda(s) paradas >15 dias` : "Sem vendas paradas", t: `Olá Marcela! Estética no mês: faturado ${brl(est.fat)}, a faturar ${brl(est.aFat)} (${uni(est.nAFat)} lançamentos)${est.parados ? `, ${est.parados} parados há mais de 15 dias — priorize a conclusão e o faturamento` : ""}. Foco: oferecer PPF/vitrificação em toda revisão e converter a carteira a faturar.` },
     { n: "Geovana · Acessórios", a: ac.parados ? `${ac.parados} venda(s) paradas >15 dias` : "Sem vendas paradas", t: `Olá Geovana! Acessórios no mês: faturado ${brl(ac.fat)}, a faturar ${brl(ac.aFat)} (${uni(ac.nAFat)} lançamentos)${ac.parados ? `, ${ac.parados} parados há mais de 15 dias — cobre instalação/faturamento` : ""}. Foco: itens Chase Auto Care e acessórios na entrega técnica.` },
     { n: "Delmir · Chefe de Oficina", a: `${gargalos[2]!.q} em diagnóstico`, t: `Olá Delmir! Oficina hoje: ${gargalos[2]!.q} O.S. em diagnóstico (${brl(gargalos[2]!.v)}) e ${gargalos[1]!.q} aguardando peças. Priorize fechar os pareceres de diagnóstico para liberar orçamento e acompanhe os retornos de 60 dias.` },
     { n: "Marcos · Controlador de Quadro", a: `${mais30.q} O.S. >30d · ${mais21.q} entre 21-30d`, t: `Olá Marcos! Pátio: ${mais30.q} O.S. com mais de 30 dias (${brl(mais30.v)}) e ${mais21.q} entre 21 e 30 dias. ${gargalos[3]!.q} prontas para faturar (${brl(gargalos[3]!.v)}). Vamos girar os boxes e destravar o faturamento hoje.` },
   ];
+
+  const consultores = linhas.map((l) => ({
+    n: l.c.nome,
+    a: l.meta > 0 ? `${pct(l.perf)} da meta · proj. ${pct(l.projPct)}` : "Sem meta definida no mês",
+    t: `Olá ${l.c.nome}! Seu desempenho no mês: ${brl(l.real)} de ${brl(l.meta)} (${pct(l.perf)}), projeção de fechamento em ${pct(l.projPct)}.${l.nec > 0 ? ` Para bater a meta você precisa vender ${brl(l.nec)} por dia útil até o fim do mês.` : ""} Conto com você!`,
+  }));
 
   return (
     <div className="grid gap-2 xl:grid-cols-3">
@@ -77,10 +85,18 @@ export function HubLideranca({ linhas, mes, tot, dec }: { linhas: L[]; mes: stri
           <button type="button" className="rounded-md border border-border px-2 py-1" onClick={() => void navigator.clipboard.writeText(pauta)}>Copiar</button></div>
       </section>
       <section className="lux-card px-3 py-2">
-        <h3 className="flex items-center gap-1 text-sm font-semibold"><MessageCircle className="size-4 text-success" />WhatsApp da liderança</h3>
-        <ul className="mt-1 space-y-1 text-xs">{lideres.map((l) => <li key={l.n} className="flex items-center justify-between gap-2 border-b border-border/50 pb-1">
-          <span><b>{l.n}</b><span className="block text-[10px] text-muted-foreground">{l.a}</span></span>
-          <a href={wa(l.t)} target="_blank" rel="noreferrer" className="shrink-0 rounded-md border border-success px-2 py-0.5 text-success">Enviar</a></li>)}</ul>
+        <h3 className="flex items-center gap-1 text-sm font-semibold"><MessageCircle className="size-4 text-success" />WhatsApp da equipe</h3>
+        <div className="mt-1 flex gap-1 text-[11px]">
+          <button type="button" onClick={() => setAba("lideranca")} className={`rounded-md px-2 py-0.5 font-medium ${aba === "lideranca" ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground"}`}>Liderança ({lideres.length})</button>
+          <button type="button" onClick={() => setAba("consultores")} className={`rounded-md px-2 py-0.5 font-medium ${aba === "consultores" ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground"}`}>Consultores ({consultores.length})</button>
+        </div>
+        {aba === "lideranca" ?
+          <ul className="mt-1 space-y-1 text-xs">{lideres.map((l) => <li key={l.n} className="flex items-center justify-between gap-2 border-b border-border/50 pb-1">
+            <span><b>{l.n}</b><span className="block text-[10px] text-muted-foreground">{l.a}</span></span>
+            <a href={wa(l.t)} target="_blank" rel="noreferrer" className="shrink-0 rounded-md border border-success px-2 py-0.5 text-success">Enviar</a></li>)}</ul> :
+          <ul className="mt-1 max-h-44 space-y-1 overflow-y-auto text-xs">{consultores.map((l) => <li key={l.n} className="flex items-center justify-between gap-2 border-b border-border/50 pb-1">
+            <span><b>{l.n}</b><span className="block text-[10px] text-muted-foreground">{l.a}</span></span>
+            <a href={wa(l.t)} target="_blank" rel="noreferrer" className="shrink-0 rounded-md border border-success px-2 py-0.5 text-success">Enviar</a></li>)}</ul>}
       </section>
     </div>
   );
