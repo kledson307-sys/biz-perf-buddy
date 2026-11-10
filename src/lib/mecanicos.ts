@@ -228,7 +228,7 @@ export function lerPassagens(raw: unknown[][]): PassReport {
 /** Mix de passagens por consultor (O.S. distintas). */
 export type MixCons = { bsi: string[]; rev: string[]; gar: string[]; rep: string[] };
 /** Pedro e Gilberto atendem Moto (regras próprias, sem BSI). */
-export const consultorMoto = (nome: string) => /\b(PEDRO|GILBERTO)/.test(nome.toUpperCase());
+export const consultorMoto = (nome: string) => /\b(PEDRO|P\.?\s?BENIGNO|BENIGNO|GILBERTO)/.test(nome.toUpperCase());
 export function classificarConsultor(linhas: { os: string; tipo: string; cod: string }[], moto: boolean): MixCons {
   const tipo = new Map<string, string>(); const rev = new Set<string>();
   for (const l of linhas) {

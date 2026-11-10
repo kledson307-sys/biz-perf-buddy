@@ -73,8 +73,8 @@ export function Simulado({ mes }: { mes: string }) {
           out.push({ tipo: "efetivo", m: String(a), arquivo: f.name, dados: { ano: a, deptos }, resumo: `Efetivo ${a} · departamentos ${Object.keys(deptos).join(", ")}` });
         } else {
           const wb = XLSX.read(buf);
-          const objs = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[wb.SheetNames[0]!]!, { defval: null });
-          const g = lerGnc(objs);
+          let g: GncDados | null = null;
+          for (const sn of wb.SheetNames) { g = lerGnc(XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[sn]!, { defval: null })); if (g) break; }
           if (!g) throw new Error("não reconheci como Simulador, Efetivo ou GNC SYS");
           const m = g.mes || mes;
           out.push({ tipo: "gnc", m, arquivo: f.name, dados: g, resumo: `GNC SYS ${m.split("-").reverse().join("/")} · ${g.lancamentos.length} lançamentos dos centros marcados` });
@@ -83,13 +83,19 @@ export function Simulado({ mes }: { mes: string }) {
     }
     setLendo("");
     setPend(out);
+    if (out.length) toast.info(`${out.length} planilha(s) lida(s) — confira e clique em Confirmar importação`);
   }
 
+  const [salvando, setSalvando] = useState(false);
+  const [arrastando, setArrastando] = useState(false);
+  const [recibo, setRecibo] = useState<string[]>([]);
   async function confirmar() {
+    setSalvando(true);
+    const ok: string[] = [];
     for (const p of pend) {
-      try { await salvar(p.tipo, p.m, p.arquivo, p.dados); toast.success(`${p.arquivo} importado`); } catch (e) { toast.error(`${p.arquivo}: ${(e as Error).message}`); }
+      try { await salvar(p.tipo, p.m, p.arquivo, p.dados); ok.push(p.resumo); toast.success(`${p.arquivo} importado`); } catch (e) { toast.error(`${p.arquivo}: ${(e as Error).message}`); }
     }
-    setPend([]); await load();
+    setPend([]); setRecibo(ok); setSalvando(false); await load();
   }
 
   const loja = calc.reduce((s, d) => ({ venda: s.venda + d.venda, lbr: s.lbr + d.lbr, db: s.db + d.despBase, da: s.da + d.despAjustada }), { venda: 0, lbr: 0, db: 0, da: 0 });
@@ -103,7 +109,7 @@ export function Simulado({ mes }: { mes: string }) {
       <div className="lux-card flex flex-wrap items-center gap-3 p-3">
         <Calculator className="h-5 w-5 text-primary" />
         <div className="mr-auto">
-          <h2 className="text-sm font-semibold">Simulado de L.O. · BMW HAUS SSA <Lock className="inline h-3 w-3 text-muted-foreground" /></h2>
+          <h2 className="text-sm font-semibold">Simulado de L.O. · BMW HAUS SSA <span className="ml-1 inline-flex items-center gap-0.5 rounded bg-muted px-1 text-[10px] font-normal text-muted-foreground"><Lock className="h-2.5 w-2.5" /> Exclusivo gestão</span></h2>
           <p className="text-xs text-muted-foreground">Exclusivo do gestor. Despesa ajustada = maior entre simulado, média dos últimos 5 meses do Efetivo e o já lançado no GNC SYS.</p>
         </div>
         <label className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground">
@@ -113,10 +119,25 @@ export function Simulado({ mes }: { mes: string }) {
         {sim && <Button size="sm" variant="outline" className="print:hidden" onClick={() => window.print()}><Printer className="mr-1 h-4 w-4" /> Imprimir / PDF</Button>}
       </div>
 
-      {pend.length > 0 && <div className="lux-card space-y-1 border-primary p-3 text-xs">
-        <b>Confira antes de importar</b>
-        {pend.map((p) => <p key={p.arquivo}>📄 {p.arquivo} → {p.resumo}</p>)}
-        <div className="flex gap-2 pt-1"><Button size="sm" onClick={() => void confirmar()}>Confirmar importação</Button><Button size="sm" variant="ghost" onClick={() => setPend([])}>Cancelar</Button></div>
+      <label
+        onDragOver={(e) => { e.preventDefault(); setArrastando(true); }}
+        onDragLeave={() => setArrastando(false)}
+        onDrop={(e) => { e.preventDefault(); setArrastando(false); void importar(e.dataTransfer.files); }}
+        className={`flex cursor-pointer flex-col items-center gap-1 rounded-lg border-2 border-dashed p-4 text-center text-xs print:hidden ${arrastando ? "border-primary bg-primary/10" : "border-border text-muted-foreground"}`}>
+        <Upload className="h-5 w-5 text-primary" />
+        <b className="text-foreground">{lendo || "Solte aqui as planilhas do Simulado (Simulador, GNC SYS ou Efetivo) — em qualquer ordem"}</b>
+        <span>Reconheço pelo conteúdo das abas e colunas, não pelo nome do arquivo.</span>
+        <input type="file" multiple accept=".xlsx,.xlsm,.xlsb,.xls" className="hidden" disabled={!!lendo} onChange={(e) => { void importar(e.target.files); e.target.value = ""; }} />
+      </label>
+
+      {pend.length > 0 && <div className="lux-card space-y-1 border-2 border-primary p-3 text-xs">
+        <b className="text-sm">Confira antes de importar</b>
+        {pend.map((p) => <p key={p.arquivo} className="flex items-center gap-1"><CheckCircle2 className="h-4 w-4 shrink-0 text-success" /> {p.arquivo} → <b>{p.resumo}</b></p>)}
+        <div className="flex gap-2 pt-1"><Button size="sm" disabled={salvando} onClick={() => void confirmar()}>{salvando ? "Salvando…" : "Confirmar importação"}</Button><Button size="sm" variant="ghost" onClick={() => setPend([])}>Cancelar</Button></div>
+      </div>}
+      {recibo.length > 0 && <div className="lux-card space-y-1 border border-success p-3 text-xs">
+        <div className="flex items-center justify-between"><b className="text-sm text-success">✓ Importação concluída</b><Button size="sm" variant="ghost" onClick={() => setRecibo([])}>Fechar</Button></div>
+        {recibo.map((r) => <p key={r}>• {r}</p>)}
       </div>}
       <div className="grid gap-2 sm:grid-cols-3">
         {([["simulado", "Simulador (toda segunda)"], ["gnc", "GNC SYS – despesas (toda segunda)"], ["efetivo", `Efetivo ${ano} (mensal)`]] as const).map(([t, l]) => {
@@ -135,7 +156,7 @@ export function Simulado({ mes }: { mes: string }) {
       </div>
 
       {!sim ? (
-        <div className="lux-card p-6 text-center text-sm text-muted-foreground">Importe o Simulador do mês para montar a visão. O Efetivo e o GNC SYS refinam as despesas.</div>
+        gnc ? <PainelGnc gnc={gnc} /> : <div className="lux-card p-6 text-center text-sm text-muted-foreground">Importe o Simulador do mês para montar a visão. O Efetivo e o GNC SYS refinam as despesas.</div>
       ) : (
         <>
           <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-5">
@@ -250,4 +271,25 @@ function TabelaDepto({ c, linhas, efetivoOk }: { c: DeptoCalc; linhas: { nome: s
       </tbody>
     </table>
   );
+}
+
+/** Despesas reais do GNC SYS sem precisar do Simulador: por centro, por grupo e maiores contas. */
+function PainelGnc({ gnc }: { gnc: GncDados }) {
+  const l = gnc.lancamentos;
+  const total = l.reduce((a, x) => a + x.valor, 0);
+  const soma = (f: (x: (typeof l)[number]) => string) => Object.entries(l.reduce<Record<string, number>>((a, x) => { const k = f(x); a[k] = (a[k] ?? 0) + x.valor; return a; }, {})).sort((a, b) => b[1] - a[1]);
+  const porDepto = soma((x) => x.depto), porGrupo = soma((x) => x.grupo), contas = soma((x) => `${x.depto} · ${x.conta}`).slice(0, 10);
+  const Lista = ({ t, d, nome }: { t: string; d: [string, number][]; nome?: (k: string) => string }) => (
+    <div className="lux-card p-3 text-xs"><h3 className="mb-2 text-sm font-semibold">{t}</h3>
+      {d.map(([k, v]) => <div key={k} className="flex justify-between border-b border-border/40 py-1"><span>{nome ? nome(k) : k}</span><b>{brl(v)} <span className="font-normal text-muted-foreground">{total ? `${((v / total) * 100).toFixed(1)}%` : ""}</span></b></div>)}
+    </div>);
+  return (
+    <div className="space-y-3">
+      <div className="lux-card p-3 text-xs"><div className="text-[11px] uppercase text-muted-foreground">Despesas lançadas no GNC SYS · {gnc.mes.split("-").reverse().join("/")}</div><div className="text-lg font-bold">{brl(total)}</div><div className="text-muted-foreground">{l.length} lançamentos do pós-venda · importe o Simulador para ver L.O. e ponto de equilíbrio</div></div>
+      <div className="grid gap-3 xl:grid-cols-3">
+        <Lista t="Por centro de custo" d={porDepto} nome={(k) => `${k} · ${DEPTO_NOME[k as Depto] ?? ""}`} />
+        <Lista t="Por grupo" d={porGrupo} nome={(k) => GRUPO_NOME[k as keyof typeof GRUPO_NOME] ?? k} />
+        <Lista t="Maiores contas" d={contas} />
+      </div>
+    </div>);
 }

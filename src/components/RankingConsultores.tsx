@@ -31,7 +31,7 @@ function LinhaLabel({ pecas }: { pecas: boolean }) {
 
 export function RankingConsultores({ linhas: todas, pass, mes, dec, tot, soPecas, evolution }: Props) {
   const [seg, setSeg] = useState<"todos" | "carro" | "moto" | "balcao">("todos");
-  const segDe = (nome: string) => soPecas(nome) ? "balcao" : /PEDRO|GILBERTO/i.test(nome) ? "moto" : "carro";
+  const segDe = (nome: string) => soPecas(nome) ? "balcao" : /PEDRO|BENIGNO|GILBERTO/i.test(nome) ? "moto" : "carro";
   const linhas = seg === "todos" ? todas : todas.filter((l) => segDe(l.c.nome) === seg);
   const [pneus, setPneus] = useState<Record<string, number>>({});
   useEffect(() => { void supabase.from("parts_items").select("itens").eq("mes", mes.slice(0, 7)).maybeSingle().then(({ data }) => setPneus(data ? pneusPorVendedor((data.itens ?? []) as never) : {})); }, [mes]);
@@ -39,7 +39,7 @@ export function RankingConsultores({ linhas: todas, pass, mes, dec, tot, soPecas
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [trava, setTrava] = useState<{ carro: number | null; moto: number | null }>({ carro: null, moto: null });
   useEffect(() => { void supabase.from("nps_imports").select("itens").order("at", { ascending: false }).limit(1).maybeSingle().then(({ data }) => { const m = npsPorMarca(((data?.itens ?? []) as never), mes.slice(0, 7)); setTrava({ carro: m.carro, moto: m.moto }); }); }, [mes]);
-  const selo = (nome: string) => { const sg = /PEDRO|GILBERTO/i.test(nome) ? "moto" : "carro"; const v = trava[sg]; if (v == null) return null; const ok = fatorNps(sg, v) === 1; return <span title={`NPS ${sg === "moto" ? "Moto" : "Carro"} ${pct(v)} · premiações ${ok ? "liberadas" : "retidas"}`} className={`ml-1 inline-block rounded px-1 text-[9px] font-bold ${ok ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>{ok ? "Prêmio ✓" : "Prêmio ✗"}</span>; };
+  const selo = (nome: string) => { const sg = /PEDRO|BENIGNO|GILBERTO/i.test(nome) ? "moto" : "carro"; const v = trava[sg]; if (v == null) return null; const ok = fatorNps(sg, v) === 1; return <span title={`NPS ${sg === "moto" ? "Moto" : "Carro"} ${pct(v)} · premiações ${ok ? "liberadas" : "retidas"}`} className={`ml-1 inline-block rounded px-1 text-[9px] font-bold ${ok ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>{ok ? "Prêmio ✓" : "Prêmio ✗"}</span>; };
   const rank = [...linhas].sort((a, b) => (b.meta ? b.perf : -1) - (a.meta ? a.perf : -1));
   const selected = linhas.find((l) => l.c.id === selectedId);
   const total = calcPerformance(linhas.reduce((n, l) => n + l.servicos, 0), linhas.reduce((n, l) => n + l.pecas, 0), linhas.reduce((n, l) => n + l.mS, 0), linhas.reduce((n, l) => n + l.mP, 0), dec, tot);

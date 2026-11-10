@@ -14,7 +14,7 @@ import { saveOpenOrders } from "@/lib/open-orders.functions";
 import { ehFatServicos, ehFatPecas, lerFatServicos, lerFatPecas, consolidarFat, mesclarFat, type FatHistorico } from "@/lib/faturamento-historico";
 import { mesSeguinte } from "@/lib/agendamentos-data";
 import { registrarUpdate } from "@/lib/update-log";
-import { agregadosDoFatServicos } from "@/lib/agregados-os";
+import { agregadosDoFatServicos, agregadosDoFatPecas } from "@/lib/agregados-os";
 import { splitCods } from "@/lib/agregados";
 import { norm } from "@/components/painel-ui";
 
@@ -55,9 +55,12 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
       if (p) {
         const it = lerItensPecas(p.raw);
         const fat = ehFatPecas(p.raw) ? lerFatPecas(p.raw) : null;
+        const { data: codsP } = await supabase.from("agg_codes").select("item,codigos");
+        const aggP = agregadosDoFatPecas(p.raw, codsP?.length ? Object.fromEntries(codsP.map((c) => [c.item, splitCods(c.codigos)])) : undefined);
         const destinos = ["Peças & Estoque: itens", "Oficina: peças por dia", "Acessórios & Estética: faturado DMS e baixa das vendas a faturar"];
+        if (aggP) destinos.unshift(`Agregados: ${Math.round(aggP.registros.reduce((a, r) => a + r.qtd, 0))} peças vendidas (${aggP.itens.map((i) => i === "tunap" ? "Tunap" : i === "brazzo" ? "Brazzo" : i).join(", ")})`);
         if (fat) destinos.unshift(`Consultores: peças por dia ${brl(fat.linhas.reduce((a, l) => a + l.pecas, 0))} (serviços já gravados são mantidos)`);
-        out.push({ arquivo: f.name, tipo: "pecas", pecas: it, fat: fat ?? undefined, destinos, raw: p.raw, resumo: `${it.length} itens · ${brl(it.reduce((a, i) => a + i.valor, 0))} (sem O.S. internas)${fat ? ` · histórico diário de ${fat.meses.length} mês(es)` : ""}` }); continue;
+        out.push({ arquivo: f.name, tipo: "pecas", pecas: it, fat: fat ?? undefined, agg: aggP, destinos, raw: p.raw, resumo: `${it.length} itens · ${brl(it.reduce((a, i) => a + i.valor, 0))} (sem O.S. internas)${fat ? ` · histórico diário de ${fat.meses.length} mês(es)` : ""}` }); continue;
       }
       const pa = abas.find((a) => ehRelatorioPassagens(a.raw));
       if (pa) {
@@ -147,6 +150,7 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
             await supabase.from("oficina_mes").upsert({ mes: `tecchassi-${mes}`, diario: tecnicoPorChassi(oss) as never, retornos: [] as never, updated_at: new Date().toISOString() }, { onConflict: "user_id,mes" }); }
           if (a.tec) feitos.push(await salvarFatTecnicos(a.tec, mes));
           if (a.agg) feitos.push(await salvarAgg(a.agg)); }
+        if (a.tipo === "pecas" && a.agg) { const regs = a.agg.registros.filter((r) => r.dia!.startsWith(mes)); if (regs.length) { const dias = regs.map((r) => r.dia!).sort(); feitos.push((await salvarAgg({ registros: regs, ini: dias[0]!, fim: dias[dias.length - 1]!, itens: a.agg.itens })).replace("serviços", "peças")); } }
         if (a.fat) feitos.push(await salvarFat(a.fat));
       }
       setMsg(feitos.length ? "" : "Nada para salvar aqui.");

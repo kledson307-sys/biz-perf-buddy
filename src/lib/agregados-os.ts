@@ -42,3 +42,33 @@ export function agregadosDoFatServicos(raw: unknown[][], codigos?: Record<string
   const dias = registros.map((r) => r.dia!).sort();
   return { registros, ini: dias[0]!, fim: dias[dias.length - 1]!, itens: [...new Set(registros.map((r) => r.item))] };
 }
+
+/**
+ * Agregados de PEÇAS (Brazzo, Tunap…) dentro do "Faturamento de Peças": cada linha com Cód. Item do catálogo
+ * soma a Quantidade e o Preço Final para o vendedor (login) no dia da Venda. O.S. internas ficam fora.
+ */
+export function agregadosDoFatPecas(raw: unknown[][], codigos?: Record<string, string[]>) {
+  const hi = raw.findIndex((r) => { const h = r.map(low); return h.includes("cod. item") && h.includes("preco final") && h.includes("venda"); });
+  if (hi < 0) return null;
+  const h = raw[hi]!.map(low);
+  const cCod = h.indexOf("cod. item"), cQtd = h.indexOf("quantidade"), cVal = h.indexOf("preco final"), cDia = h.indexOf("venda");
+  const cVend = h.indexOf("vendedor"), cTipo = h.indexOf("tipo os");
+  const porCod = new Map<string, string>();
+  for (const it of ITENS.filter((i) => i.g === "pecas")) for (const c of codigos?.[it.k] ?? it.cod) porCod.set(normCod(c), it.k);
+  const acc = new Map<string, Registro>();
+  for (const r of raw.slice(hi + 1)) {
+    const codigo = normCod(txt(r[cCod])); const item = porCod.get(codigo);
+    if (!item) continue;
+    if (cTipo >= 0 && TIPOS_INTERNOS.has(txt(r[cTipo]).toUpperCase())) continue;
+    const dia = iso(r[cDia]); const nome = nomeVendedor(txt(r[cVend]));
+    if (!dia || !nome || naoVendeAgregado(nome)) continue;
+    const k = `${nome}|${item}|${codigo}|${dia}`;
+    const l = acc.get(k) ?? { nome, item, codigo, dia, qtd: 0, valor: 0 };
+    l.qtd += cQtd >= 0 ? num(r[cQtd]) : 1; l.valor = Math.round((l.valor + num(r[cVal])) * 100) / 100;
+    acc.set(k, l);
+  }
+  const registros = [...acc.values()];
+  if (!registros.length) return null;
+  const dias = registros.map((r) => r.dia!).sort();
+  return { registros, ini: dias[0]!, fim: dias[dias.length - 1]!, itens: [...new Set(registros.map((r) => r.item))] };
+}

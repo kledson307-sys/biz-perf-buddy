@@ -17,7 +17,7 @@ export type EntradaRel = {
 };
 
 export type Acao = { foco: string; acao: string; indicador: string; alvo: string; prioridade: "Alta" | "Média"; prazo: string; resp: string };
-const MOTO = /\b(PEDRO|GILBERTO)\b/i;
+const MOTO = /\b(PEDRO|BENIGNO|GILBERTO)/i;
 export const div = (a: number, b: number) => (b ? a / b : 0);
 export const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 export const pct = (v: number) => `${(v * 100).toFixed(1).replace(".", ",")}%`;

@@ -23,3 +23,4 @@
 - Controle O.S. manual status lives in `os_acompanhamento.acoes.__status` (with history) and wins only while newer than the latest weekly import (`comStatusManual`); NPS detractor follow-up reuses `os_acompanhamento` rows keyed `nps:<chassi>` (`acoes.__nps`) to avoid a new table.
 - Technician 'sem apontamento' billing is stored as oficina_mes row `mes = "semapont-AAAA-MM"` (diario = {servicos,pecas}), same no-migration pattern as agenda rows. Unified-import undo restores only daily_sales/NPS/parts snapshots taken in-session before saving.
 - NPS technician link is stored as oficina_mes row `mes = "tecchassi-AAAA-MM"` (diario = chassi → technicians of latest O.S.), written by the Passagens import; same no-migration pattern.
+- "Faturamento de Peças" also feeds parts agregados (Tunap/Brazzo) via `agregadosDoFatPecas`, saving only the target month so a cumulative sheet never hits closed months.
