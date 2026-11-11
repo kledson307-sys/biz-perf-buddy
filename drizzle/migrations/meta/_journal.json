@@ -281,6 +281,13 @@
       "when": 1794084864477,
       "tag": "0039_simulado_imports",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1794439952293,
+      "tag": "0040_oficina_leitura_gestao",
+      "breakpoints": true
     }
   ]
 }
