@@ -24,3 +24,4 @@
 - Technician 'sem apontamento' billing is stored as oficina_mes row `mes = "semapont-AAAA-MM"` (diario = {servicos,pecas}), same no-migration pattern as agenda rows. Unified-import undo restores only daily_sales/NPS/parts snapshots taken in-session before saving.
 - NPS technician link is stored as oficina_mes row `mes = "tecchassi-AAAA-MM"` (diario = chassi → technicians of latest O.S.), written by the Passagens import; same no-migration pattern.
 - "Faturamento de Peças" also feeds parts agregados (Tunap/Brazzo) via `agregadosDoFatPecas`, saving only the target month so a cumulative sheet never hits closed months.
+- Item quantity display goes through `qtdItem`/`litrosDe` (`src/lib/pecas-itens.ts`), which detects ml-launched fluids by unit price below R$1; every item table must use it instead of formatting `qtd` directly.

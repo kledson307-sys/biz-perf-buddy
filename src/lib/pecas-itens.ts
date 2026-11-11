@@ -80,6 +80,22 @@ export function faixasGiro(curva: ItemAbc[]) {
   });
 }
 
+/** Fluidos (óleo, lubrificante, fluido, aditivo...) cuja quantidade o DMS lança em ml: unitário abaixo de R$1. */
+const FLUIDO = /\b(oleo|lubrificante|fluido|aditivo|graxa|twinpower|advantec|hyospin|hyspin|saf-xo|arrefecimento|liquido)\b/;
+export const ehFluidoMl = (i: Pick<ItemPeca, "desc" | "qtd" | "valor">) =>
+  i.qtd > 0 && FLUIDO.test(n(i.desc)) && i.valor / i.qtd < 1;
+
+/** Volume em litros quando a quantidade do item está em ml; null quando é contagem de unidades. */
+export const litrosDe = (i: Pick<ItemPeca, "desc" | "qtd" | "valor">) => (ehFluidoMl(i) ? i.qtd / 1000 : null);
+
+/** Quantidade pronta para a tela: litros para fluido lançado em ml, unidades inteiras para o resto. */
+export function qtdItem(i: Pick<ItemPeca, "desc" | "qtd" | "valor">): string {
+  const L = litrosDe(i);
+  if (L === null) return Math.round(i.qtd).toLocaleString("pt-BR");
+  const d = L < 1 ? 2 : 1;
+  return `${L.toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d })} L`;
+}
+
 /** Pneus vendidos (unidades) por login do vendedor, pela descrição do item. */
 export const ehPneu = (i: Pick<ItemPeca, "desc">) => /\bpneu/.test(n(i.desc));
 export function pneusPorVendedor(itens: ItemPeca[]): Record<string, number> {

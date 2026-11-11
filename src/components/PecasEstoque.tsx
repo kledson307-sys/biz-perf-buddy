@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Box, brl, div, pct, tone, uni } from "@/components/painel-ui";
-import { curvaAbc, faixasGiro, familiaPeca, ehPneu, pneusPorVendedor, descontoPorVendedor, toneDesconto, type ItemPeca } from "@/lib/pecas-itens";
+import { curvaAbc, faixasGiro, familiaPeca, ehPneu, pneusPorVendedor, descontoPorVendedor, toneDesconto, ehFluidoMl, litrosDe, qtdItem, type ItemPeca } from "@/lib/pecas-itens";
 import { Bloco, Linha } from "@/components/Cockpit";
 import { CabecalhoTela, KpiCard } from "@/components/TelasGestor";
 import { BarChart3, Package, PieChart, RefreshCw, Trophy, Users } from "lucide-react";
@@ -107,13 +107,16 @@ export function PecasEstoque({ linhas, porDept, margemIdeal, deptName, passagens
             <ul className="mt-1 space-y-0.5 text-xs">{pv.map(([lg, n]) => <li key={lg} className="flex justify-between border-b border-border/50"><span>{lg}</span><b>{uni(n)} un.{/ANDRESSA/.test(lg) && <span className={n >= 50 ? " text-success" : " text-warning"}> · meta 50 ({n >= 50 ? "R$ 400 ✓" : `faltam ${uni(50 - n)}`})</span>}</b></li>)}</ul>
           </Bloco>; })()}
         <Bloco titulo="Top 5 itens de maior faturamento" icon={<Trophy className="size-4 text-warning" />} right={curva.length ? <button type="button" className="text-[11px] text-primary hover:underline" onClick={() => setAbc(!abc)}>{abc ? "Fechar Curva ABC" : "Curva ABC"}</button> : undefined}>
-          {!curva.length ? semItens : <table className="w-full text-xs"><thead className="text-muted-foreground"><tr><th className="text-left font-normal">Item</th><th className="text-right font-normal">Qtd</th><th className="text-right font-normal">Faturamento</th></tr></thead>
-            <tbody>{curva.slice(0, 5).map((i) => <tr key={i.cod} className="border-t border-border/50"><td className="max-w-0 truncate py-1">{i.desc || i.cod}</td><td className="text-right">{uni(i.qtd)}</td><td className="text-right font-bold tabular-nums">{brl(i.valor)}</td></tr>)}</tbody></table>}
+          {!curva.length ? semItens : (() => { const t5 = curva.slice(0, 5); return <>
+            <table className="w-full text-xs"><thead className="text-muted-foreground"><tr><th className="text-left font-normal">Item</th><th className="text-right font-normal" title="Unidades; óleo e fluidos em litros">Qtd</th><th className="text-right font-normal">Faturamento</th></tr></thead>
+            <tbody>{t5.map((i) => <tr key={i.cod} className="border-t border-border/50"><td className="max-w-0 truncate py-1">{i.desc || i.cod}</td><td className="text-right tabular-nums" title={litrosDe(i) !== null ? `${uni(i.qtd)} ml` : undefined}>{qtdItem(i)}</td><td className="text-right font-bold tabular-nums">{brl(i.valor)}</td></tr>)}</tbody></table>
+            {t5.some(ehFluidoMl) && <p className="mt-1 text-[10px] text-muted-foreground">Óleo e fluidos em litros (o DMS lança em ml).</p>}
+          </>; })()}
         </Bloco>
       </div>
       {abc && <Box title="Curva ABC completa">
-        <div className="max-h-96 overflow-y-auto"><table className="w-full text-xs"><thead className="sticky top-0 bg-card text-muted-foreground"><tr><th className="px-2 text-left">Classe</th><th className="text-left">Item</th><th>Qtd</th><th>Faturamento</th><th>Margem</th><th title="Desconto médio sobre a tabela">Desc.</th><th>% acum.</th></tr></thead>
-          <tbody>{curva.map((i) => { const [t, d] = Object.values(i.desc$ ?? {}).reduce((x, y) => [x[0] + y[0], x[1] + y[1]], [0, 0]); return <tr key={i.cod} className="border-t border-border"><td className="px-2 font-bold">{i.classe}</td><td>{i.cod} · {i.desc}</td><td className="text-center">{uni(i.qtd)}</td><td className="text-right">{brl(i.valor)}</td><td className="text-right">{pct(div(i.margem, i.valor))}</td><td className={`text-right font-bold ${t ? toneDesconto(div(d, t)) : ""}`} title={t ? `${brl(d)} concedidos` : ""}>{t ? pct(div(d, t)) : "—"}</td><td className="text-right">{pct(i.acum)}</td></tr>; })}</tbody></table></div>
+        <div className="max-h-96 overflow-y-auto"><table className="w-full text-xs"><thead className="sticky top-0 bg-card text-muted-foreground"><tr><th className="px-2 text-left">Classe</th><th className="text-left">Item</th><th title="Unidades; óleo e fluidos em litros">Qtd</th><th>Faturamento</th><th>Margem</th><th title="Desconto médio sobre a tabela">Desc.</th><th>% acum.</th></tr></thead>
+          <tbody>{curva.map((i) => { const [t, d] = Object.values(i.desc$ ?? {}).reduce((x, y) => [x[0] + y[0], x[1] + y[1]], [0, 0]); return <tr key={i.cod} className="border-t border-border"><td className="px-2 font-bold">{i.classe}</td><td>{i.cod} · {i.desc}</td><td className="text-center tabular-nums" title={litrosDe(i) !== null ? `${uni(i.qtd)} ml` : undefined}>{qtdItem(i)}</td><td className="text-right">{brl(i.valor)}</td><td className="text-right">{pct(div(i.margem, i.valor))}</td><td className={`text-right font-bold ${t ? toneDesconto(div(d, t)) : ""}`} title={t ? `${brl(d)} concedidos` : ""}>{t ? pct(div(d, t)) : "—"}</td><td className="text-right">{pct(i.acum)}</td></tr>; })}</tbody></table></div>
       </Box>}
     </section>
   );
