@@ -7,3 +7,10 @@ describe("consultorMoto", () => {
     expect(consultorMoto("ANDRESSA.O")).toBe(false);
   });
 });
+
+import { casarConsultor } from "./sales-report";
+describe("casarConsultor inverso", () => {
+  it("PEDRO BENIGNO SANTOS SANTANA → P.BENIGNO", () => {
+    expect(casarConsultor("PEDRO BENIGNO SANTOS SANTANA", ["P.BENIGNO", "GILBERTO.S"])).toBe("P.BENIGNO");
+  });
+});
