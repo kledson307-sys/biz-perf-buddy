@@ -108,7 +108,7 @@ export function casarConsultor(nome: string, logins: string[]): string | undefin
   }
   // padrão inverso: INICIAL.SOBRENOME (ex.: PEDRO BENIGNO SANTOS → P.BENIGNO)
   for (const sob of resto) {
-    const l = porK.get(k(`${prim[0]}.${sob}`));
+    const l = porK.get(k(`${prim![0]}.${sob}`));
     if (l) return l;
   }
   return undefined;
