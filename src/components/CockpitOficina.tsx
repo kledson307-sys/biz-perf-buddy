@@ -3,7 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Box, Posicao, brl, div, norm, pct, tone, uni } from "@/components/painel-ui";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, Menu, X, LayoutDashboard, Car, Wrench, ShieldCheck, FileSearch, Wallet, Gem, ClipboardList, CalendarClock, Star } from "lucide-react";
+import bmwLogo from "@/assets/bmw-logo.asset.json";
+import { Agregados } from "@/components/Agregados";
+import { Mecanicos } from "@/components/Mecanicos";
+import { ControleOS } from "@/components/ControleOS";
+import { Agendamentos } from "@/components/Agendamentos";
+import { NpsPainel } from "@/components/NpsPainel";
+import { RetrabalhoOficina } from "@/components/RetrabalhoOficina";
+import { RankingAgregados, RankingTecnicos } from "@/components/RankingExtra";
 import { Notificacoes } from "@/components/Notificacoes";
 import { MixPassagens } from "@/components/MixPassagens";
 import { NpsResumoRestrito } from "@/components/NpsPainel";
@@ -29,6 +37,13 @@ export function CockpitOficina({ chefe }: { chefe: boolean }) {
   const [pn, setPn] = useState<Painel | null>(null);
   const [nps, setNps] = useState<NpsItem[]>([]);
   const [erro, setErro] = useState("");
+  const [menu, setMenu] = useState(false);
+  const [cons, setCons] = useState<{ id: string; nome: string; department_id: string | null }[]>([]);
+  const [deps, setDeps] = useState<{ id: string; nome: string }[]>([]);
+  const [email, setEmail] = useState("");
+  const loadCons = () => { void supabase.from("consultants").select("id,nome,department_id").order("nome").then(({ data }) => setCons(data ?? [])); };
+  useEffect(() => { loadCons(); void supabase.from("departments").select("id,nome").then(({ data }) => setDeps(data ?? [])); void supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? "")); }, []);
+  const deptName = (id: string | null) => deps.find((d) => d.id === id)?.nome ?? "—";
   useEffect(() => {
     setErro("");
     void supabase.rpc("tecnicos_carro", { p_mes: mes }).then(({ data, error }) => (error ? setErro("Não foi possível carregar os dados.") : setTec(data as unknown as { tecnicos: T[]; params: Params })));
@@ -70,7 +85,6 @@ export function CockpitOficina({ chefe }: { chefe: boolean }) {
   const pecasHoje = por("pecas").filter((a) => a.prev && a.prev <= ref);
 
   const V = pn?.vendas ?? { servicos: 0, pecas: 0 }, M = pn?.metas ?? { servicos: 0, pecas: 0 };
-  const abas: [string, string][] = [["resumo", "Resumo"], ["patio", "Pátio & O.S."], ["tecnicos", "Técnicos & Boxes"], ["qualidade", "Qualidade & Retorno"], ...(chefe ? [["dossie", "Dossiê técnico"] as [string, string], ["comissao", "Minha remuneração"] as [string, string]] : [])];
   const vend = (+(pn?.vendas.servicos ?? 0)) + (+(pn?.vendas.pecas ?? 0)), metaOf = (+(pn?.metas.servicos ?? 0)) + (+(pn?.metas.pecas ?? 0));
   const npsCarro = npsPorMarca(nps, mes).carro;
   const metDel = (v: number): Metricas => ({ metaOficinaOk: metaOf > 0 ? v >= metaOf : null, npsBmw: npsCarro });
@@ -78,20 +92,51 @@ export function CockpitOficina({ chefe }: { chefe: boolean }) {
   const retTec = new Map<string, number>();
   for (const r of ret) for (const t of (r.tecnicoAnterior || "SEM TÉCNICO").split(", ")) retTec.set(norm(t), (retTec.get(norm(t)) ?? 0) + 1);
   const rankRet = [...ret.reduce((m, r) => { for (const t of (r.tecnicoAnterior || "SEM TÉCNICO").split(", ")) m.set(t, (m.get(t) ?? 0) + 1); return m; }, new Map<string, number>()).entries()].sort((a, b) => b[1] - a[1]);
+  const grupos: { t: string; itens: [string, string, typeof Gem][] }[] = [
+    { t: "Operação da oficina", itens: [["resumo", "Resumo do pátio", LayoutDashboard], ["patio", "Pátio & O.S.", Car], ["tecnicos", "Técnicos & Boxes", Wrench], ["qualidade", "Qualidade & Retorno", ShieldCheck], ...(chefe ? [["dossie", "Dossiê técnico", FileSearch], ["comissao", "Minha remuneração", Wallet]] as [string, string, typeof Gem][] : [])] },
+    { t: "Visão de gestão", itens: [["g-agregados", "Agregados", Gem], ["g-tecnicos", "Oficina & Técnicos", Wrench], ["g-os", "Ordens de Serviço", ClipboardList], ["g-agenda", "Agendamentos", CalendarClock], ["g-nps", "NPS & Satisfação", Star]] },
+  ];
+  const rotulo = grupos.flatMap((g) => g.itens).find(([k]) => k === aba)?.[1] ?? "";
+  const navList = <nav aria-label="Abas da oficina" className="flex flex-col gap-0.5">{grupos.map((g) => <div key={g.t} className="mb-2">
+    <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">{g.t}</p>
+    {g.itens.map(([k, l, Icon]) => { const on = aba === k; return <button key={k} type="button" aria-current={on ? "page" : undefined} onClick={() => { setAba(k); setMenu(false); }}
+      className={`flex w-full items-center gap-3 rounded-lg px-3 py-1.5 text-left text-sm transition-colors ${on ? "bg-gradient-to-r from-primary/30 to-primary/5 font-semibold text-foreground shadow-[inset_3px_0_0_var(--color-primary)]" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+      <Icon strokeWidth={1.5} className={`size-4 shrink-0 ${on ? "text-primary" : ""}`} /><span className="flex-1">{l}</span></button>; })}</div>)}</nav>;
+  const marca = <div className="flex items-center gap-3"><img src={bmwLogo.url} alt="BMW" className="size-10 shrink-0" />
+    <div className="min-w-0 leading-tight"><p className="text-sm font-bold tracking-wide">BMW PÓS-VENDA</p>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">Haus Motors · Salvador</p>
+      <p className="text-[10px] text-muted-foreground">{chefe ? "Chefe de Oficina · Delmir" : "Controlador · Marcos"}</p></div></div>;
+  const rodape = <div className="border-t border-border p-2"><div className="m-stripe mx-auto w-16 rounded-full" />
+    <p className="mt-2 text-center text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Juntos pela melhor experiência.</p>
+    <p className="mt-1 break-all text-center text-[10px] text-muted-foreground">{email}</p></div>;
   return (
-    <div className="min-h-screen bg-background p-3 md:p-6">
-      <div className="mx-auto max-w-[1600px] space-y-3">
-        <header className="lux-card flex flex-wrap items-center justify-between gap-2 p-3">
-          <div><p className="text-[10px] uppercase tracking-[0.3em] text-primary">HAUS MOTORS · SALVADOR</p>
-            <h1 className="text-lg font-bold">Oficina Carro · {chefe ? "Chefe de Oficina · Delmir Xavier" : "Controlador de Quadro · Marcos"}</h1></div>
-          <div className="flex items-center gap-2">
-            <input type="month" className="h-9 rounded-md border bg-background px-2 text-sm" value={mes} onChange={(e) => setMes(e.target.value)} />
+    <div className="min-h-screen bg-background text-foreground">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-border bg-card lg:flex">
+        <div className="border-b border-border p-4">{marca}</div>
+        <div className="flex-1 overflow-y-auto p-3">{navList}</div>
+        {rodape}
+      </aside>
+      {menu && <div className="fixed inset-0 z-40 lg:hidden">
+        <button aria-label="Fechar menu" className="absolute inset-0 bg-background/70 backdrop-blur-sm" onClick={() => setMenu(false)} />
+        <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-border bg-card shadow-xl">
+          <div className="flex items-center justify-between border-b border-border p-4">{marca}<Button variant="ghost" size="icon" aria-label="Fechar menu" onClick={() => setMenu(false)}><X /></Button></div>
+          <div className="flex-1 overflow-y-auto p-3">{navList}</div>
+          {rodape}
+        </div>
+      </div>}
+      <div className="lg:pl-64">
+        <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur">
+          <div className="flex items-center gap-2 px-3 py-1.5 sm:px-5">
+            <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Abrir menu" onClick={() => setMenu(true)}><Menu /></Button>
+            <div className="min-w-0 flex-1"><h1 className="truncate text-base font-bold sm:text-lg">{rotulo}</h1>
+              <p className="text-[11px] text-muted-foreground">{uteis ? "Úteis" : "Corridos"} {dec}/{tot}</p></div>
+            <input aria-label="Mês" type="month" className="h-9 rounded-md border bg-background px-2 text-sm" value={mes} onChange={(e) => setMes(e.target.value)} />
             <Notificacoes oficina abrir={() => setAba("patio")} />
             <ThemeToggle />
-            <Button size="sm" variant="outline" onClick={() => supabase.auth.signOut()}><LogOut className="size-4" /> Sair</Button>
+            <Button variant="ghost" size="icon" title="Sair" aria-label="Sair" onClick={() => void supabase.auth.signOut()}><LogOut /></Button>
           </div>
         </header>
-        <nav className="flex flex-wrap gap-1">{abas.map(([k, n]) => <Button key={k} size="sm" variant={aba === k ? "default" : "outline"} onClick={() => setAba(k)}>{n}</Button>)}</nav>
+      <div className="mx-auto max-w-[1600px] space-y-3 p-3 sm:p-5">
         {erro && <p className="text-sm text-destructive">{erro}</p>}
 
         {aba === "resumo" && <div className="grid gap-3 lg:grid-cols-4">
@@ -164,6 +209,14 @@ export function CockpitOficina({ chefe }: { chefe: boolean }) {
                 <td>{brl(div(+t.servicos + +t.pecas, +t.passagens))}</td><td className={r.cls}>{r.txt}</td><td className={(retTec.get(norm(t.nome)) ?? 0) ? "text-destructive font-semibold" : ""}>{uni(retTec.get(norm(t.nome)) ?? 0)}</td><td className={tone(t.perf)}>{pct(t.perf)}</td></tr>; })}</tbody>
           </table></div>
         </Box>}
+        {aba === "g-agregados" && <><Agregados mes={mes} cons={cons} allCons={cons} tot={tot} dec={dec} deptName={deptName} reloadCons={loadCons} />
+          <details className="lux-card"><summary className="cursor-pointer px-4 py-2 text-sm font-semibold">Ranking geral de agregados <span className="text-xs text-primary">abrir/fechar</span></summary><div className="max-h-[60vh] overflow-y-auto"><RankingAgregados mes={mes} cons={cons} deptName={deptName} tot={tot} dec={dec} /></div></details></>}
+        {aba === "g-tecnicos" && <><Mecanicos mes={mes} tot={tot} dec={dec} lado={(f) => <RetrabalhoOficina mes={mes} segmento={f} />} />
+          <details className="lux-card"><summary className="cursor-pointer px-4 py-2 text-sm font-semibold">Ranking dos técnicos · Serviços, Peças e Total <span className="text-xs text-primary">abrir/fechar</span></summary><RankingTecnicos mes={mes} tot={tot} dec={dec} /></details></>}
+        {aba === "g-os" && <ControleOS />}
+        {aba === "g-agenda" && <Agendamentos mes={mes} />}
+        {aba === "g-nps" && <NpsPainel mes={mes} />}
+      </div>
       </div>
     </div>
   );
