@@ -26,3 +26,4 @@
 - "Faturamento de Peças" also feeds parts agregados (Tunap/Brazzo) via `agregadosDoFatPecas`, saving only the target month so a cumulative sheet never hits closed months.
 - Item quantity display goes through `qtdItem`/`litrosDe` (`src/lib/pecas-itens.ts`), which detects ml-launched fluids by unit price below R$1; every item table must use it instead of formatting `qtd` directly.
 - Marcos/Delmir (chefe_oficina/controlador) also get read-only SELECT on the management tabs' tables via `oficina_owner()` "oficina read" policies, so CockpitOficina's sidebar reuses the master Agregados/Mecanicos/ControleOS/Agendamentos/NpsPainel components unchanged; writes stay master/editor-only.
+- Exception: Marcos/Delmir may INSERT/UPDATE `os_acompanhamento` (non-`nps:` rows) via "oficina insert/update" policies so they can change Controle O.S. status; user_id defaults to coalesce(data_owner(), oficina_owner()).

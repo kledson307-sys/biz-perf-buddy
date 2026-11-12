@@ -288,6 +288,13 @@
       "when": 1794439952293,
       "tag": "0040_oficina_leitura_gestao",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1794442299915,
+      "tag": "0041_oficina_muda_status_os",
+      "breakpoints": true
     }
   ]
 }
