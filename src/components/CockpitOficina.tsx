@@ -14,8 +14,7 @@ import { RetrabalhoOficina } from "@/components/RetrabalhoOficina";
 import { RankingAgregados, RankingTecnicos } from "@/components/RankingExtra";
 import { Notificacoes } from "@/components/Notificacoes";
 import { MixPassagens } from "@/components/MixPassagens";
-import { NpsResumoRestrito } from "@/components/NpsPainel";
-import { META_PROMOTOR, classe, type NpsItem } from "@/lib/nps";
+import { classe, type NpsItem } from "@/lib/nps";
 import { analisar, fmt, hoje, type OsImport, type OsItem } from "@/lib/os-controle";
 import type { Composicao } from "@/lib/mecanicos";
 import { dicaTecnico, ratioFaixa, ritmo } from "@/lib/oficina";
@@ -92,8 +91,12 @@ export function CockpitOficina({ chefe }: { chefe: boolean }) {
   const retTec = new Map<string, number>();
   for (const r of ret) for (const t of (r.tecnicoAnterior || "SEM TÉCNICO").split(", ")) retTec.set(norm(t), (retTec.get(norm(t)) ?? 0) + 1);
   const rankRet = [...ret.reduce((m, r) => { for (const t of (r.tecnicoAnterior || "SEM TÉCNICO").split(", ")) m.set(t, (m.get(t) ?? 0) + 1); return m; }, new Map<string, number>()).entries()].sort((a, b) => b[1] - a[1]);
+  const ratioOf = ratioFaixa(+V.pecas, +V.servicos);
+  const baixoRatio = lista.filter((t) => +t.servicos > 0 && ratioFaixa(+t.pecas, +t.servicos).r < 2);
+  const abaixoRitmo = lista.map((t) => ({ t, r: ritmo(+t.servicos + +t.pecas, +t.meta_servicos + +t.meta_pecas, dec, tot) })).filter((x) => +x.t.meta_servicos + +x.t.meta_pecas > 0 && x.r.projP < 0.85).sort((a, b) => a.r.projP - b.r.projP);
+  const consOrc = [...por("autorizacao").reduce((m, a) => m.set(a.item.cons || "—", (m.get(a.item.cons || "—") ?? 0) + 1), new Map<string, number>()).entries()].sort((a, b) => b[1] - a[1]);
   const grupos: { t: string; itens: [string, string, typeof Gem][] }[] = [
-    { t: "Operação da oficina", itens: [["resumo", "Resumo do pátio", LayoutDashboard], ["patio", "Pátio & O.S.", Car], ["tecnicos", "Técnicos & Boxes", Wrench], ["qualidade", "Qualidade & Retorno", ShieldCheck], ...(chefe ? [["dossie", "Dossiê técnico", FileSearch], ["comissao", "Minha remuneração", Wallet]] as [string, string, typeof Gem][] : [])] },
+    { t: "Operação da oficina", itens: [["resumo", "Torre de controle", LayoutDashboard], ["patio", "Pátio & O.S.", Car], ["tecnicos", "Técnicos & Boxes", Wrench], ["qualidade", "Retornos & Retrabalho", ShieldCheck], ...(chefe ? [["dossie", "Dossiê técnico", FileSearch], ["comissao", "Minha remuneração", Wallet]] as [string, string, typeof Gem][] : [])] },
     { t: "Visão de gestão", itens: [["g-agregados", "Agregados", Gem], ["g-tecnicos", "Oficina & Técnicos", Wrench], ["g-os", "Ordens de Serviço", ClipboardList], ["g-agenda", "Agendamentos", CalendarClock], ["g-nps", "NPS & Satisfação", Star]] },
   ];
   const rotulo = grupos.flatMap((g) => g.itens).find(([k]) => k === aba)?.[1] ?? "";
@@ -139,21 +142,47 @@ export function CockpitOficina({ chefe }: { chefe: boolean }) {
       <div className="mx-auto max-w-[1600px] space-y-3 p-3 sm:p-5">
         {erro && <p className="text-sm text-destructive">{erro}</p>}
 
-        {aba === "resumo" && <div className="grid gap-3 lg:grid-cols-4">
-          <Meta l="Serviços SG Oficina" v={V.servicos} m={M.servicos} dec={dec} tot={tot} />
-          <Meta l="Peças SG Oficina" v={V.pecas} m={M.pecas} dec={dec} tot={tot} />
-          <Meta l="Total SG Oficina" v={V.servicos + V.pecas} m={M.servicos + M.pecas} dec={dec} tot={tot} />
-          <Box title="Radar do dia">
-            <ul className="space-y-1 p-3 text-sm">
-              <Radar n={preventivo.length} t="clientes com histórico NPS neutro/detrator no pátio" />
-              <Radar n={pecasHoje.length} t="peças com chegada prevista até hoje" />
-              <Radar n={parados.length} t="O.S. sem mudança há mais de 5 dias" />
-              {chefe && <Radar n={diag3.length} t="diagnósticos parados há mais de 3 dias" />}
-              <Radar n={por("autorizacao").length} t="aguardando aprovação de orçamento" />
-            </ul>
-          </Box>
-          <div className="lg:col-span-2"><TabelaTec lista={lista} dec={dec} tot={tot} /></div>
-          <div className="lg:col-span-2"><MixPassagens titulo="Mix de passagens · Carro" linhas={lista} todos={todos} /></div>
+        {aba === "resumo" && <div className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Kpi t="Serviços SG Oficina" v={brl(V.servicos)} p={div(V.servicos, M.servicos)} sub={`Projeção ${pct(ritmo(V.servicos, M.servicos, dec, tot).projP)} · precisa ${brl(ritmo(V.servicos, M.servicos, dec, tot).nec)}/dia`} ir={() => setAba("g-tecnicos")} />
+            <Kpi t="Peças SG Oficina" v={brl(V.pecas)} p={div(V.pecas, M.pecas)} sub={`Projeção ${pct(ritmo(V.pecas, M.pecas, dec, tot).projP)} · precisa ${brl(ritmo(V.pecas, M.pecas, dec, tot).nec)}/dia`} ir={() => setAba("g-tecnicos")} />
+            <Kpi t="Total SG Oficina" v={brl(vend)} p={div(vend, metaOf)} sub={`Meta ${brl(metaOf)} · projeção ${brl(ritmo(vend, metaOf, dec, tot).proj)}`} ir={() => setAba("g-tecnicos")} />
+            <Kpi t="Peças por R$ 1 de M.O." v={ratioOf.txt} cls={ratioOf.cls} sub="Ideal ≥ R$ 2,50 · inspeção completa em cada passagem" ir={() => setAba("tecnicos")} />
+          </div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">{chefe ? "Prioridades do Chefe de Oficina" : "Prioridades do Controlador de Quadro"}</p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {chefe ? <>
+              <Alerta n={diag3.length} t="Diagnósticos parados > 3 dias" d="Intervir tecnicamente ou abrir caso na fábrica." ir={() => setAba("patio")} />
+              <Alerta n={ret.length} t="Retornos em até 60 dias" d={rankRet[0] ? `Mais retornos: ${rankRet[0][0]} (${rankRet[0][1]})` : "Nenhum retrabalho identificado."} ir={() => setAba("qualidade")} />
+              <Alerta n={baixoRatio.length} t="Técnicos com peças abaixo de R$ 2,00/M.O." d={baixoRatio.slice(0, 3).map((t) => t.nome).join(", ") || "Toda a equipe na faixa."} ir={() => setAba("tecnicos")} aviso />
+              <Alerta n={preventivo.length} t="Clientes insatisfeitos no pátio" d="Fazer teste de rodagem e acompanhar a entrega." ir={() => setAba("patio")} />
+              <Alerta n={pecasHoje.length} t="Peças com chegada prevista até hoje" d="Confirmar recebimento e liberar box." ir={() => setAba("patio")} aviso />
+              <button type="button" onClick={() => setAba("comissao")} className="lux-card p-3 text-left transition-colors hover:border-primary">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Travas da minha remuneração</p>
+                <ul className="mt-1 space-y-0.5 text-sm">
+                  <li>{metaOf && vend >= metaOf ? "✅" : "⏳"} Meta oficina · <b className={tone(div(vend, metaOf))}>{pct(div(vend, metaOf))}</b></li>
+                  <li>{npsCarro != null && npsCarro >= 0.85 ? "✅" : "⏳"} NPS Carro ≥ 85% · <b>{npsCarro == null ? "—" : pct(npsCarro)}</b></li>
+                  <li>⏳ Vídeos de inspeção · pendente</li></ul>
+              </button>
+            </> : <>
+              <Alerta n={pecasHoje.length} t="Peças chegando até hoje" d="Cobrar o estoque e mandar o carro para o box." ir={() => setAba("patio")} aviso />
+              <Alerta n={por("autorizacao").length} t="Aguardando aprovação de orçamento" d={consOrc.slice(0, 3).map(([c, q]) => `${c} (${q})`).join(" · ") || "Nenhum orçamento pendente."} ir={() => setAba("patio")} aviso />
+              <Alerta n={parados.length} t="O.S. sem mudança > 5 dias" d="Atualizar o status ou destravar a O.S." ir={() => setAba("g-os")} />
+              <Alerta n={por("diag").length} t="Em diagnóstico" d={`${diag3.length} há mais de 3 dias`} ir={() => setAba("patio")} aviso />
+              <Alerta n={preventivo.length} t="Clientes insatisfeitos no pátio" d="Avisar o chefe e o consultor antes da entrega." ir={() => setAba("patio")} />
+              <Kpi t="Carga de agendamentos" v="Hoje e D+1" sub="Revisões, diagnósticos e recalls para planejar os boxes" ir={() => setAba("g-agenda")} />
+            </>}
+          </div>
+          <div className="grid gap-3 lg:grid-cols-3">
+            <button type="button" onClick={() => setAba("tecnicos")} className="lux-card p-3 text-left transition-colors hover:border-primary">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Técnicos abaixo do ritmo (&lt; 85%)</p>
+              <ul className="mt-1 space-y-1 text-sm">{abaixoRitmo.slice(0, 5).map(({ t, r }) => <li key={t.nome} className="flex justify-between gap-2"><span>{t.nome} · <b className={tone(r.projP)}>{pct(r.projP)}</b></span><span className="text-xs text-muted-foreground">precisa {brl(r.nec)}/dia</span></li>)}
+                {!abaixoRitmo.length && <li className="text-success">✅ Equipe toda no ritmo da meta.</li>}</ul>
+              {lista[0] && <p className="mt-2 text-xs text-muted-foreground">Líder do mês: <b className="text-foreground">{lista[0].nome}</b> ({pct(lista[0].perf)})</p>}
+            </button>
+            <Kpi t="NPS Carro do mês" v={npsCarro == null ? "—" : pct(npsCarro)} p={npsCarro == null ? undefined : npsCarro / 0.85} sub="Meta 85% de promotores" ir={() => setAba("g-nps")} />
+            <MixPassagens titulo="Mix de passagens · Carro" linhas={lista} todos={todos} />
+          </div>
         </div>}
 
         {aba === "patio" && <div className="grid gap-3 lg:grid-cols-3">
@@ -175,8 +204,7 @@ export function CockpitOficina({ chefe }: { chefe: boolean }) {
           </Box>
         </div>}
 
-        {aba === "qualidade" && <div className="grid gap-3 lg:grid-cols-3">
-          <NpsResumoRestrito titulo="NPS da oficina · Carro" meta={META_PROMOTOR.carro} />
+        {aba === "qualidade" && <div>
           <Box title={`Retornos por chassi · até 60 dias (${uni(ret.length)})`} fit="xl:max-h-[calc(100vh-260px)]">
             <div className="p-3 text-xs">
               <p className="mb-1 text-muted-foreground">Mesmo veículo voltou com reparo/garantia. Responsável = técnico da O.S. anterior.</p>
@@ -186,10 +214,6 @@ export function CockpitOficina({ chefe }: { chefe: boolean }) {
                 <p className="text-muted-foreground">{r.modelo} · {r.placa || r.chassi} · técnico anterior: <b className="text-foreground">{r.tecnicoAnterior || "—"}</b></p></li>)}
                 {!ret.length && <li className="text-muted-foreground">Nenhum retorno identificado (ou planilha de Passagens ainda não reimportada).</li>}</ul>
             </div>
-          </Box>
-          <Box title="Clientes insatisfeitos de volta ao pátio">
-            <ul className="space-y-1 p-3 text-xs">{preventivo.map((a) => <li key={a.item.n} className="rounded border border-border p-2">O.S. <b>{a.item.n}</b> · {a.item.mod} · {a.item.cons} · {a.diasStatus} dias</li>)}
-              {!preventivo.length && <li className="text-muted-foreground">Nenhum cliente insatisfeito no pátio.</li>}</ul>
           </Box>
         </div>}
 
@@ -231,6 +255,23 @@ function Meta({ l, v, m, dec, tot }: { l: string; v: number; m: number; dec: num
     <p className="text-xs">Projeção {brl(r.proj)} · <b className={tone(r.projP)}>{pct(r.projP)}</b></p>
     <p className="text-xs text-muted-foreground">Necessidade diária {brl(r.nec)}</p>
   </section>;
+}
+function Kpi({ t, v, p, sub, cls, ir }: { t: string; v: string; p?: number; sub?: string; cls?: string; ir: () => void }) {
+  return <button type="button" onClick={ir} className="lux-card group p-3 text-left transition-colors hover:border-primary">
+    <p className="flex justify-between text-xs uppercase tracking-wide text-muted-foreground">{t}<span className="text-primary opacity-0 group-hover:opacity-100">→</span></p>
+    <p className={`text-2xl font-bold ${cls ?? ""}`}>{v}</p>
+    {p !== undefined && <><div className="mt-1 h-1.5 rounded-full bg-muted"><div className={`h-full rounded-full ${p >= 1 ? "bg-success" : p >= 0.85 ? "bg-warning" : "bg-destructive"}`} style={{ width: `${Math.min(100, p * 100)}%` }} /></div>
+      <p className={`mt-0.5 text-xs font-semibold ${tone(p)}`}>{pct(p)} da meta</p></>}
+    {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
+  </button>;
+}
+function Alerta({ n, t, d, ir, aviso }: { n: number; t: string; d: string; ir: () => void; aviso?: boolean }) {
+  const c = !n ? "border-l-success" : aviso ? "border-l-warning" : "border-l-destructive";
+  return <button type="button" onClick={ir} className={`lux-card group border-l-4 p-3 text-left transition-colors hover:border-primary ${c}`}>
+    <div className="flex items-center justify-between"><p className="text-xs uppercase tracking-wide text-muted-foreground">{t}</p><span className="text-primary opacity-0 group-hover:opacity-100">→</span></div>
+    <p className={`text-3xl font-bold ${!n ? "text-success" : aviso ? "text-warning" : "text-destructive"}`}>{uni(n)}</p>
+    <p className="text-xs text-muted-foreground">{d}</p>
+  </button>;
 }
 function Radar({ n, t }: { n: number; t: string }) {
   return <li className="flex items-center gap-2"><b className={n ? "text-destructive" : "text-success"}>{uni(n)}</b><span>{t}</span></li>;
