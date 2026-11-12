@@ -256,7 +256,7 @@ function Meta({ l, v, m, dec, tot }: { l: string; v: number; m: number; dec: num
     <p className="text-xs text-muted-foreground">Necessidade diária {brl(r.nec)}</p>
   </section>;
 }
-function Kpi({ t, v, p, sub, cls, ir }: { t: string; v: string; p?: number; sub?: string; cls?: string; ir: () => void }) {
+function Kpi({ t, v, p, sub, cls, ir }: { t: string; v: string; p?: number | undefined; sub?: string; cls?: string; ir: () => void }) {
   return <button type="button" onClick={ir} className="lux-card group p-3 text-left transition-colors hover:border-primary">
     <p className="flex justify-between text-xs uppercase tracking-wide text-muted-foreground">{t}<span className="text-primary opacity-0 group-hover:opacity-100">→</span></p>
     <p className={`text-2xl font-bold ${cls ?? ""}`}>{v}</p>
