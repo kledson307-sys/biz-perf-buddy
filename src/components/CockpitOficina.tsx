@@ -40,8 +40,11 @@ export function CockpitOficina({ chefe }: { chefe: boolean }) {
   const [cons, setCons] = useState<{ id: string; nome: string; department_id: string | null }[]>([]);
   const [deps, setDeps] = useState<{ id: string; nome: string }[]>([]);
   const [email, setEmail] = useState("");
+  const [agenda, setAgenda] = useState<{ data: string; categoria: string }[]>([]);
   const loadCons = () => { void supabase.from("consultants").select("id,nome,department_id").order("nome").then(({ data }) => setCons(data ?? [])); };
-  useEffect(() => { loadCons(); void supabase.from("departments").select("id,nome").then(({ data }) => setDeps(data ?? [])); void supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? "")); }, []);
+  useEffect(() => { loadCons(); void supabase.from("departments").select("id,nome").then(({ data }) => setDeps(data ?? [])); void supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ""));
+    const d = new Date(); const hj = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    void supabase.from("agendamentos").select("data,categoria").eq("segmento", "carro").gte("data", hj).order("data").limit(500).then(({ data }) => setAgenda((data as { data: string; categoria: string }[] | null) ?? [])); }, []);
   const deptName = (id: string | null) => deps.find((d) => d.id === id)?.nome ?? "—";
   useEffect(() => {
     setErro("");
@@ -51,6 +54,11 @@ export function CockpitOficina({ chefe }: { chefe: boolean }) {
     void supabase.rpc("meu_nps").then(({ data }) => setNps(((data as { itens?: NpsItem[] } | null)?.itens) ?? []));
   }, [mes]);
 
+  const agHoje = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
+  const agProx = agenda.find((a) => a.data > agHoje)?.data ?? "";
+  const agDia = (dia: string) => { const l = agenda.filter((a) => a.data === dia); const c = (k: string) => l.filter((a) => a.categoria === k).length; return { n: l.length, txt: `${c("revisao")} rev · ${c("diagnostico")} diag · ${c("recall")} recall` }; };
+  const agH = agDia(agHoje), agP = agDia(agProx);
+  const agSub = `Hoje ${agH.n} (${agH.txt})${agProx ? ` · ${agProx.slice(8, 10)}/${agProx.slice(5, 7)}: ${agP.n} (${agP.txt})` : " · próximo dia ainda não importado"}`;
   const p = tec?.params;
   const uteis = (p?.base ?? "uteis") === "uteis";
   const dec = Math.max(1, uteis ? p?.du_decorridos ?? 1 : p?.dc_decorridos ?? 1);
@@ -170,7 +178,7 @@ export function CockpitOficina({ chefe }: { chefe: boolean }) {
               <Alerta n={parados.length} t="O.S. sem mudança > 5 dias" d="Atualizar o status ou destravar a O.S." ir={() => setAba("g-os")} />
               <Alerta n={por("diag").length} t="Em diagnóstico" d={`${diag3.length} há mais de 3 dias`} ir={() => setAba("patio")} aviso />
               <Alerta n={preventivo.length} t="Clientes insatisfeitos no pátio" d="Avisar o chefe e o consultor antes da entrega." ir={() => setAba("patio")} />
-              <Kpi t="Carga de agendamentos" v="Hoje e D+1" sub="Revisões, diagnósticos e recalls para planejar os boxes" ir={() => setAba("g-agenda")} />
+              <Kpi t="Carga de agendamentos" v={`${agH.n} hoje · ${agP.n} D+1`} sub={agSub} ir={() => setAba("g-agenda")} />
             </>}
           </div>
           <div className="grid gap-3 lg:grid-cols-3">
