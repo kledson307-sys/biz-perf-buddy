@@ -170,8 +170,9 @@ function MatrizRvd({ mes, vendas, vends, vols, reload }: { mes: string; vendas: 
   const [prev, setPrev] = useState<LinhaRvd[] | null>(null);
   const ler = async (file: File) => {
     const XLSX = await import("xlsx");
-    const wb = XLSX.read(await file.arrayBuffer());
-    const nomes = [...wb.SheetNames].sort((a, b) => Number(/SSA|HAUS/i.test(b)) - Number(/SSA|HAUS/i.test(a)));
+    let wb: import("xlsx").WorkBook;
+    try { wb = XLSX.read(await file.arrayBuffer()); } catch { toast.error("Não consegui abrir este arquivo. Salve como .xlsx ou .ods e tente de novo."); return; }
+    const nomes = [...wb.SheetNames].sort((a, b) => Number(/HAUS SSA/i.test(b)) - Number(/HAUS SSA/i.test(a)) || Number(/SSA|HAUS/i.test(b)) - Number(/SSA|HAUS/i.test(a)));
     for (const n of nomes) {
       const r = parseRvd(XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[n]!, { header: 1, raw: true }));
       if (r.length) { const cad = vends.map((v) => v.nome); setPrev(r.map((l) => ({ ...l, vendedor: casarVendedor(l.vendedor, cad) }))); toast.info(`Aba "${n}": ${r.length} vendedor(es) encontrados`); return; }
@@ -193,8 +194,11 @@ function MatrizRvd({ mes, vendas, vends, vols, reload }: { mes: string; vendas: 
   const grupos = CANAIS.flatMap((c) => SEGMENTOS.map((s) => [c, s] as const));
   return <div className="grid gap-3 xl:grid-cols-2">
     <div className="lux-card flex flex-wrap items-center gap-2 px-3 py-2 text-xs xl:col-span-2">
-      <b>Importar planilha RVD</b>
-      <input type="file" accept=".xlsx,.xls" onChange={(e) => e.target.files?.[0] && ler(e.target.files[0])} />
+      <label className="basis-full cursor-pointer rounded-lg border-2 border-dashed border-primary/50 px-3 py-3 text-center hover:bg-primary/5"
+        onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) void ler(f); }}>
+        <b>Importar planilha RVD</b> — solte aqui ou clique (.xlsx, .xls, .ods, .csv)
+        <input type="file" className="hidden" accept=".xlsx,.xls,.xlsm,.ods,.csv" onChange={(e) => { const f = e.target.files?.[0]; if (f) void ler(f); e.target.value = ""; }} />
+      </label>
       {prev && <><span>{prev.length} vendedores · faturado {brl(prev.reduce((a, l) => a + l.faturado, 0))} · a faturar {brl(prev.reduce((a, l) => a + l.aFaturar, 0))} · {uni(prev.reduce((a, l) => a + l.veiculos, 0))} veículos/passagens</span><Button size="sm" onClick={importar}>Confirmar importação</Button>
         {prev.map((l) => ({ l, d: diferencaRvd(l, vendas) })).filter(({ d }) => d.mFat + d.mAf > 0).map(({ l, d }) => <span key={l.vendedor} className="basis-full text-warning">🔎 {l.vendedor}: já tem {brl(d.mFat + d.mAf)} lançado à mão — a planilha soma {brl(l.faturado + l.aFaturar)}, importo só a diferença ({brl(d.fat + d.af)}) para não duplicar.</span>)}<Button size="sm" variant="ghost" onClick={() => setPrev(null)}>Cancelar</Button></>}
     </div>
