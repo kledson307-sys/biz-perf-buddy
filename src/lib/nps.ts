@@ -59,7 +59,7 @@ function lerPosVendas(raw: unknown[][], hi: number, aba: string): NpsItem[] {
   const c = {
     loja: col("LOJA"), cli: col("CLIENTE"), chassi: col("CHASSI"), cons: col("CONSULTOR"), fech: col("FECHAMENTO DA OS", "FECHAMENTO"),
     rec: col("DATA DE RECEBIMENTO", "RECEBIMENTO"), nota: col("NOTA PSI"), tel: col("TELEFONE"), obs: col("OBSERVACAO"),
-    rac: col("RAC ABERTA"), mot: col("MOTIVO DA RAC"), vei: col("VEICULO"), doc: col("CPF/CNPJ", "CNPJ", "CPF", "DOCUMENTO"),
+    rac: col("RAC ABERTA"), mot: col("MOTIVO DA RAC"), vei: col("VEICULO", "MODELO DO VEICULO"), doc: col("CPF/CNPJ", "CNPJ", "CPF", "DOCUMENTO"),
   };
   if (c.cons < 0) c.cons = h.findIndex((x) => /^VENDEDOR/.test(x));
   const g = (r: unknown[], i: number) => (i >= 0 ? r[i] : "");
@@ -71,7 +71,9 @@ function lerPosVendas(raw: unknown[][], hi: number, aba: string): NpsItem[] {
     const n = Number(notaRaw.replace(",", "."));
     const nota = notaRaw !== "" && Number.isFinite(n) && n >= 0 && n <= 10 ? n : null;
     const chassi = String(g(r, c.chassi) ?? "").trim(), veiculo = String(g(r, c.vei) ?? "").trim();
-    const lojaAba = norm(aba);
+    // Loja pela coluna LOJA da linha (planilha online reúne várias lojas); sem coluna, vale o nome da aba.
+    const lojaCel = c.loja >= 0 ? norm(g(r, c.loja)) : "";
+    const lojaAba = lojaCel ? (lojaCel.includes(LOJA_PADRAO) ? LOJA_PADRAO : lojaCel) : norm(aba);
     out.push({
       loja: lojaAba, loja_padrao: lojaAba === LOJA_PADRAO ? "1" : "0", cliente, chassi,
       consultor: norm(g(r, c.cons)), fechamento: dataISO(g(r, c.fech)), recebimento: dataISO(g(r, c.rec)),

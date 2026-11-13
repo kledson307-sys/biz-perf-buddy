@@ -8,6 +8,11 @@ export type StatusVenda = "A_FATURAR" | "OS_ABERTA" | "FATURADO" | "CANCELADO";
 
 export const CANAIS: Canal[] = ["NOVO", "SEMINOVO", "OFICINA"];
 export const SEGMENTOS: Segmento[] = ["CARRO", "MOTO"];
+/** Target de ticket médio (R$ por veículo) definido pelo gestor por canal e segmento; prevalece sobre a planilha. */
+export const TARGET_TICKET: Record<Canal, Record<Segmento, number>> = {
+  NOVO: { CARRO: 8000, MOTO: 4500 }, SEMINOVO: { CARRO: 2000, MOTO: 1000 }, OFICINA: { CARRO: 300, MOTO: 300 },
+};
+export const targetTicket = (canal: string, segmento: string) => TARGET_TICKET[canal as Canal]?.[segmento as Segmento] ?? 0;
 export const STATUS_LABEL: Record<StatusVenda, string> = { A_FATURAR: "A faturar", OS_ABERTA: "O.S. aberta", FATURADO: "Faturado", CANCELADO: "Cancelado" };
 export const MARGEM_IDEAL: Record<Depto, number> = { ACESSORIOS: 0.31, ESTETICA: 0.38 };
 export const DEPTO_DMS: Record<Depto, string> = { ACESSORIOS: "ACESSÓRIOS", ESTETICA: "ESTÉTICA" };

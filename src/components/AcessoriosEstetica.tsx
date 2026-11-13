@@ -8,6 +8,7 @@ import { ehEncerrado } from "@/lib/os-controle";
 import {
   CANAIS, CHASE, DEPTO_DMS, MARGEM_IDEAL, SEGMENTOS, STATUS_LABEL, diferencaRvd, estagnada, folhaComissao, parseRvd, possiveisDuplicadas, chaveDuplicada, statusConciliado, casarVendedor, radarDia, type LinhaRvd,
   type Depto, type StatusVenda, type VendaC,
+  targetTicket,
 } from "@/lib/acessorios-estetica";
 
 type Venda = VendaC & { id: string; cliente: string; placa: string; produto: string; os_n: string; dia: string; mes: string; created_at?: string; criado_por?: string };
@@ -112,100 +113,41 @@ function Departamento({ depto, mes, tot, dec, vendas, vends, vols, dms, reload }
   const atualizar = async (id: string, patch: { os_n?: string; status?: string }) => { const { error } = await supabase.from("vendas_complementares").update(patch).eq("id", id); if (error) toast.error(error.message); else reload(); };
   const excluir = async (id: string) => { if (!confirm("Excluir esta venda?")) return; await supabase.from("vendas_complementares").delete().eq("id", id); reload(); };
 
-  const abas: [typeof aba, string][] = [["vendas", "Vendas & carteira"], ["rvd", "Matriz RVD"], ["comissao", est ? "Premiação RH" : "Comissão RH"], ["vendedores", "Vendedores"]];
+  const abas: [typeof aba, string][] = [["vendas", "Vendas & carteira"], ["rvd", "Matriz RVD"], ["comissao", est ? "Premiação RH" : "Comissão RH"]];
   const paradas = vendas.filter((v) => estagnada(v, hoje)).length;
   const dups = useMemo(() => possiveisDuplicadas(vendas), [vendas]);
 
   return <div className="space-y-3">
     <Faixa depto={depto} d={dms} vendas={vendas} tot={tot} dec={dec} />
-    {dups.size > 0 && <p className="rounded-md border border-destructive px-3 py-1.5 text-xs text-destructive">🔎 Revisor: {dups.size} venda(s) parecem duplicadas (mesmo cliente, vendedor e valor, ou mesma O.S.). Estão marcadas na carteira; cancele a repetida.</p>}
+    {dups.size > 0 && <p className="rounded-md border border-destructive px-3 py-1.5 text-xs text-destructive">🔎 Revisor: {dups.size} venda(s) parecem duplicadas na planilha online (marcadas com ⚠). Corrija na planilha de origem.</p>}
     {paradas > 0 && <p className="rounded-md border border-warning px-3 py-1.5 text-xs text-warning">⚠️ {paradas} venda(s) a faturar há mais de 15 dias sem O.S. aberta.</p>}
     <div className="flex flex-wrap gap-1">{abas.map(([k, l]) => <button key={k} type="button" onClick={() => setAba(k)} className={`rounded-md px-2.5 py-1 text-xs ${aba === k ? "bg-muted font-semibold" : "text-muted-foreground hover:bg-muted"}`}>{l}</button>)}</div>
 
-    {aba === "vendas" && <div className="grid items-start gap-3 xl:grid-cols-[22rem_1fr]">
-      <Box title="Lançar venda">
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <label className="col-span-2">Cliente<input className={`${sel} w-full`} value={f.cliente} onChange={(e) => setF({ ...f, cliente: e.target.value })} /></label>
-          <label>Data<input type="date" className={`${sel} w-full`} value={f.dia} onChange={(e) => setF({ ...f, dia: e.target.value })} /></label>
-          <label>Placa/chassi<input className={`${sel} w-full`} value={f.placa} onChange={(e) => setF({ ...f, placa: e.target.value })} /></label>
-          <label className="col-span-2">Vendedor<select className={`${sel} w-full`} value={f.vendedor} onChange={(e) => escolherVendedor(e.target.value)}><option value="">Selecione…</option>{vends.filter((v) => v.ativo).map((v) => <option key={v.id}>{v.nome}</option>)}</select></label>
-          <label>Segmento<select className={`${sel} w-full`} value={f.segmento} onChange={(e) => setF({ ...f, segmento: e.target.value })}>{SEGMENTOS.map((s) => <option key={s}>{s}</option>)}</select></label>
-          <label>Canal<select className={`${sel} w-full`} value={f.canal} onChange={(e) => setF({ ...f, canal: e.target.value })}>{CANAIS.map((s) => <option key={s}>{s}</option>)}</select></label>
-          {est
-            ? <label className="col-span-2">Produto Chase<select className={`${sel} w-full`} value={f.produto} onChange={(e) => escolherProduto(e.target.value)}><option value="">Selecione…</option>{CHASE.map((p) => <option key={p.nome}>{p.nome}</option>)}</select></label>
-            : <label className="col-span-2">Itens / acessório<input className={`${sel} w-full`} value={f.produto} onChange={(e) => setF({ ...f, produto: e.target.value })} /></label>}
-          <label>Valor negociado (R$)<input className={`${sel} w-full`} value={f.valor} onChange={(e) => setF({ ...f, valor: e.target.value })} /></label>
-          {est ? <label>Premiação (R$)<input className={`${sel} w-full`} value={f.premiacao} onChange={(e) => setF({ ...f, premiacao: e.target.value })} /></label>
-            : <label className="flex items-end gap-1 pb-2"><input type="checkbox" checked={f.obsoleto} onChange={(e) => setF({ ...f, obsoleto: e.target.checked })} /> Obsoleto (2%)</label>}
-          <label className="col-span-2">Nº da O.S. (quando abrir)<input className={`${sel} w-full`} value={f.os_n} onChange={(e) => setF({ ...f, os_n: e.target.value })} /></label>
-          <Button size="sm" className="col-span-2" onClick={salvar}>Lançar venda</Button>
-          {!vends.length && <p className="col-span-2 text-muted-foreground">Cadastre os vendedores na aba "Vendedores" primeiro.</p>}
-        </div>
-      </Box>
+    {aba === "vendas" && <div className="grid items-start gap-3">
       <Box title={`Carteira do mês · ${vendas.length} venda(s)`} fit="xl:max-h-[calc(100vh-22rem)]">
         <div className="overflow-x-auto"><table className="w-full text-xs">
-          <thead><tr className="text-left text-muted-foreground"><th className="py-1">Data</th><th>Cliente</th><th>Vendedor</th><th>Canal</th><th>{est ? "Produto" : "Itens"}</th><th className="text-right">Valor</th><th>O.S.</th><th>Status</th><th /></tr></thead>
+          <thead><tr className="text-left text-muted-foreground"><th className="py-1">Data</th><th>Cliente</th><th>Vendedor</th><th>Canal</th><th>{est ? "Produto" : "Itens"}</th><th className="text-right">Valor</th><th className="pl-3">O.S.</th><th>Status</th></tr></thead>
           <tbody>{vendas.map((v) => <tr key={v.id} className={`border-t border-border ${estagnada(v, hoje) ? "text-warning" : ""}`}>
             <td className="py-1">{v.dia.slice(8, 10)}/{v.dia.slice(5, 7)}</td><td>{dups.has(v.id) && <span title="Possível duplicada" className="mr-1 text-destructive">⚠</span>}{v.cliente}</td><td>{v.vendedor}</td><td>{v.canal} · {v.segmento}</td><td>{v.produto}{v.obsoleto ? " (obsoleto)" : ""}</td>
             <td className="text-right">{brl(v.valor)}</td>
-            <td><input className="h-6 w-16 rounded border border-border bg-background px-1" defaultValue={v.os_n} onBlur={(e) => e.target.value !== v.os_n && atualizar(v.id, { os_n: e.target.value.trim() })} /></td>
-            <td><select className="h-6 rounded border border-border bg-background text-xs" value={v.status} onChange={(e) => atualizar(v.id, { status: e.target.value })}>{(Object.keys(STATUS_LABEL) as StatusVenda[]).map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}</select></td>
-            <td><button type="button" className="text-destructive" onClick={() => excluir(v.id)} aria-label="Excluir">✕</button></td>
+            <td className="pl-3">{v.os_n || "—"}</td>
+            <td>{STATUS_LABEL[v.status as StatusVenda] ?? v.status}</td>
           </tr>)}</tbody>
         </table></div>
-        <p className="mt-2 text-[11px] text-muted-foreground">O status muda sozinho: O.S. no Controle O.S. → "O.S. aberta"; O.S. encerrada pelo faturamento → "Faturado".</p>
+        <p className="mt-2 text-[11px] text-muted-foreground">Somente leitura: os dados vêm da planilha online. O status muda sozinho: O.S. no Controle O.S. → "O.S. aberta"; O.S. encerrada pelo faturamento → "Faturado".</p>
       </Box>
     </div>}
     {aba === "rvd" && <MatrizRvd mes={mes} vendas={vendas} vends={vends} vols={vols} reload={reload} />}
     {aba === "comissao" && <Comissao depto={depto} mes={mes} vendas={vendas} />}
-    {aba === "vendedores" && <Vendedores vends={vends} reload={reload} />}
   </div>;
 }
 
 function MatrizRvd({ mes, vendas, vends, vols, reload }: { mes: string; vendas: Venda[]; vends: Vend[]; vols: Vol[]; reload: () => void }) {
-  const salvarVol = async (vendedor: string, campo: "veiculos" | "target", valor: number) => {
-    const atual = vols.find((v) => v.vendedor === vendedor);
-    const { data: u } = await supabase.auth.getUser();
-    const { error } = await supabase.from("rvd_volumes_mes").upsert({ mes, vendedor, veiculos: atual?.veiculos ?? 0, target: atual?.target ?? 0, ...(campo === "veiculos" ? { veiculos: valor } : { target: valor }), atualizado_por: u.user?.email ?? "", updated_at: new Date().toISOString() }, { onConflict: "user_id,mes,vendedor" });
-    if (error) toast.error(error.message); else { toast.success("Atualizado"); reload(); }
-  };
-  const [prev, setPrev] = useState<LinhaRvd[] | null>(null);
-  const ler = async (file: File) => {
-    const XLSX = await import("xlsx");
-    let wb: import("xlsx").WorkBook;
-    try { wb = XLSX.read(await file.arrayBuffer()); } catch { toast.error("Não consegui abrir este arquivo. Salve como .xlsx ou .ods e tente de novo."); return; }
-    const nomes = [...wb.SheetNames].sort((a, b) => Number(/HAUS SSA/i.test(b)) - Number(/HAUS SSA/i.test(a)) || Number(/SSA|HAUS/i.test(b)) - Number(/SSA|HAUS/i.test(a)));
-    for (const n of nomes) {
-      const r = parseRvd(XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[n]!, { header: 1, raw: true }));
-      if (r.length) { const cad = vends.map((v) => v.nome); setPrev(r.map((l) => ({ ...l, vendedor: casarVendedor(l.vendedor, cad) }))); toast.info(`Aba "${n}": ${r.length} vendedor(es) encontrados`); return; }
-    }
-    toast.error("Não encontrei os blocos NOVO/SEMINOVO/OFICINA nesta planilha");
-  };
-  const importar = async () => {
-    if (!prev) return;
-    const { data: u } = await supabase.auth.getUser(); const email = u.user?.email ?? "";
-    const e1 = await supabase.from("vendedores_showroom").upsert(prev.map((l) => ({ nome: l.vendedor, canal: l.canal, segmento: l.segmento })), { onConflict: "user_id,nome" });
-    const e2 = await supabase.from("rvd_volumes_mes").upsert(prev.map((l) => ({ mes, vendedor: l.vendedor, veiculos: l.veiculos, target: l.target, atualizado_por: email, updated_at: new Date().toISOString() })), { onConflict: "user_id,mes,vendedor" });
-    await supabase.from("vendas_complementares").delete().eq("mes", mes).eq("departamento", "ACESSORIOS").eq("produto", "IMPORTAÇÃO RVD");
-    const dia = `${mes}-01`;
-    const linhas = prev.flatMap((l) => { const d = diferencaRvd(l, vendas); return ([[d.fat, "FATURADO"], [d.af, "A_FATURAR"]] as const).filter(([v]) => v > 0).map(([v, st]) => ({ mes, dia, departamento: "ACESSORIOS", cliente: "CONSOLIDADO RVD", vendedor: l.vendedor, canal: l.canal, segmento: l.segmento, produto: "IMPORTAÇÃO RVD", valor: v, status: st, criado_por: email })); });
-    const e3 = linhas.length ? await supabase.from("vendas_complementares").insert(linhas) : { error: null };
-    const err = e1.error ?? e2.error ?? e3.error;
-    if (err) toast.error(err.message); else { toast.success("Planilha RVD importada (substitui a importação anterior do mês)"); setPrev(null); reload(); }
-  };
   const grupos = CANAIS.flatMap((c) => SEGMENTOS.map((s) => [c, s] as const));
   return <div className="grid gap-3 xl:grid-cols-2">
-    <div className="lux-card flex flex-wrap items-center gap-2 px-3 py-2 text-xs xl:col-span-2">
-      <label className="basis-full cursor-pointer rounded-lg border-2 border-dashed border-primary/50 px-3 py-3 text-center hover:bg-primary/5"
-        onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) void ler(f); }}>
-        <b>Importar planilha RVD</b> — solte aqui ou clique (.xlsx, .xls, .ods, .csv)
-        <input type="file" className="hidden" accept=".xlsx,.xls,.xlsm,.ods,.csv" onChange={(e) => { const f = e.target.files?.[0]; if (f) void ler(f); e.target.value = ""; }} />
-      </label>
-      {prev && <><span>{prev.length} vendedores · faturado {brl(prev.reduce((a, l) => a + l.faturado, 0))} · a faturar {brl(prev.reduce((a, l) => a + l.aFaturar, 0))} · {uni(prev.reduce((a, l) => a + l.veiculos, 0))} veículos/passagens</span><Button size="sm" onClick={importar}>Confirmar importação</Button>
-        {prev.map((l) => ({ l, d: diferencaRvd(l, vendas) })).filter(({ d }) => d.mFat + d.mAf > 0).map(({ l, d }) => <span key={l.vendedor} className="basis-full text-warning">🔎 {l.vendedor}: já tem {brl(d.mFat + d.mAf)} lançado à mão — a planilha soma {brl(l.faturado + l.aFaturar)}, importo só a diferença ({brl(d.fat + d.af)}) para não duplicar.</span>)}<Button size="sm" variant="ghost" onClick={() => setPrev(null)}>Cancelar</Button></>}
-    </div>
     {grupos.map(([c, s]) => {
-      const lista = vends.filter((v) => v.ativo && v.canal === c && v.segmento === s);
+      const daPlanilha = new Set(vols.map((x) => x.vendedor));
+      const lista = vends.filter((v) => v.ativo && v.canal === c && v.segmento === s && (!vols.length || daPlanilha.has(v.nome)));
       if (!lista.length) return null;
       return <Box key={c + s} title={`${c} · ${s}`}>
         <table className="w-full text-xs"><thead><tr className="text-left text-muted-foreground"><th>Vendedor</th><th className="text-right">Faturado</th><th className="text-right">A faturar</th><th className="text-right">Veículos</th><th className="text-right">Ticket</th><th className="text-right">Target</th><th className="text-right">Oportunidade</th></tr></thead>
@@ -214,19 +156,19 @@ function MatrizRvd({ mes, vendas, vends, vols, reload }: { mes: string; vendas: 
             const fat = vs.filter((x) => x.status === "FATURADO").reduce((a, x) => a + x.valor, 0);
             const af = vs.filter((x) => x.status !== "FATURADO").reduce((a, x) => a + x.valor, 0);
             const vol = vols.find((x) => x.vendedor === v.nome);
-            const n = vol?.veiculos ?? 0; const tk = div(fat + af, n); const tg = vol?.target ?? 0;
+            const n = vol?.veiculos ?? 0; const tk = div(fat + af, n); const tg = targetTicket(v.canal, v.segmento);
             return <tr key={v.id} className="border-t border-border">
               <td className="py-1">{v.nome}</td><td className="text-right">{brl(fat)}</td><td className="text-right">{brl(af)}</td>
-              <td className="text-right"><input key={`n${n}`} type="number" min={0} className="h-6 w-14 rounded border border-border bg-background px-1 text-right" defaultValue={n} title={vol ? `Atualizado por ${vol.atualizado_por}` : ""} onBlur={(e) => Number(e.target.value) !== n && salvarVol(v.nome, "veiculos", Math.max(0, Math.round(Number(e.target.value))))} /></td>
+              <td className="text-right">{n}</td>
               <td className="text-right">{n ? brl(tk) : "—"}</td>
-              <td className="text-right"><input key={`t${tg}`} className="h-6 w-20 rounded border border-border bg-background px-1 text-right" defaultValue={tg || ""} onBlur={(e) => parseNum(e.target.value) !== tg && salvarVol(v.nome, "target", parseNum(e.target.value))} /></td>
+              <td className="text-right">{tg ? brl(tg) : "—"}</td>
               <td className={`text-right ${tg && n ? (tk >= tg ? "text-success" : "text-destructive") : ""}`}>{tg && n ? brl((tg - tk) * n * -1) : "—"}</td>
             </tr>;
           })}</tbody></table>
       </Box>;
     })}
     {!vends.length && <p className="text-xs text-muted-foreground">Cadastre os vendedores para montar a matriz.</p>}
-    <p className="text-[11px] text-muted-foreground xl:col-span-2">Veículos vendidos é o total do mês (não soma): quem atualizar por último substitui o número. Ticket = (faturado + a faturar) ÷ veículos. Oportunidade negativa = quanto falta para o target.</p>
+    <p className="text-[11px] text-muted-foreground xl:col-span-2">Somente leitura: vendedores e veículos vêm da planilha RVD online; target de ticket fixo por canal (Novo Carro 8.000 · Novo Moto 4.500 · Seminovo Carro 2.000 · Seminovo Moto 1.000 · Oficina 300). Ticket = (faturado + a faturar) ÷ veículos. Oportunidade negativa = quanto falta para o target.</p>
   </div>;
 }
 
@@ -250,30 +192,6 @@ function Comissao({ depto, mes, vendas }: { depto: Depto; mes: string; vendas: V
       <tbody>{linhas.map((l) => <tr key={l.vendedor + l.canal} className="border-t border-border">{!est && <td className="py-1">{l.canal === "OFICINA" ? "PÓS-VENDAS" : l.canal}</td>}<td className="py-1">{l.vendedor}</td><td className="text-right">{uni(l.itens)}</td><td className="text-right">{brl(l.faturado)}</td><td className="text-right">{brl(l.devolucao)}</td>{!est && <><td className="text-right">{brl(l.producao)}</td><td className="text-right">{pct(l.pct)}</td><td className="text-right">{brl(l.comissao)}</td><td className="text-right">{brl(l.comObsoleto)}</td></>}<td className="text-right font-semibold">{l.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</td></tr>)}
         <tr className="border-t border-border font-bold"><td colSpan={est ? 4 : 8} className="py-1">Total</td><td className="text-right">{total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</td></tr></tbody></table>
     <p className="mt-2 text-[11px] text-muted-foreground">{est ? "Premiação fixa por produto da tabela Chase Auto Care (inclui PPF). Só vendas faturadas." : "Showroom: até R$ 30 mil 3% · até R$ 45 mil 4% · acima 5% (sobre produção líquida). Pós-vendas 3%. Obsoleto 2%. Só vendas faturadas."}</p>
-  </Box>;
-}
-
-function Vendedores({ vends, reload }: { vends: Vend[]; reload: () => void }) {
-  const [n, setN] = useState({ nome: "", segmento: "CARRO", canal: "NOVO" });
-  const add = async () => {
-    if (!n.nome.trim()) return;
-    const { error } = await supabase.from("vendedores_showroom").insert({ ...n, nome: n.nome.trim().toUpperCase() });
-    if (error) toast.error(error.message.includes("duplicate") ? "Vendedor já cadastrado" : error.message); else { setN({ ...n, nome: "" }); reload(); }
-  };
-  const upd = async (id: string, patch: { segmento?: string; canal?: string; ativo?: boolean }) => { await supabase.from("vendedores_showroom").update(patch).eq("id", id); reload(); };
-  return <Box title="Vendedores (showroom e oficina)" fit="xl:max-h-[calc(100vh-22rem)]">
-    <div className="mb-2 flex flex-wrap gap-2 text-xs">
-      <input placeholder="Nome" className={sel} value={n.nome} onChange={(e) => setN({ ...n, nome: e.target.value })} />
-      <select className={sel} value={n.segmento} onChange={(e) => setN({ ...n, segmento: e.target.value })}>{SEGMENTOS.map((s) => <option key={s}>{s}</option>)}</select>
-      <select className={sel} value={n.canal} onChange={(e) => setN({ ...n, canal: e.target.value })}>{CANAIS.map((s) => <option key={s}>{s}</option>)}</select>
-      <Button size="sm" onClick={add}>Adicionar</Button>
-    </div>
-    <table className="w-full text-xs"><tbody>{vends.map((v) => <tr key={v.id} className="border-t border-border">
-      <td className="py-1">{v.nome}</td>
-      <td><select className="h-6 rounded border border-border bg-background" value={v.segmento} onChange={(e) => upd(v.id, { segmento: e.target.value })}>{SEGMENTOS.map((s) => <option key={s}>{s}</option>)}</select></td>
-      <td><select className="h-6 rounded border border-border bg-background" value={v.canal} onChange={(e) => upd(v.id, { canal: e.target.value })}>{CANAIS.map((s) => <option key={s}>{s}</option>)}</select></td>
-      <td><label className="flex items-center gap-1"><input type="checkbox" checked={v.ativo} onChange={(e) => upd(v.id, { ativo: e.target.checked })} /> ativo</label></td>
-    </tr>)}</tbody></table>
   </Box>;
 }
 

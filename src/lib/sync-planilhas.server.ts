@@ -2,7 +2,7 @@
 import * as XLSX from "xlsx";
 import { FONTES, urlDownload, isoBahia, hashConteudo, lerAgendaOnline, separarAgenda, lerEsteticaOnline, type Fonte, type StatusSync } from "./sync-planilhas";
 import { lerAbaNps } from "./nps";
-import { parseRvd, casarVendedor, diferencaRvd, type VendaC } from "./acessorios-estetica";
+import { parseRvd, casarVendedor, diferencaRvd, targetTicket, type VendaC } from "./acessorios-estetica";
 import { classificar } from "./agendamento";
 
 const AUTOR = "sincronização";
@@ -23,7 +23,9 @@ async function preparar(db: Db, f: Fonte, owner: string): Promise<{ conteudo: un
   const wb = await baixar(f);
   const hoje = isoBahia(), mes = hoje.slice(0, 7);
   if (f === "nps") {
-    const lst = wb.SheetNames.flatMap((s) => lerAbaNps(XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[s]!, { header: 1, defval: "" }), s));
+    // Só a base oficial de pós-vendas (as demais abas são vendas de novos, resumos ou cópias).
+    const base = wb.SheetNames.filter((s) => /^BASE DE P[OÓ]S/i.test(s.trim()));
+    const lst = (base.length ? base : wb.SheetNames).flatMap((s) => lerAbaNps(XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[s]!, { header: 1, defval: "" }), s));
     if (!lst.length) throw new Error("Não reconheci as colunas NOTA PSI e CONSULTOR");
     return { conteudo: lst, linhas: lst.length, resumo: `${lst.length} pesquisas`, gravar: async () => {
       const { data: novo, error } = await db.from("nps_imports").insert({ user_id: owner, itens: lst, arquivo: "SharePoint (sincronização automática)", nome: AUTOR }).select("id").single();
@@ -72,10 +74,14 @@ async function preparar(db: Db, f: Fonte, owner: string): Promise<{ conteudo: un
     const vendas = (vend ?? []) as VendaC[];
     const at = new Date().toISOString();
     chk(await db.from("vendedores_showroom").upsert(prev.map((l) => ({ user_id: owner, nome: l.vendedor, canal: l.canal, segmento: l.segmento })), { onConflict: "user_id,nome" }));
-    chk(await db.from("rvd_volumes_mes").upsert(prev.map((l) => ({ user_id: owner, mes, vendedor: l.vendedor, veiculos: l.veiculos, target: l.target, atualizado_por: AUTOR, updated_at: at })), { onConflict: "user_id,mes,vendedor" }));
+    chk(await db.from("rvd_volumes_mes").upsert(prev.map((l) => ({ user_id: owner, mes, vendedor: l.vendedor, veiculos: l.veiculos, target: targetTicket(l.canal, l.segmento), atualizado_por: AUTOR, updated_at: at })), { onConflict: "user_id,mes,vendedor" }));
     chk(await db.from("vendas_complementares").delete().eq("user_id", owner).eq("mes", mes).eq("departamento", "ACESSORIOS").eq("produto", "IMPORTAÇÃO RVD"));
     const rows = prev.flatMap((l) => { const d = diferencaRvd(l, vendas); return ([[d.fat, "FATURADO"], [d.af, "A_FATURAR"]] as const).filter(([x]) => x > 0).map(([x, st]) => ({ user_id: owner, mes, dia: `${mes}-01`, departamento: "ACESSORIOS", cliente: "CONSOLIDADO RVD", vendedor: l.vendedor, canal: l.canal, segmento: l.segmento, produto: "IMPORTAÇÃO RVD", valor: x, status: st, criado_por: AUTOR })); });
     if (rows.length) chk(await db.from("vendas_complementares").insert(rows));
+    // A planilha é a fonte única: remove vendedores fora dela (evita duplicados com nomes abreviados).
+    const nomes = new Set(prev.map((l) => l.vendedor));
+    const fora = cad.filter((n) => !nomes.has(n));
+    if (fora.length) chk(await db.from("vendedores_showroom").delete().eq("user_id", owner).in("nome", fora));
     return ["Acessórios RVD (planilha online)"];
   } };
 }

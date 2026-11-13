@@ -95,3 +95,13 @@ describe("radar do dia", () => {
     expect(rd([{ created_at: "2026-11-05T15:00:00Z" }], [], "2026-11-07").ok).toBe(false);
   });
 });
+
+import { targetTicket as tt } from "./acessorios-estetica";
+import { describe as d2, it as i2, expect as e2 } from "vitest";
+d2("target de ticket médio", () => {
+  i2("valores por canal/segmento", () => {
+    e2(tt("NOVO", "CARRO")).toBe(8000); e2(tt("NOVO", "MOTO")).toBe(4500);
+    e2(tt("SEMINOVO", "CARRO")).toBe(2000); e2(tt("SEMINOVO", "MOTO")).toBe(1000);
+    e2(tt("OFICINA", "CARRO")).toBe(300); e2(tt("OFICINA", "MOTO")).toBe(300);
+  });
+});
