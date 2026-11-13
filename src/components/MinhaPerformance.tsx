@@ -8,6 +8,8 @@ import { Box, Kpi, brl, div, pct, tone, uni } from "@/components/painel-ui";
 import { ITENS } from "@/lib/agregados";
 import { Button } from "@/components/ui/button";
 import { AcessoTopo } from "@/components/AcessoTopo";
+import { Menu, X, LayoutDashboard, Gem, ClipboardList, CalendarClock, Star, Wallet } from "lucide-react";
+import bmwLogo from "@/assets/bmw-logo.asset.json";
 import { Anel } from "@/components/Cockpit";
 import { ExtratoComissao } from "@/components/ExtratoComissao";
 import { calcularComissao, dsrComissao, npsPorMarca, perfisDoLogin, promotoresFaltando, type Metricas } from "@/lib/comissoes";
@@ -32,7 +34,8 @@ export function MinhaPerformance() {
   const [d, setD] = useState<Dados | null>(null);
   const [aberto, setAberto] = useState<string | null>(null);
   const [erro, setErro] = useState("");
-  const [aba, setAba] = useState<"dash" | "detalhes" | "comissao">("dash");
+  const [aba, setAba] = useState<"dash" | "agregados" | "os" | "agenda" | "nps" | "comissao">("dash");
+  const [menu, setMenu] = useState(false);
   const [npsItens, setNpsItens] = useState<NpsItem[]>([]);
   useEffect(() => { void supabase.rpc("meu_nps").then(({ data }) => setNpsItens(((data as { itens?: NpsItem[] } | null)?.itens) ?? [])); }, []);
   const [agenda, setAgenda] = useState<Agend[]>([]);
@@ -82,16 +85,28 @@ export function MinhaPerformance() {
   const agendaDia = agenda.filter((a) => a.tipo === "d0" && a.data === hoje);
 
   return (
-    <div className={`min-h-screen bg-background p-4 md:p-8${rosa ? " tema-rosa" : ""}`}>
-      <div className="mx-auto max-w-5xl space-y-4">
+    <div className={`min-h-screen bg-background${rosa ? " tema-rosa" : ""}`}>
+      {menu && <div className="fixed inset-0 z-40 bg-background/70 lg:hidden" onClick={() => setMenu(false)} />}
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-60 flex-col border-r border-border bg-card transition-transform lg:translate-x-0 ${menu ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="flex items-center gap-3 p-4"><img src={bmwLogo.url} alt="BMW" className="size-10 shrink-0" />
+          <div className="min-w-0 leading-tight"><p className="text-sm font-bold tracking-wide">BMW PÓS-VENDA</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">Haus Motors · Salvador</p>
+            <p className="truncate text-[10px] text-muted-foreground">Consultor · {d?.nome ?? ""}</p></div>
+          <button type="button" aria-label="Fechar menu" className="ml-auto lg:hidden" onClick={() => setMenu(false)}><X className="size-4" /></button></div>
+        <nav aria-label="Abas do consultor" className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2">
+          <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Minha visão</p>
+          {([["dash", "Consultores · Meu desempenho", LayoutDashboard], ["agregados", "Agregados", Gem], ["os", "Ordens de Serviço", ClipboardList], ["agenda", "Agendamentos", CalendarClock], ["nps", "NPS & Satisfação", Star], ["comissao", "Minha comissão", Wallet]] as const).map(([k, l, Icon]) => { const on = aba === k; return (
+            <button key={k} type="button" aria-current={on ? "page" : undefined} onClick={() => { setAba(k); setMenu(false); }}
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-1.5 text-left text-sm transition-colors ${on ? "bg-gradient-to-r from-primary/30 to-primary/5 font-semibold text-foreground shadow-[inset_3px_0_0_var(--color-primary)]" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+              <Icon strokeWidth={1.5} className={`size-4 shrink-0 ${on ? "text-primary" : ""}`} /><span className="flex-1">{l}</span></button>); })}
+        </nav>
+        <div className="border-t border-border p-2"><div className="m-stripe mx-auto w-16 rounded-full" /></div>
+      </aside>
+      <div className="p-4 md:p-6 lg:pl-64">
+      <div className="mx-auto max-w-6xl space-y-4">
+        <button type="button" aria-label="Abrir menu" onClick={() => setMenu(true)} className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm lg:hidden"><Menu className="size-4" /> Menu</button>
         <AcessoTopo titulo="Minha performance" sub={`${d?.nome ?? ""}${d?.departamento ? ` · ${d.departamento}` : ""}`} mes={mes} setMes={setMes}
-          extra={<Notificacoes vendedor abrir={() => document.getElementById("retornos-vendedor")?.scrollIntoView({ behavior: "smooth", block: "start" })} />} />
-        <div className="flex gap-2" role="tablist" aria-label="Visões">
-          {([["dash", "Dashboard"], ["detalhes", "Detalhes"], ["comissao", "Comissão"]] as const).map(([k, rot]) => (
-            <button key={k} role="tab" aria-selected={aba === k} onClick={() => setAba(k)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${aba === k ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>{rot}</button>
-          ))}
-        </div>
+          extra={<Notificacoes vendedor abrir={() => setAba("os")} />} />
         {aba === "dash" && d && (
           <section className="lux-card flex flex-wrap items-center justify-around gap-4 p-4">
             <Anel p={perf} rot="Performance" />
@@ -112,8 +127,8 @@ export function MinhaPerformance() {
           ? <p className="lux-card p-4 text-sm text-muted-foreground">Sua ficha de comissão ainda não está cadastrada. Fale com a gestão.</p>
           : perfis.map((pf) => <div key={pf.chave} className="space-y-2">{perfis.length > 1 && <h2 className="font-semibold">{pf.nome}</h2>}
             <ExtratoComissao atual={calcularComissao(pf, met, dsr)} proj={calcularComissao(pf, metProj, dsr)} nps={pf.travaNps ? { rotulo: `NPS do departamento (${pct((pf.segmento === "moto" ? nps.moto : nps.carro) ?? 0)} · meta ${pct(metaNps)})`, faltam: promotoresFaltando(nps.avaliados, nps.promotores, metaNps) } : null} /></div>))}
-        {aba === "detalhes" && <RetornosVendedor />}
-        {aba === "detalhes" && <NpsResumoRestrito titulo="Meu NPS & clientes para encantar" />}
+        {aba === "os" && <RetornosVendedor />}
+        {aba === "nps" && <NpsResumoRestrito titulo="Meu NPS & clientes para encantar" />}
         {erro && <p className="text-sm text-destructive">{erro}</p>}
         {aba === "dash" && d && (
           <>
@@ -125,7 +140,9 @@ export function MinhaPerformance() {
               <Kpi label="Margem de peças" value={pc ? pct(margem) : "—"} sub={<span>Ideal do departamento {pct(ideal)}{pc ? <> · <b className={tone(div(margem, ideal))}>{margem >= ideal ? "na média ou acima" : "abaixo do ideal"}</b></> : null}</span>} />
               <Kpi label="Posição no ranking" value={d.posicao ? `${d.posicao}º de ${d.participantes}` : "—"} sub={<span>Sua performance <b className={tone(perf)}>{pct(perf)}</b>{d.perf_lider ? <> · líder {pct(+d.perf_lider)}{d.posicao !== 1 ? ` (faltam ${pct(Math.max(0, +d.perf_lider - perf))})` : " — você é a líder!"}</> : null}</span>} />
             </div>
-            {aba === "dash" && (
+          </>
+        )}
+        {aba === "agenda" && (
               <Box title="Meus agendamentos">
                 <div className="divide-y text-sm">
                   <p className="px-5 py-2 text-xs text-muted-foreground">Clientes agendados com você — agenda de amanhã (D+1) e de hoje.</p>
@@ -146,11 +163,10 @@ export function MinhaPerformance() {
                   ))}
                 </div>
               </Box>
-            )}
-          </>
         )}
-        {aba === "detalhes" && d && (
+        {aba === "agregados" && d && (
           <>
+            {d.agregados.length === 0 && <p className="lux-card p-4 text-sm text-muted-foreground">Nenhum agregado lançado para você neste mês.</p>}
             {d.agregados.length > 0 && (
               <Box title="Agregados">
                 <div className="divide-y text-sm">
@@ -178,7 +194,10 @@ export function MinhaPerformance() {
                 </div>
               </Box>
             )}
-            {(
+          </>
+        )}
+        {aba === "dash" && d && (
+          <>
               <Box title="Resumo das necessidades diárias">
                 <div className="divide-y text-sm">
                   <p className="px-5 py-2 text-xs text-muted-foreground">Quanto vender por dia nos {uni(rest)} dias restantes para bater 100% das metas.</p>
@@ -197,9 +216,9 @@ export function MinhaPerformance() {
                   })}
                 </div>
               </Box>
-            )}
           </>
         )}
+      </div>
       </div>
     </div>
   );
