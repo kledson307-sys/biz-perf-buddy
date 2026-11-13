@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { SyncPlanilhas } from "@/components/SyncPlanilhas";
 import { supabase } from "@/integrations/supabase/client";
 import { Box, brl, div, pct, tone, uni, parseNum } from "@/components/painel-ui";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ export function AcessoriosEstetica({ mes, tot, dec, restrito }: { mes: string; t
   const subs: [typeof sub, string][] = [["ACESSORIOS", "Acessórios · Geovana"], ["ESTETICA", "Estética · Marcela"], ["CONSOLIDADO", "Consolidado"]];
   return (
     <div className="space-y-3">
+      {!restrito && <SyncPlanilhas fontes={["acessorios", "estetica"]} compacto />}
       {!restrito && <Radar vendas={vendas} vols={vols} />}
       {!restrito && <div className="flex flex-wrap gap-1">
         {subs.map(([k, l]) => <button key={k} type="button" onClick={() => setSub(k)} className={`rounded-md border px-3 py-1.5 text-xs font-semibold ${sub === k ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>{l}</button>)}

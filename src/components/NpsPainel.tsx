@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { SyncPlanilhas } from "@/components/SyncPlanilhas";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { pct, uni } from "@/components/painel-ui";
@@ -82,6 +83,7 @@ export function NpsPainel({ mes = new Date().toISOString().slice(0, 7) }: { mes?
 
   return (
     <div className="space-y-3">
+      <SyncPlanilhas fontes={["nps"]} compacto />
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-card px-3 py-2">
         <div><h2 className="font-semibold">NPS & Satisfação · {LOJA_PADRAO}</h2><p className="text-xs text-muted-foreground">{info || "Aguardando a primeira importação da planilha de pesquisa da montadora."} {pjs ? `· ${pjs} clientes CNPJ fora da base (não são pesquisados)` : ""}</p></div>
         <div className="flex flex-wrap items-center gap-2">

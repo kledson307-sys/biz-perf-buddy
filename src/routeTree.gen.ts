@@ -10,33 +10,43 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicSyncPlanilhasRouteImport } from './routes/api/public/sync/planilhas'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicSyncPlanilhasRoute = ApiPublicSyncPlanilhasRouteImport.update({
+  id: '/api/public/sync/planilhas',
+  path: '/api/public/sync/planilhas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/public/sync/planilhas': typeof ApiPublicSyncPlanilhasRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/public/sync/planilhas': typeof ApiPublicSyncPlanilhasRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/public/sync/planilhas': typeof ApiPublicSyncPlanilhasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/api/public/sync/planilhas'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/api/public/sync/planilhas'
+  id: '__root__' | '/' | '/api/public/sync/planilhas'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiPublicSyncPlanilhasRoute: typeof ApiPublicSyncPlanilhasRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +58,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/sync/planilhas': {
+      id: '/api/public/sync/planilhas'
+      path: '/api/public/sync/planilhas'
+      fullPath: '/api/public/sync/planilhas'
+      preLoaderRoute: typeof ApiPublicSyncPlanilhasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiPublicSyncPlanilhasRoute: ApiPublicSyncPlanilhasRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

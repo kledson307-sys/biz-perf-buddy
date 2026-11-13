@@ -1,4 +1,5 @@
 import { GuiaAcesso } from "@/components/GuiaAcesso";
+import { SyncPlanilhas } from "@/components/SyncPlanilhas";
 import { ViradaMes } from "@/components/ViradaMes";
 import { Devolucoes } from "@/components/Devolucoes";
 import { TecnicosMetas } from "@/components/TecnicosMetas";
@@ -622,6 +623,7 @@ function Painel({ email }: { email: string }) {
             <h2 className="text-sm font-semibold">Central de importações · {mes}</h2>
             <p className="text-xs text-muted-foreground">Todas as planilhas do dia em um só lugar. Cada bloco tem seu botão, prévia e confirmação. O Controle O.S. semanal continua na própria aba.</p>
           </div>
+          <SyncPlanilhas />
           <ImportadorUnificado mes={mes} onDone={load} />
           <p className="text-xs text-muted-foreground">Importação individual por fonte (abra o bloco desejado):</p>
           <div className="grid items-start gap-3 xl:grid-cols-2">
