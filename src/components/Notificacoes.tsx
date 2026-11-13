@@ -1,3 +1,4 @@
+import { alertasSync, type StatusSync } from "@/lib/sync-planilhas";
 import { useCallback, useEffect, useState } from "react";
 import { Bell, CheckCheck, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -80,7 +81,13 @@ export function Notificacoes({ vendedor = false, oficina = false, abrir }: { ven
         if (!due || retornos.some(r => r.os_n === i.n && r.data_ref >= due)) return [];
         return [{ id: `pendente-${i.n}`, titulo: `O.S. ${i.n} · retorno pendente`, texto: `${vendedor ? i.cli : i.cons} · ${i.st === "diag" ? "Em diagnóstico" : "Aguardando peças"} · desde ${fmt(due)}`, feito: false }];
       });
+      let planilhas: Notification[] = [];
+      if (!vendedor) {
+        const { data: ss } = await supabase.from("oficina_mes").select("mes,diario").like("mes", "sync-%");
+        planilhas = alertasSync(Object.fromEntries((ss ?? []).map((x) => [x.mes.slice(5), x.diario as unknown as StatusSync])));
+      }
       setItems([
+        ...planilhas,
         ...novos.map(r => ({ id: r.id, titulo: `O.S. ${r.os_n} · retorno realizado`, texto: `${r.consultor}: ${r.nota}`, feito: true })),
         ...pendentes,
       ]);

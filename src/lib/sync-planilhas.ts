@@ -99,3 +99,15 @@ export function lerEsteticaOnline(raw: unknown[][]): EsteticaOnline[] {
     pagamento: txt(g(r, k.pg)), chassi: txt(g(r, k.ch)).toUpperCase(), vendedor: txt(g(r, k.ve)).toUpperCase(), premiacao: numv(g(r, k.pr)),
   })).filter((x) => x.dia && x.valor > 0);
 }
+
+/** Avisos do sininho: planilha parada há 2+ dias (sem domingo) ou leitura com falha. */
+export function alertasSync(st: Partial<Record<Fonte, StatusSync>>, agora = new Date()) {
+  return LISTA_FONTES.flatMap((f) => {
+    const s = st[f]; if (!s) return [];
+    const out: { id: string; titulo: string; texto: string; feito: boolean }[] = [];
+    const dias = s.mudouEm ? diasSemNovidade(s.mudouEm, agora) : 0;
+    if (dias >= 2) out.push({ id: `sync-parada-${f}-${isoBahia(agora)}`, titulo: `⚠️ Planilha de ${FONTES[f].label} sem novos lançamentos há ${dias} dias`, texto: `Responsável: ${FONTES[f].responsavel} · última novidade em ${new Date(s.mudouEm!).toLocaleDateString("pt-BR")}`, feito: false });
+    if (!s.ok) out.push({ id: `sync-falha-${f}-${isoBahia(agora)}`, titulo: `Falha ao ler a planilha de ${FONTES[f].label}`, texto: `${s.erro ?? ""} · dados anteriores mantidos`, feito: false });
+    return out;
+  });
+}

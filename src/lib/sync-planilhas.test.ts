@@ -46,3 +46,12 @@ describe("leitores", () => {
     expect(v[0]).toMatchObject({ dia: "2026-11-05", valor: 790, faturado: true, vendedor: "ANE" });
   });
 });
+
+import { alertasSync } from "./sync-planilhas";
+describe("sininho das planilhas", () => {
+  it("avisa só com 2+ dias parada ou falha", () => {
+    const agora = bahia("2026-11-13T10:00:00");
+    const a = alertasSync({ nps: { at: "", ok: true, mudouEm: bahia("2026-11-12T10:00:00").toISOString() }, estetica: { at: "", ok: true, mudouEm: bahia("2026-11-10T10:00:00").toISOString() }, agenda: { at: "", ok: false, erro: "x", mudouEm: agora.toISOString() } }, agora);
+    expect(a.map((x) => x.id.split("-").slice(0, 3).join("-"))).toEqual(["sync-falha-agenda", "sync-parada-estetica"]);
+  });
+});
