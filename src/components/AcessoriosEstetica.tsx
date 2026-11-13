@@ -8,7 +8,7 @@ import { ehEncerrado } from "@/lib/os-controle";
 import {
   CANAIS, CHASE, DEPTO_DMS, MARGEM_IDEAL, SEGMENTOS, STATUS_LABEL, diferencaRvd, estagnada, folhaComissao, parseRvd, possiveisDuplicadas, chaveDuplicada, statusConciliado, casarVendedor, radarDia, type LinhaRvd,
   type Depto, type StatusVenda, type VendaC,
-  targetTicket,
+  targetTicket, conciliarCarteira,
 } from "@/lib/acessorios-estetica";
 
 type Venda = VendaC & { id: string; cliente: string; placa: string; produto: string; os_n: string; dia: string; mes: string; created_at?: string; criado_por?: string };
@@ -50,7 +50,7 @@ export function AcessoriosEstetica({ mes, tot, dec, restrito }: { mes: string; t
   const subs: [typeof sub, string][] = [["ACESSORIOS", "Acessórios · Geovana"], ["ESTETICA", "Estética · Marcela"], ["CONSOLIDADO", "Consolidado"]];
   return (
     <div className="space-y-3">
-      {!restrito && <SyncPlanilhas fontes={["acessorios", "estetica"]} compacto />}
+      {!restrito && <SyncPlanilhas fontes={["acessorios", "estetica"]} compacto onSynced={load} />}
       {!restrito && <Radar vendas={vendas} vols={vols} />}
       {!restrito && <div className="flex flex-wrap gap-1">
         {subs.map(([k, l]) => <button key={k} type="button" onClick={() => setSub(k)} className={`rounded-md border px-3 py-1.5 text-xs font-semibold ${sub === k ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>{l}</button>)}
@@ -63,10 +63,9 @@ export function AcessoriosEstetica({ mes, tot, dec, restrito }: { mes: string; t
 }
 
 function kpis(vendas: VendaC[], d: { fat: number; margem: number; meta: number }, tot: number, dec: number) {
-  const aFaturar = vendas.filter((v) => v.status === "A_FATURAR" || v.status === "OS_ABERTA").reduce((s, v) => s + v.valor, 0);
-  const proj = d.fat + aFaturar;
+  const conc = conciliarCarteira(vendas, d.fat);
   const rest = Math.max(tot - dec, 0);
-  return { aFaturar, proj, p: div(proj, d.meta), nec: rest ? Math.max(d.meta - proj, 0) / rest : 0 };
+  return { ...conc, p: div(conc.proj, d.meta), nec: rest ? Math.max(d.meta - conc.proj, 0) / rest : 0 };
 }
 
 function Faixa({ depto, d, vendas, tot, dec }: { depto: Depto; d: { fat: number; margem: number; meta: number }; vendas: VendaC[]; tot: number; dec: number }) {
@@ -74,8 +73,8 @@ function Faixa({ depto, d, vendas, tot, dec }: { depto: Depto; d: { fat: number;
   const mg = div(d.margem, d.fat); const ideal = MARGEM_IDEAL[depto];
   const cards: [string, string, string, string?][] = [
     ["Faturado (DMS)", brl(d.fat), `Departamento ${DEPTO_DMS[depto]}`],
-    ["A faturar", brl(k.aFaturar), "Lançamentos ainda não faturados"],
-    ["Projeção do mês", brl(k.proj), "Faturado + a faturar", tone(k.p)],
+    ["A faturar", brl(k.aFaturar), k.abatido > 0 ? `Conciliado: ${brl(k.abatido)} já faturados abatidos` : "Carteira líquida ainda não faturada"],
+    ["Projeção do mês", brl(k.proj), k.abatido > 0 ? "DMS + carteira líquida reconciliada" : "Faturado + a faturar", tone(k.p)],
     ["Meta do mês", d.meta ? pct(k.p) : "—", d.meta ? `Meta ${brl(d.meta)}` : "Cadastre a meta em Metas", tone(k.p)],
     ["Margem", d.fat ? pct(mg) : "—", `Ideal ${pct(ideal)}`, mg >= ideal ? "text-success" : mg >= ideal * 0.85 ? "text-warning" : "text-destructive"],
     ["Necessidade diária", brl(k.nec), `${Math.max(tot - dec, 0)} dia(s) restantes`],

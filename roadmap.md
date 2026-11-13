@@ -27,3 +27,10 @@
 - [x] NPS: técnico responsável pelo chassi (lido das Passagens)
 - [x] Agregados: passagens em branco + penetração por consultor
 - [x] Peças: desconto médio na Curva ABC
+
+## Bloco 6 · Planilhas online e conciliação (13/11/2026)
+- [ ] Estética: atribuir vendas ao Executivo Vendas, com fallback para Marcela
+- [ ] Estética: descartar linhas fantasma sem cliente e sem produto
+- [ ] Acessórios e Estética: conciliar carteira com o faturamento oficial DMS e mostrar o abatimento
+- [ ] NPS: validar filtro pela coluna LOJA e restaurar a base oficial pela sincronização
+- [ ] Executar testes, validar valores no painel e salvar as alterações

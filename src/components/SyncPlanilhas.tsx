@@ -9,7 +9,7 @@ const hm = (iso?: string) => (iso ? new Date(iso).toLocaleString("pt-BR", { day:
 const COR = { verde: "border-success/50 bg-success/10 text-success", amarelo: "border-warning/50 bg-warning/10 text-warning", vermelho: "border-destructive/50 bg-destructive/10 text-destructive" } as const;
 
 /** Selos de sincronização das planilhas online: conexão, alimentação da equipe e botão "Sincronizar agora". */
-export function SyncPlanilhas({ fontes = LISTA_FONTES, compacto = false }: { fontes?: Fonte[]; compacto?: boolean }) {
+export function SyncPlanilhas({ fontes = LISTA_FONTES, compacto = false, onSynced }: { fontes?: Fonte[]; compacto?: boolean; onSynced?: (fonte: Fonte) => void | Promise<void> }) {
   const [st, setSt] = useState<Partial<Record<Fonte, StatusSync>>>({});
   const [busy, setBusy] = useState<Fonte | null>(null);
   const sync = useServerFn(sincronizarAgora);
@@ -20,7 +20,7 @@ export function SyncPlanilhas({ fontes = LISTA_FONTES, compacto = false }: { fon
   useEffect(() => { void load(); const t = setInterval(() => void load(), 120_000); return () => clearInterval(t); }, [fontes.join()]); // eslint-disable-line react-hooks/exhaustive-deps
   const agora = async (f: Fonte) => {
     setBusy(f);
-    try { const r = await sync({ data: { fonte: f } }); if (r.ok) toast.success(r.resumo ?? "Sincronizado"); else toast.error(`${FONTES[f].label}: ${r.erro}`); await load(); }
+    try { const r = await sync({ data: { fonte: f } }); if (r.ok) { toast.success(r.resumo ?? "Sincronizado"); await onSynced?.(f); } else toast.error(`${FONTES[f].label}: ${r.erro}`); await load(); }
     catch (e) { toast.error(e instanceof Error ? e.message : "Falha ao sincronizar"); }
     finally { setBusy(null); }
   };

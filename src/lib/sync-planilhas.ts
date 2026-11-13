@@ -93,11 +93,14 @@ export function lerEsteticaOnline(raw: unknown[][]): EsteticaOnline[] {
   const c = (re: RegExp) => h.findIndex((x) => re.test(x));
   const k = { d: c(/^DATA VENDA/), t: c(/^TIPO/), ex: c(/^EXECUTIVO/), f: c(/^FATURADO/), cli: c(/^CLIENTE/), mod: c(/^MODELO/), ob: c(/^OBS/), v: c(/^VALOR VENDA/), pg: c(/^PAGAMENTO/), ch: c(/^CHASSI/), ve: c(/^VENDEDOR EST/), pr: c(/^PREMIA/) };
   const g = (r: unknown[], i: number) => (i >= 0 ? r[i] : "");
-  return raw.slice(hi + 1).map((r) => ({
-    dia: dataCel(g(r, k.d)), tipo: txt(g(r, k.t)).toUpperCase(), executivo: txt(g(r, k.ex)).toUpperCase(), faturado: /^FATURADO/.test(norm(txt(g(r, k.f)))),
-    cliente: txt(g(r, k.cli)).toUpperCase(), modelo: txt(g(r, k.mod)).toUpperCase(), descricao: txt(g(r, k.ob)), valor: numv(g(r, k.v)),
-    pagamento: txt(g(r, k.pg)), chassi: txt(g(r, k.ch)).toUpperCase(), vendedor: txt(g(r, k.ve)).toUpperCase(), premiacao: numv(g(r, k.pr)),
-  })).filter((x) => x.dia && x.valor > 0);
+  return raw.slice(hi + 1).map((r) => {
+    const executivo = txt(g(r, k.ex)).toUpperCase();
+    return {
+      dia: dataCel(g(r, k.d)), tipo: txt(g(r, k.t)).toUpperCase(), executivo, faturado: /^FATURADO/.test(norm(txt(g(r, k.f)))),
+      cliente: txt(g(r, k.cli)).toUpperCase(), modelo: txt(g(r, k.mod)).toUpperCase(), descricao: txt(g(r, k.ob)), valor: numv(g(r, k.v)),
+      pagamento: txt(g(r, k.pg)), chassi: txt(g(r, k.ch)).toUpperCase(), vendedor: executivo || "MARCELA", premiacao: numv(g(r, k.pr)),
+    };
+  }).filter((x) => x.dia && x.valor > 0 && (x.cliente || x.tipo));
 }
 
 /** Avisos do sininho: planilha parada há 2+ dias (sem domingo) ou leitura com falha. */

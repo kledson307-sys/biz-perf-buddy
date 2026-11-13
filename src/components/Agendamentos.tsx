@@ -142,7 +142,7 @@ export function Agendamentos({ mes }: { mes: string }) {
 
   return (
     <div className="space-y-3">
-      <SyncPlanilhas fontes={["agenda"]} compacto />
+      <SyncPlanilhas fontes={["agenda"]} compacto onSynced={load} />
       <details className="rounded-xl border border-border bg-card/60 p-2">
         <summary className="cursor-pointer text-sm font-semibold text-primary">📥 Importar agendamento (D+1 ou do dia)</summary>
         <div className="mt-2"><ImportadorUnificado mes={mes} onDone={() => void load()} /></div>

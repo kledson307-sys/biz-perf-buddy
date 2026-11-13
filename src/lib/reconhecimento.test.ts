@@ -14,6 +14,17 @@ describe("NPS — formatos da montadora", () => {
     expect(itens[0]).toMatchObject({ consultor: "ALEXANDRE", nota: 9, loja_padrao: "1", segmento: "moto", rac: true });
   });
 
+  it("filtra pela coluna LOJA mesmo quando a aba reúne o grupo inteiro", () => {
+    const raw = [
+      ["LOJA", "CLIENTE", "CHASSI", "CONSULTOR", "DATA DE RECEBIMENTO", "NOTA PSI", "MODELO DO VEICULO"],
+      ["HAUS SALVADOR", "CLIENTE LOCAL", "98M40EE01P4021269", "WESLEY.F", "13/11/2026", "10", "BMW X1"],
+      ["HAUS MACEIÓ", "CLIENTE EXTERNO", "98M40EE01P4021270", "CONSULTOR EXTERNO", "13/11/2026", "10", "BMW X1"],
+    ];
+    const itens = lerAbaNps(raw, "BASE DE PÓS VENDAS");
+    expect(itens.map((x) => x.loja_padrao)).toEqual(["1", "0"]);
+    expect(itens[0]).toMatchObject({ loja: "SALVADOR", consultor: "WESLEY.F", veiculo: "BMW X1" });
+  });
+
   it("reconhece prospecção (Advisor/VIN/NOTA/Dealer Name) e marca só Haus (40484) como loja padrão", () => {
     const raw = [
       ["Brand", "Touchpoint", "Customer ID", "Dealer Name", "Advisor", "E-MAIL", "Mobilephone", "Model", "VIN", "Import Date", "Status", "Is Submitted", "NOTA ", "OBSERVAÇÃO"],

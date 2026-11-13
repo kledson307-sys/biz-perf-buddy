@@ -55,6 +55,21 @@ export type VendaC = {
   cliente?: string; produto?: string; os_n?: string; dia?: string; created_at?: string;
 };
 
+/** Concilia a carteira declarada na planilha com o caixa oficial: o que o DMS já faturou deixa de contar como pendente. */
+export function conciliarCarteira(vendas: Pick<VendaC, "status" | "valor">[], faturadoDms: number) {
+  const ativas = vendas.filter((v) => v.status !== "CANCELADO");
+  const carteira = ativas.reduce((s, v) => s + v.valor, 0);
+  const aFaturarBruto = ativas.filter((v) => v.status === "A_FATURAR" || v.status === "OS_ABERTA").reduce((s, v) => s + v.valor, 0);
+  const aFaturar = Math.max(0, round2(carteira - faturadoDms));
+  return {
+    carteira: round2(carteira),
+    aFaturarBruto: round2(aFaturarBruto),
+    aFaturar,
+    abatido: Math.max(0, round2(aFaturarBruto - aFaturar)),
+    proj: round2(faturadoDms + aFaturar),
+  };
+}
+
 export type LinhaComissao = { vendedor: string; canal: string; faturado: number; devolucao: number; producao: number; pct: number; comissao: number; obsoleto: number; comObsoleto: number; premiacao: number; itens: number; total: number };
 
 /** Folha de comissão do RH — só vendas FATURADAS, separada por departamento. */

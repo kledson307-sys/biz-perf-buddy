@@ -39,11 +39,15 @@ describe("leitores", () => {
     const s = separarAgenda(lerAgendaOnline(raw), "2026-11-13");
     expect(s.d0.length).toBe(1); expect(s.dataD1).toBe("2026-11-14"); expect(s.d1[0]!.segmento).toBe("moto");
   });
-  it("estética: lê data, valor e status faturado", () => {
+  it("estética: atribui ao executivo, usa Marcela no fallback e elimina linha fantasma", () => {
     const raw = [["x"], ["Data Venda", "Tipo", "Executivo Vendas", "Faturado", "Cliente", "Modelo", "Obs. Descrição", "Valor Venda", "Pagamento", "Chassi", "Vendedor Estet.", "Premiação"],
-      ["05/11/2026", "Pelicula", "DIEGO", "FATURADO", "DIANA", "SPARK", "", "790,00", "PIX", "", "ANE", ""]];
+      ["05/11/2026", "Pelicula", "DIEGO", "FATURADO", "DIANA", "SPARK", "", "790,00", "PIX", "", "MARCELA", ""],
+      ["06/11/2026", "Polimento", "", "A FATURAR", "JOAO", "X1", "", "350", "", "", "MARCELA", ""],
+      ["10/11/2026", "", "", "A FATURAR", "", "", "", "18.925,00", "", "", "MARCELA", ""]];
     const v = lerEsteticaOnline(raw);
-    expect(v[0]).toMatchObject({ dia: "2026-11-05", valor: 790, faturado: true, vendedor: "ANE" });
+    expect(v).toHaveLength(2);
+    expect(v[0]).toMatchObject({ dia: "2026-11-05", valor: 790, faturado: true, vendedor: "DIEGO" });
+    expect(v[1]).toMatchObject({ valor: 350, faturado: false, vendedor: "MARCELA" });
   });
 });
 

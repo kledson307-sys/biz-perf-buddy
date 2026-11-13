@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CHASE, estagnada, folhaComissao, pctAcessorios, statusConciliado, type VendaC } from "./acessorios-estetica";
+import { CHASE, conciliarCarteira, estagnada, folhaComissao, pctAcessorios, statusConciliado, type VendaC } from "./acessorios-estetica";
 
 const v = (p: Partial<VendaC>): VendaC => ({ departamento: "ACESSORIOS", vendedor: "RICK", canal: "NOVO", segmento: "CARRO", valor: 0, premiacao: 0, devolucao: 0, obsoleto: false, status: "FATURADO", ...p });
 
@@ -33,6 +33,22 @@ describe("premiação estética", () => {
 });
 
 describe("conciliação", () => {
+  it("abate da carteira os R$ 3.191,20 que o DMS já faturou além do declarado", () => {
+    const r = conciliarCarteira([
+      v({ valor: 10943, status: "FATURADO" }),
+      v({ valor: 13662, status: "A_FATURAR" }),
+    ], 14134.20);
+    expect(r.carteira).toBe(24605);
+    expect(r.aFaturar).toBe(10470.80);
+    expect(r.abatido).toBe(3191.20);
+    expect(r.proj).toBe(24605);
+  });
+  it("DMS acima da carteira zera o pendente e mantém o faturamento real", () => {
+    const r = conciliarCarteira([v({ valor: 10000, status: "FATURADO" }), v({ valor: 5000, status: "A_FATURAR" })], 18000);
+    expect(r.aFaturar).toBe(0);
+    expect(r.abatido).toBe(5000);
+    expect(r.proj).toBe(18000);
+  });
   it("O.S. aberta e faturada", () => {
     expect(statusConciliado({ status: "A_FATURAR", os_n: "76914" }, ["076914"], [])).toBe("OS_ABERTA");
     expect(statusConciliado({ status: "OS_ABERTA", os_n: "76914" }, [], ["76914"])).toBe("FATURADO");
