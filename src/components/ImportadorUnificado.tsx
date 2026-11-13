@@ -25,6 +25,23 @@ type Achado = {
   fat?: FatHistorico | undefined; tec?: FatTecnicos | null; agg?: ReturnType<typeof agregadosDoFatServicos>; destinos?: string[]; osLinhas?: { nome: string; servicos: number; pecas: number }[];
 };
 const ROTULO = { nps: "NPS da montadora", pecas: "Faturamento de Peças", passagens: "Faturamento de Serviços / Passagens", d1: "Agendamento D+1", d0: "Agendamento do dia", os: "O.S. Abertas", outro: "Não reconhecido" } as const;
+const mesBR = (m: string) => { const [a, n] = m.split("-"); return `${["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"][Number(n) - 1]}/${a}`; };
+
+/** Avisos da agenda: destino escolhível, dia passado e mês diferente do painel. */
+function AvisoAgenda({ a, mes, onTipo }: { a: Achado; mes: string; onTipo: (t: "d1" | "d0") => void }) {
+  const ag = a.agenda!; const d = new Date(); const hoje = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const dBR = ag.data.split("-").reverse().join("/");
+  return (
+    <div className="mt-1 space-y-1 text-xs">
+      <div className="flex flex-wrap items-center gap-1">Destino:
+        {(["d1", "d0"] as const).map((t) => <button key={t} type="button" onClick={() => onTipo(t)} className={`rounded-md border px-2 py-0.5 ${a.tipo === t ? "border-primary bg-primary/15 font-semibold text-primary" : "border-border"}`}>{t === "d1" ? "Radar D+1 (amanhã)" : "Agenda de hoje (D0)"}</button>)}
+      </div>
+      {a.tipo === "d0" && <p className="text-warning">⚠️ Vai alimentar a agenda de {dBR}. O alerta D+1 do topo continua pendente até chegar a agenda do próximo dia.</p>}
+      {ag.data < hoje && <p className="text-warning">⚠️ Esta agenda é de um dia que já passou ({dBR}).</p>}
+      {ag.data.slice(0, 7) !== mes && <p className="font-semibold text-destructive">⚠️ Competência diferente: a planilha é de {mesBR(ag.data.slice(0, 7))} e você está em {mesBR(mes)}. Ela será salva em {mesBR(ag.data.slice(0, 7))}.</p>}
+    </div>
+  );
+}
 const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 /** Esteira única: arraste os arquivos em qualquer ordem; cada um é reconhecido pelos cabeçalhos e conferido antes de salvar. */
@@ -194,7 +211,7 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
         <input type="file" multiple accept=".xlsx,.xls" className="hidden" onChange={(e) => { const fs = e.target.files ? Array.from(e.target.files) : []; e.target.value = ""; if (fs.length) void ler(fs).catch((err) => setMsg("❌ Não consegui ler o arquivo: " + (err instanceof Error ? err.message : String(err)))); }} />
       </label>
       {achados.length > 0 && <>
-        <ul className="space-y-1 text-sm">{achados.map((a) => <li key={a.arquivo} className="rounded border border-border p-2">{a.tipo === "outro" ? "❌" : "✅"} <b>{ROTULO[a.tipo]}</b> · {a.arquivo}<p className="text-xs text-muted-foreground">{a.resumo}</p>{a.destinos && <ul className="mt-1 grid gap-0.5 text-xs">{a.destinos.map((d) => <li key={d}>→ {d}</li>)}</ul>}</li>)}</ul>
+        <ul className="space-y-1 text-sm">{achados.map((a) => <li key={a.arquivo} className="rounded border border-border p-2">{a.tipo === "outro" ? "❌" : "✅"} <b>{ROTULO[a.tipo]}</b> · {a.arquivo}<p className="text-xs text-muted-foreground">{a.resumo}</p>{a.agenda && <AvisoAgenda a={a} mes={mes} onTipo={(t) => setAchados((xs) => xs.map((x) => x === a ? { ...x, tipo: t, agenda: { ...x.agenda!, tipo: t } } : x))} />}{a.destinos && <ul className="mt-1 grid gap-0.5 text-xs">{a.destinos.map((d) => <li key={d}>→ {d}</li>)}</ul>}</li>)}</ul>
         <button type="button" disabled={busy} onClick={() => void salvar()} className="h-9 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground">{busy ? "Salvando…" : "Conferido · salvar"}</button>
       </>}
       {msg && <p className="text-sm">{msg}</p>}

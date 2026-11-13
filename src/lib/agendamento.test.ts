@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 import { readFileSync, existsSync } from "node:fs";
-import { lerAgendamento, classificar, ehAgendamento } from "./agendamento";
+import { lerAgendamento, classificar, ehAgendamento, tipoAgenda } from "./agendamento";
 import { contar } from "./agendamentos-data";
 
 describe("agendamento", () => {
@@ -9,6 +9,11 @@ describe("agendamento", () => {
     expect(classificar("CAMPANHA ATUALIZAÇÃO DE SOFTWARE")).toBe("recall");
     expect(classificar("ALEGAÇÕES: BARULHO NA SUSPENSÃO")).toBe("diagnostico");
     expect(classificar("ALEGAÇÕES:NÃO POSSUI\nBSI: NÃO\nTROCA DE ÓLEO")).toBe("revisao");
+  });
+  it("agenda de amanhã é D+1 mesmo impressa com a mesma data", () => {
+    expect(tipoAgenda("2026-11-13", "2026-11-13", "2026-11-12")).toBe("d1");
+    expect(tipoAgenda("2026-11-12", "2026-11-12", "2026-11-12")).toBe("d0");
+    expect(tipoAgenda("2026-11-13", "2026-11-12", "2026-11-13")).toBe("d1");
   });
   it("não reconhece planilha qualquer", () => { expect(ehAgendamento([["Nome", "Valor"]])).toBe(false); });
   const f = (n: string) => `/tmp/${n}.json`;

@@ -93,7 +93,7 @@ export function Simulado({ mes }: { mes: string }) {
     setSalvando(true);
     const ok: string[] = [];
     for (const p of pend) {
-      try { await salvar(p.tipo, p.m, p.arquivo, p.dados); ok.push(p.resumo); toast.success(`${p.arquivo} importado`); } catch (e) { toast.error(`${p.arquivo}: ${(e as Error).message}`); }
+      try { await salvar(p.tipo, p.m, p.arquivo, p.dados); ok.push(p.tipo !== "efetivo" && p.m !== mes ? `${p.resumo} — salvo no histórico de ${p.m.split("-").reverse().join("/")}, não no mês aberto (${mes.split("-").reverse().join("/")})` : p.resumo); toast.success(`${p.arquivo} importado`); } catch (e) { toast.error(`${p.arquivo}: ${(e as Error).message}`); }
     }
     setPend([]); setRecibo(ok); setSalvando(false); await load();
   }
@@ -132,7 +132,7 @@ export function Simulado({ mes }: { mes: string }) {
 
       {pend.length > 0 && <div className="lux-card space-y-1 border-2 border-primary p-3 text-xs">
         <b className="text-sm">Confira antes de importar</b>
-        {pend.map((p) => <p key={p.arquivo} className="flex items-center gap-1"><CheckCircle2 className="h-4 w-4 shrink-0 text-success" /> {p.arquivo} → <b>{p.resumo}</b></p>)}
+        {pend.map((p) => <p key={p.arquivo} className="flex items-center gap-1"><CheckCircle2 className="h-4 w-4 shrink-0 text-success" /> {p.arquivo} → <b>{p.resumo}</b>{p.tipo !== "efetivo" && p.m !== mes && <span className="block font-semibold text-destructive">⚠️ Competência diferente: o arquivo é de {p.m.split("-").reverse().join("/")} e você está em {mes.split("-").reverse().join("/")}. Será salvo em {p.m.split("-").reverse().join("/")} — o mês atual continuará aguardando a planilha dele.</span>}</p>)}
         <div className="flex gap-2 pt-1"><Button size="sm" disabled={salvando} onClick={() => void confirmar()}>{salvando ? "Salvando…" : "Confirmar importação"}</Button><Button size="sm" variant="ghost" onClick={() => setPend([])}>Cancelar</Button></div>
       </div>}
       {recibo.length > 0 && <div className="lux-card space-y-1 border border-success p-3 text-xs">

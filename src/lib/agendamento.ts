@@ -76,7 +76,14 @@ export function classificar(obs: string): Categoria {
   return "revisao";
 }
 
-export function lerAgendamento(raw: unknown[][]): AgendReport | null {
+const hojeISO = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+/** D+1 quando a agenda é para depois da impressão ou depois de hoje; só pelo conteúdo, nunca pelo nome do arquivo. */
+export function tipoAgenda(periodo: string, impressao: string, hoje = hojeISO()): "d1" | "d0" {
+  return (impressao && periodo > impressao) || periodo > hoje ? "d1" : "d0";
+}
+
+export function lerAgendamento(raw: unknown[][], hoje = hojeISO()): AgendReport | null {
   if (!ehAgendamento(raw)) return null;
   let periodo = "", impressao = ""; let h = -1; const col: Record<string, number> = {};
   raw.forEach((r, i) => r.forEach((c, j) => {
@@ -100,7 +107,7 @@ export function lerAgendamento(raw: unknown[][]): AgendReport | null {
     }
   }
   itens.forEach((it) => { it.categoria = classificar(`${it.obs} ${it.produto}`); if (/\b0000111/.test(norm(it.obs))) it.segmento = "moto"; if (/\b0000105/.test(norm(it.obs))) it.segmento = "carro"; });
-  return { tipo: impressao && periodo > impressao ? "d1" : "d0", data: periodo, itens };
+  return { tipo: tipoAgenda(periodo, impressao, hoje), data: periodo, itens };
 }
 
 
