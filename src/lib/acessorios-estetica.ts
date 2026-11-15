@@ -179,3 +179,11 @@ export function radarDia(vendas: { created_at?: string; criado_por?: string }[],
   const todas = [...vendas.map((v) => v.created_at), ...vols.map((v) => v.updated_at)].filter(Boolean).sort() as string[];
   return { vendasHoje: vh.length, volumesHoje: volH.length, ultima: todas[todas.length - 1], ok: vh.length + volH.length > 0 };
 }
+
+/** Reconciliação automática: o que o DMS já faturou além do declarado na planilha é abatido do "a faturar". */
+export function reconciliarDms(vendas: { status: string; valor: number }[], fatDms: number) {
+  const bruto = vendas.filter((v) => v.status === "A_FATURAR" || v.status === "OS_ABERTA").reduce((s, v) => s + v.valor, 0);
+  const declarado = vendas.filter((v) => v.status === "FATURADO").reduce((s, v) => s + v.valor, 0);
+  const abatido = Math.min(Math.max(fatDms - declarado, 0), bruto);
+  return { bruto, abatido, aFaturar: bruto - abatido };
+}

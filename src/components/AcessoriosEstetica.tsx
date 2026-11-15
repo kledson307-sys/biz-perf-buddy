@@ -9,6 +9,7 @@ import {
   CANAIS, CHASE, DEPTO_DMS, MARGEM_IDEAL, SEGMENTOS, STATUS_LABEL, diferencaRvd, estagnada, folhaComissao, parseRvd, possiveisDuplicadas, chaveDuplicada, statusConciliado, casarVendedor, radarDia, type LinhaRvd,
   type Depto, type StatusVenda, type VendaC,
   targetTicket,
+  reconciliarDms,
 } from "@/lib/acessorios-estetica";
 
 type Venda = VendaC & { id: string; cliente: string; placa: string; produto: string; os_n: string; dia: string; mes: string; created_at?: string; criado_por?: string };
@@ -63,10 +64,10 @@ export function AcessoriosEstetica({ mes, tot, dec, restrito }: { mes: string; t
 }
 
 function kpis(vendas: VendaC[], d: { fat: number; margem: number; meta: number }, tot: number, dec: number) {
-  const aFaturar = vendas.filter((v) => v.status === "A_FATURAR" || v.status === "OS_ABERTA").reduce((s, v) => s + v.valor, 0);
+  const { aFaturar, abatido } = reconciliarDms(vendas, d.fat);
   const proj = d.fat + aFaturar;
   const rest = Math.max(tot - dec, 0);
-  return { aFaturar, proj, p: div(proj, d.meta), nec: rest ? Math.max(d.meta - proj, 0) / rest : 0 };
+  return { aFaturar, abatido, proj, p: div(proj, d.meta), nec: rest ? Math.max(d.meta - proj, 0) / rest : 0 };
 }
 
 function Faixa({ depto, d, vendas, tot, dec }: { depto: Depto; d: { fat: number; margem: number; meta: number }; vendas: VendaC[]; tot: number; dec: number }) {
@@ -74,7 +75,7 @@ function Faixa({ depto, d, vendas, tot, dec }: { depto: Depto; d: { fat: number;
   const mg = div(d.margem, d.fat); const ideal = MARGEM_IDEAL[depto];
   const cards: [string, string, string, string?][] = [
     ["Faturado (DMS)", brl(d.fat), `Departamento ${DEPTO_DMS[depto]}`],
-    ["A faturar", brl(k.aFaturar), "Lançamentos ainda não faturados"],
+    ["A faturar", brl(k.aFaturar), k.abatido ? `Reconciliado com DMS: ${brl(k.abatido)} abatidos` : "Lançamentos ainda não faturados"],
     ["Projeção do mês", brl(k.proj), "Faturado + a faturar", tone(k.p)],
     ["Meta do mês", d.meta ? pct(k.p) : "—", d.meta ? `Meta ${brl(d.meta)}` : "Cadastre a meta em Metas", tone(k.p)],
     ["Margem", d.fat ? pct(mg) : "—", `Ideal ${pct(ideal)}`, mg >= ideal ? "text-success" : mg >= ideal * 0.85 ? "text-warning" : "text-destructive"],

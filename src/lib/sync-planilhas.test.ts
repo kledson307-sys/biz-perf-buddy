@@ -43,7 +43,12 @@ describe("leitores", () => {
     const raw = [["x"], ["Data Venda", "Tipo", "Executivo Vendas", "Faturado", "Cliente", "Modelo", "Obs. Descrição", "Valor Venda", "Pagamento", "Chassi", "Vendedor Estet.", "Premiação"],
       ["05/11/2026", "Pelicula", "DIEGO", "FATURADO", "DIANA", "SPARK", "", "790,00", "PIX", "", "ANE", ""]];
     const v = lerEsteticaOnline(raw);
-    expect(v[0]).toMatchObject({ dia: "2026-11-05", valor: 790, faturado: true, vendedor: "ANE" });
+    expect(v[0]).toMatchObject({ dia: "2026-11-05", valor: 790, faturado: true, vendedor: "DIEGO" });
+  });
+  it("estética: ignora linha fantasma sem cliente/produto", () => {
+    const raw = [["Data Venda", "Tipo", "Executivo Vendas", "Faturado", "Cliente", "Modelo", "Obs. Descrição", "Valor Venda", "Vendedor Estet."],
+      ["10/11/2026", "PPF", "RICK", "", "GERCINO", "X1", "PPF FULL", "18925", "MARCELA"], ["10/11/2026", "", "", "", "", "", "", "18925", ""]];
+    expect(lerEsteticaOnline(raw).length).toBe(1);
   });
 });
 

@@ -96,8 +96,8 @@ export function lerEsteticaOnline(raw: unknown[][]): EsteticaOnline[] {
   return raw.slice(hi + 1).map((r) => ({
     dia: dataCel(g(r, k.d)), tipo: txt(g(r, k.t)).toUpperCase(), executivo: txt(g(r, k.ex)).toUpperCase(), faturado: /^FATURADO/.test(norm(txt(g(r, k.f)))),
     cliente: txt(g(r, k.cli)).toUpperCase(), modelo: txt(g(r, k.mod)).toUpperCase(), descricao: txt(g(r, k.ob)), valor: numv(g(r, k.v)),
-    pagamento: txt(g(r, k.pg)), chassi: txt(g(r, k.ch)).toUpperCase(), vendedor: txt(g(r, k.ve)).toUpperCase(), premiacao: numv(g(r, k.pr)),
-  })).filter((x) => x.dia && x.valor > 0);
+    pagamento: txt(g(r, k.pg)), chassi: txt(g(r, k.ch)).toUpperCase(), vendedor: txt(g(r, k.ex)).toUpperCase() || txt(g(r, k.ve)).toUpperCase() || "MARCELA", premiacao: numv(g(r, k.pr)),
+  })).filter((x) => x.dia && x.valor > 0 && (x.cliente || x.tipo || x.descricao)); // linha sem cliente/produto = duplicata fantasma
 }
 
 /** Avisos do sininho: planilha parada há 2+ dias (sem domingo) ou leitura com falha. */
