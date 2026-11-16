@@ -7,6 +7,6 @@ describe("preservarAjustes", () => {
   });
   it("não altera linhas sem ajuste manual", () => {
     const r = preservarAjustes([{ placa: "X", consultor: "AG", hora: "09:00", importado_por: "sincronização" }], [{ placa: "X", consultor: "OUTRO", hora: "10:00", importado_por: "sincronização" }]);
-    expect(r[0].consultor).toBe("AG");
+    expect(r[0]?.consultor).toBe("AG");
   });
 });

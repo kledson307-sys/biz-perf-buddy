@@ -10,7 +10,7 @@ const dBR = (iso: string) => iso.split("-").reverse().join("/");
 /** Quadro do dia: um chip por agendamento, uma linha por consultor; consultor e horário ajustáveis e preservados pela sincronização. */
 export function QuadroConsultores({ itens, data, onChange }: { itens: AgendRow[]; data: string; onChange: () => void }) {
   const [salvando, setSalvando] = useState("");
-  const oficiais = CONSULTORES_AGENDA.map((c) => c.login);
+  const oficiais: string[] = CONSULTORES_AGENDA.map((c) => c.login);
   const salvar = async (r: AgendRow, campos: { consultor?: string; hora?: string }) => {
     setSalvando(r.id);
     const { error } = await supabase.from("agendamentos").update({ ...campos, importado_por: AJUSTE_MANUAL }).eq("id", r.id);

@@ -5,7 +5,7 @@ import type { Categoria } from "@/lib/agendamento";
 export type AgendRow = {
   id: string; data: string; tipo: "d1" | "d0"; hora: string; status: string; cliente: string; os: string;
   celular: string; consultor: string; produto: string; placa: string; segmento: "carro" | "moto";
-  categoria: Categoria; obs: string;
+  categoria: Categoria; obs: string; importado_por?: string;
 };
 export type Followup = { id: string; agendamento_id: string; aceito_por: string; aceito_em: string | null; confirmacao: "sim" | "nao" | "faltou" | null; confirmado_por: string; confirmado_em: string | null };
 
