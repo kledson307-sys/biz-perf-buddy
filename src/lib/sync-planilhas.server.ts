@@ -4,6 +4,7 @@ import { FONTES, urlDownload, isoBahia, hashConteudo, lerAgendaOnline, separarAg
 import { lerAbaNps } from "./nps";
 import { parseRvd, casarVendedor, diferencaRvd, targetTicket, type VendaC } from "./acessorios-estetica";
 import { classificar } from "./agendamento";
+import { preservarAjustes } from "./agenda-atribuicao";
 
 const AUTOR = "sincronização";
 type Db = any; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -41,6 +42,7 @@ async function preparar(db: Db, f: Fonte, owner: string): Promise<{ conteudo: un
     return { conteudo: lotes, linhas: s.d0.length + s.d1.length, resumo: `Hoje ${s.d0.length} · D+1 ${s.d1.length}`, gravar: async () => {
       const origens: string[] = [];
       for (const l of lotes) {
+        const { data: antigas } = await db.from("agendamentos").select("placa,consultor,hora,importado_por").eq("user_id", owner).eq("data", l.data);
         chk(await db.from("agendamentos").delete().eq("user_id", owner).eq("tipo", l.tipo).eq("data", l.data));
         const vistos = new Set<string>();
         const rows = l.itens.map((it) => {
@@ -49,7 +51,8 @@ async function preparar(db: Db, f: Fonte, owner: string): Promise<{ conteudo: un
           const categoria = /RECALL|CAMPANHA/.test(sv) ? "recall" : /DIAG/.test(sv) ? "diagnostico" : /REV|MANUT/.test(sv) ? "revisao" : classificar(`${it.obs} ${it.servico}`);
           return { user_id: owner, data: l.data, tipo: l.tipo, hora: it.hora, status: it.status, cliente: it.cliente, os: "", celular: it.celular, consultor: it.operador, produto: it.modelo, placa, segmento: it.segmento, categoria, obs: it.obs, arquivo: "SharePoint (sincronização automática)", importado_por: AUTOR };
         }).filter((r) => { const k = `${r.placa}|${r.hora}`; if (vistos.has(k)) return false; vistos.add(k); return true; });
-        if (rows.length) chk(await db.from("agendamentos").insert(rows));
+        const finais = preservarAjustes(rows, antigas ?? []);
+        if (finais.length) chk(await db.from("agendamentos").insert(finais));
         origens.push(l.tipo === "d1" ? "Agendamento D+1" : "Agendamento do dia");
       }
       return origens;
