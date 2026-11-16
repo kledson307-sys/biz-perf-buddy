@@ -15,7 +15,7 @@ export function QuadroConsultores({ itens, data, onChange }: { itens: AgendRow[]
     setSalvando(r.id);
     const { error } = await supabase.from("agendamentos").update({ ...campos, importado_por: AJUSTE_MANUAL }).eq("id", r.id);
     setSalvando("");
-    if (error) return toast.error(`Não foi possível salvar: ${error.message}`);
+    if (error) { toast.error(`Não foi possível salvar: ${error.message}`); return; }
     toast.success(`${r.cliente} · ${campos.consultor ? `atribuído a ${campos.consultor}` : `horário ${campos.hora}`}`);
     onChange();
   };
