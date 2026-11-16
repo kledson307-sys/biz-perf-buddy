@@ -148,7 +148,8 @@ export function Agendamentos({ mes }: { mes: string }) {
         <summary className="cursor-pointer text-sm font-semibold text-primary">📥 Importar agendamento (D+1 ou do dia)</summary>
         <div className="mt-2"><ImportadorUnificado mes={mes} onDone={() => void load()} /></div>
       </details>
-      <QuadroConsultores itens={d0} data={d0[0]?.data ?? hoje} onChange={() => void load()} />
+      <QuadroConsultores titulo="Agendamentos do dia" itens={d0} data={d0[0]?.data ?? hoje} onChange={() => void load()} />
+      <QuadroConsultores titulo="Agendamentos de amanhã (D+1)" itens={d1Todos} data={amanha.data} onChange={() => void load()} />
       <Box title={`Agenda de amanhã (D+1) · ${amanha.data ? dBR(amanha.data) : "—"}`}
         right={<p className="text-xs text-muted-foreground">Acumulado do mês: 🚗 {uni(acumD1.carro)} carros · 🏍 {uni(acumD1.moto)} motos · {uni(atendidosMes)} atendidos{(() => { const f = faltas.reduce((n, x) => n + x.faltas, 0), t = atendidosMes + f; if (!t) return null; const r = atendidosMes / t; return <> · comparecimento <b className={r >= 0.9 ? "text-success" : r >= 0.8 ? "text-warning" : "text-destructive"}>{(r * 100).toFixed(1).replace(".", ",")}%</b> ({uni(f)} faltas)</>; })()}</p>}>
         <div className="flex flex-wrap items-center gap-2 px-3 pt-3 text-xs">
