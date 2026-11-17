@@ -150,42 +150,6 @@ export function Agendamentos({ mes }: { mes: string }) {
       </details>
       <QuadroConsultores titulo="Agendamentos do dia" itens={d0} data={d0[0]?.data ?? hoje} onChange={() => void load()} />
       <QuadroConsultores titulo="Agendamentos de amanhã (D+1)" itens={d1Todos} data={amanha.data} onChange={() => void load()} />
-      <Box title={`Agenda de amanhã (D+1) · ${amanha.data ? dBR(amanha.data) : "—"}`}
-        right={<p className="text-xs text-muted-foreground">Acumulado do mês: 🚗 {uni(acumD1.carro)} carros · 🏍 {uni(acumD1.moto)} motos · {uni(atendidosMes)} atendidos{(() => { const f = faltas.reduce((n, x) => n + x.faltas, 0), t = atendidosMes + f; if (!t) return null; const r = atendidosMes / t; return <> · comparecimento <b className={r >= 0.9 ? "text-success" : r >= 0.8 ? "text-warning" : "text-destructive"}>{(r * 100).toFixed(1).replace(".", ",")}%</b> ({uni(f)} faltas)</>; })()}</p>}>
-        <div className="flex flex-wrap items-center gap-2 px-3 pt-3 text-xs">
-          <span className="text-muted-foreground">Consultor:</span>
-          <select value={filtroCons} onChange={(e) => setFiltroCons(e.target.value)} className="rounded-md border border-border bg-background px-2 py-1">
-            <option value="">Todos</option>
-            {consultoresD1.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <span className="ml-2 text-muted-foreground">Data:</span>
-          <select value={amanha.data} onChange={(e) => setDataEscolhida(e.target.value)} className="rounded-md border border-border bg-background px-2 py-1">
-            {[...amanha.datas].reverse().map((d) => <option key={d} value={d}>{dBR(d)}</option>)}
-          </select>
-        </div>
-        <div className="grid gap-2 p-3 sm:grid-cols-2">
-          <BlocoSegmento icone="🚗" nome="Carros" m={radar} seg="carro" cor="text-primary" />
-          <BlocoSegmento icone="🏍" nome="Motos" m={radar} seg="moto" cor="text-neon" />
-        </div>
-        <div className="grid gap-2 px-3 pb-3 sm:grid-cols-2">
-          {(["carro", "moto"] as const).map((seg) => {
-            const meta = metaSeg(seg), real = radar[seg], sit = SIT[situacaoCapacidade(real, meta)];
-            return <p key={seg} className="rounded bg-background/60 px-2 py-1 text-xs">{seg === "carro" ? "🚗" : "🏍"} Capacidade: {uni(real)} de {meta ? uni(meta) : "—"} meta/dia · <b className={sit[1]}>{sit[0]}</b></p>;
-          })}
-        </div>
-        {picos.length > 0 && (
-          <div className="px-3 pb-3">
-            <p className="mb-1 text-[11px] font-semibold uppercase text-muted-foreground">Entradas por horário</p>
-            <div className="flex flex-wrap gap-1">
-              {picos.map((p) => {
-                const max = Math.max(...Object.values(p.porConsultor));
-                return <span key={p.hora} title={Object.entries(p.porConsultor).map(([c, n]) => `${c}: ${n}`).join(" · ")} className={`rounded px-2 py-1 text-[11px] ${max >= 4 ? "bg-destructive text-background" : "bg-card/70"}`}>{p.hora}h · {uni(p.total)}</span>;
-              })}
-            </div>
-            <p className="mt-1 text-[10px] text-muted-foreground">Vermelho: um consultor com 4+ entradas no mesmo horário.</p>
-          </div>
-        )}
-      </Box>
 
       {criticos.length > 0 && (
         <Box title={`⚠️ Alerta de recepção · ${uni(criticos.length)} cliente(s) detrator(es) amanhã`}>
@@ -249,28 +213,6 @@ export function Agendamentos({ mes }: { mes: string }) {
         </Box>
       )}
 
-      <Box title={`Agenda do dia · ${d0.length ? dBR(d0[0]!.data) : "—"} · passantes × agendados`}>
-        {!d0.length && <p className="p-3 text-sm text-muted-foreground">Planilha do dia ainda não importada.</p>}
-        {d0.length > 0 && (
-          <div className="p-3">
-            <div className="grid gap-2 sm:grid-cols-2">
-              {[{ t: "Passantes (Andressa, Wesley, Pedro, Gilberto, Luis, Jadna, Renan)", m: mixPass, n: passantes.length }, { t: "Agendados demais consultores", m: mixAg, n: agendados.length }].map((g) => (
-                <div key={g.t} className="rounded-lg bg-background/60 p-3">
-                  <p className="text-xs text-muted-foreground">{g.t}</p>
-                  <p className="text-xl font-bold">{uni(g.n)}</p>
-                  <div className="mt-2 space-y-1">
-                    <LinhaSegmento icone="🚗" nome="Carros" m={g.m} seg="carro" />
-                    <LinhaSegmento icone="🏍" nome="Motos" m={g.m} seg="moto" />
-                  </div>
-                </div>
-              ))}
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Penetração de agendados: {Math.round((agendados.length / d0.length) * 100)}% do dia ({uni(agendados.length)} de {uni(d0.length)}) · indicador sem meta
-            </p>
-          </div>
-        )}
-      </Box>
 
       {fechamento.length > 0 && (
         <Box title={`Fechamento do dia · D+1 × agenda do dia (${uni(fechamento.filter((f) => f.atendido).length)} atendidos de ${uni(fechamento.length)})`} fit="xl:max-h-[40vh]">

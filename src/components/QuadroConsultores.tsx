@@ -62,7 +62,7 @@ export function QuadroConsultores({ itens, data, titulo, onChange }: { itens: Ag
   };
 
   return (
-    <Box title={`${titulo} · ${data ? dBR(data) : "—"} (${uni(itens.length)})`} right={
+    <Box title={`${titulo} · ${data ? dBR(data) : "—"} (${uni(itens.filter((r) => r.segmento !== "moto").length)} carros · ${uni(itens.filter((r) => r.segmento === "moto").length)} motos · total ${uni(itens.length)})`} right={
       <button type="button" onClick={() => setGaveta((g) => !g)} className={`rounded-md px-3 py-1 text-xs font-semibold ${pendentes.length ? "bg-warning text-background" : "bg-card text-muted-foreground"}`}>
         ⏳ Não atribuídos ({uni(pendentes.length)}) {gaveta ? "▲" : "▼"}
       </button>}>
