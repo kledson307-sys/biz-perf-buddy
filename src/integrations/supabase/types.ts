@@ -1144,6 +1144,7 @@ export type Database = {
       oficina_owner: { Args: never; Returns: string }
       oficina_retornos: { Args: { p_mes: string }; Returns: Json }
       painel_oficina: { Args: { p_mes: string }; Returns: Json }
+      pecas_owner: { Args: never; Returns: string }
       registrar_acesso: { Args: never; Returns: undefined }
       registrar_retorno: {
         Args: { p_data: string; p_nota: string; p_os: string }
