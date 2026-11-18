@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { preservarAjustes } from "./agenda-atribuicao";
 
 export type Categoria = "revisao" | "diagnostico" | "recall";
 export type AgendItem = { hora: string; status: string; cliente: string; os: string; celular: string; consultor: string; produto: string; placa: string; segmento: "carro" | "moto"; categoria: Categoria; obs: string };
@@ -111,8 +112,10 @@ export function lerAgendamento(raw: unknown[][], hoje = hojeISO()): AgendReport 
 }
 
 
-/** Agendas ficam na tabela `agendamentos`: reimportar o mesmo dia/tipo substitui as linhas. */
+/** Agendas ficam na tabela `agendamentos`: reimportar o mesmo dia/tipo substitui as linhas sem perder ajustes manuais. */
 export async function salvarAgendamento(r: AgendReport, arquivo: string, nome: string) {
+  const { data: antigas, error: leitura } = await supabase.from("agendamentos").select("placa,consultor,hora,importado_por").eq("tipo", r.tipo).eq("data", r.data);
+  if (leitura) throw new Error("Erro ao preservar atribuições do agendamento: " + leitura.message);
   const { error: del } = await supabase.from("agendamentos").delete().eq("tipo", r.tipo).eq("data", r.data);
   if (del) throw new Error("Erro ao substituir agendamento: " + del.message);
   // A mesma placa/horário pode aparecer repetida no relatório (quebra de página ou placa vazia): mantém uma linha só.
@@ -128,8 +131,9 @@ export async function salvarAgendamento(r: AgendReport, arquivo: string, nome: s
     celular: it.celular, consultor: it.consultor, produto: it.produto, placa: it.placa,
     segmento: it.segmento, categoria: it.categoria, obs: it.obs, arquivo, importado_por: nome,
   }));
-  if (rows.length) {
-    const { error } = await supabase.from("agendamentos").insert(rows);
+  const finais = preservarAjustes(rows, antigas ?? []);
+  if (finais.length) {
+    const { error } = await supabase.from("agendamentos").insert(finais);
     if (error) throw new Error("Erro ao salvar agendamento: " + error.message);
   }
   await supabase.from("update_log").insert({ nome, origem: r.tipo === "d1" ? "Agendamento D+1" : "Agendamento do dia", mes: r.data.slice(0, 7) });

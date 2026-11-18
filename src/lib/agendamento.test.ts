@@ -1,7 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
+const mocks = vi.hoisted(() => ({ from: vi.fn() }));
+vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: mocks.from } }));
 import { readFileSync, existsSync } from "node:fs";
-import { lerAgendamento, classificar, ehAgendamento, tipoAgenda } from "./agendamento";
+import { lerAgendamento, classificar, ehAgendamento, tipoAgenda, salvarAgendamento, type AgendReport } from "./agendamento";
+import { AJUSTE_MANUAL } from "./agenda-atribuicao";
 import { contar } from "./agendamentos-data";
 
 describe("agendamento", () => {
@@ -23,6 +25,20 @@ describe("agendamento", () => {
     expect(d1.tipo).toBe("d1"); expect(d1.data).toBe("2026-10-31");
     expect(d0.tipo).toBe("d0"); expect(d0.data).toBe("2026-10-30");
     console.log(d1.itens.length, d0.itens.length, d1.itens.map((i) => i.categoria + "/" + i.segmento).join(","));
+  });
+
+  it("preserva consultor e horário manuais ao reimportar o mesmo dia", async () => {
+    const inseridos = vi.fn().mockResolvedValue({ error: null });
+    mocks.from.mockImplementation((tabela: string) => tabela === "agendamentos" ? {
+      select: () => ({ eq: () => ({ eq: async () => ({ data: [{ placa: "ABC1D23", consultor: "ANDRESSA.O", hora: "08:30", importado_por: AJUSTE_MANUAL }], error: null }) }) }),
+      delete: () => ({ eq: () => ({ eq: async () => ({ error: null }) }) }),
+      insert: inseridos,
+    } : { insert: vi.fn().mockResolvedValue({ error: null }) });
+    const relatorio: AgendReport = { tipo: "d0", data: "2026-11-18", itens: [{ hora: "08:00", status: "AGENDADO", cliente: "CLIENTE", os: "", celular: "", consultor: "AGENDADOR", produto: "X1", placa: "ABC1D23", segmento: "carro", categoria: "revisao", obs: "" }] };
+
+    await salvarAgendamento(relatorio, "agenda.xlsx", "Kledson");
+
+    expect(inseridos).toHaveBeenCalledWith([expect.objectContaining({ placa: "ABC1D23", consultor: "ANDRESSA.O", hora: "08:30", importado_por: AJUSTE_MANUAL })]);
   });
 
   it("separa carros e motos em cada categoria", () => {
