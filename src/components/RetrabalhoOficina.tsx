@@ -5,6 +5,7 @@ import { baseNps, daLoja, type NpsItem } from "@/lib/nps";
 import { lerOficinaMes } from "@/lib/oficina-mes";
 import type { Retorno } from "@/lib/diario-retorno";
 import { grupoDe } from "@/lib/mecanicos";
+import { RET_KEY } from "@/lib/os-agrupar";
 
 const RETRABALHO = /CONTINUA|RETRABALHO|QUALIDADE|REPARO/;
 const fmt = (d: string) => d.slice(8, 10) + "/" + d.slice(5, 7);
@@ -14,7 +15,9 @@ export function RetrabalhoOficina({ mes, segmento = "todos" }: { mes: string; se
   const [itens, setItens] = useState<NpsItem[] | null>(null);
   const [ret0, setRet] = useState<Retorno[]>([]);
   const doSeg = (tec: string) => segmento === "todos" || (tec || "").split(", ").some((t) => grupoDe(t) === segmento);
-  const ret = ret0.filter((r) => doSeg(r.tecnicoAnterior || r.tecnico || ""));
+  const [naoRet, setNaoRet] = useState<Set<string>>(new Set());
+  useEffect(() => { void supabase.from("os_acompanhamento").select("os_n,acoes").like("os_n", "ret:%").then(({ data }) => setNaoRet(new Set((data ?? []).filter((x) => (x.acoes as Record<string, { d?: string }>)?.[RET_KEY]?.d === "nao").map((x) => x.os_n.slice(4))))); }, []);
+  const ret = ret0.filter((r) => !naoRet.has(r.os) && doSeg(r.tecnicoAnterior || r.tecnico || ""));
   const [aba, setAba] = useState<"chassi" | "rac">("chassi");
   useEffect(() => { void supabase.from("nps_imports").select("itens").order("at", { ascending: false }).limit(1).maybeSingle().then(({ data }) => setItens(baseNps(daLoja((data?.itens as unknown as NpsItem[]) ?? [])))); }, []);
   useEffect(() => {

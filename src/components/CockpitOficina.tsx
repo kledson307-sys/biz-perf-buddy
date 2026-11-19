@@ -19,6 +19,7 @@ import { analisar, fmt, hoje, type OsImport, type OsItem } from "@/lib/os-contro
 import type { Composicao } from "@/lib/mecanicos";
 import { dicaTecnico, ratioFaixa, ritmo } from "@/lib/oficina";
 import type { Retorno } from "@/lib/diario-retorno";
+import { RET_KEY, retChave, type DecisaoRetorno } from "@/lib/os-agrupar";
 import { ExtratoComissao } from "@/components/ExtratoComissao";
 import { PERFIS, calcularComissao, npsPorMarca, type Metricas } from "@/lib/comissoes";
 
@@ -29,7 +30,16 @@ const OCULTOS = ["VINICIUS", "DELMIR", "LUIS SANDRO"];
 
 /** Cockpit da oficina de Carro. Marcos (controlador de quadro) e Delmir (chefe: + auditoria e dossiê). */
 export function CockpitOficina({ chefe }: { chefe: boolean }) {
-  const [ret, setRet] = useState<Retorno[]>([]);
+  const [retAll, setRet] = useState<Retorno[]>([]);
+  const [dec0, setDec] = useState<Record<string, DecisaoRetorno>>({});
+  const loadDec = () => { void supabase.from("os_acompanhamento").select("os_n,acoes").like("os_n", "ret:%").then(({ data }) => setDec(Object.fromEntries((data ?? []).map((x) => [x.os_n.slice(4), ((x.acoes as Record<string, { d?: DecisaoRetorno }>)?.[RET_KEY]?.d) ?? null]).filter((x) => x[1])) as Record<string, DecisaoRetorno>)); };
+  useEffect(loadDec, []);
+  const ret = retAll.filter((r) => dec0[r.os] === "sim");
+  const retPend = retAll.filter((r) => !dec0[r.os]);
+  const decidir = async (os: string, d: DecisaoRetorno) => {
+    const { error } = await supabase.from("os_acompanhamento").upsert({ os_n: retChave(os), acoes: { [RET_KEY]: { d, por: email, at: new Date().toISOString() } } as never, updated_at: new Date().toISOString() }, { onConflict: "user_id,os_n" });
+    if (error) setErro("Não foi possível salvar a decisão: " + error.message); else setDec((p) => ({ ...p, [os]: d }));
+  };
   const [mes, setMes] = useState(() => new Date().toISOString().slice(0, 7));
   const [aba, setAba] = useState("resumo");
   const [tec, setTec] = useState<{ tecnicos: T[]; params: Params } | null>(null);
@@ -161,7 +171,7 @@ export function CockpitOficina({ chefe }: { chefe: boolean }) {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {chefe ? <>
               <Alerta n={diag3.length} t="Diagnósticos parados > 3 dias" d="Intervir tecnicamente ou abrir caso na fábrica." ir={() => setAba("patio")} />
-              <Alerta n={ret.length} t="Retornos em até 60 dias" d={rankRet[0] ? `Mais retornos: ${rankRet[0][0]} (${rankRet[0][1]})` : "Nenhum retrabalho identificado."} ir={() => setAba("qualidade")} />
+              <Alerta n={retPend.length} t="Possíveis retornos a validar" d={`${ret.length} confirmados${rankRet[0] ? ` · mais: ${rankRet[0][0]} (${rankRet[0][1]})` : ""}`} ir={() => setAba("qualidade")} />
               <Alerta n={baixoRatio.length} t="Técnicos com peças abaixo de R$ 2,00/M.O." d={baixoRatio.slice(0, 3).map((t) => t.nome).join(", ") || "Toda a equipe na faixa."} ir={() => setAba("tecnicos")} aviso />
               <Alerta n={preventivo.length} t="Clientes insatisfeitos no pátio" d="Fazer teste de rodagem e acompanhar a entrega." ir={() => setAba("patio")} />
               <Alerta n={pecasHoje.length} t="Peças com chegada prevista até hoje" d="Confirmar recebimento e liberar box." ir={() => setAba("patio")} aviso />
@@ -212,8 +222,18 @@ export function CockpitOficina({ chefe }: { chefe: boolean }) {
           </Box>
         </div>}
 
-        {aba === "qualidade" && <div>
-          <Box title={`Retornos por chassi · até 60 dias (${uni(ret.length)})`} fit="xl:max-h-[calc(100vh-260px)]">
+        {aba === "qualidade" && <div className="space-y-3">
+          <Box title={`Possíveis retornos para validar (${uni(retPend.length)})`} fit="xl:max-h-[40vh]">
+            <div className="p-3 text-xs">
+              <p className="mb-2 text-muted-foreground">Muitos casos são o cliente voltando para trocar a peça que estava aguardando. Só entram no índice dos técnicos os confirmados pelo Chefe de Oficina.</p>
+              <ul className="space-y-1">{retPend.map((r) => <li key={r.os + r.osAnterior} className="flex flex-wrap items-center justify-between gap-2 rounded border border-border p-1.5">
+                <span><b>O.S. {r.os}</b> ({r.tipo}) ← <b>O.S. {r.osAnterior}</b> · {r.dias} dias · {r.modelo} {r.placa || r.chassi} · técnico anterior: <b>{r.tecnicoAnterior || "—"}</b></span>
+                {chefe ? <span className="flex gap-1"><Button size="sm" variant="destructive" onClick={() => void decidir(r.os, "sim")}>É retorno técnico</Button><Button size="sm" variant="outline" onClick={() => void decidir(r.os, "nao")}>Não é retorno (troca de peça)</Button></span> : <span className="text-muted-foreground">Aguardando Chefe de Oficina</span>}
+              </li>)}
+              {!retPend.length && <li className="text-muted-foreground">Nenhum caso pendente de validação.</li>}</ul>
+            </div>
+          </Box>
+          <Box title={`Retornos confirmados · até 60 dias (${uni(ret.length)})`} fit="xl:max-h-[calc(100vh-260px)]">
             <div className="p-3 text-xs">
               <p className="mb-1 text-muted-foreground">Mesmo veículo voltou com reparo/garantia. Responsável = técnico da O.S. anterior.</p>
               <ul className="mb-2 space-y-0.5">{rankRet.map(([t, q], i) => <li key={t} className="flex justify-between"><span>{i + 1}. {t}</span><b className="text-destructive">{uni(q)}</b></li>)}</ul>

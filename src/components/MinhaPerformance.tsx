@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAccessPresence } from "@/hooks/use-access-presence";
 import { RetornosVendedor } from "@/components/RetornosVendedor";
+import { MinhasOSLista } from "@/components/MinhasOSLista";
 import { NpsResumoRestrito } from "@/components/NpsPainel";
 import { Notificacoes } from "@/components/Notificacoes";
 import { supabase } from "@/integrations/supabase/client";
@@ -127,7 +128,7 @@ export function MinhaPerformance() {
           ? <p className="lux-card p-4 text-sm text-muted-foreground">Sua ficha de comissão ainda não está cadastrada. Fale com a gestão.</p>
           : perfis.map((pf) => <div key={pf.chave} className="space-y-2">{perfis.length > 1 && <h2 className="font-semibold">{pf.nome}</h2>}
             <ExtratoComissao atual={calcularComissao(pf, met, dsr)} proj={calcularComissao(pf, metProj, dsr)} nps={pf.travaNps ? { rotulo: `NPS do departamento (${pct((pf.segmento === "moto" ? nps.moto : nps.carro) ?? 0)} · meta ${pct(metaNps)})`, faltam: promotoresFaltando(nps.avaliados, nps.promotores, metaNps) } : null} /></div>))}
-        {aba === "os" && <RetornosVendedor />}
+        {aba === "os" && <><RetornosVendedor /><MinhasOSLista /></>}
         {aba === "nps" && <NpsResumoRestrito titulo="Meu NPS & clientes para encantar" />}
         {erro && <p className="text-sm text-destructive">{erro}</p>}
         {aba === "dash" && d && (

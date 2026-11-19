@@ -309,6 +309,13 @@
       "when": 1794944645415,
       "tag": "0043_papel_pecas_check",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1795090851721,
+      "tag": "0044_minhas_os_status_manual",
+      "breakpoints": true
     }
   ]
 }
