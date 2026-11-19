@@ -40,16 +40,16 @@ export function PecasEstoque({ linhas, porDept, margemIdeal, deptName, passagens
 
   return (
     <section className="space-y-2">
-      <div className="space-y-2 lg:grid lg:h-[calc(100dvh-7rem)] lg:min-h-[640px] lg:grid-cols-2 lg:grid-rows-[auto_auto_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] lg:gap-2 lg:space-y-0">
-        <CabecalhoTela className="lg:col-span-2" titulo="Peças" sub="Controle de estoque, giro e rentabilidade." mes={mes} dec={dec} tot={tot} />
-        <div className="grid grid-cols-2 gap-2 lg:col-span-2 lg:grid-cols-4">
+      <div className="space-y-2 lg:grid lg:h-[calc(100dvh-7rem)] lg:min-h-[640px] lg:grid-cols-12 lg:grid-rows-[auto_auto_minmax(0,0.95fr)_minmax(0,1.05fr)_minmax(0,1.1fr)] lg:gap-2 lg:space-y-0">
+        <CabecalhoTela className="lg:col-span-12" titulo="Peças" sub="Controle de estoque, giro e rentabilidade." mes={mes} dec={dec} tot={tot} />
+        <div className="grid grid-cols-2 gap-2 lg:col-span-12 lg:grid-cols-4">
           <KpiCard label="Meta" value={brl(tm)} sub={`Projeção ${brl(tproj)} · ${pct(div(tproj, tm))}`} />
           <KpiCard label="Realizado (líquido)" value={brl(tp)} sub={passagens ? `Ticket médio ${brl(div(tp, passagens))}` : "Já com devoluções abatidas"} />
           <KpiCard label="Atingimento" value={pct(div(tp, tm))} cls={tone(div(tp, tm))} sub={`Falta ${brl(Math.max(tm - tp, 0))}`} />
           <KpiCard label="Margem" value={pct(div(tmg, tp))} cls={mTone(div(tmg, tp), idealPond)} sub={`${brl(tmg)} · ideal ${pct(idealPond)}`} />
         </div>
 
-        <Bloco titulo="Faturamento por categoria" icon={<BarChart3 className="size-4 text-primary" />} className="[&_h2]:text-primary">
+        <Bloco titulo="Faturamento por categoria" icon={<BarChart3 className="size-4 text-primary" />} className="lg:col-span-4 lg:col-start-1 [&_h2]:text-primary">
           {!catTop.length ? semItens : <ul className="space-y-1.5 text-xs">{catTop.map(([g, v], i) => (
             <li key={g} className="flex items-center gap-2">
               <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/15"><Package className="size-3.5 text-primary" /></span>
@@ -57,9 +57,9 @@ export function PecasEstoque({ linhas, porDept, margemIdeal, deptName, passagens
               <span className="w-12 text-right text-muted-foreground">{pct(div(v, totItens))}</span><b className="w-24 text-right tabular-nums">{brl(v)}</b>
             </li>))}</ul>}
         </Bloco>
-        <Bloco titulo="Participação por categoria" icon={<PieChart className="size-4 text-primary" />}>
-          {!catTop.length ? semItens : <div className="flex h-full items-center gap-4">
-            <div className="relative h-full max-h-40 min-h-24 aspect-square">
+        <Bloco titulo="Participação por categoria" icon={<PieChart className="size-4 text-primary" />} className="lg:col-span-4 lg:col-start-5">
+          {!catTop.length ? semItens : <div className="grid h-full grid-cols-[8rem_minmax(0,1fr)] items-center gap-3">
+            <div className="relative size-32 shrink-0">
               <svg viewBox="0 0 42 42" className="size-full -rotate-0" role="img" aria-label="Participação por categoria">
                 <circle cx="21" cy="21" r="15.9" fill="none" className="stroke-muted" strokeWidth="5" />
                 {catTop.map(([g, v], i) => { const p = div(v, totItens) * 100; const el = <circle key={g} cx="21" cy="21" r="15.9" fill="none" stroke={CORES[i]} strokeWidth="5" strokeDasharray={`${p} ${100 - p}`} strokeDashoffset={off} />; off -= p; return el; })}
@@ -70,7 +70,7 @@ export function PecasEstoque({ linhas, porDept, margemIdeal, deptName, passagens
           </div>}
         </Bloco>
 
-        <Bloco titulo="Vendas por departamento · meta x realizado" icon={<BarChart3 className="size-4 text-primary" />}>
+        <Bloco titulo="Vendas por departamento · meta x realizado" icon={<BarChart3 className="size-4 text-primary" />} className="lg:col-span-5 lg:col-start-1 lg:row-start-4">
           <div className="flex h-full flex-col">
             <div className="flex min-h-20 flex-1 items-end gap-3">{depts.map((d) => (
               <div key={d.nome} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-0.5">
@@ -84,16 +84,16 @@ export function PecasEstoque({ linhas, porDept, margemIdeal, deptName, passagens
             {curva.length > 0 && <p className="mt-1 text-[11px] text-muted-foreground">Em O.S. <b className="text-foreground">{pct(div(comOs, totItens))}</b> · Balcão/venda direta <b className="text-foreground">{pct(div(totItens - comOs, totItens))}</b></p>}
           </div>
         </Bloco>
-        <Bloco titulo="Giro de estoque · curva ABC" icon={<RefreshCw className="size-4 text-primary" />}>
-          {!curva.length ? semItens : <div className="flex h-full flex-col gap-1.5 text-xs">
+        <Bloco titulo="Giro de estoque · curva ABC" icon={<RefreshCw className="size-4 text-primary" />} className="lg:col-span-4 lg:col-start-9 lg:row-start-3">
+          {!curva.length ? semItens : <div className="flex h-full flex-col gap-1 text-xs">
             {faixas.map((f) => { const [nome, bg, tx, dica] = FX[f.classe]; return (
               <div key={f.classe}><div className="flex items-baseline justify-between gap-2"><span className={`font-semibold ${tx}`}>{nome} · Classe {f.classe}</span><span className="tabular-nums"><b>{brl(f.valor)}</b> · {pct(f.pct)} · {uni(f.itens)} itens</span></div>
                 <Linha p={f.pct} cor={bg} /><p className="text-[10px] text-muted-foreground">{dica}</p></div>); })}
-            <p className="mt-auto text-[11px] text-muted-foreground">Apenas <b className="text-foreground">{uni(faixas[0]!.itens)} itens</b> ({pct(faixas[0]!.pctItens)} dos códigos vendidos) geram {pct(faixas[0]!.pct)} do faturamento de peças.</p>
+            <p className="mt-auto text-[11px] text-muted-foreground"><b className="text-foreground">{uni(faixas[0]!.itens)} códigos</b> ({pct(faixas[0]!.pctItens)}) geram {pct(faixas[0]!.pct)} do faturamento.</p>
           </div>}
         </Bloco>
 
-        <Bloco titulo="Peças por consultor" icon={<Users className="size-4 text-primary" />}>
+        <Bloco titulo="Peças por consultor" icon={<Users className="size-4 text-primary" />} className="lg:col-span-12 lg:col-start-1 lg:row-start-5">
           <table className="w-full text-xs tabular-nums"><thead className="sticky top-0 bg-card text-muted-foreground"><tr><th className="w-6 text-left font-normal">#</th><th className="text-left font-normal">Consultor</th><th className="text-right font-normal">Peças</th><th className="text-right font-normal">Meta</th><th className="text-right font-normal">%</th><th className="text-right font-normal">Margem</th><th className="text-right font-normal" title="Desconto médio sobre o preço de tabela">Desc.</th></tr></thead>
             <tbody>{rank.map((l, i) => { const ideal = margemIdeal(deptName(l.c.department_id)); const m = div(l.margem, l.pecas); const ds = descs[l.c.nome.toUpperCase()]; return (
               <tr key={l.c.id} className="border-t border-border/50"><td className="py-1">{i + 1}</td><td className="font-medium">{l.c.nome}</td><td className="text-right">{brl(l.pecas)}</td><td className="text-right text-muted-foreground">{brl(l.mP)}</td>
@@ -102,11 +102,11 @@ export function PecasEstoque({ linhas, porDept, margemIdeal, deptName, passagens
               {!rank.length && <tr><td colSpan={7} className="py-4 text-center text-muted-foreground">Sem vendas de peças no mês.</td></tr>}</tbody></table>
         </Bloco>
         {(() => { const pn = (itens ?? []).filter(ehPneu); if (!pn.length) return null; const q = pn.reduce((a, i) => a + i.qtd, 0), v = pn.reduce((a, i) => a + i.valor, 0); const pv = Object.entries(pneusPorVendedor(itens ?? [])).sort((a, b) => b[1] - a[1]);
-          return <Bloco titulo="Radar de pneus" icon={<Package className="size-4 text-neon" />}>
+          return <Bloco titulo="Radar de pneus" icon={<Package className="size-4 text-neon" />} className="lg:col-span-3 lg:col-start-6 lg:row-start-4">
             <p className="text-xs"><b className="text-lg text-neon">{uni(q)}</b> pneus · <b>{brl(v)}</b> no mês</p>
-            <ul className="mt-1 space-y-0.5 text-xs">{pv.map(([lg, n]) => <li key={lg} className="flex justify-between border-b border-border/50"><span>{lg}</span><b>{uni(n)} un.{/ANDRESSA/.test(lg) && <span className={n >= 50 ? " text-success" : " text-warning"}> · meta 50 ({n >= 50 ? "R$ 400 ✓" : `faltam ${uni(50 - n)}`})</span>}</b></li>)}</ul>
+            <ul className="mt-1 space-y-0.5 text-xs">{pv.map(([lg, n]) => <li key={lg} className="flex items-start justify-between gap-2 border-b border-border/50 py-0.5"><span>{lg}</span><b className="text-right">{uni(n)} un.{/ANDRESSA/.test(lg) && <span className={n >= 50 ? " text-success" : " text-warning"}> · meta 50 ({n >= 50 ? "R$ 400 ✓" : `faltam ${uni(50 - n)}`})</span>}</b></li>)}</ul>
           </Bloco>; })()}
-        <Bloco titulo="Top 5 itens de maior faturamento" icon={<Trophy className="size-4 text-warning" />} right={curva.length ? <button type="button" className="text-[11px] text-primary hover:underline" onClick={() => setAbc(!abc)}>{abc ? "Fechar Curva ABC" : "Curva ABC"}</button> : undefined}>
+        <Bloco titulo="Top 5 itens de maior faturamento" icon={<Trophy className="size-4 text-warning" />} className="lg:col-span-4 lg:col-start-9 lg:row-start-4" right={curva.length ? <button type="button" className="text-[11px] text-primary hover:underline" onClick={() => setAbc(!abc)}>{abc ? "Fechar Curva ABC" : "Curva ABC"}</button> : undefined}>
           {!curva.length ? semItens : (() => { const t5 = curva.slice(0, 5); return <>
             <table className="w-full text-xs"><thead className="text-muted-foreground"><tr><th className="text-left font-normal">Item</th><th className="text-right font-normal" title="Unidades; óleo e fluidos em litros">Qtd</th><th className="text-right font-normal">Faturamento</th></tr></thead>
             <tbody>{t5.map((i) => <tr key={i.cod} className="border-t border-border/50"><td className="max-w-0 truncate py-1">{i.desc || i.cod}</td><td className="text-right tabular-nums" title={litrosDe(i) !== null ? `${uni(i.qtd)} ml` : undefined}>{qtdItem(i)}</td><td className="text-right font-bold tabular-nums">{brl(i.valor)}</td></tr>)}</tbody></table>
