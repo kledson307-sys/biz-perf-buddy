@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Box, uni } from "@/components/painel-ui";
 import type { AgendRow } from "@/lib/agendamentos-data";
 import { hojeLocal } from "@/lib/agendamentos-data";
-import { AJUSTE_MANUAL, CONSULTORES_AGENDA } from "@/lib/agenda-atribuicao";
+import { AJUSTE_MANUAL, CONSULTORES_AGENDA, linkConfirmacao } from "@/lib/agenda-atribuicao";
 import { SLOTS, slotDaHora, statusAgenda, type StatusAgenda } from "@/lib/agenda-status";
 
 const dBR = (iso: string) => iso.split("-").reverse().join("/");
@@ -27,12 +27,12 @@ export function QuadroConsultores({ itens, data, titulo, onChange }: { itens: Ag
   useEffect(() => { const t = setInterval(() => { const d = new Date(); setAgora(d.getHours() * 60 + d.getMinutes()); }, 60000); return () => clearInterval(t); }, []);
   const hoje = hojeLocal();
   const oficiais: string[] = CONSULTORES_AGENDA.map((c) => c.login);
-  const salvar = async (r: AgendRow, campos: { consultor?: string; hora?: string }) => {
+  const salvar = async (r: AgendRow, campos: { consultor?: string; hora?: string; status?: string }) => {
     setSalvando(r.id);
     const { error } = await supabase.from("agendamentos").update({ ...campos, importado_por: AJUSTE_MANUAL }).eq("id", r.id);
     setSalvando("");
     if (error) { toast.error(`Não foi possível salvar: ${error.message}`); return; }
-    toast.success(`${r.cliente} · ${campos.consultor ? `atribuído a ${campos.consultor}` : `horário ${campos.hora}`}`);
+    toast.success(`${r.cliente} · ${campos.consultor ? `atribuído a ${campos.consultor}` : campos.status ? `status ${campos.status.toLowerCase()}` : `horário ${campos.hora}`}`);
     onChange();
   };
   const st = (r: AgendRow) => statusAgenda(r.status, r.data, r.hora, hoje, agora);
@@ -57,6 +57,13 @@ export function QuadroConsultores({ itens, data, titulo, onChange }: { itens: Ag
         <p className="truncate font-semibold">{r.cliente}</p>
         <p className="truncate text-muted-foreground">{r.segmento === "moto" ? "🏍" : "🚗"} {TIPO[r.categoria][0]} · {ST[s][1]}</p>
         {seletor(r)}
+        {oficiais.includes(r.consultor) && (data === hoje ? (
+          <div className="mt-0.5 flex gap-0.5">
+            {([["COMPARECEU", "✅", "Chegou"], ["EM ATENDIMENTO", "🔧", "Em atendimento"], ["FALTOU", "✖️", "Faltou"]] as const).map(([v, ic, t]) => (
+              <button key={v} type="button" title={t} aria-label={`${t}: ${r.cliente}`} onClick={() => void salvar(r, { status: v })} className={`flex-1 rounded px-0.5 ${r.status === v ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}>{ic}</button>
+            ))}
+          </div>
+        ) : (() => { const l = linkConfirmacao(r, CONSULTORES_AGENDA.find((c) => c.login === r.consultor)?.nome ?? ""); return l ? <a href={l} target="_blank" rel="noreferrer" className="mt-0.5 block rounded bg-success/20 text-center font-semibold hover:bg-success/30">💬 Confirmar no WhatsApp</a> : null; })())}
       </div>
     );
   };

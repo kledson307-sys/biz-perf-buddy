@@ -17,3 +17,11 @@ describe("semPrevisao", () => {
     expect(semPrevisao({ __semprev: { at: "2026-11-01T10:00:00Z", por: "x" } }, "2026-11-11")).toMatchObject({ usado: true, ativo: false });
   });
 });
+
+import { pecaRecebidaRecente } from "./os-agrupar";
+describe("aviso de peça recebida", () => {
+  const at = "2026-11-20T12:00:00Z";
+  const acoes = { __status: { st: "servico", nota: "Peça recebida pelo setor de peças", at } };
+  it("avisa dentro de 48h", () => expect(pecaRecebidaRecente(acoes, Date.parse("2026-11-21T12:00:00Z"))).toBe(at));
+  it("some depois de 48h", () => expect(pecaRecebidaRecente(acoes, Date.parse("2026-11-23T12:00:00Z"))).toBeNull());
+});

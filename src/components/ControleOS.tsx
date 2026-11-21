@@ -85,6 +85,8 @@ export function ControleOS() {
   const consultoresOS = [...new Set(lista.map(a => a.item.cons))].filter(Boolean).sort();
   const q = norm(busca);
   const doStatus = lista.filter(a => (q ? [a.item.n, a.item.placa, a.item.cli, a.item.mod].some(v => norm(v).includes(q)) : a.item.st === aba) && a.item.dias > filtroDias && (!filtroCons || a.item.cons === filtroCons));
+  const grupos = useMemo(() => { const m = new Map<string, string[]>(); for (const a of lista) { if (a.item.st !== "pecas") continue; const k = a.item.placa.replace(/[^A-Z0-9]/gi, "").toUpperCase(); if (k.length < 5) continue; m.set(k, [...(m.get(k) ?? []), a.item.n]); } const r = new Map<string, string[]>(); for (const ns of m.values()) if (ns.length > 1) for (const n of ns) r.set(n, ns); return r; }, [lista]);
+  const valorDe = (ns: string[]) => lista.filter(a => ns.includes(a.item.n)).reduce((n, a) => n + a.item.valor, 0);
   const porCons = [...new Set(doStatus.map(a => a.item.cons))].sort().map(c => ({ c, l: doStatus.filter(a => a.item.cons === c).sort((x, y) => y.diasStatus - x.diasStatus) }));
   const ranking = useMemo(() => STATUS.map(s => {
     const l = lista.filter(a => a.item.st === s.k);
@@ -205,8 +207,8 @@ export function ControleOS() {
               <span>{aba === "pronto" ? "A faturar: " : "Valor: "}{brl(l.reduce((n, a) => n + a.item.valor, 0))}</span>
             </div>
             <Tabela head={["O.S.", "Cliente / Modelo", "Valor", "Na oficina", "No status", aba === "pecas" ? "Previsão / contato" : "Situação", "Alertas", ""]}>
-              {l.map(a => <FragmentRow key={a.item.n} podeEncerrar={podeEncerrar} a={a} aba={aba} aberto={aberto === a.item.n} toggle={() => setAberto(aberto === a.item.n ? null : a.item.n)}
-                ac={acomp[a.item.n] ?? { acoes: {}, prev_manual: null }} hist={rets.filter(r => r.os_n === a.item.n)} salvar={v => void salvarAcomp(a.item.n, v)} quem={quem} />)}
+              {l.filter(a => (grupos.get(a.item.n)?.[0] ?? a.item.n) === a.item.n).map(a => <FragmentRow key={a.item.n} ns={grupos.get(a.item.n)} valorGrupo={grupos.has(a.item.n) ? valorDe(grupos.get(a.item.n)!) : undefined} podeEncerrar={podeEncerrar} a={a} aba={aba} aberto={aberto === a.item.n} toggle={() => setAberto(aberto === a.item.n ? null : a.item.n)}
+                ac={acomp[a.item.n] ?? { acoes: {}, prev_manual: null }} hist={rets.filter(r => r.os_n === a.item.n)} salvar={v => { for (const n of grupos.get(a.item.n) ?? [a.item.n]) void salvarAcomp(n, v); }} quem={quem} />)}
             </Tabela>
           </div>)}
         </Box>
@@ -264,14 +266,14 @@ function CartaoPizza({ titulo, sub, dados, fmt, onClick }: {
   );
 }
 
-function FragmentRow({ a, aba, aberto, toggle, ac, salvar, hist, podeEncerrar, quem }: { quem: string; podeEncerrar: boolean; hist: Retorno[]; a: Analise; aba: Status; aberto: boolean; toggle: () => void; ac: Acomp; salvar: (v: Acomp) => void }) {
+function FragmentRow({ ns, valorGrupo, a, aba, aberto, toggle, ac, salvar, hist, podeEncerrar, quem }: { ns?: string[] | undefined; valorGrupo?: number | undefined; quem: string; podeEncerrar: boolean; hist: Retorno[]; a: Analise; aba: Status; aberto: boolean; toggle: () => void; ac: Acomp; salvar: (v: Acomp) => void }) {
   const feitas = a.acoes.filter(x => ac.acoes[x]?.feito).length;
   const alto = a.alertas.some(x => x.nivel === "alto");
   return <>
     <tr className="border-t border-border align-top">
-      <td className="px-3 py-2 font-semibold">{a.item.n}{a.semMudanca && <div className="text-xs font-normal text-warning">sem mudança</div>}</td>
+      <td className="px-3 py-2 font-semibold">{ns ? ns.join(" / ") : a.item.n}{ns && <div className="text-xs font-normal text-primary">🔗 {ns.length} O.S. do mesmo veículo</div>}{a.semMudanca && <div className="text-xs font-normal text-warning">sem mudança</div>}</td>
       <td className="px-3 py-2">{a.item.cli}<div className="text-xs text-muted-foreground">{a.item.mod} {a.item.placa}</div></td>
-      <td className="whitespace-nowrap px-3 py-2">{brl(a.item.valor)}</td>
+      <td className="whitespace-nowrap px-3 py-2">{brl(valorGrupo ?? a.item.valor)}</td>
       <td className={`px-3 py-2 font-semibold ${a.item.dias > 30 ? "text-destructive" : a.item.dias > 20 ? "text-warning" : "text-success"}`}>{a.item.dias} d</td>
       <td className="px-3 py-2">{a.diasStatus} d</td>
       <td className="max-w-xs px-3 py-2 text-xs">{aba === "pecas" ? <>

@@ -37,3 +37,10 @@ export function semPrevisao(acoes: Record<string, unknown> | undefined, hojeIso:
 export const RET_KEY = "__retorno";
 export type DecisaoRetorno = "sim" | "nao";
 export const retChave = (os: string) => `ret:${os}`;
+
+/** Peça recebida pelo setor de peças nas últimas `horas` (lê o status manual gravado em acoes.__status). */
+export function pecaRecebidaRecente(acoes: Record<string, unknown> | undefined, agoraMs: number, horas = 48): string | null {
+  const st = acoes?.["__status"] as { st?: string; nota?: string; at?: string } | undefined;
+  if (!st?.at || st.st !== "servico" || !/pe[çc]a recebida/i.test(st.nota ?? "")) return null;
+  return agoraMs - Date.parse(st.at) <= horas * 36e5 ? st.at : null;
+}

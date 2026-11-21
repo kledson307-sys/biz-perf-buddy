@@ -114,7 +114,7 @@ export function lerAgendamento(raw: unknown[][], hoje = hojeISO()): AgendReport 
 
 /** Agendas ficam na tabela `agendamentos`: reimportar o mesmo dia/tipo substitui as linhas sem perder ajustes manuais. */
 export async function salvarAgendamento(r: AgendReport, arquivo: string, nome: string) {
-  const { data: antigas, error: leitura } = await supabase.from("agendamentos").select("placa,consultor,hora,importado_por").eq("tipo", r.tipo).eq("data", r.data);
+  const { data: antigas, error: leitura } = await supabase.from("agendamentos").select("placa,consultor,hora,importado_por,status").eq("tipo", r.tipo).eq("data", r.data);
   if (leitura) throw new Error("Erro ao preservar atribuições do agendamento: " + leitura.message);
   const { error: del } = await supabase.from("agendamentos").delete().eq("tipo", r.tipo).eq("data", r.data);
   if (del) throw new Error("Erro ao substituir agendamento: " + del.message);

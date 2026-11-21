@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { analisar, foraDosAlertas, fmt, hoje, retornoDevido, type OsImport, type OsItem } from "@/lib/os-controle";
 import { classe, type NpsItem } from "@/lib/nps";
 import { norm } from "@/components/painel-ui";
+import { pecaRecebidaRecente } from "@/lib/os-agrupar";
 import { ativarAvisos, atualizarBadge, avisarNovos, avisosAtivos, avisosSuportados } from "@/lib/aviso-aparelho";
 
 type AgendaAlerta = { id: string; hora: string; cliente: string; placa: string; categoria: string; segmento: string; aceito: boolean; confirmacao: string | null };
@@ -32,6 +33,9 @@ export async function alertasOficina(): Promise<Notification[]> {
     if (i.st === "diag" && x.diasStatus > 3) out.push({ id: `diag-${i.n}`, titulo: `O.S. ${i.n} · diagnóstico parado ${x.diasStatus} dias`, texto: `${i.cli} · ${i.mod} · ${i.cons}`, feito: false });
     if (i.st === "pecas" && x.diasStatus > 7) out.push({ id: `pecas-${i.n}`, titulo: `O.S. ${i.n} · aguardando peça há ${x.diasStatus} dias`, texto: `${i.cli} · ${i.mod}${x.prev ? ` · previsão ${fmt(x.prev)}` : " · sem previsão"}`, feito: false });
   }
+  const { data: acs } = await supabase.from("os_acompanhamento").select("os_n,acoes").not("os_n", "like", "nps:%");
+  const porN = new Map((atual?.itens ?? []).map((i) => [i.n, i]));
+  for (const x of acs ?? []) { const at = pecaRecebidaRecente(x.acoes as Record<string, unknown>, Date.now()); const i = porN.get(x.os_n); if (at && i) out.push({ id: `chegou-${x.os_n}-${at}`, titulo: `📦 Peça chegou · O.S. ${x.os_n}`, texto: `${i.cli} · ${i.mod} · ${i.cons} · levar para a oficina`, feito: true }); }
   const A = ag.data as unknown as { data: string | null; itens: AgendaAlerta[] } | null;
   const detr = new Set((((nps.data as { itens?: NpsItem[] } | null)?.itens) ?? []).filter((n) => n.nota !== null && classe(n.nota) === "detrator").map((n) => norm(n.cliente.trim())));
   for (const r of A?.itens ?? []) {
@@ -57,11 +61,13 @@ export function Notificacoes({ vendedor = false, oficina = false, abrir }: { ven
       let itens: OsItem[] = [];
       let retornos: Pick<Retorno, "os_n" | "data_ref">[] = [];
       let novos: Retorno[] = [];
+      let chegou: Notification[] = [];
       if (vendedor) {
         const result = await supabase.rpc("minhas_os");
         if (result.error) throw result.error;
-        const data = result.data as unknown as { itens: OsItem[]; retornos: typeof retornos } | null;
+        const data = result.data as unknown as { itens: OsItem[]; retornos: typeof retornos; acomp?: { os_n: string; acoes?: Record<string, unknown> }[] } | null;
         itens = data?.itens ?? [];
+        chegou = (data?.acomp ?? []).flatMap((x) => { const at = pecaRecebidaRecente(x.acoes, Date.now()); const i = itens.find((o) => o.n === x.os_n); return at && i ? [{ id: `chegou-${x.os_n}-${at}`, titulo: `📦 Peça chegou · O.S. ${x.os_n}`, texto: `${i.cli} · ${i.mod} · avise o cliente e libere para a oficina`, feito: true }] : []; });
         retornos = data?.retornos ?? [];
       } else {
         const [snapshot, history, acomp] = await Promise.all([
@@ -87,6 +93,7 @@ export function Notificacoes({ vendedor = false, oficina = false, abrir }: { ven
         planilhas = alertasSync(Object.fromEntries((ss ?? []).map((x) => [x.mes.slice(5), x.diario as unknown as StatusSync])));
       }
       setItems([
+        ...chegou,
         ...planilhas,
         ...novos.map(r => ({ id: r.id, titulo: `O.S. ${r.os_n} · retorno realizado`, texto: `${r.consultor}: ${r.nota}`, feito: true })),
         ...pendentes,

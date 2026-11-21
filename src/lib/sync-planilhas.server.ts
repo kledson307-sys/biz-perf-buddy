@@ -42,7 +42,7 @@ async function preparar(db: Db, f: Fonte, owner: string): Promise<{ conteudo: un
     return { conteudo: lotes, linhas: s.d0.length + s.d1.length, resumo: `Hoje ${s.d0.length} · D+1 ${s.d1.length}`, gravar: async () => {
       const origens: string[] = [];
       for (const l of lotes) {
-        const { data: antigas } = await db.from("agendamentos").select("placa,consultor,hora,importado_por").eq("user_id", owner).eq("data", l.data);
+        const { data: antigas } = await db.from("agendamentos").select("placa,consultor,hora,importado_por,status").eq("user_id", owner).eq("data", l.data);
         chk(await db.from("agendamentos").delete().eq("user_id", owner).eq("tipo", l.tipo).eq("data", l.data));
         const vistos = new Set<string>();
         const rows = l.itens.map((it) => {
