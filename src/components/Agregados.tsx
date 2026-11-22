@@ -1,7 +1,7 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Barra, Box, Kpi, Tabela, brl, div, norm, parseNum, pct, tone, uni } from "./painel-ui";
-import { GRUPO_NOME, ITENS, naoVende, naoVendeAgregado, splitCods, bonusLimpar, BONUS_LIMPAR_UN, type Grupo } from "@/lib/agregados";
+import { GRUPO_NOME, ITENS, naoVende, naoVendeAgregado, splitCods, bonusLimpar, BONUS_LIMPAR_UN, potencialNaMesa, type Grupo } from "@/lib/agregados";
 import { AgregadosImport } from "./AgregadosImport";
 import { AgregadosIA } from "./AgregadosIA";
 import { registrarUpdate } from "@/lib/update-log";
@@ -136,6 +136,16 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
           <h3 className="text-sm font-semibold">Passagens em branco · serviços agregados <span className="font-normal text-muted-foreground">— no mínimo {uni(tb)} de {uni(tp)} passagens sem nenhum agregado vendido</span></h3>
           {l.length ? <div className="mt-1 flex flex-wrap gap-2">{l.map((x, i) => <span key={x.c.id} className={`rounded-full border px-2 py-0.5 ${x.pen >= 0.3 ? "border-success/50" : x.pen >= 0.15 ? "border-warning/50" : "border-destructive/50"}`}>{i === l.length - 1 && l.length > 1 ? "🏆 " : ""}<b>{x.c.nome}</b> · {uni(x.branco)} em branco · penetração <b>{pct(x.pen)}</b></span>)}</div>
             : <p className="text-muted-foreground">Importe as Passagens para ver este quadro.</p>}
+        </section>;
+      })()}
+      {!relatorio && (sub === "servicos" || sub === "pecas") && (() => {
+        const its = ITENS.filter((i) => i.g === sub).map((it) => ({ it, p: potencialNaMesa(consAgg.filter((c) => !naoVende(it.k, c.nome)).map((c) => { const s = stat([c.id], [it.k]); return { nome: c.nome, qtd: s.qtd, valor: s.valor, pass: s.pass }; })) })).filter((x) => x.p.valor > 0);
+        const total = its.reduce((n, x) => n + x.p.valor, 0);
+        return <section className="lux-card px-3 py-2 text-xs">
+          <h3 className="text-sm font-semibold">💸 Potencial deixado na mesa · <span className="text-destructive">{brl(total)}</span> <span className="font-normal text-muted-foreground">— se quem está abaixo chegasse à penetração média da equipe em cada item (preço médio praticado)</span></h3>
+          {its.length ? <div className="mt-1 space-y-1">{its.map(({ it, p }) => <div key={it.k} className="flex flex-wrap items-center gap-1.5"><b className="w-40 shrink-0">{it.nome} <span className="font-normal text-muted-foreground">({pct(p.media)})</span></b>{p.porConsultor.map((x) => <span key={x.nome} className={`rounded-full border px-2 py-0.5 ${x.zerado && dec >= 5 ? "border-destructive bg-destructive/10 text-destructive" : "border-warning/50"}`}>{x.zerado && dec >= 5 ? "⛔ " : ""}{x.nome} · +{uni(x.un)} un = <b>{brl(x.valor)}</b></span>)}</div>)}</div>
+            : <p className="text-muted-foreground">Sem potencial a recuperar (ou passagens ainda não importadas).</p>}
+          <p className="mt-1 text-[10px] text-muted-foreground">⛔ = nenhuma venda do item no mês após 5+ dias decorridos.</p>
         </section>;
       })()}
       {sub === "ia" && <AgregadosIA mes={mes} cons={consAgg} tot={tot} dec={dec} stat={stat} deptName={deptName} />}

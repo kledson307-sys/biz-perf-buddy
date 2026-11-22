@@ -161,3 +161,16 @@ export function bonusLimpar(vendas: { item: string; qtd: number }[]): { qtd: num
   const qtd = Math.round(vendas.filter((v) => v.item === "limpar").reduce((n, v) => n + v.qtd, 0));
   return { qtd, bonus: qtd * BONUS_LIMPAR_UN };
 }
+
+/** Potencial deixado na mesa: quanto entraria se quem está abaixo da penetração média da equipe chegasse nela.
+ *  Penetração = qtd ÷ passagens; valor pelo preço médio praticado pela equipe no item. */
+export function potencialNaMesa(linhas: { nome: string; qtd: number; valor: number; pass: number }[]) {
+  const base = linhas.filter((l) => l.pass > 0);
+  const tq = base.reduce((n, l) => n + l.qtd, 0), tp = base.reduce((n, l) => n + l.pass, 0), tv = base.reduce((n, l) => n + l.valor, 0);
+  const media = tp ? tq / tp : 0, preco = tq ? tv / tq : 0;
+  const porConsultor = base.map((l) => {
+    const un = Math.max(0, Math.round(media * l.pass - l.qtd));
+    return { nome: l.nome, un, valor: un * preco, zerado: l.qtd === 0 };
+  }).filter((x) => x.un > 0).sort((a, b) => b.valor - a.valor);
+  return { media, preco, porConsultor, un: porConsultor.reduce((n, x) => n + x.un, 0), valor: porConsultor.reduce((n, x) => n + x.valor, 0) };
+}
