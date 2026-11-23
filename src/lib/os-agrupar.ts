@@ -20,6 +20,22 @@ export function unificarPecas(itens: OsItem[]): OsGrupo[] {
   return out;
 }
 
+/** Filtra primeiro e usa a primeira O.S. correspondente como representante do grupo unificado. */
+export function filtrarUnificados<T extends { item: OsItem }>(lista: T[], grupos: ReadonlyMap<string, string[]>, corresponde: (a: T) => boolean): T[] {
+  const exibidos = new Set<string>();
+  const out: T[] = [];
+  for (const a of lista) {
+    if (!corresponde(a)) continue;
+    const lider = grupos.get(a.item.n)?.[0];
+    if (lider) {
+      if (exibidos.has(lider)) continue;
+      exibidos.add(lider);
+    }
+    out.push(a);
+  }
+  return out;
+}
+
 export const SEM_PREV_KEY = "__semprev";
 export const SEM_PREV_DIAS = 10;
 export type SemPrev = { at: string; por: string };

@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { brl, Box, Pizza, Tabela, norm } from "@/components/painel-ui";
 import { analisar, normalizar, comJudicial, ehJudicial, JUDICIAL_KEY, ENCERRADO_KEY, ehEncerrado, PODE_ENCERRAR, fmt, hoje, diasEntre, retornoDevido, lerRelatorio, STATUS, STATUS_KEY, STATUS_MANUAL, comStatusManual, type StatusManual, type Analise, type OsImport, type OsItem, type Status } from "@/lib/os-controle";
 import { registrarUpdate } from "@/lib/update-log";
+import { filtrarUnificados } from "@/lib/os-agrupar";
 import { NOTIFICATIONS_EVENT } from "@/components/Notificacoes";
 
 const cor = { alto: "text-destructive", medio: "text-warning", info: "text-muted-foreground" } as const;
@@ -84,8 +85,8 @@ export function ControleOS() {
 
   const consultoresOS = [...new Set(lista.map(a => a.item.cons))].filter(Boolean).sort();
   const q = norm(busca);
-  const doStatus = lista.filter(a => (q ? [a.item.n, a.item.placa, a.item.cli, a.item.mod].some(v => norm(v).includes(q)) : a.item.st === aba) && a.item.dias > filtroDias && (!filtroCons || a.item.cons === filtroCons));
   const grupos = useMemo(() => { const m = new Map<string, string[]>(); for (const a of lista) { if (a.item.st !== "pecas") continue; const k = a.item.placa.replace(/[^A-Z0-9]/gi, "").toUpperCase(); if (k.length < 5) continue; m.set(k, [...(m.get(k) ?? []), a.item.n]); } const r = new Map<string, string[]>(); for (const ns of m.values()) if (ns.length > 1) for (const n of ns) r.set(n, ns); return r; }, [lista]);
+  const doStatus = filtrarUnificados(lista, grupos, a => (q ? [a.item.n, a.item.placa, a.item.cli, a.item.mod].some(v => norm(v).includes(q)) : a.item.st === aba) && a.item.dias > filtroDias && (!filtroCons || a.item.cons === filtroCons));
   const valorDe = (ns: string[]) => lista.filter(a => ns.includes(a.item.n)).reduce((n, a) => n + a.item.valor, 0);
   const porCons = [...new Set(doStatus.map(a => a.item.cons))].sort().map(c => ({ c, l: doStatus.filter(a => a.item.cons === c).sort((x, y) => y.diasStatus - x.diasStatus) }));
   const ranking = useMemo(() => STATUS.map(s => {
@@ -203,11 +204,11 @@ export function ControleOS() {
           {porCons.length === 0 && <p className="p-5 text-sm text-muted-foreground">Nenhuma O.S. neste status.</p>}
           {porCons.map(({ c, l }) => <div key={c} className="border-t border-border first:border-t-0">
             <div className="flex flex-wrap justify-between gap-2 bg-muted px-5 py-2 text-sm font-semibold">
-              <span>{c} · {l.length} O.S.</span>
-              <span>{aba === "pronto" ? "A faturar: " : "Valor: "}{brl(l.reduce((n, a) => n + a.item.valor, 0))}</span>
+              <span>{c} · {l.reduce((n, a) => n + (grupos.get(a.item.n)?.length ?? 1), 0)} O.S.</span>
+              <span>{aba === "pronto" ? "A faturar: " : "Valor: "}{brl(l.reduce((n, a) => n + (grupos.has(a.item.n) ? valorDe(grupos.get(a.item.n)!) : a.item.valor), 0))}</span>
             </div>
             <Tabela head={["O.S.", "Cliente / Modelo", "Valor", "Na oficina", "No status", aba === "pecas" ? "Previsão / contato" : "Situação", "Alertas", ""]}>
-              {l.filter(a => (grupos.get(a.item.n)?.[0] ?? a.item.n) === a.item.n).map(a => <FragmentRow key={a.item.n} ns={grupos.get(a.item.n)} valorGrupo={grupos.has(a.item.n) ? valorDe(grupos.get(a.item.n)!) : undefined} podeEncerrar={podeEncerrar} a={a} aba={aba} aberto={aberto === a.item.n} toggle={() => setAberto(aberto === a.item.n ? null : a.item.n)}
+              {l.map(a => <FragmentRow key={a.item.n} ns={grupos.get(a.item.n)} valorGrupo={grupos.has(a.item.n) ? valorDe(grupos.get(a.item.n)!) : undefined} podeEncerrar={podeEncerrar} a={a} aba={aba} aberto={aberto === a.item.n} toggle={() => setAberto(aberto === a.item.n ? null : a.item.n)}
                 ac={acomp[a.item.n] ?? { acoes: {}, prev_manual: null }} hist={rets.filter(r => r.os_n === a.item.n)} salvar={v => { for (const n of grupos.get(a.item.n) ?? [a.item.n]) void salvarAcomp(n, v); }} quem={quem} />)}
             </Tabela>
           </div>)}
