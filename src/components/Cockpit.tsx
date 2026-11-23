@@ -207,6 +207,9 @@ export function Cockpit({ linhas, porDept, mes, tot, dec, soPecas, setTab, sales
           <p className="mt-1.5 text-[11px] text-muted-foreground">Serviços <b className={tone(div(pS, t.ms))}>{pct(div(pS, t.ms))}</b> · Peças <b className={tone(div(pP, t.mp))}>{pct(div(pP, t.mp))}</b></p>
           <p className="text-[11px] text-muted-foreground">{comOs ? "Só faturado" : "Com O.S."}: {brl(altS + altP)}</p>
         </button>
+        <div className="mt-1.5 rounded-md border border-border bg-background/50 px-2 py-1 text-[11px]">
+          <b>Reta final</b> · {rest ? <>{uni(Math.ceil(rest))} dia(s) útil(eis): Serviços <b>{brl(Math.max(t.ms - t.s, 0) / rest)}</b>/dia · Peças <b>{brl(Math.max(t.mp - t.p, 0) / rest)}</b>/dia</> : "mês encerrado"}
+        </div>
       </Bloco>
       <Bloco titulo="Status da operação" icon={<ClipboardList className="size-4 text-primary" />} className="lg:col-span-3">
         <ul className="space-y-0.5 text-xs">{status.map(([n, p, ir]) => { const s = st(p); return (

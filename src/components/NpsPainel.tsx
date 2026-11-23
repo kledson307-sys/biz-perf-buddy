@@ -104,6 +104,8 @@ export function NpsPainel({ mes = new Date().toISOString().slice(0, 7) }: { mes?
           <Card l="RACs abertas" v={uni(r.racs)} s={motivos[0] ? `principal: ${motivos[0][0].toLowerCase()}` : ""} />
         </div>
 
+        {(() => { const lim = new Date(Date.now() - 2 * 864e5).toISOString().slice(0, 10); const urg = baseNps(vis).filter((x) => x.nota !== null && classe(x.nota) === "detrator" && x.recebimento >= lim && (trat[`nps:${x.chassi || x.cliente}`]?.st ?? "pendente") === "pendente");
+          return urg.length ? <div className="animate-pulse rounded-lg border border-destructive bg-destructive/10 px-3 py-2 text-xs"><b className="text-destructive">🚨 {uni(urg.length)} detrator(es) recente(s) sem contato — ligar em até 24h:</b> {urg.map((x) => <span key={x.chassi + x.recebimento} className="ml-2">{x.cliente} ({x.consultor}, nota {x.nota}){x.telefone && <> · <a className="text-primary underline" target="_blank" rel="noreferrer" href={wa(x.telefone, `Olá ${x.cliente.split(" ")[0]}, aqui é da BMW Haus Motors. Recebemos sua avaliação e queremos entender o que aconteceu para resolver com prioridade.`)}>WhatsApp</a></>}</span>)}</div> : null; })()}
         <div className="grid gap-2 sm:grid-cols-2">{([["Carro", rc, META_PROMOTOR.carro], ["Moto", rm, META_PROMOTOR.moto]] as const).filter(([, x]) => x.avaliados > 0).map(([n, x, m]) => {
           const f = faltamPromotores(x.prom, x.avaliados, m);
           return <div key={n} className={`rounded-lg border px-3 py-2 text-xs ${f ? "border-warning/50 bg-warning/10" : "border-success/50 bg-success/10"}`}>
