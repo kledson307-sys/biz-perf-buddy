@@ -145,6 +145,7 @@ function Departamento({ depto, mes, tot, dec, vendas, vends, vols, dms, reload }
 
 function MatrizRvd({ mes, vendas, vends, vols, reload }: { mes: string; vendas: Venda[]; vends: Vend[]; vols: Vol[]; reload: () => void }) {
   const grupos = CANAIS.flatMap((c) => SEGMENTOS.map((s) => [c, s] as const));
+  const cadNomes = vends.map((v) => v.nome);
   return <div className="grid gap-3 xl:grid-cols-2">
     {grupos.map(([c, s]) => {
       const daPlanilha = new Set(vols.map((x) => x.vendedor));
@@ -153,7 +154,7 @@ function MatrizRvd({ mes, vendas, vends, vols, reload }: { mes: string; vendas: 
       return <Box key={c + s} title={`${c} · ${s}`}>
         <table className="w-full text-xs"><thead><tr className="text-left text-muted-foreground"><th>Vendedor</th><th className="text-right">Faturado</th><th className="text-right">A faturar</th><th className="text-right">Veículos</th><th className="text-right">Ticket</th><th className="text-right">Target</th><th className="text-right">Oportunidade</th></tr></thead>
           <tbody>{lista.map((v) => {
-            const vs = vendas.filter((x) => x.vendedor === v.nome && x.status !== "CANCELADO");
+            const vs = vendas.filter((x) => x.status !== "CANCELADO" && (x.vendedor === v.nome || casarVendedor(x.vendedor, cadNomes) === v.nome));
             const fat = vs.filter((x) => x.status === "FATURADO").reduce((a, x) => a + x.valor, 0);
             const af = vs.filter((x) => x.status !== "FATURADO").reduce((a, x) => a + x.valor, 0);
             const vol = vols.find((x) => x.vendedor === v.nome);
