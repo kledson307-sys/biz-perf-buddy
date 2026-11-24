@@ -32,11 +32,14 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
   const fim = new Date(y!, m!, 0).getDate();
   const ini = `${mes}-01`, end = `${mes}-${fim}`;
 
+  const [de, setDe] = useState(ini), [ate, setAte] = useState(end);
+  useEffect(() => { setDe(ini); setAte(end); }, [ini, end]);
+  const periodo = de !== ini || ate !== end;
   const load = useCallback(async () => {
     const [s, g, v, c] = await Promise.all([
-      supabase.from("agg_sales").select("consultant_id,dia,item,codigo,qtd,valor").gte("dia", ini).lte("dia", end),
+      supabase.from("agg_sales").select("consultant_id,dia,item,codigo,qtd,valor").gte("dia", de).lte("dia", ate),
       supabase.from("agg_goals").select("consultant_id,item,meta_qtd,meta_valor").eq("mes", mes),
-      supabase.from("agg_visits").select("consultant_id,dia,passagens").gte("dia", ini).lte("dia", end),
+      supabase.from("agg_visits").select("consultant_id,dia,passagens").gte("dia", de).lte("dia", ate),
       supabase.from("agg_codes").select("item,codigos"),
     ]);
     const mx = await supabase.from("cons_mix").select("nome,composicao").eq("mes", mes);
@@ -46,7 +49,7 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
     setVisits((v.data ?? []).map((x) => ({ ...x, passagens: +x.passagens })));
     const salvo = new Map((c.data ?? []).map((x) => [x.item, splitCods(x.codigos)]));
     setCodigos({ ...Object.fromEntries(ITENS.map((i) => [i.k, salvo.get(i.k) ?? i.cod])), __ignorar: salvo.get("__ignorar") ?? [] });
-  }, [mes, ini, end]);
+  }, [mes, de, ate]);
   useEffect(() => { load(); }, [load]);
 
   const rest = Math.max(tot - dec, 0);
@@ -100,10 +103,15 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
       </details>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold">Agregados · {mes}</h2>
+          <h2 className="text-sm font-semibold">Agregados · {periodo ? `${de.split("-").reverse().join("/")} a ${ate.split("-").reverse().join("/")}` : mes}</h2>
           <p className="text-xs text-muted-foreground">Acompanhamento separado — estes valores não entram nos totais das outras abas.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 print:hidden">
+          <label className="flex items-center gap-1 text-xs text-muted-foreground">De
+            <input type="date" value={de} onChange={(e) => e.target.value && setDe(e.target.value)} className="rounded-md border border-border bg-card px-2 py-1 text-foreground" /></label>
+          <label className="flex items-center gap-1 text-xs text-muted-foreground">a
+            <input type="date" value={ate} onChange={(e) => e.target.value && setAte(e.target.value)} className="rounded-md border border-border bg-card px-2 py-1 text-foreground" /></label>
+          {periodo && <button onClick={() => { setDe(ini); setAte(end); }} className="rounded-md border border-border px-2 py-1 text-xs">Mês inteiro</button>}
           <nav className="flex flex-wrap gap-1 rounded-lg bg-muted p-1">
             {subs.map(([k, l]) => (
               <button key={k} onClick={() => setSub(k)} className={`rounded-md px-3 py-1.5 text-sm font-medium ${sub === k ? "bg-card shadow-sm" : "text-muted-foreground"}`}>{l}</button>
