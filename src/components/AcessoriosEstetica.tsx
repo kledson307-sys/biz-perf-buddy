@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { SyncPlanilhas } from "@/components/SyncPlanilhas";
 import { supabase } from "@/integrations/supabase/client";
 import { Box, brl, div, pct, tone, uni, parseNum } from "@/components/painel-ui";
@@ -178,6 +178,13 @@ function Comissao({ depto, mes, vendas }: { depto: Depto; mes: string; vendas: V
   const est = depto === "ESTETICA";
   const linhas = useMemo(() => folhaComissao(vendas, depto), [vendas, depto]);
   const total = linhas.reduce((s, l) => s + l.total, 0);
+  const [aberto, setAberto] = useState<string | null>(null);
+  const detalhe = (vend: string, canal: string) => {
+    const itens = vendas.filter((v) => v.departamento === depto && v.status === "FATURADO" && (v.vendedor ?? "").toUpperCase() === vend && (est || String(v.canal) === canal)).sort((a, b) => String(a.dia).localeCompare(String(b.dia)));
+    const m = new Map<string, { produto: string; qtd: number; valor: number; premio: number }>();
+    for (const v of itens) { const p = v.produto || "—"; const r = m.get(p) ?? { produto: p, qtd: 0, valor: 0, premio: 0 }; r.qtd++; r.valor += v.valor; r.premio += v.premiacao ?? 0; m.set(p, r); }
+    return { itens, resumo: [...m.values()].sort((a, b) => b.premio - a.premio || b.valor - a.valor) };
+  };
   const exportar = async () => {
     const XLSX = await import("xlsx");
     const rows = est
@@ -191,7 +198,16 @@ function Comissao({ depto, mes, vendas }: { depto: Depto; mes: string; vendas: V
   };
   return <Box title={est ? `Premiação Estética (Chase) · ${mes}` : `Comissão Acessórios · ${mes}`} right={<Button size="sm" variant="outline" onClick={exportar} disabled={!linhas.length}>Exportar para o RH</Button>}>
     <table className="w-full text-xs"><thead><tr className="text-left text-muted-foreground">{!est && <th>Canal</th>}<th>Vendedor</th><th className="text-right">Itens</th><th className="text-right">Faturado</th><th className="text-right">Devolução</th>{!est && <><th className="text-right">Produção</th><th className="text-right">%</th><th className="text-right">Comissão</th><th className="text-right">Obsoleto 2%</th></>}<th className="text-right">Total a pagar</th></tr></thead>
-      <tbody>{linhas.map((l) => <tr key={l.vendedor + l.canal} className="border-t border-border">{!est && <td className="py-1">{l.canal === "OFICINA" ? "PÓS-VENDAS" : l.canal}</td>}<td className="py-1">{l.vendedor}</td><td className="text-right">{uni(l.itens)}</td><td className="text-right">{brl(l.faturado)}</td><td className="text-right">{brl(l.devolucao)}</td>{!est && <><td className="text-right">{brl(l.producao)}</td><td className="text-right">{pct(l.pct)}</td><td className="text-right">{brl(l.comissao)}</td><td className="text-right">{brl(l.comObsoleto)}</td></>}<td className="text-right font-semibold">{l.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</td></tr>)}
+      <tbody>{linhas.map((l) => { const k = l.vendedor + l.canal; const det = aberto === k ? detalhe(l.vendedor, l.canal) : null; return <Fragment key={k}><tr className="border-t border-border cursor-pointer hover:bg-muted/40" onClick={() => setAberto(aberto === l.vendedor + l.canal ? null : l.vendedor + l.canal)}>{!est && <td className="py-1">{l.canal === "OFICINA" ? "PÓS-VENDAS" : l.canal}</td>}<td className="py-1">{aberto === l.vendedor + l.canal ? "▾" : "▸"} {l.vendedor}</td><td className="text-right">{uni(l.itens)}</td><td className="text-right">{brl(l.faturado)}</td><td className="text-right">{brl(l.devolucao)}</td>{!est && <><td className="text-right">{brl(l.producao)}</td><td className="text-right">{pct(l.pct)}</td><td className="text-right">{brl(l.comissao)}</td><td className="text-right">{brl(l.comObsoleto)}</td></>}<td className="text-right font-semibold">{l.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</td></tr>
+        {det && <tr className="bg-muted/30"><td colSpan={est ? 5 : 10} className="p-2">
+          <p className="mb-1 text-[11px] font-semibold text-muted-foreground">Resumo por {est ? "serviço" : "item"}</p>
+          <table className="mb-2 w-full text-[11px]"><thead><tr className="text-left text-muted-foreground"><th>{est ? "Serviço" : "Item"}</th><th className="text-right">Qtd</th><th className="text-right">Valor vendido</th>{est && <th className="text-right">Premiação</th>}</tr></thead>
+            <tbody>{det.resumo.map((r) => <tr key={r.produto} className="border-t border-border"><td>{r.produto}</td><td className="text-right">{uni(r.qtd)}</td><td className="text-right">{brl(r.valor)}</td>{est && <td className="text-right">{brl(r.premio)}</td>}</tr>)}</tbody></table>
+          <p className="mb-1 text-[11px] font-semibold text-muted-foreground">Vendas individuais</p>
+          <table className="w-full text-[11px]"><thead><tr className="text-left text-muted-foreground"><th>Data</th><th>Cliente</th><th>O.S.</th><th>{est ? "Serviço" : "Item"}</th><th className="text-right">Valor</th>{est ? <th className="text-right">Premiação</th> : <th className="text-right">Obsoleto</th>}</tr></thead>
+            <tbody>{det.itens.map((v, i) => <tr key={i} className="border-t border-border"><td>{v.dia}</td><td>{v.cliente}</td><td>{v.os_n}</td><td>{v.produto}</td><td className="text-right">{brl(v.valor)}</td>{est ? <td className="text-right">{brl(v.premiacao)}</td> : <td className="text-right">{v.obsoleto ? "Sim" : "Não"}</td>}</tr>)}</tbody></table>
+        </td></tr>}
+      </Fragment>; })}
         <tr className="border-t border-border font-bold"><td colSpan={est ? 4 : 8} className="py-1">Total</td><td className="text-right">{total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</td></tr></tbody></table>
     <p className="mt-2 text-[11px] text-muted-foreground">{est ? "Premiação fixa por produto da tabela Chase Auto Care (inclui PPF). Só vendas faturadas." : "Showroom: até R$ 30 mil 3% · até R$ 45 mil 4% · acima 5% (sobre produção líquida). Pós-vendas 3%. Obsoleto 2%. Só vendas faturadas."}</p>
   </Box>;
