@@ -156,6 +156,19 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
           <p className="mt-1 text-[10px] text-muted-foreground">⛔ = nenhuma venda do item no mês após 5+ dias decorridos.</p>
         </section>;
       })()}
+      {!relatorio && (sub === "servicos" || sub === "pecas") && (() => {
+        const linhas = consAgg.map((c) => { const t = stat([c.id], ["tunap"]); const a = stat([c.id], ITENS.map((i) => i.k)); return { c, pass: t.pass, tunap: t.qtd, todos: a.qtd }; }).filter((x) => x.pass > 0 || x.todos > 0).sort((a, b) => div(b.tunap, b.pass) - div(a.tunap, a.pass));
+        const tp = linhas.reduce((n, x) => n + x.pass, 0), tt = linhas.reduce((n, x) => n + x.tunap, 0), ta = linhas.reduce((n, x) => n + x.todos, 0);
+        return <details className="lux-card px-3 py-2 text-xs">
+          <summary className="cursor-pointer text-sm font-semibold">🎯 Campanha Tunap · conversão por consultor <span className="font-normal text-muted-foreground">— manutenções, agregados vendidos e aproveitamento no período</span></summary>
+          <table className="mt-2 w-full tabular-nums">
+            <thead className="text-muted-foreground"><tr><th className="text-left">Consultor</th><th className="text-right">Manutenções</th><th className="text-right">Tunap (un)</th><th className="text-right">Conversão Tunap</th><th className="text-right">Todos agregados (un)</th><th className="text-right">Aproveitamento geral</th></tr></thead>
+            <tbody>{linhas.map((x) => <tr key={x.c.id} className="border-t border-border"><td>{x.c.nome}</td><td className="text-right">{uni(x.pass)}</td><td className="text-right">{uni(x.tunap)}</td><td className="text-right font-semibold">{pct(div(x.tunap, x.pass))}</td><td className="text-right">{uni(x.todos)}</td><td className="text-right">{pct(div(x.todos, x.pass))}</td></tr>)}</tbody>
+            <tfoot><tr className="border-t-2 border-primary font-semibold"><td>Total</td><td className="text-right">{uni(tp)}</td><td className="text-right">{uni(tt)}</td><td className="text-right">{pct(div(tt, tp))}</td><td className="text-right">{uni(ta)}</td><td className="text-right">{pct(div(ta, tp))}</td></tr></tfoot>
+          </table>
+          <p className="mt-1 text-[10px] text-muted-foreground">Manutenções = passagens de revisão (Carro: BSI + Revisão; Moto: Revisão). Use o filtro De/a acima para o período da campanha.</p>
+        </details>;
+      })()}
       {sub === "ia" && <AgregadosIA mes={mes} cons={consAgg} tot={tot} dec={dec} stat={stat} deptName={deptName} />}
       {sub === "metas" && <Metas cons={consAgg} goals={goals} mes={mes} deptName={deptName} onSaved={load} />}
     </div>
