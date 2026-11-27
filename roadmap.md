@@ -1,5 +1,10 @@
 # Roadmap — melhorias aprovadas na varredura das 10 abas
 
+## Atualizações diárias aprovadas
+- [ ] Reconhecer agregados pela descrição somente quando o código estiver vazio, mantendo LIMP10 em Limpar.
+- [ ] Integrar O.S. abertas diárias ao Controle, preservando previsões/status e baixando ausências apenas de lista completa confirmada.
+- [ ] Testar leitura, conciliação e importação integrada.
+
 ## Bloco 1 · Operação (O.S. e NPS)
 - [x] Controle O.S.: mudança manual de status + status "Em serviço" + histórico (quem/quando/motivo)
 - [x] Controle O.S.: busca rápida, filtro SG/SC, capital parado >30d
