@@ -5,6 +5,8 @@ export type Status = "pronto" | "pecas" | "judicial" | "diag" | "faturar" | "gar
 export type OsItem = {
   n: string; cons: string; cli: string; mod: string; placa: string; emi: string;
   pec: number; serv: number; valor: number; dias: number; obs: string; st: Status; desde: string;
+  /** Tipo da O.S. (C7, N7…), quando o relatório traz a coluna. */
+  tipo?: string;
 };
 export type OsImport = { id: string; at: string; nome: string; arquivo: string; itens: OsItem[] };
 
@@ -49,7 +51,7 @@ export function lerRelatorio(rows: unknown[][], anterior: OsImport | undefined, 
   if (h < 0) throw new Error("Não encontrei as colunas Número e Observação na planilha.");
   const head = (rows[h] ?? []).map(c => norm(String(c)).trim());
   const col = (re: RegExp) => head.findIndex(c => re.test(c));
-  const c = { n: col(/^numero$/), cli: col(/cliente/), mod: col(/modelo/), cons: col(/recep|consultor|vendedor/), placa: col(/placa/), emi: col(/emissao/), pec: col(/itens/), serv: col(/serv/), valor: col(/valor/), dias: col(/dias/), obs: col(/observ/) };
+  const c = { tipo: col(/^tipo$/), n: col(/^numero$/), cli: col(/cliente/), mod: col(/modelo/), cons: col(/recep|consultor|vendedor/), placa: col(/placa/), emi: col(/emissao/), pec: col(/itens/), serv: col(/serv/), valor: col(/valor/), dias: col(/dias/), obs: col(/observ/) };
   if (c.cons < 0) throw new Error("Não encontrei a coluna do consultor (Recep.).");
   const prev = new Map((anterior?.itens ?? []).map(i => [i.n, i]));
   const out: OsItem[] = [];
@@ -62,7 +64,7 @@ export function lerRelatorio(rows: unknown[][], anterior: OsImport | undefined, 
     const p = prev.get(n);
     const desde = p && p.st === st ? p.desde : anterior ? dataImport : addDias(dataImport, -dias);
     out.push({
-      n, st, obs, dias, desde,
+      n, st, obs, dias, desde, ...(c.tipo >= 0 && String(r[c.tipo] ?? "").trim() ? { tipo: String(r[c.tipo]).trim().toUpperCase() } : {}),
       cons: String(r[c.cons] ?? "").trim().toUpperCase() || "SEM CONSULTOR",
       cli: String(r[c.cli] ?? "").trim(), mod: String(r[c.mod] ?? "").trim(), placa: String(r[c.placa] ?? "").trim(),
       emi: String(r[c.emi] ?? "").trim(),

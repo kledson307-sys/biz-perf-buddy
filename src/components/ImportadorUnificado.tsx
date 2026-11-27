@@ -11,6 +11,7 @@ import { salvarOficinaMes } from "@/lib/oficina-mes";
 import { lerAgendamento, salvarAgendamento, resumoAgenda, type AgendReport } from "@/lib/agendamento";
 import { ehOsAbertas, lerOsTabela, lerOsSistema, consolidarOs } from "@/lib/os-abertas";
 import { saveOpenOrders } from "@/lib/open-orders.functions";
+import { sincronizarControleOs } from "@/lib/os-diario-save";
 import { ehFatServicos, ehFatPecas, lerFatServicos, lerFatPecas, consolidarFat, mesclarFat, type FatHistorico } from "@/lib/faturamento-historico";
 import { mesSeguinte } from "@/lib/agendamentos-data";
 import { registrarUpdate } from "@/lib/update-log";
@@ -66,7 +67,7 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
       const osAb = abas.find((a) => ehOsAbertas(a.raw));
       if (osAb) {
         const linhas = lerOsTabela(osAb.raw) ?? lerOsSistema(osAb.raw);
-        if (linhas) { out.push({ arquivo: f.name, tipo: "os", osLinhas: linhas, resumo: `${linhas.length} O.S. dos consultores do painel · ${brl(linhas.reduce((a, l) => a + l.servicos + l.pecas, 0))}` }); continue; }
+        if (linhas) { out.push({ arquivo: f.name, tipo: "os", osLinhas: linhas, raw: osAb.raw, destinos: ["Projeção + OS: valores em aberto por consultor", "Controle O.S.: entrada das O.S. novas (Em serviço / Fila) e baixa das que não vieram"], resumo: `${linhas.length} O.S. dos consultores do painel · ${brl(linhas.reduce((a, l) => a + l.servicos + l.pecas, 0))}` }); continue; }
       }
       const p = abas.find((a) => ehFaturamentoPecas(a.raw));
       if (p) {
@@ -155,6 +156,7 @@ export function ImportadorUnificado({ mes, onDone }: { mes: string; onDone?: () 
           await saveOpenOrders({ data: { mes, valores } });
           await registrarUpdate("O.S. abertas (importação/edição)", mes);
           feitos.push(`O.S. abertas (${Object.keys(valores).length} consultores)${fora.length ? ` · ignorados: ${[...new Set(fora)].join(", ")}` : ""}`);
+          if (a.raw) feitos.push(await sincronizarControleOs(a.raw));
         }
         if (a.tipo === "pecas" && a.pecas) {
           if (undo.pecas === undefined) { const { data: pv } = await supabase.from("parts_items").select("mes,itens,nome,at").eq("mes", mes).maybeSingle(); undo.pecas = pv ?? null; }

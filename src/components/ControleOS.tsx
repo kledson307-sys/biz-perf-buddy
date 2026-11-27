@@ -3,6 +3,8 @@ import { AlertTriangle, Bell, ChevronDown, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { brl, Box, Pizza, Tabela, norm } from "@/components/painel-ui";
+import { lerOsDiarias } from "@/lib/os-diario-save";
+import { comDiarias } from "@/lib/os-diario";
 import { analisar, normalizar, comJudicial, ehJudicial, JUDICIAL_KEY, ENCERRADO_KEY, ehEncerrado, PODE_ENCERRAR, fmt, hoje, diasEntre, retornoDevido, lerRelatorio, STATUS, STATUS_KEY, STATUS_MANUAL, comStatusManual, type StatusManual, type Analise, type OsImport, type OsItem, type Status } from "@/lib/os-controle";
 import { registrarUpdate } from "@/lib/update-log";
 import { filtrarUnificados } from "@/lib/os-agrupar";
@@ -33,7 +35,8 @@ export function ControleOS() {
   const load = async () => {
     const { data, error } = await supabase.from("os_imports").select("id,at,nome,arquivo,itens").order("at", { ascending: false }).limit(60);
     if (error) { setMsg(error.message); return; }
-    setImps((data ?? []).map(d => ({ ...d, itens: normalizar(d.itens as unknown as OsItem[]) })));
+    const diarias = await lerOsDiarias();
+    setImps((data ?? []).map((d, i) => ({ ...d, itens: i === 0 ? comDiarias(normalizar(d.itens as unknown as OsItem[]), diarias) : normalizar(d.itens as unknown as OsItem[]) })));
     const r = await supabase.from("os_acompanhamento").select("os_n,acoes,prev_manual");
     if (!r.error) setAcomp(Object.fromEntries((r.data ?? []).map(x => [x.os_n, { acoes: (x.acoes ?? {}) as Acomp["acoes"], prev_manual: x.prev_manual }])));
     const rr = await supabase.from("os_retornos").select("*").order("feito_at", { ascending: false });

@@ -12,6 +12,17 @@ const iso = (v: unknown): string => {
   return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
 };
 
+const chaveDesc = (v: string) => norm(v).toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim();
+/** Descrições oficiais dos serviços agregados (DMS) → item e código, usadas só quando o TMO Ref. vem vazio. */
+export const DESC_PADRAO: [string, string, string][] = [
+  ["OXISANITIZAÇÃO PREMIUM", "oxi", "OXICAP"], ["OXI-SANITIZAÇÃO", "oxi", "OXICAP"],
+  ["ALINHAMENTO", "alinhamento", "ALINHA01"], ["ALINHAMENTO E BALANCEAMENTO", "alinhamento", "0000170"],
+  ["LIMPEZA DE SISTEMA", "limpar", "LIMPSIST"], ["LIMPEZA DOS DUTOS DO A/C", "limpar", "LIMP001"],
+  ["LIMPAR- SANITIZANTE", "limpar", "LIMP05"], ["LIMPAR- VERNIZ DE MOTOR", "limpar", "LIMP04"],
+  ["LIMPEZA DE FREIOS", "limpar", "LIMPFREIO"], ["LIMPEZA E LUBRIFICAÇÃO DE CORRENTE", "limpar", "LIMPCORRENTE"],
+  ["SANITIZAÇÃO DE CAPACETES", "limpar", "LIMP10"],
+];
+
 /**
  * Agregados de SERVIÇO dentro do relatório "O.S. Fechadas": cada linha com TMO Ref. de um código de agregado
  * vira 1 unidade para o consultor (login) no dia do encerramento, valor = Serv. Líquido. O.S. internas ficam fora.
@@ -23,11 +34,20 @@ export function agregadosDoFatServicos(raw: unknown[][], codigos?: Record<string
   const h = raw[hi]!.map(low);
   const cRef = h.findIndex((x) => /^tmo ref/.test(x)), cEnc = h.indexOf("encerrada"), cServ = h.findIndex((x) => /^serv\.? liq/.test(x));
   const cTipo = h.findIndex((x) => x === "tipo"), cCons = h.lastIndexOf("consultor");
+  const cDesc = h.findIndex((x) => /^tmo descri/.test(x));
   const porCod = new Map<string, string>();
   for (const it of ITENS.filter((i) => i.g === "servicos")) for (const c of codigos?.[it.k] ?? it.cod) porCod.set(normCod(c), it.k);
+  // Descrição → item/código: aprendida das linhas com código cadastrado neste mesmo arquivo; o catálogo padrão completa.
+  const porDesc = new Map<string, { item: string; codigo: string }>(DESC_PADRAO.filter(([, k]) => ITENS.some((i) => i.k === k)).map(([d, k, c]) => [chaveDesc(d), { item: k, codigo: c }]));
+  if (cDesc >= 0) for (const r of raw.slice(hi + 1)) {
+    const codigo = normCod(txt(r[cRef])); const item = porCod.get(codigo); const d = chaveDesc(txt(r[cDesc]));
+    if (item && d) porDesc.set(d, { item, codigo });
+  }
   const acc = new Map<string, Registro>();
   for (const r of raw.slice(hi + 1)) {
-    const codigo = normCod(txt(r[cRef])); const item = porCod.get(codigo);
+    let codigo = normCod(txt(r[cRef])); let item = porCod.get(codigo);
+    // Só usa a descrição quando o código vem em branco (código preenchido de outro serviço nunca vira agregado).
+    if (!codigo && cDesc >= 0) { const m = porDesc.get(chaveDesc(txt(r[cDesc]))); if (m) { item = m.item; codigo = m.codigo; } }
     if (!item) continue;
     if (cTipo >= 0 && TIPOS_INTERNOS.has(txt(r[cTipo]).toUpperCase())) continue;
     const dia = iso(r[cEnc]); const nome = nomeVendedor(txt(r[cCons]));

@@ -19,6 +19,22 @@ describe("agregados nas O.S. Fechadas", () => {
   });
 });
 
+describe("agregados sem código", () => {
+  const H2 = ["Consultor", "TMO Ref.", "TMO Descrição", "Tipo", "Encerrada", "Serv. Líquido", "Consultor"];
+  const D = (ref: string, desc: string, login: string) => ["X", ref, desc, "C7", "05/11/2026", 100, login];
+  it("reconhece pela descrição só quando o código vem vazio, mantendo LIMP10 em Limpar", () => {
+    const r = agregadosDoFatServicos([H2,
+      D("", "OXISANITIZAÇÃO PREMIUM", "P.BENIGNO"), D("", "Alinhamento", "ANDRESSA.O"),
+      D("", "SANITIZAÇÃO DE CAPACETES", "GILBERTO.S"), D("9999", "OXISANITIZAÇÃO PREMIUM", "P.BENIGNO"),
+      D("", "TROCA DE ÓLEO", "WESLEY.F")])!;
+    const q = (i: string) => r.registros.filter((x) => x.item === i).reduce((a, x) => a + x.qtd, 0);
+    expect(q("oxi")).toBe(1);
+    expect(q("alinhamento")).toBe(1);
+    expect(q("limpar")).toBe(1);
+    expect(r.registros.length).toBe(3);
+  });
+});
+
 describe("agregadosDoFatPecas", () => {
   it("soma Tunap/Brazzo do faturamento de peças por vendedor e dia, sem O.S. internas", () => {
     const raw = [
