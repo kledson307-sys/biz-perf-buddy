@@ -6,6 +6,7 @@ import { AgregadosImport } from "./AgregadosImport";
 import { AgregadosIA } from "./AgregadosIA";
 import { registrarUpdate } from "@/lib/update-log";
 import { consultorMoto, type MixCons } from "@/lib/mecanicos";
+import { CAMPANHA_TUNAP, premioTunap } from "@/lib/campanha-tunap";
 
 /** Un./passagem de revisão: Carro = BSI + Revisão C7; Moto = Revisão N7. */
 const aprovFmt = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " un/pass";
@@ -157,16 +158,29 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
         </section>;
       })()}
       {!relatorio && (sub === "servicos" || sub === "pecas") && (() => {
-        const linhas = consAgg.map((c) => { const t = stat([c.id], ["tunap"]); const a = stat([c.id], ITENS.map((i) => i.k)); return { c, pass: t.pass, tunap: t.qtd, todos: a.qtd }; }).filter((x) => x.pass > 0 || x.todos > 0).sort((a, b) => div(b.tunap, b.pass) - div(a.tunap, a.pass));
-        const tp = linhas.reduce((n, x) => n + x.pass, 0), tt = linhas.reduce((n, x) => n + x.tunap, 0), ta = linhas.reduce((n, x) => n + x.todos, 0);
+        const linhas = consAgg.map((c) => { const t = stat([c.id], ["tunap"]); const moto = consultorMoto(c.nome); return { c, moto, pass: t.pass, qtd: t.qtd, valor: t.valor, p: premioTunap(moto ? "moto" : "auto", t.qtd, t.pass) }; }).filter((x) => x.pass > 0 || x.qtd > 0).sort((a, b) => b.p.conv - a.p.conv);
+        const tp = linhas.reduce((n, x) => n + x.pass, 0), tq = linhas.reduce((n, x) => n + x.qtd, 0), tv = linhas.reduce((n, x) => n + x.valor, 0);
+        const loja = premioTunap("loja", tq, tp);
+        const ganho = linhas.reduce((n, x) => n + (x.p.atual?.valor ?? 0), 0) + (loja.atual?.valor ?? 0);
+        const camp = de === CAMPANHA_TUNAP.de && ate === CAMPANHA_TUNAP.ate;
+        const aprov = (q: number, ps: number) => `${aprovFmt(div(q, ps))} · ${pct(div(q, ps))}`;
         return <details className="lux-card px-3 py-2 text-xs">
-          <summary className="cursor-pointer text-sm font-semibold">🎯 Campanha Tunap · conversão por consultor <span className="font-normal text-muted-foreground">— manutenções, agregados vendidos e aproveitamento no período</span></summary>
-          <table className="mt-2 w-full tabular-nums">
-            <thead className="text-muted-foreground"><tr><th className="text-left">Consultor</th><th className="text-right">Manutenções</th><th className="text-right">Tunap (un)</th><th className="text-right">Conversão Tunap</th><th className="text-right">Todos agregados (un)</th><th className="text-right">Aproveitamento geral</th></tr></thead>
-            <tbody>{linhas.map((x) => <tr key={x.c.id} className="border-t border-border"><td>{x.c.nome}</td><td className="text-right">{uni(x.pass)}</td><td className="text-right">{uni(x.tunap)}</td><td className="text-right font-semibold">{pct(div(x.tunap, x.pass))}</td><td className="text-right">{uni(x.todos)}</td><td className="text-right">{pct(div(x.todos, x.pass))}</td></tr>)}</tbody>
-            <tfoot><tr className="border-t-2 border-primary font-semibold"><td>Total</td><td className="text-right">{uni(tp)}</td><td className="text-right">{uni(tt)}</td><td className="text-right">{pct(div(tt, tp))}</td><td className="text-right">{uni(ta)}</td><td className="text-right">{pct(div(ta, tp))}</td></tr></tfoot>
-          </table>
-          <p className="mt-1 text-[10px] text-muted-foreground">Manutenções = passagens de revisão (Carro: BSI + Revisão; Moto: Revisão). Use o filtro De/a acima para o período da campanha.</p>
+          <summary className="cursor-pointer text-sm font-semibold">🎯 Copa TUNAP · conversão e prêmios <span className="font-normal text-muted-foreground">— bateu, levou (Jul–Nov/2026)</span></summary>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <button onClick={() => { if (camp) { setDe(ini); setAte(end); } else { setDe(CAMPANHA_TUNAP.de); setAte(CAMPANHA_TUNAP.ate); } }} className="rounded-md border border-primary px-2 py-1 text-primary">{camp ? "Voltar ao mês" : "Período da campanha (01/07–30/11)"}</button>
+            <span className="text-muted-foreground">Cálculo pelo período selecionado no topo.</span>
+          </div>
+          <div className="overflow-x-auto"><table className="mt-2 w-full min-w-[560px] tabular-nums">
+            <thead className="text-muted-foreground"><tr><th className="text-left">Consultor</th><th className="text-right">Revisões</th><th className="text-right">Qtd</th><th className="text-right">Valor</th><th className="text-right">Aproveit.</th><th className="pl-3 text-left">Prêmio atual</th></tr></thead>
+            <tbody>{linhas.map((x) => <tr key={x.c.id} className="border-t border-border"><td>{x.c.nome} <span className="rounded bg-muted px-1 text-[10px] text-muted-foreground">{x.moto ? "Moto" : "Carro"}</span></td><td className="text-right">{uni(x.pass)}</td><td className="text-right font-semibold">{uni(x.qtd)}</td><td className="text-right">{brl(x.valor)}</td><td className={`text-right font-semibold ${tone(x.p.conv)}`}>{aprov(x.qtd, x.pass)}</td><td className="pl-3">{x.p.atual ? <span className="text-success">🏆 {x.p.atual.premio}</span> : <span className="text-muted-foreground">—</span>}</td></tr>)}</tbody>
+            <tfoot><tr className="border-t-2 border-primary font-semibold"><td>Total</td><td className="text-right">{uni(tp)}</td><td className="text-right">{uni(tq)}</td><td className="text-right">{brl(tv)}</td><td className="text-right">{aprov(tq, tp)}</td><td className="pl-3">{loja.atual ? `🎉 ${loja.atual.premio}` : "—"}</td></tr></tfoot>
+          </table></div>
+          <h4 className="mt-3 text-sm font-semibold">💰 O que estamos ganhando até agora · <span className="text-success">{brl(ganho)}</span></h4>
+          <div className="mt-1 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="rounded-lg border border-primary/50 bg-primary/5 p-2"><b>Confraternização da loja</b> · {aprov(tq, tp)}<br />{loja.atual ? <span className="text-success">🎉 {loja.atual.premio} ({brl(loja.atual.valor)})</span> : <span className="text-muted-foreground">Ainda não destravada</span>}{loja.prox && <><br /><span className="text-warning">Faltam {uni(loja.faltam)} un para: {loja.prox.premio}</span></>}</div>
+            {linhas.map((x) => <div key={x.c.id} className={`rounded-lg border p-2 ${x.p.atual ? "border-success/50 bg-success/5" : "border-border"}`}><b>{x.c.nome}</b> · {x.moto ? "Moto" : "Carro"}<br />{x.p.atual ? <span className="text-success">🏆 {x.p.atual.premio} ({brl(x.p.atual.valor)})</span> : <span className="text-muted-foreground">Nenhum prêmio ainda</span>}{x.p.prox ? <><br /><span className="text-warning">Faltam {uni(x.p.faltam)} un para: {x.p.prox.premio}</span></> : <><br /><span className="text-success">Faixa máxima atingida</span></>}</div>)}
+          </div>
+          <p className="mt-1 text-[10px] text-muted-foreground">Revisões = passagens de revisão (Carro: BSI + Revisão; Moto: Revisão). Faixas: Moto 1,0/1,5/2,0 · Carro 1,0/1,5/1,8 · Loja 1,0/1,5/2,0 un/pass. Valores = teto do regulamento; pagamento em dez/2026.</p>
         </details>;
       })()}
       {sub === "ia" && <AgregadosIA mes={mes} cons={consAgg} tot={tot} dec={dec} stat={stat} deptName={deptName} />}
