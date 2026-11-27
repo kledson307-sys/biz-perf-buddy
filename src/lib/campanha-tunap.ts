@@ -29,3 +29,27 @@ export function premioTunap(tipo: keyof typeof FAIXAS, qtd: number, pass: number
   const faltam = prox && pass > 0 ? Math.max(Math.ceil(prox.min * pass - qtd), 0) : 0;
   return { conv, atual, prox, faltam };
 }
+
+/** Base apurada nas planilhas DMS (Faturamento de Peças grupo QUIMICOS TUNAP sem O.S. internas;
+ *  revisões = O.S. distintas BSI + Revisão por data de encerramento) para meses fechados da campanha.
+ *  [revisões, qtd, valor] por consultor/mês. Meses aqui SUBSTITUEM os dados importados no cartão. */
+export const BASE_TUNAP: Record<string, Record<string, [number, number, number]>> = {
+  "2026-07": { "ANDRESSA.O": [89, 61, 8092.74], "GILBERTO.S": [22, 66, 9540.21], "P.BENIGNO": [40, 91, 12615.56], "RENAN.O": [1, 29, 7645.89], "WESLEY.F": [84, 75, 10088.87] },
+  "2026-08": { "ANDRESSA.O": [96, 82, 11322.46], "GILBERTO.S": [32, 57, 8940.47], "P.BENIGNO": [36, 102, 14820.59], "RENAN.O": [1, 28, 4824.01], "WESLEY.F": [78, 105, 14013.1] },
+  "2026-09": { "ANDRESSA.O": [81, 47, 14481.71], "GILBERTO.S": [51, 96, 28042.44], "P.BENIGNO": [14, 39, 10110.94], "RENAN.O": [0, 7, 2183.86], "WESLEY.F": [85, 59, 13052.02] },
+  "2026-10": { "ANDRESSA.O": [86, 59, 10666.26], "GILBERTO.S": [24, 44, 13025.2], "P.BENIGNO": [19, 72, 17958.44], "RENAN.O": [0, 15, 1313.85], "WESLEY.F": [75, 66, 14287.33] },
+};
+
+/** Meses (AAAA-MM) inteiramente dentro de [de, ate]. */
+export function mesesCheios(de: string, ate: string): string[] {
+  const out: string[] = [];
+  let [y, m] = de.slice(0, 7).split("-").map(Number) as [number, number];
+  for (;;) {
+    const k = `${y}-${String(m).padStart(2, "0")}`;
+    if (k > ate.slice(0, 7)) break;
+    const fim = `${k}-${String(new Date(y, m, 0).getDate()).padStart(2, "0")}`;
+    if (de <= `${k}-01` && ate >= fim) out.push(k);
+    m++; if (m > 12) { m = 1; y++; }
+  }
+  return out;
+}

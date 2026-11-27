@@ -16,3 +16,11 @@ describe("Copa Tunap", () => {
     expect(r.faltam).toBe(262);
   });
 });
+
+import { mesesCheios as mc } from "./campanha-tunap";
+describe("mesesCheios", () => {
+  it("só meses inteiros do período", () => {
+    expect(mc("2026-07-01", "2026-11-30")).toEqual(["2026-07", "2026-08", "2026-09", "2026-10", "2026-11"]);
+    expect(mc("2026-07-15", "2026-09-29")).toEqual(["2026-08"]);
+  });
+});

@@ -6,7 +6,7 @@ import { AgregadosImport } from "./AgregadosImport";
 import { AgregadosIA } from "./AgregadosIA";
 import { registrarUpdate } from "@/lib/update-log";
 import { consultorMoto, type MixCons } from "@/lib/mecanicos";
-import { CAMPANHA_TUNAP, premioTunap } from "@/lib/campanha-tunap";
+import { BASE_TUNAP, CAMPANHA_TUNAP, mesesCheios, premioTunap } from "@/lib/campanha-tunap";
 
 /** Un./passagem de revisão: Carro = BSI + Revisão C7; Moto = Revisão N7. */
 const aprovFmt = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " un/pass";
@@ -27,6 +27,7 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
   const [goals, setGoals] = useState<AGoal[]>([]);
   const [visits, setVisits] = useState<AVisit[]>([]);
   const [mix, setMix] = useState<Map<string, MixCons>>(new Map());
+  const [mixMeses, setMixMeses] = useState<{ mes: string; nome: string; m: MixCons }[]>([]);
   const [codigos, setCodigos] = useState<Record<string, string[]>>(() => Object.fromEntries(ITENS.map((i) => [i.k, i.cod])));
 
   const [y, m] = mes.split("-").map(Number);
@@ -45,6 +46,8 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
     ]);
     const mx = await supabase.from("cons_mix").select("nome,composicao").eq("mes", mes);
     setMix(new Map((mx.data ?? []).map((r) => [r.nome.trim().toUpperCase(), r.composicao as unknown as MixCons])));
+    const mm = await supabase.from("cons_mix").select("mes,nome,composicao").gte("mes", de.slice(0, 7)).lte("mes", ate.slice(0, 7));
+    setMixMeses((mm.data ?? []).map((r) => ({ mes: r.mes, nome: r.nome.trim().toUpperCase(), m: r.composicao as unknown as MixCons })));
     setSales((s.data ?? []).map((x) => ({ ...x, qtd: +x.qtd, valor: +x.valor })));
     setGoals((g.data ?? []).map((x) => ({ ...x, meta_qtd: +x.meta_qtd, meta_valor: +x.meta_valor })));
     setVisits((v.data ?? []).map((x) => ({ ...x, passagens: +x.passagens })));
@@ -158,7 +161,17 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
         </section>;
       })()}
       {!relatorio && (sub === "servicos" || sub === "pecas") && (() => {
-        const linhas = consAgg.map((c) => { const t = stat([c.id], ["tunap"]); const moto = consultorMoto(c.nome); return { c, moto, pass: t.pass, qtd: t.qtd, valor: t.valor, p: premioTunap(moto ? "moto" : "auto", t.qtd, t.pass) }; }).filter((x) => x.pass > 0 || x.qtd > 0).sort((a, b) => b.p.conv - a.p.conv);
+        // Meses fechados da campanha vêm da base apurada no DMS; demais meses, dos dados importados (revisões somadas mês a mês).
+        const base = mesesCheios(de, ate).filter((k) => BASE_TUNAP[k]);
+        const fora = (dia: string) => !base.includes(dia.slice(0, 7));
+        const linhas = consAgg.map((c) => {
+          const nome = c.nome.trim().toUpperCase(), moto = consultorMoto(c.nome);
+          let qtd = 0, valor = 0, pass = 0;
+          for (const s of sales) if (s.consultant_id === c.id && s.item === "tunap" && fora(s.dia)) { qtd += s.qtd; valor += s.valor; }
+          for (const r of mixMeses) if (r.nome === nome && !base.includes(r.mes)) pass += moto ? (r.m.rev?.length ?? 0) : (r.m.bsi?.length ?? 0) + (r.m.rev?.length ?? 0);
+          for (const k of base) { const b = BASE_TUNAP[k]![nome]; if (b) { pass += b[0]; qtd += b[1]; valor += b[2]; } }
+          return { c, moto, pass, qtd, valor, p: premioTunap(moto ? "moto" : "auto", qtd, pass) };
+        }).filter((x) => x.pass > 0 || x.qtd > 0).sort((a, b) => b.p.conv - a.p.conv);
         const tp = linhas.reduce((n, x) => n + x.pass, 0), tq = linhas.reduce((n, x) => n + x.qtd, 0), tv = linhas.reduce((n, x) => n + x.valor, 0);
         const loja = premioTunap("loja", tq, tp);
         const ganho = linhas.reduce((n, x) => n + (x.p.atual?.valor ?? 0), 0) + (loja.atual?.valor ?? 0);
