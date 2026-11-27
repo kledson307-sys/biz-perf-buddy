@@ -65,7 +65,10 @@ export function Agregados({ mes, cons, allCons, tot, dec, deptName, reloadCons, 
     for (const s of sales) if (idSet.has(s.consultant_id) && itSet.has(s.item)) { qtd += s.qtd; valor += s.valor; }
     for (const g of goals) if (idSet.has(g.consultant_id) && itSet.has(g.item)) { mq += g.meta_qtd; mv += g.meta_valor; }
     for (const c of cons) if (idSet.has(c.id)) {
-      const m = mix.get(c.nome.trim().toUpperCase());
+      const nm = c.nome.trim().toUpperCase();
+      const doPeriodo = periodo ? mixMeses.filter((r) => r.nome === nm) : [];
+      if (doPeriodo.length) { for (const r of doPeriodo) pass += consultorMoto(c.nome) ? (r.m.rev?.length ?? 0) : (r.m.bsi?.length ?? 0) + (r.m.rev?.length ?? 0); continue; }
+      const m = mix.get(nm);
       if (m) pass += consultorMoto(c.nome) ? (m.rev?.length ?? 0) : (m.bsi?.length ?? 0) + (m.rev?.length ?? 0);
       else for (const v of visits) if (v.consultant_id === c.id) pass += v.passagens;
     }
